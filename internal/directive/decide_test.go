@@ -236,7 +236,7 @@ func TestDecide_Table(t *testing.T) {
 				if d.EmpreinteOrigine != approval.Digest("attribuer_pret", base) {
 					t.Error("l'empreinte d'origine doit porter sur les arguments reçus")
 				}
-				if !strings.Contains(d.Motif, "caviardés") {
+				if !strings.Contains(d.Motif, "caviardés (3 champ(s))") {
 					t.Errorf("motif %q", d.Motif)
 				}
 			},

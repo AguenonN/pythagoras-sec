@@ -51,6 +51,7 @@ const (
 // refusé par l'engine n'est jamais une consultation : la provenance ne
 // retient que ce qui est réellement sorti.
 type Consultation struct {
+	Seq              int // rang dans la session, attribué par l'engine
 	Serveur          string
 	Outil            string
 	Horodatage       time.Time
@@ -192,11 +193,14 @@ func Decide(jeu Jeu, etat EtatSession, appel Appel) Decision {
 			}
 			app.Declenchee = true
 			app.ChampsRetires = enleves
+			// Le motif cite la liste autorisée, qui vient de la directive,
+			// et un nombre : jamais les clés reçues, que l'agent contrôle.
+			liste := fmt.Sprintf("%d champ(s) hors liste (autorisés : %s)", len(enleves), strings.Join(d.Champs.Autorises, ", "))
 			if d.Champs.Mode == ModeRefuser {
 				app.Effet = Refuser
-				notes = append(notes, "champs hors liste : "+strings.Join(enleves, ", "))
+				notes = append(notes, liste)
 			} else {
-				notes = append(notes, "caviardage de "+strings.Join(enleves, ", "))
+				notes = append(notes, "caviardage de "+liste)
 				if d.Statut == Active {
 					args = filtres
 					for _, p := range enleves {
@@ -240,11 +244,11 @@ func motif(dec Decision) string {
 	case AttendreValidation:
 		s := "en attente de validation humaine par " + strings.Join(ids, ", ")
 		if len(dec.ChampsRetires) > 0 {
-			s += " ; arguments caviardés (" + strings.Join(dec.ChampsRetires, ", ") + ")"
+			s += fmt.Sprintf(" ; arguments caviardés (%d champ(s))", len(dec.ChampsRetires))
 		}
 		return s
 	case Caviarder:
-		return "autorisé après caviardage de " + strings.Join(dec.ChampsRetires, ", ") + " par " + strings.Join(ids, ", ")
+		return fmt.Sprintf("autorisé après caviardage de %d champ(s) par %s", len(dec.ChampsRetires), strings.Join(ids, ", "))
 	}
 	return "autorisé : aucune directive applicable"
 }
