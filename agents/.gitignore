@@ -1,0 +1,5 @@
+# Environnement virtuel, binaires construits, état local (budget d'appels)
+.venv/
+.bin/
+.etat/
+__pycache__/

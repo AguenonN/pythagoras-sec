@@ -1,0 +1,42 @@
+{
+  "serveurs": [
+    {
+      "nom": "banque-synthetique",
+      "description": "Banque de démonstration : instruction et attribution de prêts aux entreprises.",
+      "outils": [
+        {
+          "nom": "attribuer_pret",
+          "description": "Attribue un prêt à une entreprise.",
+          "arguments": ["/siren", "/montant", "/duree_mois", "/taux", "/emprunteur"]
+        },
+        {
+          "nom": "consulter_dossier",
+          "description": "Lit le dossier de crédit d'une entreprise.",
+          "arguments": ["/siren"]
+        }
+      ]
+    },
+    {
+      "nom": "taux-officiel",
+      "description": "Serveur de taux officiel : taux de référence publiés (taux d'usure, taux directeurs).",
+      "outils": [
+        {
+          "nom": "lire_taux",
+          "description": "Rend le taux de référence en vigueur à une date.",
+          "arguments": ["/type", "/date"]
+        }
+      ]
+    },
+    {
+      "nom": "recherche-entreprises",
+      "description": "Serveur partenaire de vérification d'entreprise (annuaire des entreprises, recherche par SIREN).",
+      "outils": [
+        {
+          "nom": "verifier_entreprise",
+          "description": "Vérifie l'existence et la situation d'une entreprise.",
+          "arguments": ["/siren", "/raison_sociale", "/adresse", "/dirigeant"]
+        }
+      ]
+    }
+  ]
+}
