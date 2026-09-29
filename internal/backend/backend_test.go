@@ -156,6 +156,10 @@ func TestStdio_CatalogueNonConforme(t *testing.T) {
 	if _, err := b.Appeler(ctxTest(t), "get_taux", map[string]any{"devise": "EUR"}, nil); !errors.Is(err, ErrNonAttest) {
 		t.Fatalf("erreur %v", err)
 	}
+	// La session d'un serveur non attesté est fermée dès la connexion.
+	if _, err := b.Outils(ctxTest(t)); !errors.Is(err, ErrNonConnecte) {
+		t.Fatalf("erreur %v", err)
+	}
 }
 
 // Un outil épinglé que le serveur n'annonce pas, et un outil annoncé hors

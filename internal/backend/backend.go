@@ -185,19 +185,22 @@ func (c *client) etablir(ctx context.Context, t mcp.Transport, observe func() st
 		cs.Close()
 		return c.echec(observe(), "liste des outils impossible", err)
 	}
+	vu := observe()
 	c.mu.Lock()
-	c.cs = cs
 	c.att = directive.Attestation{Mode: c.s.Attestation.Mode, Attendu: c.s.Attestation.Attendu,
-		Observe: observe(), Schemas: conforme, Detail: detail}
+		Observe: vu, Schemas: conforme, Detail: detail}
 	c.att.Verifiee = c.att.Valide()
-	if c.att.Verifiee {
-		c.etat = connecte
+	att := c.att
+	if att.Verifiee {
+		c.cs, c.etat = cs, connecte
 	} else {
 		c.etat = horsService
 	}
-	att := c.att
 	c.mu.Unlock()
 	if !att.Verifiee {
+		// Un serveur non attesté ne recevra rien : sa session est fermée
+		// (et son processus arrêté) tout de suite.
+		cs.Close()
 		return fmt.Errorf("%w: %s: attestation en échec (%s)", ErrNonAttest, c.s.Nom, detailOuObserve(att))
 	}
 	return nil
