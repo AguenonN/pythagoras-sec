@@ -34,3 +34,4 @@ deploy/spire/bootstrap/
 # Trail d'audit des approbations — contient approved_by / ticket_id
 audit*.log
 audit*.jsonl
+pyagent/__pycache__/
