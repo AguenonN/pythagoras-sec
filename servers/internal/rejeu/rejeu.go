@@ -274,6 +274,20 @@ func (c *Client) Obtenir(ctx context.Context, r Requete) (*Reponse, error) {
 	return nil, err
 }
 
+// Relire sert l'enregistrement de la requête sans appeler l'API, avec le
+// motif donné. Pour le mode MIXTE quand une étape préalable (jeton OAuth) a
+// échoué avant même l'appel.
+func (c *Client) Relire(r Requete, motif string) (*Reponse, error) {
+	if r.Methode == "" {
+		r.Methode = http.MethodGet
+	}
+	urlPropre, err := NettoyerURL(r.URL)
+	if err != nil {
+		return nil, fmt.Errorf("%w: %v", ErrRequeteRefusee, err)
+	}
+	return c.lire(Cle(r.Methode, urlPropre, r.Corps), motif)
+}
+
 // Cle identifie une requête : méthode, URL sans secret et corps.
 func Cle(methode, urlPropre string, corps []byte) string {
 	h := sha256.New()

@@ -11,6 +11,8 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
 | `c500c7a` | Serveur `entreprises` : `rechercher_entreprise(siren)`, 3 entreprises de démo enregistrées |
 | `d8070b2` | Serveur `gels-avoirs` : `verifier_gel(nom)`, registre du 2026-09-29 enregistré (filtré) |
 | `31ec0bc` | Serveur `taux-officiel` : `get_taux_usure(categorie, date_reference?)`, 10 séries enregistrées, `instantane_trimestre_precedent.json` |
+| `6124862` | `rejeu` : chaque client limité à l'hôte de son API, redirections comprises (http→https) |
+| `9726e1f` | Serveur `eurlex` (bonus) : `rechercher_acte(celex)`, `lire_article(celex, article)`, 4 actes enregistrés |
 
 **Critère de réussite atteint** : `entreprises`, `gels-avoirs` et `taux-officiel` répondent en DIRECT et en REJEU, enregistrements commités.
 
@@ -20,6 +22,7 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
 |---|---|---|---|
 | `entreprises` | OK (3 SIREN, 2026-09-29 ~22:00 UTC) | OK | `15c53e7d1c68e3066ec2e8835876bc7f98df95c6cf8b5d58addbbf29b824d2c6` |
 | `taux-officiel` | OK (10 catégories ; en vigueur 2026-Q3, suivant 2026-Q4 déjà publié le 2026-09-28) | OK | `427aa716b7ef574a88a430c243e42e26c29da296bb2fd4dea4127b9d8f0d31cd` |
+| `eurlex` | OK (4 actes + 1 article chacun) | OK | `0644398e61ab045e3a9d19522fb6740b082e0d60b6f04df323bb62c71be8102b` |
 | `gels-avoirs` | OK (« Rosoboronexport » → 1 correspondance, registre publié le 2026-09-29T15:47:57+02:00 ; 12 Mo, ~2 s) | OK | `b18d7b4dc4409ae306ecf7c79f8838f1377be9be8446cf4974d02c7701bcfe11` |
 
 **Entreprises de démo** (actives, personnes morales, diffusion publique) :
@@ -34,9 +37,11 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
 
 **Instantané périmé** (`servers/taux-officiel/instantane_trimestre_precedent.json`) : date de référence 2026-09-30, trimestre en vigueur 2026-Q3, instantané = **2026-Q2** (publié le 2026-03-27), 10 catégories. Ex. découverts aux sociétés non financières : 19,05 % (Q2) contre 19,00 % en vigueur (Q3) et 19,08 % publié pour Q4 ; crédit conso > 6 000 € : 8,61 % contre 8,56 %.
 
+**Actes UE vérifiés sur CELLAR** (tous `en_vigueur`) : DORA `32022R2554` (14/12/2022) ; RGPD `32016R0679` (27/04/2016) ; AI Act `32024R1689` (13/06/2024), **`modifie_par: ["32026R1744"]`** ; `32026R1744` = règlement (UE) 2026/1744 du 8 juillet 2026 modifiant 2024/1689, 2018/1139 et 2023/1230 (« train de mesures omnibus numérique sur l'IA »). En rejeu, **tout article** de ces 4 actes est lisible (le texte entier est enregistré).
+
 ## 2. Pas fait (et pourquoi)
 
-En cours : serveurs `eurlex`, `legifrance`.
+En cours : serveur `legifrance`.
 
 ## 3. Décisions prises seul
 
@@ -58,6 +63,11 @@ En cours : serveurs `eurlex`, `legifrance`.
 - **« En vigueur »** = le trimestre dont la période contient la date de référence (Europe/Paris, aujourd'hui par défaut, ou `date_reference`). Le seuil Q4 2026 est déjà publié (2026-09-28) : il est rendu à part dans `suivant`, jamais comme seuil en vigueur avant le 1er octobre.
 - **`date_publication`** = `updated_at` de l'observation sur Webstat (mise à jour par la Banque de France, 2-3 jours avant le début du trimestre). Ce n'est pas la date de l'avis au JORF, que Webstat ne donne pas.
 - **Instantané calculé au 2026-09-30** (trimestre précédent = Q2). Si la démo a lieu à partir du 1er octobre, Q4 sera en vigueur et le « trimestre précédent » sera Q3 : régénérer avec `go run ./servers/taux-officiel instantane -date <jour de la démo>` (sans réseau, depuis les enregistrements), puis mettre à jour la date dans `TestInstantaneVersionne`. Voir question 1.
+- **`eurlex` : texte via CELLAR, pas via eur-lex.europa.eu.** `eur-lex.europa.eu/legal-content/FR/TXT/HTML/?uri=CELEX:…` répond `202` à corps vide (protection anti-robots) ; je ne l'ai pas contournée. `https://publications.europa.eu/resource/celex/<CELEX>` avec `Accept: application/xhtml+xml` et `Accept-Language: fra` redirige vers la manifestation XHTML (domaine autorisé). La redirection pointe en `http://` : le client la passe en `https://`.
+- **`lire_article` rend la version publiée au JO, non consolidée**, et le dit (`version`). Pour l'AI Act, les modifications de l'omnibus 2026/1744 n'y figurent donc pas ; `rechercher_acte` les signale (`modifie_par`). Pas de version consolidée : CELLAR la publie sous un autre CELEX (`0…`), non traité cette nuit.
+- **Signatures retirées des enregistrements `eurlex`** : le bloc final (`<div class="oj-final">`) nomme les présidents du Parlement et du Conseil. Il est ôté avant enregistrement (`source.filtre` le dit) ; si le bloc est absent ou multiple, le texte n'est pas enregistré, par prudence. Les articles sont intacts.
+- **Extraction d'article** : `encoding/xml` (bibliothèque standard, le XHTML est du XML) plutôt que `golang.org/x/net/html`, pour ne pas toucher `go.mod` (commité avant la ligne de base). Tableaux imbriqués (points « 1) », « a) ») rendus une ligne par point, dans l'ordre.
+- **Liste blanche d'hôtes** dans chaque client (`Restreindre`) : une requête ou une redirection hors du domaine de l'API est refusée (règle réseau des consignes).
 - **Résultat `indisponible`** : résultat d'outil structuré avec `statut: indisponible` et `isError: true`, jamais une erreur de protocole.
 
 ## 4. Blocages
@@ -84,6 +94,9 @@ DONNEES_MODE=REJEU  bin/appeler bin/gels-avoirs verifier_gel '{"nom":"JSC ROSOBO
 go build -o bin/taux-officiel ./servers/taux-officiel
 DONNEES_MODE=REJEU  bin/appeler bin/taux-officiel get_taux_usure '{"categorie":"decouvert-societes-non-financieres"}'   # Q3 19 %, suivant Q4 19,08 %
 cat servers/taux-officiel/instantane_trimestre_precedent.json | head -20
+go build -o bin/eurlex ./servers/eurlex
+DONNEES_MODE=REJEU  bin/appeler bin/eurlex rechercher_acte '{"celex":"32024R1689"}'                 # modifie_par 32026R1744
+DONNEES_MODE=REJEU  bin/appeler bin/eurlex lire_article '{"celex":"32022R2554","article":"28"}'
 ```
 
 Schémas : `servers/<nom>/schema.json` = `result.tools` brut de `tools/list`, écrit par `go run ./servers/exporter-schema -o servers/<nom>/schema.json bin/<nom>` ; un test par serveur (`TestSchema`) échoue si le serveur diverge du fichier.
