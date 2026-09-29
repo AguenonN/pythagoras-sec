@@ -112,3 +112,26 @@ class TestChampsPartenaire(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestTourDeCorrection(unittest.TestCase):
+    """Le format du renvoi des erreurs (message assistant avec tool_calls,
+    puis message tool) a été accepté par l'API réelle ; la réponse est
+    enregistrée. Le premier refus est simulé."""
+
+    def test_erreurs_renvoyees_une_fois_puis_acceptee(self):
+        from unittest import mock
+        from compilateur import directive_go
+        vrai, n = directive_go.verifier, []
+
+        def verifier(jeu):
+            n.append(1)
+            if len(n) == 1:
+                return False, ["directive D-001: provenance.critere doit être explicite (tour de correction)"], ""
+            return vrai(jeu)
+
+        with mock.patch.object(directive_go, "verifier", verifier):
+            r = compiler(D001, reponses("reponses-d001.json"))
+        self.assertEqual((r["etat"], r["tentatives"]), (comp.DIRECTIVE, 2), r["erreurs"])
+        self.assertEqual(r["jeu"]["directives"][0]["provenance"],
+                         {"serveurs": ["taux-officiel"], "critere": "donnees_recues"})
