@@ -59,6 +59,7 @@ type SortieRecherche struct {
 
 // Serveur construit le serveur MCP entreprises.
 func Serveur(c *rejeu.Client) *mcp.Server {
+	c.Restreindre("recherche-entreprises.api.gouv.fr")
 	s := mcp.NewServer(&mcp.Implementation{Name: Nom, Version: "0.1.0"}, nil)
 	mcp.AddTool(s, &mcp.Tool{
 		Name: "rechercher_entreprise",

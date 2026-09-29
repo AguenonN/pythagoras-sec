@@ -180,6 +180,8 @@ type Client struct {
 	// enregistrement). os.Stderr par défaut ; jamais stdout, qui porte MCP.
 	Journal io.Writer
 
+	hotes map[string]bool
+
 	mu      sync.Mutex
 	dernier time.Time
 	memo    map[string]memo
@@ -210,6 +212,28 @@ func Nouveau(dir string, mode Mode) *Client {
 	}
 }
 
+// Restreindre limite le client à ces hôtes, redirections comprises ; une
+// redirection vers http:// sur un hôte autorisé est passée en https://. Sans
+// appel à Restreindre, tout hôte est accepté (tests).
+func (c *Client) Restreindre(hotes ...string) {
+	c.hotes = map[string]bool{}
+	for _, h := range hotes {
+		c.hotes[strings.ToLower(h)] = true
+	}
+	c.HTTP.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		if len(via) >= 5 {
+			return errors.New("trop de redirections")
+		}
+		if !c.hotes[strings.ToLower(req.URL.Hostname())] {
+			return fmt.Errorf("redirection vers %s refusée (hôte non autorisé)", req.URL.Hostname())
+		}
+		if req.URL.Scheme == "http" {
+			req.URL.Scheme = "https"
+		}
+		return nil
+	}
+}
+
 // Mode rend le mode du client.
 func (c *Client) Mode() Mode { return c.mode }
 
@@ -226,6 +250,12 @@ func (c *Client) Obtenir(ctx context.Context, r Requete) (*Reponse, error) {
 
 	if c.mode == Rejeu {
 		return c.lire(cle, "")
+	}
+	if c.hotes != nil {
+		u, _ := url.Parse(r.URL)
+		if !c.hotes[strings.ToLower(u.Hostname())] {
+			return nil, fmt.Errorf("%w: hôte %s non autorisé", ErrRequeteRefusee, u.Hostname())
+		}
 	}
 
 	if rep, ok := c.memoire(cle); ok {

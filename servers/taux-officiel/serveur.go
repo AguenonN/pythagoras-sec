@@ -84,6 +84,7 @@ type SortieTaux struct {
 // Serveur construit le serveur MCP taux-officiel. maintenant fixe la date
 // de référence par défaut (time.Now hors des tests).
 func Serveur(c *rejeu.Client, maintenant func() time.Time) *mcp.Server {
+	c.Restreindre("webstat.banque-france.fr")
 	s := mcp.NewServer(&mcp.Implementation{Name: Nom, Version: "0.1.0"}, nil)
 	entree, err := jsonschema.For[EntreeTaux](nil)
 	if err != nil {

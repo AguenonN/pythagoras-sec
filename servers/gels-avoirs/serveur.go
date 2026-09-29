@@ -55,6 +55,7 @@ type SortieVerification struct {
 
 // Serveur construit le serveur MCP gels-avoirs.
 func Serveur(c *rejeu.Client) *mcp.Server {
+	c.Restreindre("gels-avoirs.dgtresor.gouv.fr")
 	s := mcp.NewServer(&mcp.Implementation{Name: Nom, Version: "0.1.0"}, nil)
 	idx := &index{}
 	mcp.AddTool(s, &mcp.Tool{

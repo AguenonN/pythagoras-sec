@@ -2,7 +2,7 @@
   "cle": "aee44e9ad2e6492be20e9dd507373603b8d34a9c28b2b7cc8fa0bfee4d24cb8a",
   "methode": "GET",
   "url": "https://recherche-entreprises.api.gouv.fr/search?include=siege%2Ccomplements\u0026minimal=true\u0026page=1\u0026per_page=5\u0026q=405750753",
-  "date": "2026-09-29T21:58:38Z",
+  "date": "2026-09-29T22:08:23Z",
   "statut": 200,
   "type_contenu": "application/json",
   "sha256": "093949d141ffb1ccfa52cbab429a344e6622c8423070cc455c2772b86e734d8e",

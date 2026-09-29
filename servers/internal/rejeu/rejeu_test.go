@@ -233,3 +233,20 @@ func TestEnregistrementAltereRefuse(t *testing.T) {
 		t.Fatalf("enregistrement altéré servi: %v", err)
 	}
 }
+
+func TestRestreindre(t *testing.T) {
+	autre := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { io.WriteString(w, "fuite") }))
+	defer autre.Close()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, strings.Replace(autre.URL, "127.0.0.1", "localhost", 1), http.StatusFound)
+	}))
+	defer srv.Close()
+	c := client(t, t.TempDir(), Direct)
+	c.Restreindre("127.0.0.1")
+	if _, err := c.Obtenir(context.Background(), Requete{URL: strings.Replace(srv.URL, "127.0.0.1", "localhost", 1)}); !errors.Is(err, ErrRequeteRefusee) {
+		t.Fatalf("hôte non autorisé accepté: %v", err)
+	}
+	if _, err := c.Obtenir(context.Background(), Requete{URL: srv.URL}); err == nil {
+		t.Fatal("redirection vers un hôte non autorisé suivie")
+	}
+}
