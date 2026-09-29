@@ -79,19 +79,19 @@ const (
 type Source struct {
 	// Origine vaut "direct" (obtenue de l'API pendant ce processus) ou
 	// "rejeu" (lue dans un enregistrement).
-	Origine string `json:"origine"`
+	Origine string `json:"origine" jsonschema:"direct (obtenue de l'API officielle pendant ce processus) ou rejeu (lue dans un enregistrement)"`
 	// URL appelée, sans secret.
-	URL string `json:"url"`
+	URL string `json:"url" jsonschema:"URL de l'API officielle appelée"`
 	// Date à laquelle l'API a produit cette réponse (RFC 3339, UTC). En
 	// rejeu, c'est la date de l'enregistrement.
-	Date string `json:"date"`
+	Date string `json:"date" jsonschema:"date d'obtention de la réponse auprès de l'API (RFC 3339, UTC) ; en rejeu, date de l'enregistrement"`
 	// SHA256 du corps servi.
-	SHA256 string `json:"sha256"`
+	SHA256 string `json:"sha256" jsonschema:"empreinte SHA-256 du corps de réponse servi"`
 	// Motif du rejeu en mode MIXTE (l'erreur de l'API).
-	Motif string `json:"motif,omitempty"`
+	Motif string `json:"motif,omitempty" jsonschema:"en mode MIXTE, pourquoi l'API n'a pas été utilisée"`
 	// Filtre appliqué au corps avant enregistrement, s'il y en a un. Une
 	// réponse rejouée filtrée est partielle.
-	Filtre string `json:"filtre,omitempty"`
+	Filtre string `json:"filtre,omitempty" jsonschema:"filtre appliqué avant enregistrement ; présent, la donnée rejouée est partielle"`
 }
 
 // Enregistrement est le contenu d'un fichier du répertoire d'enregistrements.
@@ -132,6 +132,9 @@ type Requete struct {
 	// donnée qu'il ne faut pas versionner). La réponse n'est alors jamais
 	// rejouable.
 	NePasEnregistrer bool
+	// Enregistrable, s'il est fourni, examine le corps reçu : une erreur
+	// empêche l'enregistrement (la réponse est servie quand même).
+	Enregistrable func([]byte) error
 }
 
 // Reponse est ce que le client rend.
@@ -446,6 +449,12 @@ func (c *Client) recu(r Requete, urlPropre, cle string, statut int, typ string, 
 	}
 	if r.NePasEnregistrer {
 		return rep
+	}
+	if r.Enregistrable != nil {
+		if err := r.Enregistrable(corps); err != nil {
+			fmt.Fprintf(c.Journal, "rejeu: réponse de %s non enregistrée: %v\n", urlPropre, err)
+			return rep
+		}
 	}
 	e := Enregistrement{
 		Cle:          cle,

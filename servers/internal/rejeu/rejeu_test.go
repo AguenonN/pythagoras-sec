@@ -202,6 +202,10 @@ func TestFiltreEtNePasEnregistrer(t *testing.T) {
 	if _, err := d.Obtenir(context.Background(), Requete{URL: srv.URL + "/secret", NePasEnregistrer: true}); err != nil {
 		t.Fatal(err)
 	}
+	refus := func([]byte) error { return errors.New("personne physique") }
+	if _, err := d.Obtenir(context.Background(), Requete{URL: srv.URL + "/pp", Enregistrable: refus}); err != nil {
+		t.Fatal(err)
+	}
 	r := client(t, dir, Rejeu)
 	rej, err := r.Obtenir(context.Background(), Requete{URL: srv.URL + "/f"})
 	if err != nil || string(rej.Corps) != "public" || rej.Source.Filtre != "retire prive" {
@@ -209,6 +213,9 @@ func TestFiltreEtNePasEnregistrer(t *testing.T) {
 	}
 	if _, err := r.Obtenir(context.Background(), Requete{URL: srv.URL + "/secret"}); !errors.Is(err, ErrIndisponible) {
 		t.Fatalf("réponse non enregistrable rejouée: %v", err)
+	}
+	if _, err := r.Obtenir(context.Background(), Requete{URL: srv.URL + "/pp"}); !errors.Is(err, ErrIndisponible) {
+		t.Fatalf("réponse refusée par Enregistrable rejouée: %v", err)
 	}
 }
 
