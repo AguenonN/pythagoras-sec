@@ -2,6 +2,7 @@ package journal
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -21,6 +22,24 @@ const (
 	// Absent : le coffre n'a jamais rien eu, ou l'a perdu sans purge.
 	Absent EtatDepot = "absent"
 )
+
+var (
+	// ErrPurgeSansJournal : une purge doit être chaînée, donc un journal
+	// doit être attaché au coffre.
+	ErrPurgeSansJournal = errors.New("coffre: purge refusée sans journal attaché")
+	// ErrPurgeSansMotif : motif et auteur sont obligatoires.
+	ErrPurgeSansMotif = errors.New("coffre: purge refusée sans motif ou sans auteur")
+)
+
+// DemandePurge dit pourquoi et par qui une purge est faite. Les deux vont
+// dans l'entrée purge du journal.
+type DemandePurge struct {
+	Motif  string
+	Auteur string
+}
+
+// Journaliser attache le journal où chaque purge écrit son entrée.
+func (c *Coffre) Journaliser(e *Ecrivain) { c.journal = e }
 
 // Horloge remplace l'horloge du coffre, pour les tests.
 func (c *Coffre) Horloge(h func() time.Time) { c.horloge = h }
@@ -55,7 +74,7 @@ func (c *Coffre) Purgee(empreinte string) (time.Time, bool) {
 // PurgerEmpreintes efface les arguments des empreintes d'origine données et
 // rend celles qui ont effectivement été purgées, triées. Une empreinte
 // inconnue ou déjà purgée est ignorée.
-func (c *Coffre) PurgerEmpreintes(empreintes ...string) ([]string, error) {
+func (c *Coffre) PurgerEmpreintes(d DemandePurge, empreintes ...string) ([]string, error) {
 	if c == nil {
 		return nil, nil
 	}
@@ -63,17 +82,17 @@ func (c *Coffre) PurgerEmpreintes(empreintes ...string) ([]string, error) {
 	for _, e := range empreintes {
 		cibles[e] = true
 	}
-	return c.purger(func(d Depot) bool { return cibles[d.Empreinte] })
+	return c.purger(d, nil, func(dep Depot) bool { return cibles[dep.Empreinte] })
 }
 
 // PurgerAvant efface les arguments déposés strictement avant limite. L'âge
 // d'un dépôt est celui de son premier dépôt : un appel ultérieur aux mêmes
 // arguments ne le rajeunit pas, puisque la donnée est détenue depuis lors.
-func (c *Coffre) PurgerAvant(limite time.Time) ([]string, error) {
+func (c *Coffre) PurgerAvant(limite time.Time, d DemandePurge) ([]string, error) {
 	if c == nil {
 		return nil, nil
 	}
-	return c.purger(func(d Depot) bool { return d.TS.Before(limite) })
+	return c.purger(d, &limite, func(dep Depot) bool { return dep.TS.Before(limite) })
 }
 
 // purger réécrit le coffre sans les arguments des dépôts retenus, qui
@@ -81,9 +100,22 @@ func (c *Coffre) PurgerAvant(limite time.Time) ([]string, error) {
 // temporaire synchronisé puis renommé : une coupure laisse l'ancien coffre
 // ou le nouveau, jamais un mélange. Les arguments purgés ne restent pas dans
 // le fichier ; ce qui reste sur le support physique relève du disque.
-func (c *Coffre) purger(retenir func(Depot) bool) ([]string, error) {
+//
+// L'entrée purge est chaînée avant la réécriture, à la date des pierres
+// tombales. Si la réécriture échoue ensuite, une alerte le dit : le
+// journal annonce alors une purge que le coffre n'a pas faite, ce que le
+// rejeu voit (arguments présents, appel toujours rejouable). L'ordre
+// inverse laisserait des pierres tombales sans entrée, que le rejeu
+// traiterait comme une altération.
+func (c *Coffre) purger(dem DemandePurge, avant *time.Time, retenir func(Depot) bool) ([]string, error) {
+	if dem.Motif == "" || dem.Auteur == "" {
+		return nil, ErrPurgeSansMotif
+	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if c.journal == nil {
+		return nil, ErrPurgeSansJournal
+	}
 
 	var purgees []string
 	for emp, d := range c.index {
@@ -110,8 +142,20 @@ func (c *Coffre) purger(retenir func(Depot) bool) ([]string, error) {
 		nouvPurgees[emp] = maintenant
 	}
 
+	var limite *time.Time
+	if avant != nil {
+		l := avant.UTC()
+		limite = &l
+	}
+	if _, err := c.journal.Ecrire(Entree{
+		TS: maintenant, Type: PurgeT, Empreintes: purgees, Motif: dem.Motif, Auteur: dem.Auteur, PurgeAvant: limite,
+	}); err != nil {
+		return nil, fmt.Errorf("coffre: purge non chaînée, rien n'est effacé: %w", err)
+	}
 	f, err := c.reecrire(nouvIndex, nouvPurgees)
 	if err != nil {
+		c.journal.Ecrire(Entree{Type: AlerteT, Empreintes: purgees,
+			Message: "purge annoncée non appliquée au coffre : " + err.Error()})
 		return nil, err
 	}
 	c.fichier.Close()

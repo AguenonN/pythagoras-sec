@@ -11,13 +11,20 @@
 //   - la décision rejouée doit retrouver empreinte_transmise, et l'effet
 //     journalisé.
 //
-// Tout écart est nommé : purge (le coffre a une pierre tombale : l'appel
+// Tout écart est nommé : purge (le coffre a une pierre tombale et le
+// journal une entrée purge chaînée qui la couvre, à la même date : l'appel
 // n'est plus rejouable, son entrée reste vérifiable dans la chaîne) ou
 // altération (tout le reste : arguments modifiés ou disparus sans trace,
-// jeu différent, décision qui ne se retrouve pas). Chaque écart porte aussi
-// sa nature : violation quand le rejeu se fait à la date historique sous le
-// jeu d'origine, exposition quand AuDate force la date ou qu'un autre jeu
-// est imposé.
+// pierre tombale sans entrée purge, jeu différent, décision qui ne se
+// retrouve pas). Hors cadre historique, une décision rejouée qui diffère
+// de la décision journalisée est un effet_de_regle.
+//
+// La nature ne s'applique qu'aux appels rejouables : violation quand le
+// rejeu se fait à la date historique sous le jeu d'origine, exposition
+// quand AuDate force la date ou qu'un autre jeu est imposé. Un appel non
+// rejouable, purgé ou altéré, ne porte aucune nature : on ne qualifie pas
+// ce qu'on ne peut pas rejouer, et une purge conforme n'est jamais une
+// violation.
 //
 // Le rejeu n'est pas en cascade : un appel est rejoué avec l'état de
 // session qu'il a réellement vu, même si, sous un autre jeu, un appel
@@ -45,12 +52,13 @@ type Cause string
 const (
 	CausePurge      Cause = "purge"
 	CauseAlteration Cause = "alteration"
-	// CauseDivergence : hors cadre historique, la décision rejouée diffère
+	// CauseEffetDeRegle : en mode exposition, la décision rejouée diffère
 	// de la décision journalisée. C'est ce que la vue après montre.
-	CauseDivergence Cause = "divergence"
+	CauseEffetDeRegle Cause = "effet_de_regle"
 )
 
-// Nature d'un écart : le cadre dans lequel il a été constaté.
+// Nature d'un écart : le cadre dans lequel il a été constaté. Vide pour
+// un appel non rejouable.
 type Nature string
 
 const (
@@ -73,7 +81,7 @@ const NonRejouable = "non_rejouable"
 // Ecart est un désaccord entre le journal et le rejeu.
 type Ecart struct {
 	Cause    Cause  `json:"cause"`
-	Nature   Nature `json:"nature"`
+	Nature   Nature `json:"nature,omitempty"`
 	Controle string `json:"controle"`
 	Detail   string `json:"detail"`
 }
@@ -138,7 +146,7 @@ type Rejeu struct {
 	Rejouee *directive.Decision `json:"-"`
 
 	Rejouable bool    `json:"rejouable"`
-	Nature    Nature  `json:"nature"`
+	Nature    Nature  `json:"nature,omitempty"`
 	Ecarts    []Ecart `json:"ecarts,omitempty"`
 }
 
@@ -150,23 +158,53 @@ func (r Rejeu) Effet() string {
 	return string(r.Rejouee.Effet)
 }
 
+// Purges indexe les entrées purge chaînées : empreinte d'origine → dates
+// des purges qui la citent.
+type Purges map[string][]time.Time
+
+// PurgesChainees relève les entrées purge d'un journal vérifié.
+func PurgesChainees(entrees []journal.Entree) Purges {
+	p := Purges{}
+	for _, en := range entrees {
+		if en.Type != journal.PurgeT {
+			continue
+		}
+		for _, emp := range en.Empreintes {
+			p[emp] = append(p[emp], en.TS)
+		}
+	}
+	return p
+}
+
+// couvre dit si une entrée purge chaînée cite l'empreinte à cette date.
+func (p Purges) couvre(empreinte string, le time.Time) bool {
+	for _, d := range p[empreinte] {
+		if d.Equal(le) {
+			return true
+		}
+	}
+	return false
+}
+
 // ErrPasUnAppel : l'entrée n'est pas une entrée appel complète.
 var ErrPasUnAppel = errors.New("rejeu: l'entrée n'est pas un appel rejouable")
 
-// Rejouer rejoue une entrée appel. Une erreur signale une entrée
-// structurellement inutilisable ou un jeu introuvable ; les désaccords
-// sont des écarts, pas des erreurs.
-func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, opts Options) (Rejeu, error) {
+// Rejouer rejoue une entrée appel. purges vient de PurgesChainees sur le
+// même journal. Une erreur signale une entrée structurellement
+// inutilisable ou un jeu introuvable ; les désaccords sont des écarts, pas
+// des erreurs.
+func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, purges Purges, opts Options) (Rejeu, error) {
 	if en.Type != journal.AppelT || en.Appel == nil || en.Decision == nil || en.Jeu == nil {
 		return Rejeu{}, ErrPasUnAppel
 	}
-	nature := opts.nature()
 	r := Rejeu{
 		Session: en.Session, Seq: en.Seq, Serveur: en.Serveur, Outil: en.Outil, TS: en.TS,
-		Journalise: directive.Effet(en.Decision.Effet), Nature: nature,
+		Journalise: directive.Effet(en.Decision.Effet),
 	}
+	// La nature n'est posée qu'une fois l'appel établi rejouable : les
+	// écarts d'un appel non rejouable n'en ont pas.
 	ecart := func(c Cause, controle, format string, args ...any) {
-		r.Ecarts = append(r.Ecarts, Ecart{Cause: c, Nature: nature, Controle: controle, Detail: fmt.Sprintf(format, args...)})
+		r.Ecarts = append(r.Ecarts, Ecart{Cause: c, Nature: r.Nature, Controle: controle, Detail: fmt.Sprintf(format, args...)})
 	}
 
 	origine, ok := jeux.Jeu(en.Jeu.ID, en.Jeu.Version)
@@ -182,10 +220,15 @@ func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, opts Options) (Rejeu, 
 	// Contrôle 1 : les arguments du coffre retrouvent empreinte_origine.
 	args, ok := res.Arguments(en.Appel.EmpreinteOrigine)
 	if !ok {
-		if le, purge := res.Purgee(en.Appel.EmpreinteOrigine); purge {
+		le, purge := res.Purgee(en.Appel.EmpreinteOrigine)
+		switch {
+		case purge && purges.couvre(en.Appel.EmpreinteOrigine, le):
 			ecart(CausePurge, ControleArguments, "arguments purgés du coffre le %s ; l'entrée reste vérifiable dans la chaîne",
 				le.UTC().Format(time.RFC3339))
-		} else {
+		case purge:
+			ecart(CauseAlteration, ControleArguments, "pierre tombale du %s sans entrée purge chaînée correspondante",
+				le.UTC().Format(time.RFC3339))
+		default:
 			ecart(CauseAlteration, ControleArguments, "arguments absents du coffre sans trace de purge")
 		}
 		return r, nil
@@ -195,7 +238,7 @@ func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, opts Options) (Rejeu, 
 			got, en.Appel.EmpreinteOrigine)
 		return r, nil
 	}
-	r.Rejouable = true
+	r.Rejouable, r.Nature = true, opts.nature()
 
 	etat := directive.EtatSession{ID: en.Session, Appelant: en.Appelant, Consultations: journal.VersConsultations(en.EtatSession)}
 	appel := directive.Appel{
@@ -231,7 +274,7 @@ func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, opts Options) (Rejeu, 
 	autre := directive.Decide(jeu, etat, appel)
 	r.Rejouee = &autre
 	if autre.Effet != r.Journalise {
-		ecart(CauseDivergence, ControleDecision, "sous %s v%d au %s, la décision serait %s ; le journal affirme %s",
+		ecart(CauseEffetDeRegle, ControleDecision, "sous %s v%d au %s, la décision serait %s ; le journal affirme %s",
 			jeu.Meta.ID, jeu.Meta.Version, appel.Horodatage.UTC().Format(time.RFC3339), autre.Effet, r.Journalise)
 	}
 	return r, nil
@@ -293,11 +336,12 @@ func ReconstituerEtat(entrees []journal.Entree, session string, avantSeq int) (d
 // partir des entrées précédentes de la même session.
 func RejouerJournal(entrees []journal.Entree, res Resolveur, jeux Jeux, opts Options) ([]Rejeu, error) {
 	var out []Rejeu
+	purges := PurgesChainees(entrees)
 	for _, en := range entrees {
 		if en.Type != journal.AppelT {
 			continue
 		}
-		r, err := Rejouer(en, res, jeux, opts)
+		r, err := Rejouer(en, res, jeux, purges, opts)
 		if err != nil {
 			return out, fmt.Errorf("session %s seq %d: %w", en.Session, en.Seq, err)
 		}

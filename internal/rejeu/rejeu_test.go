@@ -43,8 +43,24 @@ type scenario struct {
 	coffre     *journal.Coffre
 	cheminC    string
 	journalBuf *bytes.Buffer
+	journal    *journal.Ecrivain
+	horloge    *time.Time
 	entrees    []journal.Entree
 }
+
+var dem = journal.DemandePurge{Motif: "durée de conservation échue", Auteur: "dpo@cabinet.fr"}
+
+// purger purge par le coffre (entrée purge chaînée) et relit le journal.
+func (sc *scenario) purger(t *testing.T, empreintes ...string) {
+	t.Helper()
+	*sc.horloge = sc.horloge.Add(time.Hour)
+	if p, err := sc.coffre.PurgerEmpreintes(dem, empreintes...); err != nil || len(p) != len(empreintes) {
+		t.Fatalf("purge %v %v", p, err)
+	}
+	sc.relire(t)
+}
+
+func (sc *scenario) purges() Purges { return PurgesChainees(sc.entrees) }
 
 var attestee = directive.Attestation{Mode: "binaire", Attendu: "a", Observe: "a", Schemas: true, Verifiee: true}
 
@@ -65,6 +81,8 @@ func derouler(t *testing.T) *scenario {
 	horloge := func() time.Time { return maintenant }
 	j.Horloge(horloge)
 	sc.coffre.Horloge(horloge)
+	sc.coffre.Journaliser(j)
+	sc.journal, sc.horloge = j, &maintenant
 	g := session.Nouveau(session.Config{Horloge: horloge}, j)
 	ss := new(mcp.ServerSession)
 
@@ -188,27 +206,85 @@ func TestReconstituerEtat(t *testing.T) {
 func TestRejouer_PurgeNommeeEtEntreeVerifiable(t *testing.T) {
 	sc := derouler(t)
 	en := sc.appel(t, 4)
-	if _, err := sc.coffre.PurgerEmpreintes(en.Appel.EmpreinteOrigine); err != nil {
-		t.Fatal(err)
-	}
+	sc.purger(t, en.Appel.EmpreinteOrigine)
 	// La chaîne du journal reste vérifiable après la purge.
 	if n, err := journal.Verifier(bytes.NewReader(sc.journalBuf.Bytes()), cle); err != nil || n != len(sc.entrees) {
 		t.Fatalf("vérification %d %v", n, err)
 	}
-	r, err := Rejouer(en, sc.coffre, Catalogue{sc.jeu}, Options{})
+	r, err := Rejouer(en, sc.coffre, Catalogue{sc.jeu}, sc.purges(), Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if r.Rejouable || r.Effet() != NonRejouable || r.Journalise != directive.Caviarder {
 		t.Fatalf("rejeu %+v", r)
 	}
-	if len(r.Ecarts) != 1 || r.Ecarts[0].Cause != CausePurge || r.Ecarts[0].Controle != ControleArguments || r.Ecarts[0].Nature != Violation {
-		t.Fatalf("écarts %+v", r.Ecarts)
+	// Une purge conforme n'a pas de nature, dans aucun cadre : jamais une
+	// violation, pas davantage une exposition.
+	for _, o := range []Options{{}, {AuDate: t0.Add(24 * time.Hour)}} {
+		r, _ := Rejouer(en, sc.coffre, Catalogue{sc.jeu}, sc.purges(), o)
+		if r.Nature != "" || len(r.Ecarts) != 1 || r.Ecarts[0].Cause != CausePurge ||
+			r.Ecarts[0].Controle != ControleArguments || r.Ecarts[0].Nature != "" {
+			t.Fatalf("cadre %+v: %+v", o, r)
+		}
 	}
-	// Sous une date forcée, le même écart est une exposition.
-	r, _ = Rejouer(en, sc.coffre, Catalogue{sc.jeu}, Options{AuDate: t0.Add(24 * time.Hour)})
-	if len(r.Ecarts) != 1 || r.Ecarts[0].Cause != CausePurge || r.Ecarts[0].Nature != Exposition {
-		t.Fatalf("écarts %+v", r.Ecarts)
+}
+
+// Une purge conforme rejouée dans le cadre historique, sur tout le
+// journal, n'apparaît jamais comme violation.
+func TestRejouerJournal_PurgeConformeJamaisViolation(t *testing.T) {
+	sc := derouler(t)
+	var toutes []string
+	for _, en := range sc.entrees {
+		if en.Type == journal.AppelT {
+			toutes = append(toutes, en.Appel.EmpreinteOrigine)
+		}
+	}
+	sc.purger(t, toutes...)
+	rs, err := RejouerJournal(sc.entrees, sc.coffre, Catalogue{sc.jeu}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(rs) != 4 {
+		t.Fatalf("%d rejeux", len(rs))
+	}
+	for _, r := range rs {
+		if r.Rejouable || r.Nature == Violation {
+			t.Fatalf("seq %d: %+v", r.Seq, r)
+		}
+		for _, e := range r.Ecarts {
+			if e.Nature == Violation || e.Cause != CausePurge {
+				t.Fatalf("seq %d: écart %+v", r.Seq, e)
+			}
+		}
+	}
+	cmp, err := Comparer(sc.entrees, sc.coffre, Catalogue{sc.jeu}, Options{}, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, l := range cmp.Lignes {
+		for _, e := range l.Ecarts {
+			if e.Nature == Violation {
+				t.Fatalf("ligne %+v", l)
+			}
+		}
+	}
+}
+
+func TestRejouer_PierreTombaleSansEntreePurgeEstUneAlteration(t *testing.T) {
+	sc := derouler(t)
+	en := sc.appel(t, 2)
+	// Purge faite hors de la chaîne : le coffre écrit dans un autre journal.
+	sc.coffre.Journaliser(journal.Nouveau(chaine.Nouvelle(&bytes.Buffer{}, nil)))
+	sc.purger(t, en.Appel.EmpreinteOrigine)
+	r, _ := Rejouer(en, sc.coffre, Catalogue{sc.jeu}, sc.purges(), Options{})
+	if r.Rejouable || r.Nature != "" || len(r.Ecarts) != 1 || r.Ecarts[0].Cause != CauseAlteration ||
+		r.Ecarts[0].Controle != ControleArguments || r.Ecarts[0].Nature != "" {
+		t.Fatalf("rejeu %+v", r)
+	}
+	// Une entrée purge chaînée à une autre date ne couvre pas la pierre tombale.
+	autre := Purges{en.Appel.EmpreinteOrigine: {t0}}
+	if r, _ := Rejouer(en, sc.coffre, Catalogue{sc.jeu}, autre, Options{}); r.Ecarts[0].Cause != CauseAlteration {
+		t.Fatalf("date différente: %+v", r.Ecarts)
 	}
 }
 
@@ -225,11 +301,12 @@ func TestRejouer_AlterationDuCoffre(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer c.Fermer()
-	r, err := Rejouer(sc.appel(t, 4), c, Catalogue{sc.jeu}, Options{})
+	r, err := Rejouer(sc.appel(t, 4), c, Catalogue{sc.jeu}, nil, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if r.Rejouable || len(r.Ecarts) != 1 || r.Ecarts[0].Cause != CauseAlteration || r.Ecarts[0].Controle != ControleArguments {
+	if r.Rejouable || len(r.Ecarts) != 1 || r.Ecarts[0].Cause != CauseAlteration ||
+		r.Ecarts[0].Controle != ControleArguments || r.Ecarts[0].Nature != "" {
 		t.Fatalf("rejeu %+v", r)
 	}
 	if strings.Contains(r.Ecarts[0].Detail, "Durand") || strings.Contains(r.Ecarts[0].Detail, "Dupont") {
@@ -244,7 +321,7 @@ func (coffreVide) Purgee(string) (time.Time, bool)         { return time.Time{},
 
 func TestRejouer_AbsenceSansPurgeEstUneAlteration(t *testing.T) {
 	sc := derouler(t)
-	r, _ := Rejouer(sc.appel(t, 1), coffreVide{}, Catalogue{sc.jeu}, Options{})
+	r, _ := Rejouer(sc.appel(t, 1), coffreVide{}, Catalogue{sc.jeu}, nil, Options{})
 	if r.Rejouable || len(r.Ecarts) != 1 || r.Ecarts[0].Cause != CauseAlteration {
 		t.Fatalf("rejeu %+v", r)
 	}
@@ -256,31 +333,31 @@ func TestRejouer_AlterationDuJournal(t *testing.T) {
 
 	en := sc.appel(t, 4)
 	en.Appel.EmpreinteTransmise = en.Appel.EmpreinteOrigine // caviardage effacé
-	r, _ := Rejouer(en, sc.coffre, jeux, Options{})
+	r, _ := Rejouer(en, sc.coffre, jeux, nil, Options{})
 	if len(r.Ecarts) != 1 || r.Ecarts[0].Cause != CauseAlteration || r.Ecarts[0].Controle != ControleTransmis {
 		t.Fatalf("transmis: %+v", r.Ecarts)
 	}
 
 	en = sc.appel(t, 3)
 	en.Decision.Effet = string(directive.Autoriser) // refus maquillé
-	r, _ = Rejouer(en, sc.coffre, jeux, Options{})
+	r, _ = Rejouer(en, sc.coffre, jeux, nil, Options{})
 	if len(r.Ecarts) != 1 || r.Ecarts[0].Controle != ControleDecision || r.Ecarts[0].Nature != Violation {
 		t.Fatalf("décision: %+v", r.Ecarts)
 	}
 
 	en = sc.appel(t, 1)
 	en.Jeu.Empreinte = "sha256:autre"
-	r, _ = Rejouer(en, sc.coffre, jeux, Options{})
+	r, _ = Rejouer(en, sc.coffre, jeux, nil, Options{})
 	if r.Rejouable || len(r.Ecarts) != 1 || r.Ecarts[0].Controle != ControleJeu {
 		t.Fatalf("jeu: %+v", r.Ecarts)
 	}
 
 	en = sc.appel(t, 1)
 	en.Jeu.Version = 9
-	if _, err := Rejouer(en, sc.coffre, jeux, Options{}); err == nil {
+	if _, err := Rejouer(en, sc.coffre, jeux, nil, Options{}); err == nil {
 		t.Fatal("un jeu introuvable est une erreur")
 	}
-	if _, err := Rejouer(journal.Entree{Type: journal.AlerteT}, sc.coffre, jeux, Options{}); err != ErrPasUnAppel {
+	if _, err := Rejouer(journal.Entree{Type: journal.AlerteT}, sc.coffre, jeux, nil, Options{}); err != ErrPasUnAppel {
 		t.Fatal(err)
 	}
 }
@@ -339,7 +416,7 @@ func TestComparer_AuDateAvantLeJeu(t *testing.T) {
 			}
 			continue
 		}
-		if len(l.Ecarts) != 1 || l.Ecarts[0].Cause != CauseDivergence || l.Ecarts[0].Nature != Exposition {
+		if len(l.Ecarts) != 1 || l.Ecarts[0].Cause != CauseEffetDeRegle || l.Ecarts[0].Nature != Exposition {
 			t.Fatalf("ligne %+v", l)
 		}
 	}
@@ -361,9 +438,7 @@ func TestComparer_NouveauJeuEtPurge(t *testing.T) {
 	if v2.Meta.Empreinte, err = directive.Empreinte(v2.Directives); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := sc.coffre.PurgerEmpreintes(sc.appel(t, 1).Appel.EmpreinteOrigine); err != nil {
-		t.Fatal(err)
-	}
+	sc.purger(t, sc.appel(t, 1).Appel.EmpreinteOrigine)
 
 	cmp, err := Comparer(sc.entrees, sc.coffre, Catalogue{sc.jeu, v2}, Options{}, Options{Jeu: &v2})
 	if err != nil {
@@ -374,7 +449,8 @@ func TestComparer_NouveauJeuEtPurge(t *testing.T) {
 		par[l.Seq] = l
 	}
 	// Appel 1 purgé : avant établi par le journal, après non rejouable.
-	if l := par[1]; l.Avant != string(directive.Autoriser) || l.Apres != NonRejouable || len(l.Ecarts) != 1 || l.Ecarts[0].Cause != CausePurge {
+	if l := par[1]; l.Avant != string(directive.Autoriser) || l.Apres != NonRejouable || len(l.Ecarts) != 1 ||
+		l.Ecarts[0].Cause != CausePurge || l.Ecarts[0].Nature != "" {
 		t.Fatalf("ligne 1 %+v", l)
 	}
 	// Appel 2 : 100 000 € passe sous le nouveau seuil.

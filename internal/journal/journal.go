@@ -38,6 +38,9 @@ const (
 	SessionFermee   Type = "session_fermee"
 	AlerteT         Type = "alerte"
 	IdentiteChangee Type = "identite_changee"
+	// PurgeT est écrite par chaque purge du coffre : sans elle, une pierre
+	// tombale n'est qu'une affirmation non chaînée.
+	PurgeT Type = "purge"
 )
 
 // Statuts de résultat d'un appel. Les quatre premiers sont ceux d'une
@@ -153,6 +156,12 @@ type Entree struct {
 	Message         string `json:"message,omitempty"`
 	NbConsultations int    `json:"nb_consultations,omitempty"`
 	DernierSeq      int    `json:"dernier_seq,omitempty"`
+
+	// Purge : empreintes d'origine purgées, motif, auteur ; la date est TS.
+	Empreintes []string   `json:"empreintes,omitempty"`
+	Motif      string     `json:"motif,omitempty"`
+	Auteur     string     `json:"auteur,omitempty"`
+	PurgeAvant *time.Time `json:"purge_avant,omitempty"`
 
 	Prev string `json:"prev,omitempty"`
 	MAC  string `json:"mac,omitempty"`
@@ -394,6 +403,7 @@ type Coffre struct {
 	index   map[string]Depot
 	purgees map[string]time.Time
 	horloge func() time.Time
+	journal *Ecrivain
 }
 
 // OuvrirCoffre ouvre ou crée le coffre et charge son index.

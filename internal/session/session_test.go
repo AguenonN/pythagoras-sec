@@ -46,7 +46,7 @@ func nouveauBanc(t *testing.T, cfg Config) *banc {
 	cfg.Horloge = b.horloge
 	n := 0
 	var mu sync.Mutex
-	cfg.NouvelID = func() string { mu.Lock(); defer mu.Unlock(); n++; return fmt.Sprintf("s%d", n) }
+	cfg.NouvelID = func() (string, error) { mu.Lock(); defer mu.Unlock(); n++; return fmt.Sprintf("s%d", n), nil }
 	b.g = Nouveau(cfg, journal.Nouveau(chaine.Nouvelle(b.buf, nil)))
 	return b
 }
@@ -422,5 +422,53 @@ func TestSession_SuivreUneVraieSession(t *testing.T) {
 	}
 	if f := es[len(es)-1]; f.Type != journal.SessionFermee || f.Message != MotifClient || f.NbConsultations != 1 {
 		t.Fatalf("fermeture %+v", f)
+	}
+}
+
+// Aucun chemin atteignable par un appel ne panique : chaque cas rend une
+// erreur typée.
+func TestSession_AucunePanique(t *testing.T) {
+	ctx := context.Background()
+	var gNul *Gestionnaire
+	if _, err := gNul.Entrer(ctx, new(mcp.ServerSession), alice); !errors.Is(err, ErrGestionnaireNul) {
+		t.Fatal(err)
+	}
+	b := nouveauBanc(t, Config{})
+	if _, err := b.g.Entrer(ctx, nil, alice); !errors.Is(err, ErrSessionNulle) {
+		t.Fatal(err)
+	}
+	b.g.Suivre(nil)
+
+	// Tour nul : l'engine a différé Terminer avant de tester l'erreur.
+	var nul *Tour
+	nul.Terminer()
+	if nul.Seq() != 0 || nul.SessionID() != "" || len(nul.Etat().Consultations) != 0 {
+		t.Fatal()
+	}
+	if _, r := nul.Transmettre(ctx, "s", "o", "e", ok); !errors.Is(r.Err, ErrTourNul) {
+		t.Fatal(r.Err)
+	}
+
+	ss := new(mcp.ServerSession)
+	tour, _ := b.g.Entrer(ctx, ss, alice)
+	if _, r := tour.Transmettre(ctx, "s", "o", "e", nil); !errors.Is(r.Err, ErrBackendNul) {
+		t.Fatal(r.Err)
+	}
+	if n := len(b.g.Session(ss).Consultations()); n != 0 {
+		t.Fatal("un backend nul ne consulte rien")
+	}
+	tour.Terminer()
+
+	tour, _ = b.g.Entrer(ctx, ss, alice)
+	c, r := tour.Transmettre(ctx, "s", "o", "e", func(context.Context) Retour { panic("boum") })
+	tour.Terminer()
+	if !errors.Is(r.Err, ErrBackendPanique) || c.Resultat != directive.ResultatErreur {
+		t.Fatalf("panique du backend: %+v %v", c, r.Err)
+	}
+
+	// Identifiant impossible : la session n'est pas ouverte.
+	g := Nouveau(Config{NouvelID: func() (string, error) { return "", errors.New("aléa") }}, nil)
+	if _, err := g.Entrer(ctx, new(mcp.ServerSession), alice); !errors.Is(err, ErrIdentifiant) {
+		t.Fatal(err)
 	}
 }

@@ -39,6 +39,20 @@ var (
 	ErrFermee = errors.New("session: fermée")
 	// ErrDejaTransmis : un tour ne transmet qu'une fois ; rien n'est parti.
 	ErrDejaTransmis = errors.New("session: tour déjà transmis")
+	// ErrSessionNulle : pas de ServerSession, pas d'état à tenir.
+	ErrSessionNulle = errors.New("session: ServerSession nulle")
+	// ErrTourNul : Transmettre sur un tour que Entrer n'a pas rendu.
+	ErrTourNul = errors.New("session: tour nul, rien n'est transmis")
+	// ErrBackendNul : pas de backend, rien n'est transmis ni consulté.
+	ErrBackendNul = errors.New("session: backend nul, rien n'est transmis")
+	// ErrBackendPanique : le backend a paniqué ; la consultation est en
+	// erreur, l'appel a pu partir.
+	ErrBackendPanique = errors.New("session: le backend a paniqué")
+	// ErrGestionnaireNul : Entrer sur un gestionnaire non construit.
+	ErrGestionnaireNul = errors.New("session: gestionnaire nul")
+	// ErrIdentifiant : l'identifiant de session n'a pas pu être généré ;
+	// la session n'est pas ouverte.
+	ErrIdentifiant = errors.New("session: identifiant de session impossible à générer")
 )
 
 // Motifs de fermeture, repris dans le message de session_fermee.
@@ -62,7 +76,7 @@ type Config struct {
 	AgeMax time.Duration
 	// Horloge et NouvelID sont remplaçables pour les tests.
 	Horloge  func() time.Time
-	NouvelID func() string
+	NouvelID func() (string, error)
 	// AFermeture est appelée après une fermeture forcée, hors de tout
 	// verrou ; l'engine y ferme la connexion (ss.Close).
 	AFermeture func(*mcp.ServerSession, string)
@@ -107,12 +121,12 @@ func Nouveau(cfg Config, j *journal.Ecrivain) *Gestionnaire {
 	return &Gestionnaire{cfg: cfg, journal: j, sessions: map[*mcp.ServerSession]*Session{}}
 }
 
-func nouvelID() string {
+func nouvelID() (string, error) {
 	var b [16]byte
 	if _, err := rand.Read(b[:]); err != nil {
-		panic("session: aléa indisponible: " + err.Error())
+		return "", err
 	}
-	return hex.EncodeToString(b[:])
+	return hex.EncodeToString(b[:]), nil
 }
 
 // Session est l'état d'une session. Ses champs exportés sont fixés à la
@@ -136,8 +150,11 @@ type Session struct {
 // doit être celui de sa création ; sinon l'appel est refusé et journalisé
 // en identite_changee, et la session reste inchangée.
 func (g *Gestionnaire) Entrer(ctx context.Context, ss *mcp.ServerSession, appelant string) (*Tour, error) {
+	if g == nil {
+		return nil, ErrGestionnaireNul
+	}
 	if ss == nil {
-		return nil, fmt.Errorf("session: ServerSession nulle")
+		return nil, ErrSessionNulle
 	}
 	s, err := g.obtenir(ss, appelant)
 	if err != nil {
@@ -170,8 +187,12 @@ func (g *Gestionnaire) obtenir(ss *mcp.ServerSession, appelant string) (*Session
 	defer g.mu.Unlock()
 	s, ok := g.sessions[ss]
 	if !ok {
+		id, err := g.cfg.NouvelID()
+		if err != nil || id == "" {
+			return nil, fmt.Errorf("%w: %v", ErrIdentifiant, err)
+		}
 		s = &Session{
-			ID: g.cfg.NouvelID(), Appelant: appelant, Ouverte: g.cfg.Horloge().UTC(),
+			ID: id, Appelant: appelant, Ouverte: g.cfg.Horloge().UTC(),
 			ss: ss, tour: make(chan struct{}, 1),
 		}
 		// Sous g.mu : aucune entrée de la session ne peut précéder celle-ci.
@@ -227,6 +248,9 @@ func (g *Gestionnaire) Fermer(ss *mcp.ServerSession, motif string) {
 
 // Suivre ferme la session quand le client s'en va.
 func (g *Gestionnaire) Suivre(ss *mcp.ServerSession) {
+	if ss == nil {
+		return
+	}
 	go func() {
 		ss.Wait()
 		g.Fermer(ss, MotifClient)
@@ -322,13 +346,26 @@ type Tour struct {
 }
 
 // Seq est le rang de l'appel dans la session, refus compris.
-func (t *Tour) Seq() int { return t.seq }
+func (t *Tour) Seq() int {
+	if t == nil {
+		return 0
+	}
+	return t.seq
+}
 
 // SessionID est l'identifiant généré par l'engine.
-func (t *Tour) SessionID() string { return t.s.ID }
+func (t *Tour) SessionID() string {
+	if t == nil || t.s == nil {
+		return ""
+	}
+	return t.s.ID
+}
 
 // Etat est l'instantané que Decide doit recevoir.
 func (t *Tour) Etat() directive.EtatSession {
+	if t == nil || t.s == nil {
+		return directive.EtatSession{}
+	}
 	return directive.EtatSession{ID: t.s.ID, Appelant: t.s.Appelant, Consultations: t.s.Consultations()}
 }
 
@@ -337,8 +374,14 @@ func (t *Tour) Etat() directive.EtatSession {
 // main sans attendre le backend. Une seule transmission par tour : la
 // seconde n'appelle rien, n'enregistre rien et rend ErrDejaTransmis.
 func (t *Tour) Transmettre(ctx context.Context, serveur, outil, empreinte string, backend Backend) (directive.Consultation, Retour) {
+	if t == nil || t.s == nil {
+		return directive.Consultation{}, Retour{Err: ErrTourNul}
+	}
 	if t.transmis {
 		return directive.Consultation{}, Retour{Err: ErrDejaTransmis}
+	}
+	if backend == nil {
+		return directive.Consultation{}, Retour{Err: ErrBackendNul}
 	}
 	t.transmis = true
 	c := directive.Consultation{
@@ -348,7 +391,16 @@ func (t *Tour) Transmettre(ctx context.Context, serveur, outil, empreinte string
 	ctxB, annuler := context.WithTimeout(ctx, t.g.cfg.DelaiBackend)
 	defer annuler()
 	fait := make(chan Retour, 1) // tamponné : un backend tardif ne bloque pas
-	go func() { fait <- backend(ctxB) }()
+	go func() {
+		// Une panique du backend tuerait le processus depuis cette
+		// goroutine : elle devient une consultation en erreur.
+		defer func() {
+			if p := recover(); p != nil {
+				fait <- Retour{Resultat: directive.ResultatErreur, Err: fmt.Errorf("%w: %v", ErrBackendPanique, p)}
+			}
+		}()
+		fait <- backend(ctxB)
+	}()
 	var r Retour
 	select {
 	case r = <-fait:
@@ -371,8 +423,12 @@ func (t *Tour) Transmettre(ctx context.Context, serveur, outil, empreinte string
 }
 
 // Terminer applique une fermeture en attente et rend le verrou.
-// Idempotent ; à appeler par defer.
+// Idempotent, et sans effet sur un tour nul : on peut le différer avant
+// même d'avoir testé l'erreur d'Entrer.
 func (t *Tour) Terminer() {
+	if t == nil || t.s == nil {
+		return
+	}
 	t.fin.Do(func() {
 		motif := t.g.appliquerFermeture(t.s)
 		<-t.s.tour

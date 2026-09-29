@@ -2,6 +2,7 @@ package journal
 
 import (
 	"bytes"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,15 @@ import (
 	"mcprogue/internal/approval"
 	"mcprogue/internal/chaine"
 )
+
+var dem = DemandePurge{Motif: "durée de conservation échue", Auteur: "dpo@cabinet.fr"}
+
+// avecJournal attache au coffre un journal en mémoire et le rend.
+func avecJournal(c *Coffre) *bytes.Buffer {
+	var buf bytes.Buffer
+	c.Journaliser(Nouveau(chaine.Nouvelle(&buf, nil)))
+	return &buf
+}
 
 func deposer(t *testing.T, c *Coffre, outil string, args map[string]any) string {
 	t.Helper()
@@ -37,23 +47,25 @@ func TestCoffre_PurgeParEmpreinteLaisseLeJournalVerifiable(t *testing.T) {
 	var buf bytes.Buffer
 	cle := []byte(strings.Repeat("k", 32))
 	e := Nouveau(chaine.Nouvelle(&buf, cle))
+	c.Journaliser(e)
 	for i, emp := range []string{a, b} {
 		if _, err := e.Ecrire(Entree{Type: AppelT, Seq: i + 1, Outil: "verifier",
 			Appel: &Appel{EmpreinteOrigine: emp, EmpreinteTransmise: emp}}); err != nil {
 			t.Fatal(err)
 		}
 	}
-	avant := append([]byte(nil), buf.Bytes()...)
-
 	c.Horloge(func() time.Time { return t0.Add(24 * time.Hour) })
-	purgees, err := c.PurgerEmpreintes(a, "inconnue")
+	if _, err := c.PurgerEmpreintes(DemandePurge{Auteur: "x"}, a); err != ErrPurgeSansMotif {
+		t.Fatalf("purge sans motif: %v", err)
+	}
+	purgees, err := c.PurgerEmpreintes(dem, a, "inconnue")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(purgees) != 1 || purgees[0] != a {
 		t.Fatalf("purgées %v", purgees)
 	}
-	if again, _ := c.PurgerEmpreintes(a); len(again) != 0 {
+	if again, _ := c.PurgerEmpreintes(dem, a); len(again) != 0 {
 		t.Fatal("une empreinte déjà purgée est ignorée")
 	}
 
@@ -70,12 +82,19 @@ func TestCoffre_PurgeParEmpreinteLaisseLeJournalVerifiable(t *testing.T) {
 		t.Fatal()
 	}
 
-	// Le journal n'a pas bougé et reste vérifiable ; l'entrée purgée y est.
-	if !bytes.Equal(avant, buf.Bytes()) {
-		t.Fatal("la purge du coffre ne doit pas toucher le journal")
-	}
-	if n, err := Verifier(bytes.NewReader(buf.Bytes()), cle); err != nil || n != 2 {
+	// Le journal reste vérifiable : l'appel purgé y est toujours, suivi
+	// d'une seule entrée purge chaînée, à la date de la pierre tombale.
+	if n, err := Verifier(bytes.NewReader(buf.Bytes()), cle); err != nil || n != 3 {
 		t.Fatalf("vérification %d %v", n, err)
+	}
+	lues, _ := Lire(bytes.NewReader(buf.Bytes()))
+	p := lues[2]
+	if p.Type != PurgeT || len(p.Empreintes) != 1 || p.Empreintes[0] != a || p.Motif != dem.Motif ||
+		p.Auteur != dem.Auteur || !p.TS.Equal(t0.Add(24*time.Hour)) || p.PurgeAvant != nil {
+		t.Fatalf("entrée purge %+v", p)
+	}
+	if lues[0].Appel.EmpreinteOrigine != a {
+		t.Fatal("l'entrée appel purgée doit rester dans la chaîne")
 	}
 
 	// Le fichier ne contient plus la valeur purgée, a des permissions
@@ -121,6 +140,7 @@ func TestCoffre_PurgeParAnciennete(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer c.Fermer()
+	jb := avecJournal(c)
 	var vieux, recents []string
 	for i := 0; i < 3; i++ {
 		c.Horloge(func() time.Time { return t0.Add(time.Duration(i) * time.Hour) })
@@ -132,7 +152,7 @@ func TestCoffre_PurgeParAnciennete(t *testing.T) {
 	// Redéposer un vieux dépôt ne le rajeunit pas.
 	deposer(t, c, "o", map[string]any{"i": float64(0)})
 
-	purgees, err := c.PurgerAvant(t0.Add(24 * time.Hour))
+	purgees, err := c.PurgerAvant(t0.Add(24*time.Hour), dem)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -148,8 +168,14 @@ func TestCoffre_PurgeParAnciennete(t *testing.T) {
 		t.Fatal("le dépôt récent doit rester")
 	}
 	// Limite stricte : un dépôt exactement à la limite reste.
-	if p, _ := c.PurgerAvant(t0.Add(48 * time.Hour)); len(p) != 0 {
+	if p, _ := c.PurgerAvant(t0.Add(48*time.Hour), dem); len(p) != 0 {
 		t.Fatalf("limite stricte: %v", p)
+	}
+	// Une purge sans effet n'écrit rien ; l'autre porte sa limite.
+	lues, _ := Lire(bytes.NewReader(jb.Bytes()))
+	if len(lues) != 1 || lues[0].Type != PurgeT || len(lues[0].Empreintes) != 3 ||
+		lues[0].PurgeAvant == nil || !lues[0].PurgeAvant.Equal(t0.Add(24*time.Hour)) {
+		t.Fatalf("journal %+v", lues)
 	}
 
 	// Un nouvel appel aux mêmes arguments les redépose : rejouable à nouveau.
@@ -178,6 +204,7 @@ func TestCoffre_PurgeConcurrenteAvecDepots(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer c.Fermer()
+	c.Journaliser(Nouveau(chaine.Nouvelle(io.Discard, nil)))
 	var wg sync.WaitGroup
 	for g := 0; g < 4; g++ {
 		wg.Add(1)
@@ -191,7 +218,7 @@ func TestCoffre_PurgeConcurrenteAvecDepots(t *testing.T) {
 					return
 				}
 				if i%10 == 0 {
-					if _, err := c.PurgerEmpreintes(emp); err != nil {
+					if _, err := c.PurgerEmpreintes(dem, emp); err != nil {
 						t.Error(err)
 						return
 					}
@@ -216,9 +243,24 @@ func TestCoffre_PurgeConcurrenteAvecDepots(t *testing.T) {
 	}
 }
 
+func TestCoffre_PurgeSansJournalRefusee(t *testing.T) {
+	c, err := OuvrirCoffre(filepath.Join(t.TempDir(), "coffre.jsonl"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer c.Fermer()
+	emp := deposer(t, c, "o", map[string]any{"a": "b"})
+	if _, err := c.PurgerEmpreintes(dem, emp); err != ErrPurgeSansJournal {
+		t.Fatalf("attendu ErrPurgeSansJournal, reçu %v", err)
+	}
+	if etat, _ := c.Etat(emp); etat != Present {
+		t.Fatal("une purge refusée n'efface rien")
+	}
+}
+
 func TestCoffre_NulPurge(t *testing.T) {
 	var c *Coffre
-	if p, err := c.PurgerAvant(t0); err != nil || p != nil {
+	if p, err := c.PurgerAvant(t0, dem); err != nil || p != nil {
 		t.Fatal()
 	}
 	if etat, _ := c.Etat("x"); etat != Absent {
