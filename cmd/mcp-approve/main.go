@@ -6,6 +6,10 @@
 //	mcp-approve -key-file hmac.key -by alice@example.com -ticket INC-4242 \
 //	    -tool drop_db -args '{"database":"staging"}'
 //
+// -principal and -actor add the mandate: on whose behalf the act is performed
+// and which delegate performs it, so the trail answers "who had it done" and
+// not only "who approved".
+//
 // It prints the action digest and a JWT valid for -ttl (default and maximum
 // policy: 15m), bound to exactly that tool+arguments. The agent then passes
 // the token in the tools/call params under _meta.approvalToken.
@@ -31,6 +35,8 @@ func main() {
 	issuer := flag.String("issuer", "", "iss claim (optional, must match APPROVAL_JWT_ISSUER when set)")
 	tool := flag.String("tool", "", "tool name being approved")
 	args := flag.String("args", "{}", "exact JSON arguments of the call being approved")
+	principal := flag.String("principal", "", "on whose behalf the act is performed (the mandate)")
+	actor := flag.String("actor", "", "the delegate performing it, e.g. the agent's SPIFFE ID")
 	ttl := flag.Duration("ttl", approval.DefaultMaxTTL, "token lifetime")
 	flag.Parse()
 
@@ -45,7 +51,18 @@ func main() {
 	}
 	digest := approval.Digest(*tool, arguments)
 
-	token, err := approval.Mint(loadKey(*keyFile), *by, digest, *ticket, *issuer, *ttl)
+	if *actor != "" && *principal == "" {
+		log.Fatal("mcp-approve: -actor names a delegate but -principal names nobody to delegate from; a mandate with no mandator is just a permission")
+	}
+	token, err := approval.MintGrant(loadKey(*keyFile), approval.Grant{
+		ApprovedBy:   *by,
+		ActionDigest: digest,
+		TicketID:     *ticket,
+		Issuer:       *issuer,
+		Principal:    *principal,
+		Actor:        *actor,
+		TTL:          *ttl,
+	})
 	if err != nil {
 		log.Fatalf("mcp-approve: %v", err)
 	}

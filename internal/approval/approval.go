@@ -43,6 +43,11 @@ type Request struct {
 	// Token is the caller-supplied proof from _meta.approvalToken, empty when
 	// none was sent. Only the Token approver reads it.
 	Token string
+	// Actor is the caller's proven identity, when the transport proved one
+	// (the SPIFFE ID behind lock 0). Empty over stdio, where there is no
+	// handshake and so nothing to prove — an approver must treat empty as
+	// "unknown", never as "matches".
+	Actor string
 }
 
 // Decision records who let the call through.
@@ -54,6 +59,11 @@ type Decision struct {
 	// TicketID references the change/incident record, when the mechanism
 	// carries one.
 	TicketID string
+	// Principal is on whose behalf the act was approved (the mandate) and
+	// Actor the delegate performing it. Both empty for mechanisms that carry
+	// no mandate, such as the static allowlist.
+	Principal string
+	Actor     string
 }
 
 // Approver is the dynamic interface. Approve returns the decision, or an
@@ -101,6 +111,28 @@ func WithToken(ctx context.Context, token string) context.Context {
 // TokenFromContext retrieves the token WithToken attached, or "".
 func TokenFromContext(ctx context.Context) string {
 	s, _ := ctx.Value(tokenKey{}).(string)
+	return s
+}
+
+// actorKey carries the caller's proven identity from the transport, which ran
+// the handshake, to the approvers, which did not.
+type actorKey struct{}
+
+// WithActor attaches the caller's proven identity to the context. Only the
+// transport that actually verified it may call this: an approver cannot tell
+// a proven identity from a claimed one, so a value put here is taken as
+// proof.
+func WithActor(ctx context.Context, actor string) context.Context {
+	if actor == "" {
+		return ctx
+	}
+	return context.WithValue(ctx, actorKey{}, actor)
+}
+
+// ActorFromContext retrieves the identity WithActor attached, or "" when the
+// transport proved none.
+func ActorFromContext(ctx context.Context) string {
+	s, _ := ctx.Value(actorKey{}).(string)
 	return s
 }
 
@@ -180,6 +212,7 @@ func ToToolPolicy(a Approver, audit *Audit, logf func(format string, args ...any
 			Arguments: args,
 			Digest:    Digest(params.Name, args),
 			Token:     TokenFromContext(ctx),
+			Actor:     ActorFromContext(ctx),
 		}
 		dec, err := a.Approve(ctx, req)
 		entry := Entry{
@@ -189,10 +222,16 @@ func ToToolPolicy(a Approver, audit *Audit, logf func(format string, args ...any
 			Decision:     "approved",
 			ApprovedBy:   dec.ApprovedBy,
 			TicketID:     dec.TicketID,
+			Principal:    dec.Principal,
+			Actor:        dec.Actor,
 		}
 		if err != nil {
 			entry.Decision = "refused"
 			entry.Reason = err.Error()
+			// A refusal carries no Decision, but the trail must still show who
+			// tried: "who attempted what" is the same question as "who did
+			// what", one outcome earlier.
+			entry.Actor = req.Actor
 		} else if dec.Approver != "" {
 			entry.Approver = dec.Approver
 		}

@@ -251,12 +251,23 @@ func (p *Proxy) servePost(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "mcp-proxy: request too large", http.StatusRequestEntityTooLarge)
 		return
 	}
-	if refused := p.screen(r.Context(), body); refused != nil {
+	// The peer header is only worth reading because withIdentity (cmd/mcp-proxy)
+	// sets it with Set, which overwrites whatever the caller sent. A
+	// deployment that serves this handler without that middleware is letting
+	// callers name themselves, and WithActor would then attach a claim as if
+	// it were proof.
+	ctx := approval.WithActor(r.Context(), r.Header.Get(PeerHeader))
+	if refused := p.screen(ctx, body); refused != nil {
 		writeRPCError(w, refused.id, codeRefused, refused.message)
 		return
 	}
 	p.forward(w, r, body)
 }
+
+// PeerHeader carries the caller's proven SPIFFE ID from the identity
+// middleware to the approval path. It is an internal hop, not a protocol
+// header: the middleware overwrites it on every request.
+const PeerHeader = "X-MCP-Proxy-Peer"
 
 // refusal is a decision not to forward, carrying what to tell the caller.
 type refusal struct {

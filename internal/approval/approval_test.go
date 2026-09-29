@@ -267,3 +267,205 @@ func TestAudit_ChainVerifies(t *testing.T) {
 		t.Fatalf("nil audit errored: %v", err)
 	}
 }
+
+// TestAudit_ResumesAcrossRestarts is the regression test for the defect this
+// package shipped with: a process restart built a fresh Audit, which began at
+// genesis and appended a second chain into the same file. The trail then held
+// two chains an auditor could not link, so continuity — the whole point of
+// chaining — was only ever guaranteed within one process lifetime.
+func TestAudit_ResumesAcrossRestarts(t *testing.T) {
+	var trail bytes.Buffer
+
+	// First run of the process.
+	a := approval.NewAudit(&trail, hmacKey)
+	record(t, a, "envoyer_mise_en_demeure", "refused")
+	record(t, a, "envoyer_mise_en_demeure", "refused")
+
+	// Restart: a new Audit over the trail already on disk.
+	prev, err := approval.LastMAC(bytes.NewReader(trail.Bytes()))
+	if err != nil {
+		t.Fatalf("LastMAC: %v", err)
+	}
+	if prev == approval.Genesis() {
+		t.Fatal("LastMAC returned genesis for a trail holding two entries")
+	}
+	b := approval.NewAudit(&trail, hmacKey)
+	b.Resume(prev)
+	record(t, b, "envoyer_mise_en_demeure", "approved")
+
+	n, err := approval.Verify(bytes.NewReader(trail.Bytes()), hmacKey)
+	if err != nil {
+		t.Fatalf("a resumed trail must verify end to end, got: %v", err)
+	}
+	if n != 3 {
+		t.Fatalf("verified %d entries, want 3", n)
+	}
+}
+
+// TestAudit_UnresumedRestartIsDetected pins the failure mode down: without
+// Resume the trail must not quietly pass verification.
+func TestAudit_UnresumedRestartIsDetected(t *testing.T) {
+	var trail bytes.Buffer
+	a := approval.NewAudit(&trail, hmacKey)
+	record(t, a, "drop_db", "refused")
+
+	b := approval.NewAudit(&trail, hmacKey) // no Resume: restarts at genesis
+	record(t, b, "drop_db", "approved")
+
+	n, err := approval.Verify(bytes.NewReader(trail.Bytes()), hmacKey)
+	if err == nil {
+		t.Fatal("a trail with two concatenated chains must not verify")
+	}
+	if n != 1 {
+		t.Fatalf("verification stopped after %d entries, want 1", n)
+	}
+	if !strings.Contains(err.Error(), "breaks the chain") {
+		t.Fatalf("error should name the broken link, got: %v", err)
+	}
+}
+
+func TestAudit_VerifyDetectsEditedEntry(t *testing.T) {
+	var trail bytes.Buffer
+	a := approval.NewAudit(&trail, hmacKey)
+	record(t, a, "envoyer_mise_en_demeure", "refused")
+	record(t, a, "envoyer_mise_en_demeure", "approved")
+
+	// Rewrite history: the refusal becomes an approval, MAC untouched.
+	edited := strings.Replace(trail.String(), `"decision":"refused"`, `"decision":"approved"`, 1)
+	if edited == trail.String() {
+		t.Fatal("test setup: nothing was edited")
+	}
+	if _, err := approval.Verify(strings.NewReader(edited), hmacKey); err == nil {
+		t.Fatal("an edited entry must not verify")
+	} else if !strings.Contains(err.Error(), "altered") {
+		t.Fatalf("error should say the entry was altered, got: %v", err)
+	}
+}
+
+func TestAudit_LastMAC_EmptyAndCorrupt(t *testing.T) {
+	got, err := approval.LastMAC(strings.NewReader(""))
+	if err != nil {
+		t.Fatalf("an empty trail is a valid new trail: %v", err)
+	}
+	if got != approval.Genesis() {
+		t.Fatalf("empty trail gave %q, want genesis", got)
+	}
+
+	if _, err := approval.LastMAC(strings.NewReader("{not json\n")); err == nil {
+		t.Fatal("an undecodable tail must be an error, not a silent fresh chain")
+	}
+}
+
+func record(t *testing.T, a *approval.Audit, tool, decision string) {
+	t.Helper()
+	if err := a.Record(approval.Entry{
+		Tool:         tool,
+		ActionDigest: "3b5b94b58b23df86",
+		Decision:     decision,
+		Approver:     "token",
+	}); err != nil {
+		t.Fatalf("Record: %v", err)
+	}
+}
+
+// TestToken_MandateIsCarriedAndRecorded covers the half of attribution the
+// action digest cannot reach. The digest binds an approval to one call, so a
+// token minted for dossier-42 is already inert against dossier-77 — scope is
+// solved. What it cannot say is in whose name the agent acted at all, which
+// is what principal adds.
+func TestToken_MandateIsCarriedAndRecorded(t *testing.T) {
+	args := map[string]any{"dossier": "dossier-42", "destinataire": "SOCIETE ADVERSE SA"}
+	digest := approval.Digest("envoyer_mise_en_demeure", args)
+
+	tok, err := approval.MintGrant(hmacKey, approval.Grant{
+		ApprovedBy:   "me.dupont@cabinet.fr",
+		ActionDigest: digest,
+		TicketID:     "DOSSIER-42",
+		Principal:    "me.dupont@cabinet.fr",
+		Actor:        "spiffe://cabinet.lab/agent-contentieux",
+		TTL:          5 * time.Minute,
+	})
+	if err != nil {
+		t.Fatalf("MintGrant: %v", err)
+	}
+
+	verifier := &approval.Token{Key: hmacKey}
+	dec, err := verifier.Approve(context.Background(), approval.Request{
+		Tool: "envoyer_mise_en_demeure", Arguments: args, Digest: digest, Token: tok,
+		Actor: "spiffe://cabinet.lab/agent-contentieux",
+	})
+	if err != nil {
+		t.Fatalf("a token matching call, mandate and delegate must approve: %v", err)
+	}
+	if dec.Principal != "me.dupont@cabinet.fr" {
+		t.Errorf("principal = %q, want the mandator", dec.Principal)
+	}
+	if dec.Actor != "spiffe://cabinet.lab/agent-contentieux" {
+		t.Errorf("actor = %q, want the delegate", dec.Actor)
+	}
+}
+
+func TestToken_MandateRefusals(t *testing.T) {
+	args := map[string]any{"dossier": "dossier-42"}
+	digest := approval.Digest("envoyer_mise_en_demeure", args)
+
+	mint := func(principal, actor string) string {
+		t.Helper()
+		tok, err := approval.MintGrant(hmacKey, approval.Grant{
+			ApprovedBy: "me.dupont@cabinet.fr", ActionDigest: digest,
+			Principal: principal, Actor: actor, TTL: 5 * time.Minute,
+		})
+		if err != nil {
+			t.Fatalf("MintGrant: %v", err)
+		}
+		return tok
+	}
+
+	t.Run("no principal where the deployment requires one", func(t *testing.T) {
+		v := &approval.Token{Key: hmacKey, RequireMandate: true}
+		_, err := v.Approve(context.Background(), approval.Request{
+			Tool: "envoyer_mise_en_demeure", Arguments: args, Digest: digest,
+			Token: mint("", ""),
+		})
+		if err == nil {
+			t.Fatal("a token with no principal must be refused when a mandate is required")
+		}
+		if !strings.Contains(err.Error(), "names no principal") {
+			t.Fatalf("error should name the missing mandate, got: %v", err)
+		}
+	})
+
+	t.Run("delegate is not the proven caller", func(t *testing.T) {
+		v := &approval.Token{Key: hmacKey}
+		_, err := v.Approve(context.Background(), approval.Request{
+			Tool: "envoyer_mise_en_demeure", Arguments: args, Digest: digest,
+			Token: mint("me.dupont@cabinet.fr", "spiffe://cabinet.lab/agent-contentieux"),
+			Actor: "spiffe://cabinet.lab/agent-recherche",
+		})
+		if err == nil {
+			t.Fatal("a token delegating to another agent must be refused")
+		}
+		if !strings.Contains(err.Error(), "delegates to") {
+			t.Fatalf("error should name both identities, got: %v", err)
+		}
+	})
+
+	t.Run("no proven caller: recorded, not enforced", func(t *testing.T) {
+		// The stdio case. There is no handshake, so Request.Actor is empty and
+		// act.sub cannot be checked against anything. It must still approve —
+		// refusing here would make the token unusable on desktop — and the
+		// delegate must still reach the audit trail.
+		v := &approval.Token{Key: hmacKey}
+		dec, err := v.Approve(context.Background(), approval.Request{
+			Tool: "envoyer_mise_en_demeure", Arguments: args, Digest: digest,
+			Token: mint("me.dupont@cabinet.fr", "spiffe://cabinet.lab/agent-contentieux"),
+			Actor: "",
+		})
+		if err != nil {
+			t.Fatalf("an unproven caller must not break the token: %v", err)
+		}
+		if dec.Actor != "spiffe://cabinet.lab/agent-contentieux" {
+			t.Errorf("the declared delegate must still be recorded, got %q", dec.Actor)
+		}
+	})
+}

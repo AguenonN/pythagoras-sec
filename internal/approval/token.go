@@ -29,6 +29,23 @@ type TokenClaims struct {
 	ActionDigest string `json:"action_digest"`
 	// TicketID references the change or incident record.
 	TicketID string `json:"ticket_id,omitempty"`
+	// Principal is on whose behalf the act is performed — the mandate. It
+	// answers a question sub does not: sub says who approved this call,
+	// Principal says in whose name the agent is acting at all.
+	//
+	// RFC 8693 puts the party acted for in sub and the delegate in act.sub.
+	// This token cannot: sub is already spent naming the approver, and
+	// silently changing what sub means would rewrite the meaning of every
+	// audit entry ever written. Hence an explicit principal claim, with act
+	// keeping RFC 8693's shape for the delegate.
+	Principal string `json:"principal,omitempty"`
+	// Act names the party authorised to act for Principal (RFC 8693 §4.1).
+	Act *Actor `json:"act,omitempty"`
+}
+
+// Actor is the RFC 8693 "act" claim: the delegate acting for the principal.
+type Actor struct {
+	Subject string `json:"sub,omitempty"`
 }
 
 // Token verifies caller-supplied approval JWTs (_meta.approvalToken). The
@@ -44,6 +61,11 @@ type Token struct {
 	MaxTTL time.Duration
 	// Issuer, when set, must match the iss claim.
 	Issuer string
+	// RequireMandate refuses a token that names no principal. Off by default,
+	// because a token without a mandate is still a valid approval of an
+	// action; on, it makes "no act without a named mandator" a property of
+	// the deployment rather than a convention.
+	RequireMandate bool
 	// now is stubbed in tests.
 	now func() time.Time
 }
@@ -91,7 +113,31 @@ func (t *Token) Approve(_ context.Context, req Request) (Decision, error) {
 		return Decision{}, fmt.Errorf("approval token is for another action (token digest %s, this call is %s)",
 			claims.ActionDigest, req.Digest)
 	}
-	return Decision{Approver: "token", ApprovedBy: claims.Subject, TicketID: claims.TicketID}, nil
+	if t.RequireMandate && claims.Principal == "" {
+		return Decision{}, fmt.Errorf("approval token names no principal: this deployment requires every act to carry the mandate it is performed under")
+	}
+	actor := ""
+	if claims.Act != nil {
+		actor = claims.Act.Subject
+	}
+	// The delegate named in the token must be the one making the call — but
+	// only where the caller's identity was actually proven. Over stdio there
+	// is no peer to verify (lock 0 has no handshake to run), so req.Actor is
+	// empty and act.sub is recorded as a declaration rather than enforced as
+	// a check. The audit entry is the same either way; what differs is what
+	// it is worth, and that difference belongs in the deployment's writeup,
+	// not hidden in a silent pass here.
+	if actor != "" && req.Actor != "" && actor != req.Actor {
+		return Decision{}, fmt.Errorf("approval token delegates to %q, but the caller proved it is %q",
+			actor, req.Actor)
+	}
+	return Decision{
+		Approver:   "token",
+		ApprovedBy: claims.Subject,
+		TicketID:   claims.TicketID,
+		Principal:  claims.Principal,
+		Actor:      actor,
+	}, nil
 }
 
 // algorithmsFor derives the acceptable signature algorithms from the key
@@ -129,11 +175,46 @@ func ecdsaAlg(c elliptic.Curve) ([]jose.SignatureAlgorithm, error) {
 	}
 }
 
-// Mint signs an approval token. It exists for cmd/mcp-approve and for tests;
-// in production the operators' SSO-backed signer plays this role. key is the
-// private half ([]byte HMAC secret, *rsa.PrivateKey, *ecdsa.PrivateKey or
-// ed25519.PrivateKey).
+// Grant is what an operator signs: one approval, for one call, optionally
+// under a named mandate.
+type Grant struct {
+	// ApprovedBy authenticates the decision (the sub claim).
+	ApprovedBy string
+	// ActionDigest is Digest(tool, arguments) of the call being approved.
+	ActionDigest string
+	// TicketID references the change or incident record.
+	TicketID string
+	// Issuer fills iss.
+	Issuer string
+	// Principal is on whose behalf the act is performed; Actor is the
+	// delegate performing it. Both optional, and meaningless apart: a
+	// mandate with no mandator is a permission.
+	Principal string
+	Actor     string
+	// TTL defaults to DefaultMaxTTL.
+	TTL time.Duration
+}
+
+// Mint signs an approval token with no mandate. It is the original signature,
+// kept because a token that only records who approved is still a valid
+// approval; MintGrant is the one to reach for when the act is performed in
+// someone's name.
 func Mint(key any, approvedBy, actionDigest, ticketID, issuer string, ttl time.Duration) (string, error) {
+	return MintGrant(key, Grant{
+		ApprovedBy:   approvedBy,
+		ActionDigest: actionDigest,
+		TicketID:     ticketID,
+		Issuer:       issuer,
+		TTL:          ttl,
+	})
+}
+
+// MintGrant signs an approval token. It exists for cmd/mcp-approve and for
+// tests; in production the operators' SSO-backed signer plays this role. key
+// is the private half ([]byte HMAC secret, *rsa.PrivateKey, *ecdsa.PrivateKey
+// or ed25519.PrivateKey).
+func MintGrant(key any, g Grant) (string, error) {
+	ttl := g.TTL
 	if ttl <= 0 {
 		ttl = DefaultMaxTTL
 	}
@@ -162,13 +243,17 @@ func Mint(key any, approvedBy, actionDigest, ticketID, issuer string, ttl time.D
 	now := time.Now()
 	claims := TokenClaims{
 		Claims: jwt.Claims{
-			Subject:  approvedBy,
-			Issuer:   issuer,
+			Subject:  g.ApprovedBy,
+			Issuer:   g.Issuer,
 			IssuedAt: jwt.NewNumericDate(now),
 			Expiry:   jwt.NewNumericDate(now.Add(ttl)),
 		},
-		ActionDigest: actionDigest,
-		TicketID:     ticketID,
+		ActionDigest: g.ActionDigest,
+		TicketID:     g.TicketID,
+		Principal:    g.Principal,
+	}
+	if g.Actor != "" {
+		claims.Act = &Actor{Subject: g.Actor}
 	}
 	return jwt.Signed(signer).Claims(claims).Serialize()
 }

@@ -122,6 +122,7 @@ func runStdio(ctx context.Context, cfg proxy.Config, argv []string, logf func(st
 	// stdout carries JSON-RPC, everything else goes to stderr (log's default).
 	log.SetOutput(os.Stderr)
 	logf("mcp-proxy: stdio transport — lock 0 (network identity) does not apply; the OS process boundary is the identity and UPSTREAM_SHA256 pins the binary")
+	logf("mcp-proxy: stdio transport — no caller identity is proven here, so an approval token's act.sub is RECORDED in the audit trail, not enforced against the caller")
 
 	p, err := proxy.NewStdio(cfg)
 	if err != nil {
@@ -180,7 +181,7 @@ func withIdentity(v identity.Verifier, next http.Handler, logf func(string, ...a
 			http.Error(w, "mcp-proxy: caller identity not verified", http.StatusForbidden)
 			return
 		}
-		r.Header.Set("X-MCP-Proxy-Peer", peer)
+		r.Header.Set(proxy.PeerHeader, peer)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -281,10 +282,15 @@ func buildApprovers(logf func(string, ...any)) approval.Approver {
 			log.Fatalf("mcp-proxy: APPROVAL_JWT_MAX_TTL: %v", err)
 		}
 		logf("mcp-proxy: approval token verifier armed (max TTL %s): actions may carry an operator JWT in _meta.approvalToken", maxTTL)
+		requireMandate := labconfig.Env("APPROVAL_REQUIRE_MANDATE", "") == "true"
+		if requireMandate {
+			logf("mcp-proxy: APPROVAL_REQUIRE_MANDATE=true: an approval token must name the principal the act is performed for")
+		}
 		chain = append(chain, &approval.Token{
-			Key:    key,
-			MaxTTL: maxTTL,
-			Issuer: labconfig.Env("APPROVAL_JWT_ISSUER", ""),
+			Key:            key,
+			MaxTTL:         maxTTL,
+			Issuer:         labconfig.Env("APPROVAL_JWT_ISSUER", ""),
+			RequireMandate: requireMandate,
 		})
 	}
 
@@ -343,9 +349,20 @@ func buildAudit(logf func(string, ...any)) *approval.Audit {
 		logf("mcp-proxy: AUDIT_LOG_FILE not set; approval decisions are not persisted to a tamper-evident trail")
 		return nil
 	}
-	f, err := os.OpenFile(path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	// O_RDWR, not O_WRONLY: an existing trail must be read back before it is
+	// appended to, or the chain restarts at genesis mid-file and the file
+	// ends up holding two chains nothing links. O_APPEND keeps writes at the
+	// end regardless of the read offset.
+	f, err := os.OpenFile(path, os.O_CREATE|os.O_RDWR|os.O_APPEND, 0o600)
 	if err != nil {
 		log.Fatalf("mcp-proxy: open AUDIT_LOG_FILE: %v", err)
+	}
+	prev, err := approval.LastMAC(f)
+	if err != nil {
+		// A trail that cannot be read back is a trail that cannot be
+		// continued. Starting a fresh chain over it would destroy exactly the
+		// continuity the chain exists to prove, so this is fatal.
+		log.Fatalf("mcp-proxy: AUDIT_LOG_FILE %s cannot be continued: %v", path, err)
 	}
 	var key []byte
 	if keyPath := labconfig.Env("AUDIT_HMAC_KEY_FILE", ""); keyPath != "" {
@@ -356,6 +373,12 @@ func buildAudit(logf func(string, ...any)) *approval.Audit {
 	} else {
 		logf("mcp-proxy: AUDIT_HMAC_KEY_FILE not set; the audit chain is integrity-only (tamper-evident, not tamper-proof)")
 	}
-	logf("mcp-proxy: approval audit trail: %s", path)
-	return approval.NewAudit(f, key)
+	audit := approval.NewAudit(f, key)
+	if prev == approval.Genesis() {
+		logf("mcp-proxy: approval audit trail: %s (new chain)", path)
+	} else {
+		audit.Resume(prev)
+		logf("mcp-proxy: approval audit trail: %s (continuing the existing chain from %s)", path, prev[:12])
+	}
+	return audit
 }
