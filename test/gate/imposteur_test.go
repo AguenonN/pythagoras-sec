@@ -56,6 +56,10 @@ const jeuImposteur = `{
   ]
 }`
 
+// configSession est la configuration de session des bancs ; un test peut
+// la remplacer (demarrerAvec).
+var configSession = session.Config{DelaiBackend: 10 * time.Second}
+
 type banc struct {
 	g        *gate.Gate
 	cs       *mcp.ClientSession
@@ -84,7 +88,7 @@ func demarrer(t *testing.T, reg *registre.Registre, doc string) *banc {
 	defer annuler()
 	b.g, err = gate.Demarrer(ctx, gate.Config{
 		Registre: reg, Jeu: b.jeu, Journal: b.journalE, Coffre: b.coffre, Appelant: gate.AppelantStdio,
-		Session: session.Config{DelaiBackend: 10 * time.Second},
+		Session: configSession,
 	})
 	if err != nil {
 		t.Fatal(err)
