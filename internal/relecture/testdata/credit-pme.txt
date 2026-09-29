@@ -1,0 +1,19 @@
+Jeu credit-pme, version 1, en vigueur à partir du 04/10/2026 à 08:00 UTC, auteur juriste@cabinet.fr.
+Empreinte : sha256:78fd3b304e0eb6502891bb215d365a3e4a4e03c7f079e766b231523da325ed21.
+4 directives, évaluées dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
+
+Directive D-001, version 1, active (appliquée), fondée sur l'art. 22 RGPD (source : https://eur-lex.europa.eu/eli/reg/2016/679/oj).
+Applicable aux appels à partir du 04/10/2026 à 08:00 UTC, sans date de fin ; sans échéance de relecture.
+Verrou provenance_session. Pour tous les appelants : si la session a reçu des données du serveur taux-officiel, tout appel à attribuer_pret sur banque-synthetique exige une validation humaine.
+
+Directive D-002, version 1, active (appliquée), fondée sur l'art. 22 RGPD.
+Applicable aux appels à partir du 04/10/2026 à 08:00 UTC, sans date de fin ; à relire avant le 01/01/2027 à 00:00 UTC (passée cette date, la directive reste appliquée et une alerte est émise).
+Verrou seuil_argument. Pour tous les appelants : tout appel à attribuer_pret sur banque-synthetique dont l'argument /montant est strictement supérieur à 500000 est refusé. Si cette condition ne peut pas être évaluée (argument absent ou de type inattendu), l'appel est refusé.
+
+Directive D-003, version 1, active (appliquée), fondée sur l'art. 22 RGPD.
+Applicable aux appels à partir du 04/10/2026 à 08:00 UTC, sans date de fin ; sans échéance de relecture.
+Verrou source_attestee. Pour tous les appelants : tout appel à un outil du serveur taux-officiel est refusé si l'attestation de ce serveur au registre (identité, schémas épinglés) a échoué.
+
+Directive D-004, version 1, active (appliquée), fondée sur l'art. 5 RGPD (source : https://eur-lex.europa.eu/eli/reg/2016/679/oj).
+Applicable aux appels à partir du 04/10/2026 à 08:00 UTC, sans date de fin ; sans échéance de relecture.
+Verrou champs_autorises_par_destination. Pour tous les appelants : tout appel à un outil du serveur recherche-entreprises ne transmet que le champ /siren (un champ autorisé couvre aussi tout son contenu) ; tout autre champ est retiré avant transmission.
