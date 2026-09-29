@@ -25,3 +25,16 @@ python3 -m venv .venv
 `--mode rejeu` (défaut) n'utilise que `compilateur/enregistrements/` ;
 `--mode reel` complète par l'API (`MISTRAL_API_KEY`), au plus une requête par
 seconde et `MISTRAL_MAX_APPELS` (40) appels, compteur dans `.etat/`.
+
+## Démonstration
+
+```sh
+.venv/bin/python -m compilateur.demo --jeu credit-pme \
+  --catalogue compilateur/exemples/catalogue-credit-pme.json \
+  --auteur juriste@cabinet.fr --sortie brouillon.json
+```
+
+Demande le texte et la date d'effet, pose les questions de Mistral, affiche
+la relecture à côté du texte et écrit le jeu en `brouillon`. En rejeu, seuls
+les textes et réponses enregistrés aboutissent (voir
+`compilateur/exemples/reponses-d001.json`).
