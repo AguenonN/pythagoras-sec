@@ -379,6 +379,9 @@ type Depot struct {
 	Outil             string         `json:"outil"`
 	ArgumentsOrigine  map[string]any `json:"arguments_origine"`
 	ArgumentsTransmis map[string]any `json:"arguments_transmis,omitempty"`
+	// PurgeLe marque une pierre tombale : les arguments ont été effacés à
+	// cette date, l'empreinte reste pour que le rejeu nomme la purge.
+	PurgeLe *time.Time `json:"purge_le,omitempty"`
 }
 
 // Coffre est un fichier JSONL à permissions restreintes, indexé en mémoire
@@ -386,8 +389,10 @@ type Depot struct {
 // empreintes que le journal, lui, chaîne.
 type Coffre struct {
 	mu      sync.Mutex
+	chemin  string
 	fichier *os.File
 	index   map[string]Depot
+	purgees map[string]time.Time
 	horloge func() time.Time
 }
 
@@ -397,7 +402,7 @@ func OuvrirCoffre(chemin string) (*Coffre, error) {
 	if err != nil {
 		return nil, fmt.Errorf("coffre: %w", err)
 	}
-	c := &Coffre{fichier: f, index: map[string]Depot{}, horloge: time.Now}
+	c := &Coffre{chemin: chemin, fichier: f, index: map[string]Depot{}, purgees: map[string]time.Time{}, horloge: time.Now}
 	sc := bufio.NewScanner(f)
 	sc.Buffer(make([]byte, 0, 64<<10), 16<<20)
 	for n := 1; sc.Scan(); n++ {
@@ -410,6 +415,12 @@ func OuvrirCoffre(chemin string) (*Coffre, error) {
 			f.Close()
 			return nil, fmt.Errorf("coffre: ligne %d illisible: %w", n, err)
 		}
+		if d.PurgeLe != nil {
+			delete(c.index, d.Empreinte)
+			c.purgees[d.Empreinte] = *d.PurgeLe
+			continue
+		}
+		delete(c.purgees, d.Empreinte)
 		c.index[d.Empreinte] = d
 	}
 	if err := sc.Err(); err != nil {
@@ -438,6 +449,7 @@ func (c *Coffre) Deposer(d Depot) error {
 	if _, deja := c.index[d.Empreinte]; deja {
 		return nil
 	}
+	d.PurgeLe = nil
 	if d.TS.IsZero() {
 		d.TS = c.horloge().UTC()
 	}
@@ -449,6 +461,9 @@ func (c *Coffre) Deposer(d Depot) error {
 		return fmt.Errorf("coffre: écrire: %w", err)
 	}
 	c.index[d.Empreinte] = d
+	// Un nouvel appel aux mêmes arguments les redépose : l'empreinte redevient
+	// rejouable, et la pierre tombale est écrasée à la prochaine purge.
+	delete(c.purgees, d.Empreinte)
 	return nil
 }
 
