@@ -22,10 +22,10 @@ func (c *client) connecterStdio(ctx context.Context) error {
 	chemin := c.s.Commande.Chemin
 	observe, err := empreinteFichier(chemin)
 	if err != nil {
-		return c.echec("", "binaire illisible, processus non lancé : "+err.Error())
+		return c.echec("", "binaire illisible, processus non lancé", err)
 	}
 	if observe != c.s.Attestation.Attendu {
-		return c.echec(observe, "empreinte du binaire différente de celle du registre, processus non lancé")
+		return c.echec(observe, "empreinte du binaire différente de celle du registre, processus non lancé", nil)
 	}
 	cmd := exec.Command(chemin, c.s.Commande.Args...)
 	// Environnement vide : les secrets de l'engine ne passent pas au serveur.

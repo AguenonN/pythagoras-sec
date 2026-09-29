@@ -94,9 +94,9 @@ func Connecter(ctx context.Context, s registre.Serveur, opts Options) (Backend, 
 	case registre.HTTPSpiffe:
 		// Emplacement du transport HTTP + SPIFFE (mTLS, SPIFFE ID du
 		// serveur vérifié) : pas encore disponible.
-		err = c.echec("", "transport http-spiffe pas encore disponible")
+		err = c.echec("", "transport http-spiffe pas encore disponible", nil)
 	default:
-		err = c.echec("", fmt.Sprintf("transport %q inconnu", s.Transport))
+		err = c.echec("", "transport inconnu", nil)
 	}
 	return c, err
 }
@@ -122,6 +122,7 @@ type client struct {
 	gen              int // numéro de la dernière notification tools/list_changed
 	motifQuarantaine string
 	cs               *mcp.ClientSession
+	liberer          func() // ferme les connexions HTTP inactives, s'il y en a
 }
 
 func nouveau(s registre.Serveur, opts Options) *client {
@@ -141,13 +142,19 @@ func nouveau(s registre.Serveur, opts Options) *client {
 	return c
 }
 
-// echec fige une attestation en échec et rend l'erreur correspondante.
-func (c *client) echec(observe, detail string) error {
+// echec fige une attestation en échec et rend l'erreur correspondante. Le
+// détail va dans l'attestation, donc au journal et dans le motif rendu à
+// l'agent : il ne contient jamais de texte venu du serveur. La cause, qui
+// peut en contenir, ne va que dans l'erreur rendue à l'opérateur.
+func (c *client) echec(observe, detail string, cause error) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.etat = horsService
 	c.att = directive.Attestation{Mode: c.s.Attestation.Mode, Attendu: c.s.Attestation.Attendu,
 		Observe: observe, Detail: detail}
+	if cause != nil {
+		return fmt.Errorf("%w: %s: %s: %v", ErrNonConnecte, c.s.Nom, detail, cause)
+	}
 	return fmt.Errorf("%w: %s: %s", ErrNonConnecte, c.s.Nom, detail)
 }
 
@@ -171,12 +178,12 @@ func (c *client) optionsClient() *mcp.ClientOptions {
 func (c *client) etablir(ctx context.Context, t mcp.Transport, observe func() string) error {
 	cs, err := c.clientMCP().Connect(ctx, t, nil)
 	if err != nil {
-		return c.echec(observe(), "connexion MCP impossible : "+err.Error())
+		return c.echec(observe(), "connexion MCP impossible", err)
 	}
 	conforme, detail, err := comparer(ctx, cs, c.pins)
 	if err != nil {
 		cs.Close()
-		return c.echec(observe(), "liste des outils impossible : "+err.Error())
+		return c.echec(observe(), "liste des outils impossible", err)
 	}
 	c.mu.Lock()
 	c.cs = cs
@@ -287,7 +294,8 @@ func (c *client) reverifier(gen int, cs *mcp.ClientSession) {
 	defer annuler()
 	conforme, detail, err := comparer(ctx, cs, c.pins)
 	if err != nil {
-		conforme, detail = false, "revérification du catalogue impossible : "+err.Error()
+		c.opts.Logger.Warn("revérification du catalogue impossible", "serveur", c.s.Nom, "erreur", err)
+		conforme, detail = false, "revérification du catalogue impossible"
 	}
 	c.mu.Lock()
 	switch {
@@ -380,12 +388,16 @@ func (c *client) Appeler(ctx context.Context, outil string, args map[string]any,
 // Fermer ferme la session ; le backend passe hors service.
 func (c *client) Fermer() error {
 	c.mu.Lock()
-	cs := c.cs
+	cs, liberer := c.cs, c.liberer
 	c.cs = nil
 	c.etat = horsService
 	c.mu.Unlock()
-	if cs == nil {
-		return nil
+	var err error
+	if cs != nil {
+		err = cs.Close()
 	}
-	return cs.Close()
+	if liberer != nil {
+		liberer()
+	}
+	return err
 }
