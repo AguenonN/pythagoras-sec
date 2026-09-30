@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Console de supervision des agents</title>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<header>
+  <h1>Console de supervision des agents</h1>
+  <nav id="nav" aria-label="Écrans">
+    <a href="#journal" data-ecran="journal">Journal et chaîne</a>
+    <a href="#poste" data-ecran="poste">Poste conseiller</a>
+    <a href="#regles" data-ecran="regles">Règles</a>
+    <a href="#avant-apres" data-ecran="avant-apres">Avant / après</a>
+    <a href="#file" data-ecran="file">File du superviseur</a>
+    <a href="#redaction" data-ecran="redaction">Rédaction</a>
+  </nav>
+</header>
+<div id="chaine-banniere" role="status"></div>
+<main id="contenu">
+  <p class="discret">Chargement…</p>
+</main>
+<footer>Lecture seule. Les données affichées sont lues dans les fichiers du journal ; rien n'est chargé depuis le réseau.</footer>
+<script src="app.js"></script>
+</body>
+</html>
