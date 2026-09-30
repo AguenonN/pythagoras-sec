@@ -437,9 +437,38 @@ func TestPipeline_ControleRegistre(t *testing.T) {
 	if len(b.banque.appels()) != 0 {
 		t.Fatal("rien ne doit partir")
 	}
+	// Le journal dit ce qui s'est passé : un refus, d'origine registre.
 	a := b.appels(t)[0]
-	if a.Resultat.Statut != journal.StatutNonTransmis || a.Message == "" {
-		t.Fatalf("%+v", a)
+	if a.Resultat.Statut != journal.StatutNonTransmis || a.Decision.Effet != "refuser" || a.Decision.Origine != "registre" ||
+		!strings.Contains(a.Decision.Motif, "refusé par le registre") {
+		t.Fatalf("%+v %+v", a.Resultat, a.Decision)
+	}
+	b.rejouer(t)
+
+	// Le rejeu recalcule le contrôle : effacer l'origine, ou maquiller
+	// l'effet en autorisation, sont des altérations.
+	for _, alterer := range []func(*journal.Entree){
+		func(e *journal.Entree) { e.Decision.Origine = "" },
+		func(e *journal.Entree) { e.Decision.Effet, e.Decision.Origine = "autoriser", "" },
+	} {
+		e := b.appels(t)[0]
+		alterer(&e)
+		r, err := rejeu.Rejouer(e, b.coffre, rejeu.Catalogue{b.jeu}, nil, rejeu.Options{})
+		if err != nil || len(r.Ecarts) == 0 || r.Ecarts[0].Cause != rejeu.CauseAlteration {
+			t.Fatalf("%+v %v", r.Ecarts, err)
+		}
+	}
+}
+
+// Une directive source_attestee qui refuse garde la main : l'origine reste
+// celle des directives, pas du registre.
+func TestPipeline_RegistreNeRemplacePasLaDirective(t *testing.T) {
+	b := monter(t, func(b *banc) {
+		b.taux.att = directive.Attestation{Mode: "binaire", Attendu: h64, Observe: "sha256:autre"}
+	})
+	appelerAgent(t, b.agent(t), "taux-officiel__get_taux", map[string]any{"devise": "EUR"})
+	if a := b.appels(t)[0]; a.Decision.Effet != "refuser" || a.Decision.Origine != "" || !strings.Contains(a.Decision.Motif, "D-003") {
+		t.Fatalf("%+v", a.Decision)
 	}
 	b.rejouer(t)
 }

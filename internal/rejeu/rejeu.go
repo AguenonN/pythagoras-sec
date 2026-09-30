@@ -42,6 +42,7 @@ import (
 	"time"
 
 	"mcprogue/internal/approval"
+	"mcprogue/internal/controle"
 	"mcprogue/internal/directive"
 	"mcprogue/internal/journal"
 )
@@ -73,6 +74,10 @@ const (
 	ControleTransmis  = "transmis"
 	ControleDecision  = "decision"
 	ControleEtat      = "etat"
+	// ControleStatut : le statut du résultat doit être cohérent avec
+	// l'effet (un refus n'est jamais transmis, une autorisation l'est
+	// toujours, une attente ne l'est qu'avec une approbation).
+	ControleStatut = "statut"
 	// ControleTransmission : un appel transmis doit être précédé de son
 	// entrée transmission (même session, seq, serveur, outil, empreinte
 	// transmise, effet) ; un appel non transmis ne doit pas en avoir.
@@ -210,6 +215,11 @@ func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, purges Purges, opts Op
 	ecart := func(c Cause, controle, format string, args ...any) {
 		r.Ecarts = append(r.Ecarts, Ecart{Cause: c, Nature: r.Nature, Controle: controle, Detail: fmt.Sprintf(format, args...)})
 	}
+	// Statut et effet se contrôlent sans les arguments : même un appel
+	// purgé ne peut pas affirmer avoir transmis un refus.
+	if detail, ok := statutCoherent(en); !ok {
+		ecart(CauseAlteration, ControleStatut, "%s", detail)
+	}
 
 	origine, ok := jeux.Jeu(en.Jeu.ID, en.Jeu.Version)
 	if !ok {
@@ -252,8 +262,18 @@ func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, purges Purges, opts Op
 
 	// Contrôle 2 : sous le jeu d'origine, à la date historique, la décision
 	// retrouve empreinte_transmise et l'effet journalisé.
-	dec := directive.Decide(origine, etat, appel)
+	// Le contrôle du registre s'applique après Decide, comme dans l'engine,
+	// sur l'attestation que l'entrée porte.
+	dec, parRegistre := controle.Registre(directive.Decide(origine, etat, appel), en.Serveur, appel.Attestation)
 	r.Origine = &dec
+	switch origineJ := en.Decision.Origine; {
+	case origineJ != "" && origineJ != controle.OrigineRegistre:
+		ecart(CauseAlteration, ControleDecision, "origine de décision %q inconnue", origineJ)
+	case parRegistre && origineJ != controle.OrigineRegistre:
+		ecart(CauseAlteration, ControleDecision, "le serveur n'est pas attesté : le refus est d'origine registre, le journal ne le dit pas")
+	case !parRegistre && origineJ == controle.OrigineRegistre:
+		ecart(CauseAlteration, ControleDecision, "le journal attribue la décision au registre, le rejeu à une directive")
+	}
 	if dec.EmpreinteTransmise != en.Appel.EmpreinteTransmise {
 		ecart(CauseAlteration, ControleTransmis, "la décision rejouée transmet %s, le journal cite %s",
 			dec.EmpreinteTransmise, en.Appel.EmpreinteTransmise)
@@ -275,13 +295,41 @@ func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, purges Purges, opts Op
 	if !opts.AuDate.IsZero() {
 		appel.Horodatage = opts.AuDate
 	}
-	autre := directive.Decide(jeu, etat, appel)
+	autre, _ := controle.Registre(directive.Decide(jeu, etat, appel), en.Serveur, appel.Attestation)
 	r.Rejouee = &autre
 	if autre.Effet != r.Journalise {
 		ecart(CauseEffetDeRegle, ControleDecision, "sous %s v%d au %s, la décision serait %s ; le journal affirme %s",
 			jeu.Meta.ID, jeu.Meta.Version, appel.Horodatage.UTC().Format(time.RFC3339), autre.Effet, r.Journalise)
 	}
 	return r, nil
+}
+
+// statutCoherent confronte le statut du résultat à l'effet journalisé.
+func statutCoherent(en journal.Entree) (string, bool) {
+	if en.Resultat == nil {
+		return "entrée appel sans résultat", false
+	}
+	_, transmis := consultation(en)
+	switch effet := directive.Effet(en.Decision.Effet); effet {
+	case directive.Refuser:
+		if transmis || en.Resultat.Statut != journal.StatutNonTransmis {
+			return fmt.Sprintf("effet refuser, statut %s : un refus n'est jamais transmis", en.Resultat.Statut), false
+		}
+	case directive.AttendreValidation:
+		if transmis && en.Approbation == nil {
+			return fmt.Sprintf("effet attendre_validation, statut %s, sans approbation", en.Resultat.Statut), false
+		}
+		if !transmis && en.Resultat.Statut != journal.StatutNonTransmis {
+			return fmt.Sprintf("statut %s inconnu", en.Resultat.Statut), false
+		}
+	case directive.Autoriser, directive.Caviarder:
+		if !transmis {
+			return fmt.Sprintf("effet %s, statut %s : une autorisation est toujours transmise", effet, en.Resultat.Statut), false
+		}
+	default:
+		return fmt.Sprintf("effet %q inconnu", effet), false
+	}
+	return "", true
 }
 
 // consultation rend la consultation qu'une entrée appel a produite : un

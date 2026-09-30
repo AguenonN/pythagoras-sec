@@ -107,7 +107,11 @@ type Application struct {
 }
 
 type Decision struct {
-	Effet        string        `json:"effet"`
+	Effet string `json:"effet"`
+	// Origine vaut "registre" quand l'effet est imposé par le contrôle du
+	// registre (serveur non attesté) et non par une directive ; absente,
+	// l'effet est celui des directives.
+	Origine      string        `json:"origine,omitempty"`
 	Motif        string        `json:"motif"`
 	Applications []Application `json:"applications"`
 	Alertes      []string      `json:"alertes,omitempty"`

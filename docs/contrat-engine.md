@@ -98,6 +98,27 @@ parti dont le résultat n'a pas été journalisé.
 `rejeu.TransmissionsSansAppel` les rend. Elles ne se rejouent pas, faute
 de décision complète : elles se signalent.
 
+## 5. Le refus par le registre est une décision journalisée
+
+Un serveur dont l'attestation n'est pas valide est refusé même si
+aucune directive `source_attestee` ne le cible. Ce contrôle
+s'applique après `Decide`, par `controle.Registre`, la fonction même
+qu'appelle le rejeu.
+
+- L'entrée `appel` porte `decision.effet = refuser`,
+  `decision.origine = registre` et le motif du registre ; les
+  applications restent celles de `Decide`.
+- Une directive qui refuse déjà garde la main : l'origine reste celle
+  des directives, qui citent leur fondement.
+
+Au rejeu, le contrôle est recalculé sur l'attestation que l'entrée
+porte. Une origine effacée ou inventée est une altération, tout comme un
+statut incohérent avec l'effet (contrôle `statut`) :
+
+- un refus n'est jamais transmis ;
+- une autorisation l'est toujours ;
+- une attente ne l'est qu'avec une approbation.
+
 ## Rappels
 
 - L'appelant est fixé à la création de la session. Le passer tel que le

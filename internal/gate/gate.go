@@ -43,6 +43,7 @@ import (
 
 	"mcprogue/internal/approval"
 	"mcprogue/internal/backend"
+	"mcprogue/internal/controle"
 	"mcprogue/internal/directive"
 	"mcprogue/internal/envelope"
 	"mcprogue/internal/journal"
@@ -338,6 +339,13 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 	dec := directive.Decide(jeu, etat, directive.Appel{
 		Serveur: serveur, Outil: outil, Arguments: args, Attestation: att, Horodatage: ts,
 	})
+	// Contrôle du registre, toujours actif, même sans directive
+	// source_attestee pour ce serveur : refus d'origine registre.
+	dec, parRegistre := controle.Registre(dec, serveur, att)
+	decJ := journal.DepuisDecision(dec)
+	if parRegistre {
+		decJ.Origine = controle.OrigineRegistre
+	}
 	entree := journal.Entree{
 		TS: ts, Type: journal.AppelT, Session: tour.SessionID(), Seq: tour.Seq(), Appelant: etat.Appelant,
 		SousAgentDeclare: sousAgent,
@@ -346,20 +354,17 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 			ChampsRetires: dec.ChampsRetires},
 		Attestation: journal.DepuisAttestation(att),
 		EtatSession: journal.DepuisConsultations(etat.Consultations),
-		Decision:    journal.DepuisDecision(dec),
+		Decision:    decJ,
 		Resultat:    &journal.Resultat{Statut: journal.StatutNonTransmis},
 	}
 
 	var rep *mcp.CallToolResult
 	switch {
+	case parRegistre:
+		rep = refus("Appel " + dec.Motif + ".")
 	case dec.Effet == directive.Refuser:
 		// 5.
 		rep = refus("Appel refusé par l'engine : " + dec.Motif + ".")
-	case !att.Valide():
-		// Contrôle du registre, toujours actif, même sans directive
-		// source_attestee pour ce serveur.
-		entree.Message = "refusé par le registre : serveur non attesté"
-		rep = refus(fmt.Sprintf("Appel refusé par le registre : le serveur %s n'est pas attesté (%s).", serveur, decrire(att)))
 	case dec.Effet == directive.AttendreValidation:
 		// 6.
 		rep = enAttente(dec)
@@ -656,15 +661,6 @@ func enAttente(dec directive.Decision) *mcp.CallToolResult {
 		"directives":          ids,
 	}
 	return r
-}
-
-// decrire résume une attestation en échec sans rien de fourni par le
-// serveur : le détail du backend est déjà sûr.
-func decrire(a directive.Attestation) string {
-	if a.Detail != "" {
-		return a.Detail
-	}
-	return a.Mode + " attendu " + a.Attendu + ", observé " + a.Observe
 }
 
 // Servir sert le gate sur un transport jusqu'à la fin de la session.

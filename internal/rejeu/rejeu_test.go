@@ -125,6 +125,10 @@ func derouler(t *testing.T) *scenario {
 				})
 			res = &journal.Resultat{Statut: string(c.Resultat), EmpreinteReponse: c.EmpreinteReponse}
 		}
+		var approbation *journal.Approbation
+		if dec.Effet == directive.AttendreValidation {
+			approbation = &journal.Approbation{Mecanisme: "jeton", ApprouvePar: "juriste@cabinet.fr"}
+		}
 		if _, err := j.Ecrire(journal.Entree{
 			TS: maintenant, Type: journal.AppelT, Session: tour.SessionID(), Seq: tour.Seq(), Appelant: etat.Appelant,
 			Jeu: journal.DepuisJeu(sc.jeu), Serveur: a.serveur, Outil: a.outil,
@@ -132,6 +136,7 @@ func derouler(t *testing.T) *scenario {
 			Attestation: journal.DepuisAttestation(attestee),
 			EtatSession: journal.DepuisConsultations(etat.Consultations),
 			Decision:    journal.DepuisDecision(dec),
+			Approbation: approbation,
 			Resultat:    res,
 		}); err != nil {
 			t.Fatal(err)
@@ -349,7 +354,10 @@ func TestRejouer_AlterationDuJournal(t *testing.T) {
 	en = sc.appel(t, 3)
 	en.Decision.Effet = string(directive.Autoriser) // refus maquillé
 	r, _ = Rejouer(en, sc.coffre, jeux, nil, Options{})
-	if len(r.Ecarts) != 1 || r.Ecarts[0].Controle != ControleDecision || r.Ecarts[0].Nature != Violation {
+	// Pris deux fois : une autorisation non transmise est incohérente, et
+	// la décision rejouée est un refus.
+	if len(r.Ecarts) != 2 || r.Ecarts[0].Controle != ControleStatut || r.Ecarts[1].Controle != ControleDecision ||
+		r.Ecarts[1].Nature != Violation {
 		t.Fatalf("décision: %+v", r.Ecarts)
 	}
 
@@ -567,5 +575,47 @@ func TestRejouerJournal_Transmission(t *testing.T) {
 	orph := TransmissionsSansAppel(es)
 	if len(orph) != 1 || orph[0].Seq != 2 || orph[0].Serveur != "banque-synthetique" {
 		t.Fatalf("orphelines %+v", orph)
+	}
+}
+
+// Le statut du résultat doit être cohérent avec l'effet, même pour un appel
+// qui n'est plus rejouable.
+func TestRejouer_StatutEtEffet(t *testing.T) {
+	sc := derouler(t)
+	jeux := Catalogue{sc.jeu}
+	cas := []struct {
+		nom     string
+		seq     int
+		alterer func(*journal.Entree)
+		veut    string
+	}{
+		{"refus transmis", 3, func(e *journal.Entree) { e.Resultat = &journal.Resultat{Statut: journal.StatutOK} }, "un refus n'est jamais transmis"},
+		{"autorisation non transmise", 1, func(e *journal.Entree) { e.Resultat = &journal.Resultat{Statut: journal.StatutNonTransmis} }, "toujours transmise"},
+		{"attente transmise sans approbation", 2, func(e *journal.Entree) { e.Approbation = nil }, "sans approbation"},
+		{"sans résultat", 1, func(e *journal.Entree) { e.Resultat = nil }, "sans résultat"},
+		{"effet inconnu", 1, func(e *journal.Entree) { e.Decision = &journal.Decision{Effet: "peut-etre"} }, "inconnu"},
+	}
+	for _, c := range cas {
+		sc.relire(t)
+		en := sc.appel(t, c.seq)
+		c.alterer(&en)
+		r, err := Rejouer(en, sc.coffre, jeux, nil, Options{})
+		if err != nil {
+			t.Fatalf("%s : %v", c.nom, err)
+		}
+		trouve := false
+		for _, e := range r.Ecarts {
+			if e.Controle == ControleStatut && e.Cause == CauseAlteration && strings.Contains(e.Detail, c.veut) {
+				trouve = true
+			}
+		}
+		if !trouve {
+			t.Fatalf("%s : %+v", c.nom, r.Ecarts)
+		}
+	}
+	// L'attente approuvée et transmise est cohérente.
+	sc.relire(t)
+	if r, _ := Rejouer(sc.appel(t, 2), sc.coffre, jeux, nil, Options{}); len(r.Ecarts) != 0 {
+		t.Fatalf("%+v", r.Ecarts)
 	}
 }
