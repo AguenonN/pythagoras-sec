@@ -24,6 +24,18 @@ def date_effet(s):
     return s + "T00:00:00Z"
 
 
+def ecrire_sortie(chemin, r):
+    """Écrit le jeu en brouillon et, à côté, la consignation des questions
+    et réponses qui l'ont produit (``<chemin>.reponses.json``)."""
+    with open(chemin, "w", encoding="utf-8") as f:
+        json.dump(r["jeu"], f, ensure_ascii=False, indent=2)
+        f.write("\n")
+    with open(chemin + ".reponses.json", "w", encoding="utf-8") as f:
+        json.dump({"texte": r["texte"], "reponses": r["reponses"], "consignation": r["consignation"]},
+                  f, ensure_ascii=False, indent=2)
+        f.write("\n")
+
+
 def principal(argv=None, sortie=sys.stdout):
     ap = argparse.ArgumentParser(prog="compilateur", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -35,9 +47,8 @@ def principal(argv=None, sortie=sys.stdout):
     ap.add_argument("--auteur", required=True)
     ap.add_argument("--date-effet", required=True, type=date_effet)
     ap.add_argument("--id-directive", default="D-001")
-    ap.add_argument("--reponses", help="JSON : [{\"question\": ..., \"reponse\": ...}]")
-    ap.add_argument("--ignorer-indetermine-valide-par",
-                    help="nom du juriste qui demande que les conditions indéterminées soient ignorées")
+    ap.add_argument("--reponses", help="JSON : [{\"question\": ..., \"reponse\": ...}] ; les réponses aux "
+                    "questions du compilateur portent aussi \"champ\" et \"origine\": \"compilateur\"")
     ap.add_argument("--mode", choices=["rejeu", "reel"], default="rejeu")
     ap.add_argument("--sortie", help="écrit le jeu en brouillon dans ce fichier")
     ap.add_argument("--json", action="store_true", help="sortie JSON complète")
@@ -55,12 +66,10 @@ def principal(argv=None, sortie=sys.stdout):
     r = compilateur.compiler(
         texte, a.jeu, cat.Catalogue.lire(a.catalogue), mistral.Client(mode=a.mode),
         auteur=a.auteur, date_effet=a.date_effet, reponses=reponses,
-        id_directive=a.id_directive, ignorer_valide_par=a.ignorer_indetermine_valide_par)
+        id_directive=a.id_directive)
 
     if r["etat"] == compilateur.DIRECTIVE and a.sortie:
-        with open(a.sortie, "w", encoding="utf-8") as f:
-            json.dump(r["jeu"], f, ensure_ascii=False, indent=2)
-            f.write("\n")
+        ecrire_sortie(a.sortie, r)
 
     if a.json:
         json.dump(r, sortie, ensure_ascii=False, indent=2)

@@ -11,8 +11,13 @@ décide.
 
 Ce que Mistral ne fixe jamais : le statut (toujours brouillon), texte_fr
 (le texte du juriste tel quel), l'identifiant, la version, la date d'effet
-(donnée par le juriste), si_indetermine (refuser, ou ignorer seulement sur
-validation nommée passée par l'appelant).
+(donnée par le juriste) et si_indetermine.
+
+si_indetermine : pour toute directive à condition, le compilateur (le code,
+pas Mistral) pose une question fermée au juriste. « ignorer » n'est retenu
+que sur cette réponse, qui est consignée dans le résultat (``consignation``)
+et nomme l'auteur dans si_indetermine_valide_par. Les réponses aux questions
+du code ne sont jamais envoyées à Mistral.
 """
 
 import datetime
@@ -25,6 +30,30 @@ QUESTIONS = "questions"
 DIRECTIVE = "directive"
 ERREURS = "erreurs"
 
+ORIGINE_CODE = "compilateur"
+QUESTION_INDETERMINE = {
+    "question": ("Si une condition de la directive ne peut pas être évaluée (argument absent ou de type "
+                 "inattendu), faut-il refuser l'appel (choix par défaut) ou ignorer la directive pour cet "
+                 "appel ? Répondez « refuser » ou « ignorer »."),
+    "champ": "si_indetermine",
+    "options": ["refuser", "ignorer"],
+    "origine": ORIGINE_CODE,
+}
+
+
+def _du_code(r):
+    return r.get("origine") == ORIGINE_CODE
+
+
+def reponse_indetermine(reponses):
+    """La réponse consignée à la question du code, normalisée, ou None si
+    elle manque ou n'est pas l'une des options."""
+    for r in reversed(reponses):
+        if _du_code(r) and r.get("champ") == "si_indetermine":
+            choix = verifications.sans_accents(r.get("reponse", "")).strip().lower().rstrip(".")
+            return (choix, r) if choix in QUESTION_INDETERMINE["options"] else None
+    return None
+
 
 def message_utilisateur(texte, catalogue, reponses):
     parts = [
@@ -36,6 +65,7 @@ def message_utilisateur(texte, catalogue, reponses):
         texte,
         ">>>",
     ]
+    reponses = [r for r in reponses if not _du_code(r)]
     if reponses:
         parts += ["", "Réponses du juriste à tes questions :"]
         for r in reponses:
@@ -71,6 +101,8 @@ def fondement(f):
 
 
 def construire_jeu(p, texte, jeu_id, auteur, date_effet, id_directive, ignorer_valide_par=None):
+    """``ignorer_valide_par`` n'est passé que par ``compiler``, sur la réponse
+    consignée du juriste à la question du code."""
     """Assemble le jeu d'une directive à partir de la proposition brute.
 
     Rend (jeu, erreurs) ; les erreurs sont celles qu'on ne peut pas même
@@ -152,17 +184,37 @@ def _questions(appels):
     return out
 
 
+def _conclure(resultat, p, texte, jeu_id, auteur, date_effet, id_directive, reponses):
+    """Proposition valide : pose la question du code sur si_indetermine si
+    la directive a une condition, puis rend la directive et sa relecture."""
+    if resultat["jeu"]["directives"][0].get("condition"):
+        choix = reponse_indetermine(reponses)
+        if choix is None:
+            resultat.update(etat=QUESTIONS, questions=[dict(QUESTION_INDETERMINE)], jeu=None)
+            return resultat
+        valeur, consignee = choix
+        resultat["consignation"] = [consignee]
+        if valeur == "ignorer":
+            jeu, _ = construire_jeu(p, texte, jeu_id, auteur, date_effet, id_directive, ignorer_valide_par=auteur)
+            ok, err_go, _ = directive_go.verifier(jeu)
+            if not ok:
+                resultat.update(etat=ERREURS, erreurs=err_go, jeu=jeu)
+                return resultat
+            resultat["jeu"] = jeu
+    resultat.update(etat=DIRECTIVE, erreurs=[], relecture=directive_go.relire(resultat["jeu"]))
+    return resultat
+
+
 def compiler(texte, jeu_id, catalogue, client, auteur, date_effet,
-             reponses=(), id_directive="D-001", ignorer_valide_par=None):
+             reponses=(), id_directive="D-001"):
     """Rend un dict : etat (questions | directive | erreurs) et le détail.
 
     ``date_effet`` est un horodatage RFC 3339 fixé par le juriste.
-    ``ignorer_valide_par`` : nom du juriste qui demande nommément que les
-    conditions indéterminées soient ignorées ; sans lui, elles refusent."""
+    ``reponses`` : [{"question", "reponse", "champ"?, "options"?, "origine"?}]."""
     reponses = list(reponses)
-    source = "\n".join([texte] + [r["reponse"] for r in reponses])
+    source = "\n".join([texte] + [r["reponse"] for r in reponses if not _du_code(r)])
     resultat = {"texte": texte, "reponses": reponses, "questions": [], "erreurs": [],
-                "jeu": None, "relecture": None, "tentatives": 0}
+                "jeu": None, "relecture": None, "tentatives": 0, "consignation": []}
     messages = [
         {"role": "system", "content": outils.CONSIGNE},
         {"role": "user", "content": message_utilisateur(texte, catalogue, reponses)},
@@ -188,15 +240,14 @@ def compiler(texte, jeu_id, catalogue, client, auteur, date_effet,
         if len(propositions) > 1:
             erreurs.append("une seule directive par proposition (%d reçues)" % len(propositions))
         p = propositions[0][1]
-        jeu, err_jeu = construire_jeu(p, texte, jeu_id, auteur, date_effet, id_directive, ignorer_valide_par)
+        jeu, err_jeu = construire_jeu(p, texte, jeu_id, auteur, date_effet, id_directive)
         erreurs += err_jeu
         erreurs += verifications.verifier_proposition(p, source, catalogue)
         ok, err_go, _ = directive_go.verifier(jeu)
         erreurs += err_go
         resultat["jeu"] = jeu
         if not erreurs and ok:
-            resultat.update(etat=DIRECTIVE, erreurs=[], relecture=directive_go.relire(jeu))
-            return resultat
+            return _conclure(resultat, p, texte, jeu_id, auteur, date_effet, id_directive, reponses)
         resultat["erreurs"] = erreurs
         if tentative == 2:
             break

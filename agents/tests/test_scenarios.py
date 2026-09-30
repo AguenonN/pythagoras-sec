@@ -80,8 +80,13 @@ class TestSeuilNonChiffre(unittest.TestCase):
         self.assertIsNone(r["jeu"])
 
     def test_montant_donne_par_le_juriste(self):
-        r = compiler(SEUIL, reponses("reponses-seuil.json"))
+        q = compiler(SEUIL, reponses("reponses-seuil.json"))
+        self.assertEqual(q["etat"], comp.QUESTIONS, "question du code sur si_indetermine")
+        self.assertEqual(q["questions"], [comp.QUESTION_INDETERMINE])
+        code = dict(comp.QUESTION_INDETERMINE, reponse="refuser")
+        r = compiler(SEUIL, reponses("reponses-seuil.json") + [code])
         self.assertEqual(r["etat"], comp.DIRECTIVE, r["erreurs"])
+        self.assertEqual(r["consignation"], [code])
         d = r["jeu"]["directives"][0]
         self.assertEqual(d["verrou"], "seuil_argument")
         self.assertEqual(d["condition"], [{"champ": "/montant", "op": ">", "valeur": 500000}])

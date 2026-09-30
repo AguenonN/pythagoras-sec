@@ -11,13 +11,19 @@ de deux fonctions, lire et écrire.
 """
 
 import argparse
-import json
 import sys
 
 from . import affichage, catalogue as cat, compilateur, mistral
-from .__main__ import date_effet as lire_date
+from .__main__ import date_effet as lire_date, ecrire_sortie
 
 TOURS_MAX = 3  # au-delà, les questions ne convergent pas : on rend la main
+
+
+def _admise(q, rep):
+    """Une question du code est fermée : seule une de ses options est admise."""
+    if q.get("origine") != compilateur.ORIGINE_CODE:
+        return True
+    return compilateur.reponse_indetermine([dict(q, reponse=rep)]) is not None
 
 
 def derouler(lire, ecrire, texte, jeu_id, catalogue, client, auteur, date_effet):
@@ -35,9 +41,12 @@ def derouler(lire, ecrire, texte, jeu_id, catalogue, client, auteur, date_effet)
             for o in q["options"]:
                 ecrire("   - %s\n" % o)
             rep = ""
-            while not rep.strip():
+            while not rep.strip() or not _admise(q, rep):
                 rep = lire("   Votre réponse : ")
-            reponses.append({"question": q["question"], "reponse": rep.strip()})
+            entree = {"question": q["question"], "reponse": rep.strip()}
+            if q.get("origine"):
+                entree.update(champ=q["champ"], options=q["options"], origine=q["origine"])
+            reponses.append(entree)
     else:
         ecrire("\nLes questions ne convergent pas après %d tours ; reformulez la directive.\n" % TOURS_MAX)
         return r
@@ -80,9 +89,7 @@ def principal(argv=None, lire=input, ecrire=sys.stdout.write):
                  mistral.Client(mode=a.mode), a.auteur, date)
     if r["etat"] != compilateur.DIRECTIVE:
         return 1
-    with open(a.sortie, "w", encoding="utf-8") as f:
-        json.dump(r["jeu"], f, ensure_ascii=False, indent=2)
-        f.write("\n")
+    ecrire_sortie(a.sortie, r)
     ecrire("\nJeu écrit en brouillon dans %s. Il ne sera appliqué qu'une fois passé en "
            "observation ou active par le juriste.\n" % a.sortie)
     return 0

@@ -1,3 +1,4 @@
+import json
 import unittest
 
 from compilateur import affichage, compilateur as comp
@@ -81,24 +82,55 @@ class TestCompiler(unittest.TestCase):
         self.assertEqual(r["etat"], comp.ERREURS)
         self.assertTrue(any("100000" in e for e in r["erreurs"]), r["erreurs"])
 
-    def test_si_indetermine(self):
-        p = {"verrou": "seuil_argument", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"},
+    SEUIL = {"verrou": "seuil_argument", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"},
              "effet": "refuser", "fondement": {"texte": "RGPD", "article": "22"},
              "condition": [{"champ": "/montant", "op": ">", "valeur": 500000}]}
-        rep = REPONSES + [{"question": "Seuil ?", "reponse": "500 000 euros"}]
-        r = compiler(ClientScripte(reponse(appel("proposer_directive", p))), reponses=rep)
-        self.assertEqual(r["etat"], comp.DIRECTIVE, r["erreurs"])
-        self.assertEqual(r["jeu"]["directives"][0]["si_indetermine"], "refuser")
-        # Mistral ne peut pas obtenir ignorer…
-        p2 = dict(p, si_indetermine="ignorer")
+    REP_SEUIL = REPONSES + [{"question": "Seuil ?", "reponse": "500 000 euros"}]
+
+    def code(self, reponse):
+        return dict(comp.QUESTION_INDETERMINE, reponse=reponse)
+
+    def test_si_indetermine_question_du_code(self):
+        c = ClientScripte(reponse(appel("proposer_directive", self.SEUIL)))
+        r = compiler(c, reponses=self.REP_SEUIL)
+        self.assertEqual(r["etat"], comp.QUESTIONS)
+        self.assertEqual(r["questions"], [comp.QUESTION_INDETERMINE])
+        self.assertIsNone(r["jeu"], "aucun jeu tant que le juriste n'a pas répondu")
+
+    def test_si_indetermine_refuser_ou_ignorer(self):
+        for rep, veut in [("refuser", ("refuser", None)), ("Ignorer.", ("ignorer", "juriste@cabinet.fr"))]:
+            c = ClientScripte(reponse(appel("proposer_directive", self.SEUIL)))
+            r = compiler(c, reponses=self.REP_SEUIL + [self.code(rep)])
+            self.assertEqual(r["etat"], comp.DIRECTIVE, r["erreurs"])
+            d = r["jeu"]["directives"][0]
+            self.assertEqual((d["si_indetermine"], d.get("si_indetermine_valide_par")), veut)
+            self.assertEqual(r["consignation"], [self.code(rep)], "la réponse est consignée")
+            envoye = json.dumps(c.recus[0][0], ensure_ascii=False)
+            self.assertNotIn("argument absent ou de type", envoye, "la question du code ne va pas à Mistral")
+        self.assertIn("choix validé par juriste@cabinet.fr", r["relecture"])
+
+    def test_si_indetermine_reponse_invalide_redemandee(self):
+        c = ClientScripte(reponse(appel("proposer_directive", self.SEUIL)))
+        r = compiler(c, reponses=self.REP_SEUIL + [self.code("peut-être")])
+        self.assertEqual(r["etat"], comp.QUESTIONS)
+        self.assertEqual(r["questions"][0]["champ"], "si_indetermine")
+
+    def test_ignorer_hors_question_du_code_sans_effet(self):
+        # « ignorer » dans le texte, ou en réponse à une question de Mistral, ne suffit pas.
+        rep = self.REP_SEUIL + [{"question": "Et si le montant manque ?", "reponse": "ignorer",
+                                 "champ": "si_indetermine"}]
+        r = compiler(ClientScripte(reponse(appel("proposer_directive", self.SEUIL))), reponses=rep)
+        self.assertEqual(r["etat"], comp.QUESTIONS)
+
+    def test_mistral_ne_peut_pas_proposer_ignorer(self):
+        p2 = dict(self.SEUIL, si_indetermine="ignorer")
         r = compiler(ClientScripte(reponse(appel("proposer_directive", p2)), reponse(appel("proposer_directive", p2))),
-                     reponses=rep)
+                     reponses=self.REP_SEUIL + [self.code("ignorer")])
         self.assertEqual(r["etat"], comp.ERREURS)
-        # …seul le juriste, nommément.
-        r = compiler(ClientScripte(reponse(appel("proposer_directive", p))), reponses=rep,
-                     ignorer_valide_par="Me Dupont")
-        d = r["jeu"]["directives"][0]
-        self.assertEqual((d["si_indetermine"], d["si_indetermine_valide_par"]), ("ignorer", "Me Dupont"))
+
+    def test_option_supprimee(self):
+        with self.assertRaises(TypeError):
+            compiler(ClientScripte(), ignorer_valide_par="Me Dupont")
 
     def test_sans_outil(self):
         r = compiler(ClientScripte({"choices": [{"message": {"content": "Bonjour"}}]}))

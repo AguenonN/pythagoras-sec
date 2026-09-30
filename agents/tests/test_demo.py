@@ -47,6 +47,25 @@ class TestDemo(unittest.TestCase):
         with open(os.path.join(ICI, "attendus", "d001.txt"), encoding="utf-8") as f:
             self.assertIn("Verrou provenance_session.", f.read())
 
+    def test_question_du_code_fermee_et_consignee(self):
+        seuil = "En application de l'art. 22 RGPD, au-delà d'un montant significatif, l'attribution d'un prêt est bloquée."
+        saisies = ["Au-delà de 500 000 euros.", "peut-être", "ignorer"]
+        with tempfile.TemporaryDirectory() as tmp:
+            sortie = os.path.join(tmp, "jeu.json")
+            ecrit = []
+            rc = demo.principal(["--jeu", "credit-pme", "--catalogue", os.path.join(EXEMPLES, "catalogue-credit-pme.json"),
+                                 "--auteur", "juriste@cabinet.fr", "--sortie", sortie, "--texte", seuil,
+                                 "--date-effet", "2026-10-04"], lire=lambda _: saisies.pop(0), ecrire=ecrit.append)
+            self.assertEqual(rc, 0, "".join(ecrit))
+            self.assertEqual(saisies, [], "« peut-être » est redemandé")
+            with open(sortie, encoding="utf-8") as f:
+                d = json.load(f)["directives"][0]
+            with open(sortie + ".reponses.json", encoding="utf-8") as f:
+                consigne = json.load(f)
+        self.assertEqual((d["si_indetermine"], d["si_indetermine_valide_par"]), ("ignorer", "juriste@cabinet.fr"))
+        self.assertEqual(consigne["consignation"][0]["reponse"], "ignorer")
+        self.assertEqual(consigne["consignation"][0]["origine"], "compilateur")
+
     def test_reponse_vide_redemandee(self):
         saisies = ["", "   ", reponses("reponses-d001.json")[0]["reponse"], reponses("reponses-d001.json")[1]["reponse"]]
         rc, _, jeu, _ = self.lancer(saisies, "--texte", D001, "--date-effet", "2026-10-04")
