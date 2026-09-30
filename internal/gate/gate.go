@@ -173,7 +173,7 @@ func Demarrer(ctx context.Context, cfg Config) (*Gate, error) {
 
 func (g *Gate) journaliserDemarrage() error {
 	r := g.cfg.Registre
-	if err := g.journaliserJeu(*g.jeu.Load(), "chargé au démarrage"); err != nil {
+	if err := g.journaliserJeu(journal.Entree{}, *g.jeu.Load(), "chargé au démarrage"); err != nil {
 		return err
 	}
 	if _, err := g.journal.Ecrire(journal.Entree{Type: journal.RegistreCharge,
@@ -185,10 +185,12 @@ func (g *Gate) journaliserDemarrage() error {
 }
 
 // journaliserJeu écrit l'entrée jeu_charge (identifiant, version,
-// empreinte) puis les alertes de relecture échues du jeu.
-func (g *Gate) journaliserJeu(jeu directive.Jeu, contexte string) error {
-	if _, err := g.journal.Ecrire(journal.Entree{Type: journal.JeuCharge, Jeu: journal.DepuisJeu(jeu),
-		Message: fmt.Sprintf("%s : %d directive(s), auteur %s", contexte, len(jeu.Directives), jeu.Meta.Auteur)}); err != nil {
+// empreinte), complétée des champs posés dans base, puis les alertes de
+// relecture échues du jeu.
+func (g *Gate) journaliserJeu(base journal.Entree, jeu directive.Jeu, contexte string) error {
+	base.Type, base.Jeu = journal.JeuCharge, journal.DepuisJeu(jeu)
+	base.Message = fmt.Sprintf("%s : %d directive(s), auteur %s", contexte, len(jeu.Directives), jeu.Meta.Auteur)
+	if _, err := g.journal.Ecrire(base); err != nil {
 		return fmt.Errorf("gate: journal: %w", err)
 	}
 	for _, a := range jeu.Alertes(g.horloge()) {

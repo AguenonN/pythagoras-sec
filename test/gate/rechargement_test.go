@@ -152,6 +152,15 @@ func TestRechargement_SIGHUP(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var retours []journal.Entree
+	for _, e := range entrees {
+		if e.Type == journal.JeuCharge && e.RetourArriere {
+			retours = append(retours, e)
+		}
+	}
+	if len(retours) != 1 || retours[0].VersionDepart != 2 || retours[0].VersionArrivee != 1 {
+		t.Fatalf("retours arrière %+v", retours)
+	}
 	var versions []int
 	for _, e := range entrees {
 		if e.Type == journal.AppelT {

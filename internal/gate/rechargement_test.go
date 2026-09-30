@@ -243,3 +243,48 @@ func TestRecharger_BasculeAtomique(t *testing.T) {
 		t.Fatalf("les bascules n'ont pas été entrelacées avec les appels : %v", vues)
 	}
 }
+
+// Le retour à une version inférieure est permis, et son entrée jeu_charge
+// le dit : retour_arriere, version de départ, version d'arrivée. Une
+// montée de version ne porte aucune de ces marques.
+func TestRecharger_RetourArriereMarque(t *testing.T) {
+	b := monter(t, nil)
+	cs := b.agent(t)
+	for _, doc := range []string{jeuTestV2, jeuTest, jeuTestV2} {
+		if res, err := b.g.Recharger([]byte(doc)); err != nil || !res.Bascule {
+			t.Fatalf("%+v %v", res, err)
+		}
+		appelerAgent(t, cs, "taux-officiel__get_taux", map[string]any{"devise": "EUR"})
+	}
+
+	var charges []journal.Entree
+	for _, e := range b.entrees(t) {
+		if e.Type == journal.JeuCharge {
+			charges = append(charges, e)
+		}
+	}
+	if len(charges) != 4 {
+		t.Fatalf("%d entrées jeu_charge", len(charges))
+	}
+	// Démarrage v1, montée v2, retour v1, montée v2.
+	for i, e := range charges {
+		retour := i == 2
+		if e.RetourArriere != retour {
+			t.Fatalf("jeu_charge %d (v%d) : retour_arriere %v", i, e.Jeu.Version, e.RetourArriere)
+		}
+		if !retour && (e.VersionDepart != 0 || e.VersionArrivee != 0) {
+			t.Fatalf("jeu_charge %d : versions %d → %d sur une montée", i, e.VersionDepart, e.VersionArrivee)
+		}
+	}
+	r := charges[2]
+	if r.VersionDepart != 2 || r.VersionArrivee != 1 || r.Jeu.Version != 1 || !strings.Contains(r.Message, "retour arrière de v2 à v1") {
+		t.Fatalf("retour arrière %+v", r)
+	}
+	// La ligne brute porte bien les trois champs.
+	if !strings.Contains(string(b.journal.octets()), `"retour_arriere":true`) ||
+		!strings.Contains(string(b.journal.octets()), `"version_depart":2`) ||
+		!strings.Contains(string(b.journal.octets()), `"version_arrivee":1`) {
+		t.Fatal("champs absents de la ligne écrite")
+	}
+	b.rejouerAvec(t, rejeu.Catalogue{b.jeu, versionsJeu(t, jeuTestV2)})
+}

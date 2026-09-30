@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"mcprogue/internal/directive"
+	"mcprogue/internal/journal"
 )
 
 // versionJeu identifie un jeu comme le fait le rejeu : (id, version).
@@ -35,7 +36,9 @@ type Rechargement struct {
 // alerte est écrite. En cas de succès, l'entrée jeu_charge est écrite
 // avant la bascule, puis la bascule est atomique : chaque appel décide
 // sous le jeu qu'il a lu avant Decide, et son entrée appel cite ce jeu.
-// Un jeu identique au jeu actif ne bascule rien et n'écrit rien.
+// Un jeu identique au jeu actif ne bascule rien et n'écrit rien. Le retour
+// à une version inférieure est permis ; son entrée jeu_charge porte
+// retour_arriere, la version de départ et celle d'arrivée.
 func (g *Gate) Recharger(donnees []byte) (Rechargement, error) {
 	g.recharge.Lock()
 	defer g.recharge.Unlock()
@@ -61,7 +64,14 @@ func (g *Gate) Recharger(donnees []byte) (Rechargement, error) {
 		return Rechargement{Jeu: actif}, nil
 	}
 	contexte := fmt.Sprintf("rechargé à chaud, remplace %s v%d %s", actif.Meta.ID, actif.Meta.Version, actif.Meta.Empreinte)
-	if err := g.journaliserJeu(*nouveau, contexte); err != nil {
+	var base journal.Entree
+	if nouveau.Meta.Version < actif.Meta.Version {
+		// Retour à une version inférieure : autorisé, et dit comme tel.
+		base.RetourArriere = true
+		base.VersionDepart, base.VersionArrivee = actif.Meta.Version, nouveau.Meta.Version
+		contexte = fmt.Sprintf("retour arrière de v%d à v%d, ", actif.Meta.Version, nouveau.Meta.Version) + contexte
+	}
+	if err := g.journaliserJeu(base, *nouveau, contexte); err != nil {
 		// Sans trace de la bascule, pas de bascule.
 		g.enPanne.Store(true)
 		g.log.Error("journal indisponible, l'engine refuse désormais tout appel", "erreur", err)
