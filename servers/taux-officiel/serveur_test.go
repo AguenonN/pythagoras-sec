@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"testing"
 	"time"
@@ -94,13 +95,59 @@ func TestSelectionner(t *testing.T) {
 	}
 }
 
+// JourDeDemo : le 4 octobre 2026, le seuil en vigueur est celui du 4e
+// trimestre (applicable depuis le 1er octobre) ; l'instantané périmé est
+// celui du 3e.
+const JourDeDemo = "2026-10-04"
+
+// Le jour de la démo, en REJEU, get_taux_usure sert le 4e trimestre, pour
+// chaque catégorie, sans « suivant » (aucun seuil 2027-Q1 publié).
+func TestJourDeDemoSertLeQuatriemeTrimestre(t *testing.T) {
+	cs := essai.Connecter(t, Serveur(rejeu.Nouveau("enregistrements", rejeu.Rejeu), le30Septembre))
+	fige, err := os.ReadFile("instantane_trimestre_precedent.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var inst Instantane
+	if err := json.Unmarshal(fige, &inst); err != nil {
+		t.Fatal(err)
+	}
+	perime := map[string]float64{}
+	for _, s := range inst.Seuils {
+		perime[s.Categorie] = s.SeuilPourcent
+	}
+	for _, c := range Categories {
+		var out SortieTaux
+		res := essai.Appeler(t, cs, "get_taux_usure", map[string]any{"categorie": c.Code, "date_reference": JourDeDemo}, &out)
+		if res.IsError || out.Statut != rejeu.StatutOK || out.EnVigueur == nil {
+			t.Fatalf("%s: %+v", c.Code, out)
+		}
+		if out.EnVigueur.Trimestre != "2026-Q4" || out.EnVigueur.Debut != "2026-10-01" || out.Suivant != nil || out.DateReference != JourDeDemo {
+			t.Errorf("%s: en vigueur %+v, suivant %+v", c.Code, out.EnVigueur, out.Suivant)
+		}
+		if out.Source == nil || out.Source.Origine != rejeu.OrigineRejeu {
+			t.Errorf("%s: source %+v", c.Code, out.Source)
+		}
+		if _, ok := perime[c.Code]; !ok {
+			t.Errorf("%s absente de l'instantané", c.Code)
+		}
+	}
+	// Cas de démo : la base périmée (Q3) et le seuil en vigueur (Q4)
+	// diffèrent.
+	var out SortieTaux
+	essai.Appeler(t, cs, "get_taux_usure", map[string]any{"categorie": "decouvert-societes-non-financieres", "date_reference": JourDeDemo}, &out)
+	if out.EnVigueur.SeuilPourcent != 19.08 || perime["decouvert-societes-non-financieres"] != 19.0 {
+		t.Errorf("en vigueur %v, périmé %v ; attendu 19,08 et 19,00", out.EnVigueur.SeuilPourcent, perime["decouvert-societes-non-financieres"])
+	}
+}
+
 // L'instantané versionné est bien celui que produisent les enregistrements.
 func TestInstantaneVersionne(t *testing.T) {
 	fige, err := os.ReadFile("instantane_trimestre_precedent.json")
 	if err != nil {
 		t.Fatal(err)
 	}
-	inst, err := genererInstantane(t.Context(), rejeu.Nouveau("enregistrements", rejeu.Rejeu), "2026-09-30")
+	inst, err := genererInstantane(t.Context(), rejeu.Nouveau("enregistrements", rejeu.Rejeu), JourDeDemo)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -109,9 +156,9 @@ func TestInstantaneVersionne(t *testing.T) {
 		t.Fatal(err)
 	}
 	if !bytes.Equal(b, fige) {
-		t.Fatal("instantane_trimestre_precedent.json diffère de ce que produisent les enregistrements ; régénérer avec « taux-officiel instantane -date 2026-09-30 »")
+		t.Fatal("instantane_trimestre_precedent.json diffère de ce que produisent les enregistrements ; régénérer avec « taux-officiel instantane -date " + JourDeDemo + " »")
 	}
-	if inst.TrimestreEnVigueur != "2026-Q3" || inst.TrimestreInstantane != "2026-Q2" || len(inst.Seuils) != len(Categories) {
+	if inst.TrimestreEnVigueur != "2026-Q4" || inst.TrimestreInstantane != "2026-Q3" || len(inst.Seuils) != len(Categories) {
 		t.Fatalf("instantané: %+v", inst)
 	}
 }

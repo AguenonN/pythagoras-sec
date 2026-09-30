@@ -44,7 +44,7 @@ Enregistrements : `entreprises` 16 Ko, `gels-avoirs` 1,2 Mo, `taux-officiel` 336
 
 **Cas positif de filtrage** : `JSC ROSOBORONEXPORT`, personne morale, `id_registre` 4493, fondements (UE) 2022/427 et 2023/571 (régime UE Ukraine, R (UE) 269/2014). `verifier_gel {"nom":"JSC ROSOBORONEXPORT"}` → correspondance `exacte`.
 
-**Instantané périmé** (`servers/taux-officiel/instantane_trimestre_precedent.json`) : date de référence 2026-09-30, trimestre en vigueur 2026-Q3, instantané = **2026-Q2** (publié le 2026-03-27), 10 catégories. Ex. découverts aux sociétés non financières : 19,05 % (Q2) contre 19,00 % en vigueur (Q3) et 19,08 % publié pour Q4 ; crédit conso > 6 000 € : 8,61 % contre 8,56 %.
+**Instantané périmé** (`servers/taux-officiel/instantane_trimestre_precedent.json`) : **date de référence 2026-10-04 (jour de la démo)**, trimestre en vigueur 2026-Q4 (depuis le 1er octobre), instantané = **2026-Q3** (publié le 2026-06-29), 10 catégories. Ex. découverts aux sociétés non financières : 19,00 % (Q3, périmé) contre 19,08 % en vigueur (Q4) ; immobilier taux variable : 5,28 % contre 5,52 %. `TestJourDeDemoSertLeQuatriemeTrimestre` vérifie qu'en REJEU, `get_taux_usure` avec `date_reference = 2026-10-04` sert le 4e trimestre pour les 10 catégories.
 
 **Actes UE vérifiés sur CELLAR** (tous `en_vigueur`) : DORA `32022R2554` (14/12/2022) ; RGPD `32016R0679` (27/04/2016) ; AI Act `32024R1689` (13/06/2024), **`modifie_par: ["32026R1744"]`** ; `32026R1744` = règlement (UE) 2026/1744 du 8 juillet 2026 modifiant 2024/1689, 2018/1139 et 2023/1230 (« train de mesures omnibus numérique sur l'IA »). En rejeu, **tout article** de ces 4 actes est lisible (le texte entier est enregistré).
 
@@ -79,7 +79,7 @@ Tout le brief est fait. Limites connues, non traitées cette nuit :
 - **Séries retenues** : les 10 séries trimestrielles (`MIR1.Q…`) « seuil de l'usure » non arrêtées (immobilier fixe < 10 / 10-20 / ≥ 20 ans, variable, relais, conso ≤ 3 000 / 3 000-6 000 / > 6 000 €, découverts EI, découverts sociétés non financières). Codes de catégorie stables en `enum` dans le schéma d'entrée. Pas les séries APU/ISBLSM (hors sujet démo), ajout trivial.
 - **« En vigueur »** = le trimestre dont la période contient la date de référence (Europe/Paris, aujourd'hui par défaut, ou `date_reference`). Le seuil Q4 2026 est déjà publié (2026-09-28) : il est rendu à part dans `suivant`, jamais comme seuil en vigueur avant le 1er octobre.
 - **`date_publication`** = `updated_at` de l'observation sur Webstat (mise à jour par la Banque de France, 2-3 jours avant le début du trimestre). Ce n'est pas la date de l'avis au JORF, que Webstat ne donne pas.
-- **Instantané calculé au 2026-09-30** (trimestre précédent = Q2). Si la démo a lieu à partir du 1er octobre, Q4 sera en vigueur et le « trimestre précédent » sera Q3 : régénérer avec `go run ./servers/taux-officiel instantane -date <jour de la démo>` (sans réseau, depuis les enregistrements), puis mettre à jour la date dans `TestInstantaneVersionne`. Voir question 1.
+- **Instantané calculé au jour de la démo, 2026-10-04** (sur instruction de Manu) : Q4 en vigueur, instantané Q3. Régénération : `go run ./servers/taux-officiel instantane -date 2026-10-04` (sans réseau, depuis les enregistrements) ; la date est la constante `JourDeDemo` des tests.
 - **`eurlex` : texte via CELLAR, pas via eur-lex.europa.eu.** `eur-lex.europa.eu/legal-content/FR/TXT/HTML/?uri=CELEX:…` répond `202` à corps vide (protection anti-robots) ; je ne l'ai pas contournée. `https://publications.europa.eu/resource/celex/<CELEX>` avec `Accept: application/xhtml+xml` et `Accept-Language: fra` redirige vers la manifestation XHTML (domaine autorisé). La redirection pointe en `http://` : le client la passe en `https://`.
 - **`lire_article` rend la version publiée au JO, non consolidée**, et le dit (`version`). Pour l'AI Act, les modifications de l'omnibus 2026/1744 n'y figurent donc pas ; `rechercher_acte` les signale (`modifie_par`). Pas de version consolidée : CELLAR la publie sous un autre CELEX (`0…`), non traité cette nuit.
 - **Signatures retirées des enregistrements `eurlex`** : le bloc final (`<div class="oj-final">`) nomme les présidents du Parlement et du Conseil. Il est ôté avant enregistrement (`source.filtre` le dit) ; si le bloc est absent ou multiple, le texte n'est pas enregistré, par prudence. Les articles sont intacts.
@@ -103,7 +103,7 @@ Aucun blocage dur. Contournements, tous documentés en section 3 :
 
 ## 5. Questions pour Manu (par urgence)
 
-1. **Date de la démo** : l'instantané « trimestre précédent » est calculé au 2026-09-30 (Q2). À partir du 1er octobre, Q4 est en vigueur : faut-il l'instantané Q3 (vrai trimestre précédent) ? Une commande, voir section 3.
+1. ~~Date de la démo~~ : réglé, démo le 2026-10-04, instantané Q3.
 2. **`gels-avoirs` en DIRECT restitue le nom d'une personne physique sanctionnée quand on la cherche.** C'est donnée publique et c'est le but du filtrage, mais la règle dit « aucune donnée de personne physique réelle, nulle part ». Si l'engine journalise les résultats d'outils, ce nom finira dans le journal. Faut-il masquer les noms des personnes physiques dans le résultat (ne garder que id, nature, fondements) ? Changement court dans `servers/gels-avoirs/serveur.go`.
 3. **Entreprises de démo** : je n'ai pas pu vérifier l'absence d'affaire judiciaire (aucun domaine autorisé ne le permet). Choisies parce que ce sont des sociétés établies, sans affaire notoire à ma connaissance. À valider avant la démo.
 4. **Noms d'entités du registre des gels** : un nom de personne morale peut contenir un nom de personne (entreprise éponyme). Non filtré (impossible sans liste de noms). Risque résiduel à connaître.
@@ -119,7 +119,7 @@ DONNEES_MODE=DIRECT bin/appeler bin/entreprises rechercher_entreprise '{"siren":
 go build -o bin/gels-avoirs ./servers/gels-avoirs
 DONNEES_MODE=REJEU  bin/appeler bin/gels-avoirs verifier_gel '{"nom":"JSC ROSOBORONEXPORT"}'   # 1 correspondance exacte, avertissement « partiel »
 go build -o bin/taux-officiel ./servers/taux-officiel
-DONNEES_MODE=REJEU  bin/appeler bin/taux-officiel get_taux_usure '{"categorie":"decouvert-societes-non-financieres"}'   # Q3 19 %, suivant Q4 19,08 %
+DONNEES_MODE=REJEU  bin/appeler bin/taux-officiel get_taux_usure '{"categorie":"decouvert-societes-non-financieres","date_reference":"2026-10-04"}'   # jour de la démo : Q4 19,08 %
 cat servers/taux-officiel/instantane_trimestre_precedent.json | head -20
 go build -o bin/eurlex ./servers/eurlex
 DONNEES_MODE=REJEU  bin/appeler bin/eurlex rechercher_acte '{"celex":"32024R1689"}'                 # modifie_par 32026R1744
