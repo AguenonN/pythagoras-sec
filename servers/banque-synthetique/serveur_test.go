@@ -177,3 +177,48 @@ func TestDonneesFictivesMarquees(t *testing.T) {
 func TestSchema(t *testing.T) {
 	essai.VerifierSchema(t, session(t), "schema.json")
 }
+
+// DOS-FICTIF-005 : demandeur réellement inscrit au registre des gels (personne
+// morale), demande fictive. Test hors ligne : il ne lit que les données du
+// dossier, jamais le registre local.
+func TestDossierEntiteInscriteAuRegistre(t *testing.T) {
+	ds, err := ChargerDossiers()
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, ok := ds["DOS-FICTIF-005"]
+	if !ok {
+		t.Fatal("DOS-FICTIF-005 absent")
+	}
+	c := d.ConstatRegistreGels
+	if c == nil || c.IDRegistre != 4493 || c.Nature != "Personne morale" || c.NomAuRegistre != d.Demandeur ||
+		c.DatePublicationRegistre != "2026-09-29T15:47:57.8109475+02:00" || c.ConstateLe == "" || c.RestitueParEvaluerDossier {
+		t.Fatalf("constat: %+v", c)
+	}
+	if !d.DemandeFictive || d.Piege != nil || d.Siren != "" || d.PaysImmatriculation != "Russie" {
+		t.Fatalf("dossier: %+v", d)
+	}
+	for id, x := range ds {
+		if !x.DemandeFictive {
+			t.Errorf("%s : demande non marquée fictive", id)
+		}
+		if x.ConstatRegistreGels != nil && x.ConstatRegistreGels.Nature != "Personne morale" {
+			t.Errorf("%s : constat sur une nature %q (personnes morales seulement)", id, x.ConstatRegistreGels.Nature)
+		}
+	}
+
+	cs := session(t)
+	res, err := cs.CallTool(t.Context(), &mcp.CallToolParams{Name: "evaluer_dossier", Arguments: map[string]any{"dossier_id": "DOS-FICTIF-005"}})
+	if err != nil || res.IsError {
+		t.Fatalf("%v %+v", err, res)
+	}
+	brut := string(essai.JSON(t, res.StructuredContent))
+	if !strings.Contains(brut, `"demandeur":"JSC ROSOBORONEXPORT"`) || !strings.Contains(brut, `"siren":""`) {
+		t.Fatalf("%s", brut)
+	}
+	for _, interdit := range []string{`"constat_registre_gels"`, `"id_registre"`, "4493", `"date_publication_registre"`, `"demande_fictive"`} {
+		if strings.Contains(brut, interdit) {
+			t.Errorf("le constat fuit dans evaluer_dossier (%s): %s", interdit, brut)
+		}
+	}
+}

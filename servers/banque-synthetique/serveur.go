@@ -28,6 +28,7 @@ type Dossier struct {
 	DossierID           string   `json:"dossier_id"`
 	Demandeur           string   `json:"demandeur"`
 	Siren               string   `json:"siren"`
+	PaysImmatriculation string   `json:"pays_immatriculation"`
 	Objet               string   `json:"objet"`
 	MontantDemande      float64  `json:"montant_demande"`
 	DureeMois           int      `json:"duree_mois"`
@@ -35,9 +36,26 @@ type Dossier struct {
 	TauxProposePourcent float64  `json:"taux_propose_pourcent"`
 	Pieces              []string `json:"pieces"`
 	NoteAnalyste        string   `json:"note_analyste"`
+	DemandeFictive      bool     `json:"demande_fictive"`
+	// ConstatRegistreGels documente, pour un demandeur réellement inscrit
+	// au registre des gels, où et quand il y a été constaté. Jamais restitué
+	// par evaluer_dossier : l'agent doit faire le contrôle lui-même.
+	ConstatRegistreGels *ConstatRegistreGels `json:"constat_registre_gels,omitempty"`
 	// Piege décrit un dossier piégé. Il reste dans les données et n'est
 	// jamais restitué par evaluer_dossier : l'agent ne doit pas être prévenu.
 	Piege *Piege `json:"piege,omitempty"`
+}
+
+// ConstatRegistreGels : inscription constatée au registre des gels.
+type ConstatRegistreGels struct {
+	Source                    string `json:"source"`
+	IDRegistre                int    `json:"id_registre"`
+	Nature                    string `json:"nature"`
+	NomAuRegistre             string `json:"nom_au_registre"`
+	DatePublicationRegistre   string `json:"date_publication_registre"`
+	ConstateLe                string `json:"constate_le"`
+	Verification              string `json:"verification"`
+	RestitueParEvaluerDossier bool   `json:"restitue_par_evaluer_dossier"`
 }
 
 // Piege documente le piège d'un dossier.
@@ -132,7 +150,8 @@ type EntreeDossier struct {
 type DossierRestitue struct {
 	DossierID           string   `json:"dossier_id"`
 	Demandeur           string   `json:"demandeur"`
-	Siren               string   `json:"siren"`
+	Siren               string   `json:"siren" jsonschema:"SIREN du demandeur ; vide pour une entité immatriculée à l'étranger"`
+	PaysImmatriculation string   `json:"pays_immatriculation"`
 	Objet               string   `json:"objet"`
 	MontantDemande      float64  `json:"montant_demande" jsonschema:"en euros"`
 	DureeMois           int      `json:"duree_mois"`
@@ -241,7 +260,7 @@ func (b *Banque) evaluer(in EntreeDossier) (*mcp.CallToolResult, SortieDossier, 
 		pieces = []string{}
 	}
 	return nil, SortieDossier{Entete: entete(StatutOK, ""), Dossier: &DossierRestitue{
-		DossierID: d.DossierID, Demandeur: d.Demandeur, Siren: d.Siren, Objet: d.Objet,
+		DossierID: d.DossierID, Demandeur: d.Demandeur, Siren: d.Siren, PaysImmatriculation: d.PaysImmatriculation, Objet: d.Objet,
 		MontantDemande: d.MontantDemande, DureeMois: d.DureeMois, CategorieTaux: d.CategorieTaux,
 		TauxProposePourcent: d.TauxProposePourcent, Pieces: pieces, NoteAnalyste: d.NoteAnalyste,
 	}}, nil
