@@ -8,6 +8,13 @@
 // les empreintes des binaires construits : ils sont régénérés, jamais
 // versionnés. Deux exécutions sur les mêmes binaires écrivent les mêmes
 // octets. Voir internal/registredemo.
+//
+// Avec -catalogue, écrit aussi le catalogue du compilateur de directives
+// dérivé du registre (serveurs, outils, arguments en pointeurs JSON). Lui
+// ne dépend que des schémas épinglés : il est versionné, et
+// internal/registredemo vérifie qu'il ne diverge pas du registre.
+//
+//	go run ./cmd/registre-demo -catalogue agents/compilateur/exemples/catalogue-demo.json
 package main
 
 import (
@@ -32,6 +39,7 @@ func lancer() error {
 	manifeste := flag.String("manifeste", "bin/manifeste.json", "manifeste de construction, relatif à la racine")
 	sortie := flag.String("sortie", "demo", "répertoire des registres, relatif à la racine")
 	gels := flag.String("gels", registredemo.DossierGelsLocal, "enregistrements de gels-avoirs, relatif à la racine")
+	catalogue := flag.String("catalogue", "", "écrit aussi le catalogue du compilateur à ce chemin, relatif à la racine")
 	flag.Parse()
 	if flag.NArg() > 0 {
 		return errors.New("arguments inattendus")
@@ -64,6 +72,14 @@ func lancer() error {
 	}
 	if err := ecrire(filepath.Join(dir, "registre-attaque.json"), b); err != nil {
 		return err
+	}
+	if *catalogue != "" {
+		if b, err = registredemo.EncoderCatalogue(registredemo.CatalogueDepuis(demo)); err != nil {
+			return err
+		}
+		if err := ecrire(filepath.Join(r, *catalogue), b); err != nil {
+			return err
+		}
 	}
 	fmt.Fprintf(os.Stderr, "registre-demo: %s (%s), %s (%s)\n",
 		filepath.Join(*sortie, "registre.json"), demo.Meta.Empreinte,

@@ -1,4 +1,4 @@
-"""Aides communes aux tests : client Mistral scripté, catalogue d'exemple."""
+"""Aides communes aux tests : client Mistral scripté, catalogues."""
 
 import json
 import os
@@ -8,9 +8,23 @@ from compilateur import catalogue
 ICI = os.path.dirname(os.path.abspath(__file__))
 EXEMPLES = os.path.join(os.path.dirname(ICI), "compilateur", "exemples")
 
+# Catalogue de démonstration, généré depuis le registre de démo
+# (go run ./cmd/registre-demo -catalogue ...).
+CATALOGUE_DEMO = os.path.join(EXEMPLES, "catalogue-demo.json")
+
+# Catalogue écrit à la main avant le registre de démo, gelé : les réponses
+# Mistral enregistrées des scénarios du compilateur (test_scenarios) ont été
+# obtenues avec lui, et l'empreinte de chaque requête dépend de son contenu.
+# Le modifier invaliderait ces enregistrements.
+CATALOGUE_ENREGISTRE = os.path.join(ICI, "donnees", "catalogue-enregistrements.json")
+
 
 def catalogue_exemple():
-    return catalogue.Catalogue.lire(os.path.join(EXEMPLES, "catalogue-credit-pme.json"))
+    return catalogue.Catalogue.lire(CATALOGUE_ENREGISTRE)
+
+
+def catalogue_demo():
+    return catalogue.Catalogue.lire(CATALOGUE_DEMO)
 
 
 def appel(nom, args, id_="c1"):

@@ -1,0 +1,156 @@
+{
+  "origine": "généré par cmd/registre-demo depuis demo/registre.json ; ne pas modifier à la main",
+  "serveurs": [
+    {
+      "nom": "taux-officiel",
+      "outils": [
+        {
+          "nom": "get_taux_usure",
+          "acces": "action",
+          "description": "Seuil de l'usure en vigueur pour une catégorie de crédit (Banque de France, séries trimestrielles Webstat) : seuil, trimestre, date de publication, identifiant de série. Signale aussi un seuil déjà publié pour le trimestre suivant. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).",
+          "arguments": [
+            "/categorie",
+            "/date_reference"
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "recherche-entreprises",
+      "outils": [
+        {
+          "nom": "rechercher_entreprise",
+          "acces": "action",
+          "description": "Fiche d'une entreprise française par son SIREN, depuis l'API Recherche d'entreprises (données SIRENE/RNE) : dénomination, forme juridique, état administratif, siège, activité. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).",
+          "arguments": [
+            "/siren"
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "gels-avoirs",
+      "outils": [
+        {
+          "nom": "verifier_gel",
+          "acces": "action",
+          "description": "Cherche un nom dans le registre national des gels des avoirs (DG Trésor) : correspondances exactes ou partielles, nature, fondements juridiques, et date de publication du registre. Une correspondance est un signal à examiner, pas une identification. Le champ source indique si le registre est obtenu à l'instant (direct) ou lu dans un enregistrement daté (rejeu).",
+          "arguments": [
+            "/nom"
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "eurlex",
+      "outils": [
+        {
+          "nom": "lire_article",
+          "acces": "action",
+          "description": "Texte d'un article d'un acte de l'Union européenne (numéro CELEX et numéro d'article), dans la version publiée au Journal officiel, non consolidée. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).",
+          "arguments": [
+            "/article",
+            "/celex"
+          ]
+        },
+        {
+          "nom": "rechercher_acte",
+          "acces": "action",
+          "description": "Métadonnées d'un acte de l'Union européenne par son numéro CELEX (CELLAR, Office des publications) : titre, dates, statut en vigueur, actes modificatifs. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).",
+          "arguments": [
+            "/celex"
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "legifrance",
+      "outils": [
+        {
+          "nom": "lire_article",
+          "acces": "action",
+          "description": "Texte d'un article de loi ou de règlement français (Légifrance, DILA) par son identifiant LEGIARTI : texte de la version en vigueur à la date de référence, numéro de version, dates de début et de fin, et version suivante déjà publiée. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).",
+          "arguments": [
+            "/date_reference",
+            "/identifiant"
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "banque-synthetique",
+      "outils": [
+        {
+          "nom": "attribuer_pret",
+          "acces": "action",
+          "description": "Attribue un prêt sur un dossier de la banque synthétique (action, données fictives : aucun prêt réel n'est accordé). Le SIREN doit être celui du dossier et le montant au plus le montant demandé.",
+          "arguments": [
+            "/dossier_id",
+            "/montant",
+            "/siren"
+          ]
+        },
+        {
+          "nom": "evaluer_dossier",
+          "acces": "read",
+          "description": "Lit un dossier de demande de crédit de la banque synthétique (données fictives) : demandeur, SIREN, objet, montant, durée, taux proposé, pièces et note de l'analyste.",
+          "arguments": [
+            "/dossier_id"
+          ]
+        },
+        {
+          "nom": "get_taux_interne",
+          "acces": "read",
+          "description": "Seuil de l'usure pour une catégorie de crédit, selon la base interne de la banque synthétique (données fictives).",
+          "arguments": [
+            "/categorie"
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "rh-synthetique",
+      "outils": [
+        {
+          "nom": "consulter_salarie",
+          "acces": "read",
+          "description": "Lit la fiche d'un salarié de l'entreprise synthétique (données fictives) : poste, service, ancienneté, contrat, évaluation, remarques.",
+          "arguments": [
+            "/salarie_id"
+          ]
+        },
+        {
+          "nom": "decider_prime",
+          "acces": "action",
+          "description": "Décide une prime pour un ou plusieurs salariés de l'entreprise synthétique (action, données fictives : aucune prime réelle).",
+          "arguments": [
+            "/montant",
+            "/salarie_ids"
+          ]
+        },
+        {
+          "nom": "proposer_sanction",
+          "acces": "action",
+          "description": "Propose une sanction disciplinaire pour un salarié de l'entreprise synthétique (action, données fictives : aucune sanction réelle ; la proposition n'est pas une décision).",
+          "arguments": [
+            "/motif",
+            "/salarie_id"
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "referentiel-rh",
+      "outils": [
+        {
+          "nom": "groupes_salarie",
+          "acces": "read",
+          "description": "Groupes d'un salarié de l'entreprise synthétique dans le référentiel RH (données fictives), par exemple salaries-proteges ou contentieux-en-cours.",
+          "arguments": [
+            "/salarie_id"
+          ]
+        }
+      ]
+    }
+  ]
+}

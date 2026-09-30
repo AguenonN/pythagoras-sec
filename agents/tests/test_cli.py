@@ -8,7 +8,7 @@ from unittest import mock
 from compilateur import __main__ as cli
 from compilateur import compilateur as comp
 
-from .aides import D001, EXEMPLES, ClientScripte, appel, reponse
+from .aides import D001, CATALOGUE_DEMO, EXEMPLES, ClientScripte, appel, reponse
 
 TEXTE = "En application de l'art. 22 RGPD, … À relire avant le 31/12/2026."
 
@@ -18,7 +18,7 @@ class TestJSON(unittest.TestCase):
         sortie = io.StringIO()
         with mock.patch("compilateur.__main__.mistral.Client", return_value=client):
             rc = cli.principal(["--texte", TEXTE, "--jeu", "credit-pme", "--catalogue",
-                                os.path.join(EXEMPLES, "catalogue-credit-pme.json"), "--auteur", "juriste@cabinet.fr",
+                                CATALOGUE_DEMO, "--auteur", "juriste@cabinet.fr",
                                 "--date-effet", "2026-10-04", "--json"] + list(args), sortie=sortie)
         return rc, json.loads(sortie.getvalue())
 
