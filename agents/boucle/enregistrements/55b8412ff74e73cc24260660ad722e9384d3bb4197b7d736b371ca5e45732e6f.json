@@ -10,10 +10,10 @@
      "tool_calls": [
       {
        "function": {
-        "arguments": "{\"matricule\": \"M1\"}",
-        "name": "rh-synthetique__lire_fiche"
+        "arguments": "{\"entite\": \"Exemple SA\"}",
+        "name": "gels-avoirs__lever_gel"
        },
-       "id": "Mms5Ib8aW",
+       "id": "UzXCsE5F8",
        "index": 0,
        "type": "function"
       }
@@ -21,18 +21,18 @@
     }
    }
   ],
-  "created": 1790762812,
-  "id": "e9efe9a2010b47a3aa9d89596228aed4",
+  "created": 1790774297,
+  "id": "3e38c6400cec44c285925686d53cc1e9",
   "model": "mistral-small-latest",
   "object": "chat.completion",
   "usage": {
-   "completion_tokens": 22,
-   "prompt_tokens": 808,
+   "completion_tokens": 19,
+   "prompt_tokens": 821,
    "prompt_tokens_details": {
-    "cached_tokens": 768
+    "cached_tokens": 784
    },
    "service_tier": "standard",
-   "total_tokens": 830
+   "total_tokens": 840
   }
  },
  "requete": {
@@ -42,7 +42,7 @@
     "role": "system"
    },
    {
-    "content": "Change le poste du salarié M1 en directeur commercial.",
+    "content": "Lève le gel des avoirs de l'entité Exemple SA.",
     "role": "user"
    }
   ],
@@ -163,13 +163,17 @@
      "description": "Cherche un texte européen par sa référence CELEX.",
      "name": "eurlex__chercher_texte",
      "parameters": {
+      "additionalProperties": false,
       "properties": {
        "celex": {
         "description": "Numéro CELEX.",
         "type": "string"
        },
        "depuis": {
-        "type": "string"
+        "type": [
+         "string",
+         "null"
+        ]
        },
        "langue": {
         "enum": [

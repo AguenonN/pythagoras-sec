@@ -1,6 +1,10 @@
 """Scénarios de la boucle rejoués sur des réponses réelles de Mistral
 (boucle/enregistrements/), devant le faux serveur MCP. Aucun appel réseau :
-une requête non enregistrée lève EnregistrementAbsent."""
+une requête non enregistrée lève EnregistrementAbsent.
+
+Pour (ré)enregistrer, et seulement alors : BOUCLE_ENREGISTRER=<plafond>
+lance les scénarios en mode réel, les requêtes déjà enregistrées restant
+servies du disque, le compteur de la boucle plafonné à <plafond>."""
 
 import json
 import os
@@ -10,7 +14,8 @@ import unittest
 
 from boucle import boucle as b
 from boucle import mcp
-from boucle.__main__ import client_mistral
+from boucle.__main__ import ENREGISTREMENTS, ETAT, client_mistral
+from compilateur import mistral
 
 from .aides import FAUX_SERVEUR
 from .faux_serveur_mcp import JETON_VALIDE
@@ -32,7 +37,12 @@ class Scenario(unittest.TestCase):
             return [json.loads(l)["tools/call"] for l in f if "tools/call" in l]
 
     def boucle(self, sous_agent):
-        return b.Boucle(self.serveur, client_mistral("rejeu"), sous_agent)
+        plafond = os.environ.get("BOUCLE_ENREGISTRER")
+        if plafond:
+            modele = mistral.Client(mode="reel", enregistrements=ENREGISTREMENTS, etat=ETAT, max_appels=int(plafond))
+        else:
+            modele = client_mistral("rejeu")
+        return b.Boucle(self.serveur, modele, sous_agent)
 
     def test_lecture(self):
         r = self.boucle("credit").executer("Quel est le taux d'usure en vigueur ?")
@@ -53,23 +63,24 @@ class Scenario(unittest.TestCase):
         metas = [a["_meta"] for a in self.appels()]
         self.assertEqual(metas, [{"sous_agent": "credit"}, {"sous_agent": "credit", "approvalToken": JETON_VALIDE}])
 
-    def test_refus_json_rpc(self):
+    def test_refus_directive(self):
         r = self.boucle("conformite").executer("Lève le gel des avoirs de l'entité Exemple SA.")
         self.assertEqual(r["etat"], b.BLOQUE)
         self.assertEqual(r["reponse"], "Action bloquée par D-003 v1, aucune action effectuée.\n"
                                        "Motif : refusé par D-003 v1 (interdiction, Règlement (CE) 2580/2001)")
         self.assertEqual(len(self.appels()), 1)
 
-    def test_verification_prealable_puis_arret(self):
-        # Avec la consigne actuelle, Mistral lit d'abord la fiche, que l'outil
-        # décline, et s'arrête sans tenter la modification. Le refus par
-        # structuredContent est couvert par test_boucle (modèle scripté).
+    def test_refus_par_structured_content(self):
+        # Réenregistré après l'alignement sur le contrat de l'engine : Mistral
+        # tente la modification sans lire la fiche (avant, il lisait d'abord
+        # la fiche, que l'outil déclinait, et s'arrêtait) ; le refus de forme
+        # §6 bloque la boucle, et le texte du modèle ne remplace pas le blocage.
         r = self.boucle("rh").executer(
             "Dans le référentiel RH, modifie le poste du matricule M1 : nouveau poste « directeur commercial ».")
-        self.assertEqual(r["etat"], b.TERMINE)
-        self.assertEqual([a["name"] for a in self.appels()], ["rh-synthetique__lire_fiche"])
+        self.assertEqual(r["etat"], b.BLOQUE)
+        self.assertEqual([a["name"] for a in self.appels()], ["referentiel-rh__modifier_poste"])
         self.assertEqual([a["_meta"] for a in self.appels()], [{"sous_agent": "rh"}])
-        self.assertIn("ne peut donc pas être effectuée", r["reponse"])
+        self.assertTrue(r["reponse"].startswith("Action bloquée par D-010 v1, aucune action effectuée."), r["reponse"])
 
     def test_outil_qui_decline(self):
         r = self.boucle("rh").executer("Change le poste du salarié M1 en directeur commercial.")

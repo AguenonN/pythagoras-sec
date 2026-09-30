@@ -9,12 +9,19 @@ signale tout le reste, jamais en silence :
   perdue pour le modèle, mais le serveur valide toujours ses arguments :
   retirer ne relâche rien côté serveur ;
 - ``const`` : réécrit en ``enum`` à une valeur (même sens) ;
-- ``type`` en liste : ``[T, "null"]`` devient ``T`` ; toute autre liste
-  exclut l'outil ;
+- ``additionalProperties`` booléen : conservé ; sous forme de schéma, retiré
+  (forme non sondée) ;
+- ``type`` en liste : ``[T, "null"]`` (dans un ordre ou l'autre) est
+  conservé ; toute autre liste exclut l'outil ;
 - ``STRUCTURANTS`` (composition, références, conditionnels) : les retirer
   changerait la forme des arguments ; l'outil entier est exclu et signalé.
 
 Un mot-clé inconnu est traité comme structurant : dans le doute, on exclut.
+
+Ce qui est conservé au-delà du noyau l'est parce que l'API l'a accepté,
+sondé par ``python -m boucle.sondes`` (verdicts dans ``sondes.json``) sur la
+forme exacte qu'ont les schémas épinglés : ``additionalProperties: false``
+et ``type: ["null", "array"]``.
 """
 
 import re
@@ -24,7 +31,7 @@ RETIRES = {
     "$schema", "$id", "$comment", "title", "default", "examples", "format", "pattern",
     "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "multipleOf",
     "minLength", "maxLength", "minItems", "maxItems", "uniqueItems",
-    "minProperties", "maxProperties", "additionalProperties",
+    "minProperties", "maxProperties",
     "readOnly", "writeOnly", "deprecated", "contentEncoding", "contentMediaType",
 }
 STRUCTURANTS = {
@@ -60,12 +67,16 @@ def _convertir(schema, chemin, signalements, sous_schema=False):
                 out[cle] = _convertir(valeur, ici, signalements, True)
             elif cle == "type" and isinstance(valeur, list):
                 types = [t for t in valeur if t != "null"]
-                if len(types) != 1:
+                if len(types) != 1 or len(valeur) != 2:
                     raise Exclu("%s : type multiple %r non accepté" % (ici, valeur))
-                out[cle] = types[0]
-                signalements.append("%s : type %r réduit à %r (null retiré)" % (ici, valeur, types[0]))
+                out[cle] = list(valeur)
             else:
                 out[cle] = valeur
+        elif cle == "additionalProperties":
+            if isinstance(valeur, bool):
+                out[cle] = valeur
+            else:
+                signalements.append("%s : additionalProperties sous forme de schéma non accepté, retiré" % ici)
         elif cle == "const":
             if "enum" in schema:
                 raise Exclu("%s : const et enum ensemble" % ici)

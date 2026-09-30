@@ -10,6 +10,11 @@ Format ::
                    "outils": [{"nom": "attribuer_pret", "description": "...",
                                "arguments": ["/montant", "/siren"]}]}],
      "appelants": ["spiffe://..."]}          # facultatif
+
+Le catalogue de démonstration, ``exemples/catalogue-demo.json``, est généré
+depuis le registre de démo (``go run ./cmd/registre-demo -catalogue ...``) ;
+ses outils portent en plus ``acces`` (read ou action), et le document une
+clé ``origine``. Le compilateur ignore les deux.
 """
 
 import json

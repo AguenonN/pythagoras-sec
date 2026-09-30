@@ -8,7 +8,7 @@ from compilateur import demo
 from unittest import mock
 
 from .aides import D001 as D001_PROPOSITION
-from .aides import EXEMPLES, ClientScripte, appel, reponse
+from .aides import CATALOGUE_ENREGISTRE, EXEMPLES, ClientScripte, appel, reponse
 from .test_scenarios import D001, reponses
 
 ICI = os.path.dirname(os.path.abspath(__file__))
@@ -25,7 +25,7 @@ class TestDemo(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             sortie = os.path.join(tmp, "jeu.json")
-            rc = demo.principal(["--jeu", "credit-pme", "--catalogue", os.path.join(EXEMPLES, "catalogue-credit-pme.json"),
+            rc = demo.principal(["--jeu", "credit-pme", "--catalogue", CATALOGUE_ENREGISTRE,
                                  "--auteur", "juriste@cabinet.fr", "--sortie", sortie] + list(args),
                                 lire=lire, ecrire=ecrit.append)
             jeu = None
@@ -53,7 +53,7 @@ class TestDemo(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             sortie = os.path.join(tmp, "jeu.json")
             ecrit = []
-            rc = demo.principal(["--jeu", "credit-pme", "--catalogue", os.path.join(EXEMPLES, "catalogue-credit-pme.json"),
+            rc = demo.principal(["--jeu", "credit-pme", "--catalogue", CATALOGUE_ENREGISTRE,
                                  "--auteur", "juriste@cabinet.fr", "--sortie", sortie, "--texte", seuil,
                                  "--date-effet", "2026-10-04"], lire=lambda _: saisies.pop(0), ecrire=ecrit.append)
             self.assertEqual(rc, 0, "".join(ecrit))

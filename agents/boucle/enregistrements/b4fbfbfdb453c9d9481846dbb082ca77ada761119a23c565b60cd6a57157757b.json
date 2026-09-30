@@ -2,27 +2,37 @@
  "reponse": {
   "choices": [
    {
-    "finish_reason": "stop",
+    "finish_reason": "tool_calls",
     "index": 0,
     "message": {
-     "content": "Le taux d'usure en vigueur est de **5,87%** depuis le **1er octobre 2026**.",
+     "content": "",
      "role": "assistant",
-     "tool_calls": null
+     "tool_calls": [
+      {
+       "function": {
+        "arguments": "{\"type\": \"usure\"}",
+        "name": "taux-officiel__lire_taux"
+       },
+       "id": "ffNJGjqbo",
+       "index": 0,
+       "type": "function"
+      }
+     ]
     }
    }
   ],
-  "created": 1790762795,
-  "id": "62baa595f9c142d08ae6a78dc04ef41b",
+  "created": 1790774279,
+  "id": "8434367d6f8d4cabbcb75e5861c74d8d",
   "model": "mistral-small-latest",
   "object": "chat.completion",
   "usage": {
-   "completion_tokens": 28,
-   "prompt_tokens": 892,
+   "completion_tokens": 20,
+   "prompt_tokens": 816,
    "prompt_tokens_details": {
-    "cached_tokens": 784
+    "cached_tokens": 0
    },
    "service_tier": "standard",
-   "total_tokens": 920
+   "total_tokens": 836
   }
  },
  "requete": {
@@ -34,27 +44,6 @@
    {
     "content": "Quel est le taux d'usure en vigueur ?",
     "role": "user"
-   },
-   {
-    "content": "",
-    "role": "assistant",
-    "tool_calls": [
-     {
-      "function": {
-       "arguments": "{\"type\": \"usure\"}",
-       "name": "taux-officiel__lire_taux"
-      },
-      "id": "yTHMKBh1u",
-      "index": 0,
-      "type": "function"
-     }
-    ]
-   },
-   {
-    "content": "{\"type\": \"usure\", \"taux\": 5.87, \"date\": \"2026-10-01\"}\n{\"type\": \"usure\", \"taux\": 5.87, \"date\": \"2026-10-01\"}",
-    "name": "taux-officiel__lire_taux",
-    "role": "tool",
-    "tool_call_id": "yTHMKBh1u"
    }
   ],
   "model": "mistral-small-latest",
@@ -174,13 +163,17 @@
      "description": "Cherche un texte européen par sa référence CELEX.",
      "name": "eurlex__chercher_texte",
      "parameters": {
+      "additionalProperties": false,
       "properties": {
        "celex": {
         "description": "Numéro CELEX.",
         "type": "string"
        },
        "depuis": {
-        "type": "string"
+        "type": [
+         "string",
+         "null"
+        ]
        },
        "langue": {
         "enum": [

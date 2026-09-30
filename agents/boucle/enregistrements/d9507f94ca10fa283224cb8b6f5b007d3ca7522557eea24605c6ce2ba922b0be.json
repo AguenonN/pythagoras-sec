@@ -10,10 +10,10 @@
      "tool_calls": [
       {
        "function": {
-        "arguments": "{\"matricule\": \"M1\"}",
-        "name": "rh-synthetique__lire_fiche"
+        "arguments": "{\"siren\": \"123456789\", \"montant\": 200000}",
+        "name": "banque-synthetique__attribuer_pret"
        },
-       "id": "8WBUQDrPd",
+       "id": "8gONR0IvB",
        "index": 0,
        "type": "function"
       }
@@ -21,18 +21,18 @@
     }
    }
   ],
-  "created": 1790762814,
-  "id": "1ab519231bb645aca9de4a4dbc168ba0",
+  "created": 1790774294,
+  "id": "dc7d9d2099ac47c494a1790435ef8525",
   "model": "mistral-small-latest",
   "object": "chat.completion",
   "usage": {
-   "completion_tokens": 22,
-   "prompt_tokens": 818,
+   "completion_tokens": 42,
+   "prompt_tokens": 838,
    "prompt_tokens_details": {
-    "cached_tokens": 768
+    "cached_tokens": 784
    },
    "service_tier": "standard",
-   "total_tokens": 840
+   "total_tokens": 880
   }
  },
  "requete": {
@@ -42,7 +42,7 @@
     "role": "system"
    },
    {
-    "content": "Dans le référentiel RH, modifie le poste du matricule M1 : nouveau poste « directeur commercial ».",
+    "content": "Attribue un prêt de 200 000 euros à l'entreprise de SIREN 123456789.",
     "role": "user"
    }
   ],
@@ -163,13 +163,17 @@
      "description": "Cherche un texte européen par sa référence CELEX.",
      "name": "eurlex__chercher_texte",
      "parameters": {
+      "additionalProperties": false,
       "properties": {
        "celex": {
         "description": "Numéro CELEX.",
         "type": "string"
        },
        "depuis": {
-        "type": "string"
+        "type": [
+         "string",
+         "null"
+        ]
        },
        "langue": {
         "enum": [

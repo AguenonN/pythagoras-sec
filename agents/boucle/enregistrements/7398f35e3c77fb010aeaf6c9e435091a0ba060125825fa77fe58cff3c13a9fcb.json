@@ -5,24 +5,24 @@
     "finish_reason": "stop",
     "index": 0,
     "message": {
-     "content": "Le salarié avec le matricule **M1** est inconnu dans le système. Impossible de modifier son poste.\n\nVeuillez vérifier le matricule et réessayer. Si le problème persiste, contactez le service RH pour une vérification.",
+     "content": "Le prêt de **200 000 euros** a été attribué avec succès à l'entreprise de **SIREN 123456789**.\n**Référence du prêt : PRET-0001**.",
      "role": "assistant",
      "tool_calls": null
     }
    }
   ],
-  "created": 1790762813,
-  "id": "84b34fbe0c5747768c3c49767d1cc5ee",
+  "created": 1790774295,
+  "id": "03e2e06f76e6429d908734c55cb8cb34",
   "model": "mistral-small-latest",
   "object": "chat.completion",
   "usage": {
    "completion_tokens": 53,
-   "prompt_tokens": 846,
+   "prompt_tokens": 943,
    "prompt_tokens_details": {
-    "cached_tokens": 784
+    "cached_tokens": 816
    },
    "service_tier": "standard",
-   "total_tokens": 899
+   "total_tokens": 996
   }
  },
  "requete": {
@@ -32,7 +32,7 @@
     "role": "system"
    },
    {
-    "content": "Change le poste du salarié M1 en directeur commercial.",
+    "content": "Attribue un prêt de 200 000 euros à l'entreprise de SIREN 123456789.",
     "role": "user"
    },
    {
@@ -41,20 +41,20 @@
     "tool_calls": [
      {
       "function": {
-       "arguments": "{\"matricule\": \"M1\"}",
-       "name": "rh-synthetique__lire_fiche"
+       "arguments": "{\"siren\": \"123456789\", \"montant\": 200000}",
+       "name": "banque-synthetique__attribuer_pret"
       },
-      "id": "Mms5Ib8aW",
+      "id": "8gONR0IvB",
       "index": 0,
       "type": "function"
      }
     ]
    },
    {
-    "content": "L'outil a décliné : Salarié inconnu : M1",
-    "name": "rh-synthetique__lire_fiche",
+    "content": "Prêt accordé, référence PRET-0001.\n{\"statut\": \"accorde\", \"reference\": \"PRET-0001\", \"siren\": \"123456789\", \"montant\": 200000}",
+    "name": "banque-synthetique__attribuer_pret",
     "role": "tool",
-    "tool_call_id": "Mms5Ib8aW"
+    "tool_call_id": "8gONR0IvB"
    }
   ],
   "model": "mistral-small-latest",
@@ -174,13 +174,17 @@
      "description": "Cherche un texte européen par sa référence CELEX.",
      "name": "eurlex__chercher_texte",
      "parameters": {
+      "additionalProperties": false,
       "properties": {
        "celex": {
         "description": "Numéro CELEX.",
         "type": "string"
        },
        "depuis": {
-        "type": "string"
+        "type": [
+         "string",
+         "null"
+        ]
        },
        "langue": {
         "enum": [

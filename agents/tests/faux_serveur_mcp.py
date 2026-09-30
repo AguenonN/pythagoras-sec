@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
 """Faux serveur MCP sur stdio pour les tests de la boucle.
 
-Outils exposés sous leur nom agrégé serveur__outil :
+Outils exposés sous leur nom agrégé serveur__outil. Les refus, attentes et
+échecs ont la forme du contrat de réponse de l'engine (docs/contrat-engine.md
+§6) : isError et structuredContent.statut.
 
-- taux-officiel__lire_taux            lecture, répond toujours
+- taux-officiel__lire_taux            lecture ; type « usure » répond, type
+                                      « directeur » : source indisponible
 - banque-synthetique__attribuer_pret  en attente de validation, sauf avec le
                                       jeton JETON_VALIDE dans _meta.approvalToken
-- gels-avoirs__lever_gel              refusé par directive (erreur JSON-RPC -32001)
-- referentiel-rh__modifier_poste      refusé par directive (structuredContent.statut = refuse)
-- rh-synthetique__lire_fiche          décline (isError)
+- gels-avoirs__lever_gel              refusé par directive (statut refuse) ;
+                                      avec l'entité ENTITE_JSON_RPC, par une
+                                      erreur JSON-RPC -32001 (convention de
+                                      cmd/mcp-proxy)
+- referentiel-rh__modifier_poste      refusé par directive (statut refuse)
+- rh-synthetique__lire_fiche          décline (isError sans structure)
 - eurlex__chercher_texte              schéma avec mots-clés retirés (format, pattern, const…)
 - legifrance__citer_article           schéma avec oneOf : doit être exclu
 
@@ -24,6 +30,7 @@ import os
 import sys
 
 JETON_VALIDE = "jeton-de-test-valide"
+ENTITE_JSON_RPC = "via-json-rpc"
 
 OUTILS = [
     {
@@ -105,7 +112,9 @@ def appeler(params):
     args = params.get("arguments") or {}
     meta = params.get("_meta") or {}
     if nom == "taux-officiel__lire_taux":
-        taux = {"usure": 5.87, "directeur": 2.15}.get(args.get("type"))
+        if args.get("type") == "directeur":
+            return echec("taux-officiel", "lire_taux", "Source indisponible : le serveur taux-officiel n'a pas répondu.")
+        taux = {"usure": 5.87}.get(args.get("type"))
         if taux is None:
             return {"content": texte("type de taux inconnu"), "isError": True}
         sc = {"type": args["type"], "taux": taux, "date": "2026-10-01"}
@@ -115,20 +124,33 @@ def appeler(params):
         if meta.get("approvalToken") == JETON_VALIDE:
             sc = {"statut": "accorde", "reference": "PRET-0001", "siren": args.get("siren"), "montant": args.get("montant")}
             return {"content": texte("Prêt accordé, référence PRET-0001."), "structuredContent": sc}
-        sc = {"statut": "en_attente", "empreinte": e,
-              "motif": "en attente de validation humaine par D-001 v1 (provenance_session, RGPD art. 22)"}
-        return {"content": texte("En attente de validation humaine."), "structuredContent": sc}
+        sc = {"statut": "en_attente", "empreinte_transmise": e, "directive": "D-001", "version": 1}
+        return {"content": texte("Appel non transmis : en attente de validation humaine par D-001 v1 "
+                                 "(provenance_session, RGPD art. 22)."), "structuredContent": sc, "isError": True}
     if nom == "gels-avoirs__lever_gel":
-        raise Refus("refusé par D-003 v1 (interdiction, Règlement (CE) 2580/2001)", {"directive": "D-003 v1"})
+        motif = "refusé par D-003 v1 (interdiction, Règlement (CE) 2580/2001)"
+        if args.get("entite") == ENTITE_JSON_RPC:
+            raise Refus(motif, {"directive": "D-003 v1"})
+        return refus("D-003", 1, {"texte": "Règlement (CE) 2580/2001"}, motif)
     if nom == "referentiel-rh__modifier_poste":
-        sc = {"statut": "refuse", "directive": "D-010 v1",
-              "motif": "refusé par D-010 v1 (approbation_humaine, Code du travail art. L1222-1) : modification unilatérale interdite"}
-        return {"content": texte("Refusé."), "structuredContent": sc}
+        return refus("D-010", 1, {"texte": "Code du travail", "article": "L1222-1"},
+                     "refusé par D-010 v1 (approbation_humaine, Code du travail art. L1222-1) : modification unilatérale interdite")
     if nom == "rh-synthetique__lire_fiche":
         return {"content": texte("Salarié inconnu : %s" % args.get("matricule")), "isError": True}
     if nom == "eurlex__chercher_texte":
         return {"content": texte("32016R0679 : Règlement général sur la protection des données.")}
     raise Refus("outil inconnu : %s" % nom, None, code=-32602)
+
+
+def refus(directive, version, fondement, motif):
+    sc = {"statut": "refuse", "origine": "directive", "directive": directive, "version": version,
+          "fondement": fondement, "motif": motif}
+    return {"content": texte("Appel refusé par l'engine : %s." % motif), "structuredContent": sc, "isError": True}
+
+
+def echec(serveur, outil, motif):
+    sc = {"statut": "indisponible", "serveur": serveur, "outil": outil, "motif": motif}
+    return {"content": texte(motif), "structuredContent": sc, "isError": True}
 
 
 class Refus(Exception):

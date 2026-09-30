@@ -1,7 +1,7 @@
 """Ligne de commande du compilateur.
 
     python -m compilateur --texte "..." --jeu credit-pme \\
-        --catalogue compilateur/exemples/catalogue-credit-pme.json \\
+        --catalogue compilateur/exemples/catalogue-demo.json \\
         --auteur juriste@cabinet.fr --date-effet 2026-10-04 \\
         [--reponses reponses.json] [--mode reel] [--sortie jeu.json] [--json]
 

@@ -7,6 +7,7 @@ import unittest
 from boucle import mcp
 
 from .aides import FAUX_SERVEUR
+from .faux_serveur_mcp import ENTITE_JSON_RPC
 
 
 class TestClientMCP(unittest.TestCase):
@@ -46,7 +47,7 @@ class TestClientMCP(unittest.TestCase):
 
     def test_refus_json_rpc(self):
         with self.assertRaises(mcp.ErreurMCP) as ctx:
-            self.client.appeler("gels-avoirs__lever_gel", {"entite": "X"})
+            self.client.appeler("gels-avoirs__lever_gel", {"entite": ENTITE_JSON_RPC})
         self.assertEqual(ctx.exception.code, mcp.CODE_REFUS)
         self.assertEqual(ctx.exception.data, {"directive": "D-003 v1"})
 

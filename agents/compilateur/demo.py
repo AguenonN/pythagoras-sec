@@ -3,7 +3,7 @@ saisies → relecture côte à côte → fichier de jeu en brouillon.
 
     cd agents
     .venv/bin/python -m compilateur.demo --jeu credit-pme \\
-        --catalogue compilateur/exemples/catalogue-credit-pme.json \\
+        --catalogue compilateur/exemples/catalogue-demo.json \\
         --auteur juriste@cabinet.fr --date-effet 2026-10-04 --sortie brouillon.json
 
 ``derouler`` est ce que l'interface juriste appellera : elle ne dépend que

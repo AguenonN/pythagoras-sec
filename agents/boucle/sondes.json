@@ -1,0 +1,10 @@
+{
+ "additionalProperties:false": {
+  "accepte": true,
+  "detail": "réponse 200"
+ },
+ "type:[null,array]": {
+  "accepte": true,
+  "detail": "réponse 200"
+ }
+}

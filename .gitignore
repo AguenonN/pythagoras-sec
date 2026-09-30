@@ -35,3 +35,10 @@ deploy/spire/bootstrap/
 audit*.log
 audit*.jsonl
 pyagent/__pycache__/
+
+# Registres de démonstration : chemins absolus et empreintes de la machine,
+# régénérés par go run ./cmd/registre-demo
+/demo/registre.json
+/demo/registre-attaque.json
+# Journal, coffre et traces des exécutions de scripts/lancer-demo.sh
+/demo/execution/
