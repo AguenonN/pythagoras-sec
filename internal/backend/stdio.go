@@ -28,8 +28,9 @@ func (c *client) connecterStdio(ctx context.Context) error {
 		return c.echec(observe, "empreinte du binaire différente de celle du registre, processus non lancé", nil)
 	}
 	cmd := exec.Command(chemin, c.s.Commande.Args...)
-	// Environnement vide : les secrets de l'engine ne passent pas au serveur.
-	cmd.Env = []string{}
+	// Environnement réduit aux variables que le registre nomme : les autres
+	// secrets de l'engine ne passent pas au serveur.
+	cmd.Env = c.environnement()
 	cmd.Stderr = c.opts.Stderr
 	return c.etablir(ctx, &mcp.CommandTransport{Command: cmd}, func() string { return observe })
 }
@@ -45,4 +46,20 @@ func empreinteFichier(chemin string) (string, error) {
 		return "", err
 	}
 	return "sha256:" + hex.EncodeToString(h.Sum(nil)), nil
+}
+
+// environnement rend les variables que le registre nomme, avec leur
+// valeur dans l'environnement de l'engine. Une variable absente n'est pas
+// transmise ; seul son nom est signalé, jamais une valeur.
+func (c *client) environnement() []string {
+	env := []string{}
+	for _, nom := range c.s.Commande.Env {
+		v, ok := os.LookupEnv(nom)
+		if !ok {
+			c.opts.Logger.Warn("variable nommée au registre absente de l'environnement, non transmise", "serveur", c.s.Nom, "variable", nom)
+			continue
+		}
+		env = append(env, nom+"="+v)
+	}
+	return env
 }

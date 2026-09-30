@@ -70,10 +70,15 @@ type MetaRegistre struct {
 
 // Commande est la cible d'un serveur stdio : un chemin absolu, jamais
 // résolu dans le PATH, et ses arguments. Le processus est lancé avec un
-// environnement vide : les secrets de l'engine ne passent pas au serveur.
+// environnement réduit aux variables que Env nomme : les autres secrets de
+// l'engine ne passent pas au serveur.
 type Commande struct {
 	Chemin string   `json:"chemin"`
 	Args   []string `json:"args,omitempty"`
+	// Env nomme les variables transmises au serveur, avec la valeur
+	// qu'elles ont dans l'environnement de l'engine au lancement. Le
+	// registre ne porte jamais de valeur.
+	Env []string `json:"env,omitempty"`
 }
 
 // Attestation attendue d'un serveur.
@@ -174,7 +179,11 @@ func Charger(donnees []byte) (*Registre, error) {
 	return &r, nil
 }
 
-var empreinteHex = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
+var (
+	empreinteHex = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
+	// nomVariable : un nom de variable d'environnement, sans valeur.
+	nomVariable = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
+)
 
 // Valider applique le schéma strict et fixe l'empreinte.
 func Valider(r *Registre) error {
@@ -250,6 +259,21 @@ func validerServeur(v *validation, p string, s *Serveur) {
 		}
 		if s.URL != "" {
 			v.f("%s: le transport stdio n'admet pas d'url", p)
+		}
+		if s.Commande != nil {
+			vues := map[string]bool{}
+			for _, nom := range s.Commande.Env {
+				switch {
+				case strings.Contains(nom, "="):
+					// Ne pas citer l'entrée : elle porte peut-être une valeur.
+					v.f("%s: commande.env ne contient que des noms de variables, jamais de valeur (entrée avec « = » refusée)", p)
+				case !nomVariable.MatchString(nom):
+					v.f("%s: commande.env : nom de variable %q invalide", p, nom)
+				case vues[nom]:
+					v.f("%s: commande.env : variable %s en double", p, nom)
+				}
+				vues[nom] = true
+			}
 		}
 		if a.Mode != ModeBinaire {
 			v.f("%s: le transport stdio exige l'attestation binaire (mode %q)", p, a.Mode)

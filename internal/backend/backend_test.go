@@ -262,3 +262,33 @@ func TestClient_AucuneCapacite(t *testing.T) {
 		t.Fatalf("câblé : %v", vus)
 	}
 }
+
+// Le serveur stdio ne reçoit que les variables que le registre nomme,
+// avec leur valeur ; les autres, secrets compris, ne passent pas.
+func TestStdio_Environnement(t *testing.T) {
+	t.Setenv("MCP_TEST_TRANSMISE", "douze-octets")
+	t.Setenv("MCP_TEST_SECRET", "ne-doit-pas-passer")
+	s := backendtest.Stdio("taux-officiel", backendtest.Taux, binaire, empreinte)
+	s.Commande.Env = []string{"MCP_TEST_TRANSMISE", "MCP_TEST_ABSENTE"}
+	b, err := Connecter(ctxTest(t), s, Options{})
+	t.Cleanup(func() { b.Fermer() })
+	if err != nil {
+		t.Fatal(err)
+	}
+	r, err := b.Appeler(ctxTest(t), "get_taux", map[string]any{"devise": "ENV"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := texte(t, r); got != "env MCP_TEST_TRANSMISE:12" {
+		t.Fatalf("environnement reçu : %q", got)
+	}
+
+	// Sans liste, rien ne passe.
+	b2, err := connecter(t, "taux-officiel", backendtest.Taux, empreinte, Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r, err := b2.Appeler(ctxTest(t), "get_taux", map[string]any{"devise": "ENV"}, nil); err != nil || texte(t, r) != "env " {
+		t.Fatalf("%q %v", texte(t, r), err)
+	}
+}

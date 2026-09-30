@@ -127,6 +127,9 @@ func TestCharger_Refus(t *testing.T) {
 		{"nom d'outil invalide", doc(`{"nom": "a", "transport": "stdio", "commande": {"chemin": "/x"}, "attestation": {"mode": "binaire", "attendu": "` + h64 + `"}, "outils": [{"nom": "li re", "acces": "read", "description": "d", "input_schema": {"type": "object"}}]}`), "invalide"},
 		{"nom exposé trop long", doc(`{"nom": "a", "transport": "stdio", "commande": {"chemin": "/x"}, "attestation": {"mode": "binaire", "attendu": "` + h64 + `"}, "outils": [{"nom": "` + strings.Repeat("x", 62) + `", "acces": "read", "description": "d", "input_schema": {"type": "object"}}]}`), "dépasse"},
 		{"contenu après", doc(stdio("a", "")) + `{}`, "inattendu"},
+		{"env avec valeur", doc(`{"nom": "a", "transport": "stdio", "commande": {"chemin": "/x", "env": ["PISTE_CLIENT_SECRET=s3cr3t"]}, "attestation": {"mode": "binaire", "attendu": "` + h64 + `"}, "outils": [` + outil + `]}`), "jamais de valeur"},
+		{"env nom invalide", doc(`{"nom": "a", "transport": "stdio", "commande": {"chemin": "/x", "env": ["1ABC"]}, "attestation": {"mode": "binaire", "attendu": "` + h64 + `"}, "outils": [` + outil + `]}`), "invalide"},
+		{"env en double", doc(`{"nom": "a", "transport": "stdio", "commande": {"chemin": "/x", "env": ["A", "A"]}, "attestation": {"mode": "binaire", "attendu": "` + h64 + `"}, "outils": [` + outil + `]}`), "en double"},
 	}
 	for _, c := range cases {
 		t.Run(c.nom, func(t *testing.T) {
@@ -149,5 +152,17 @@ func TestCharger_ErreursEnBloc(t *testing.T) {
 	}
 	if n := strings.Count(err.Error(), "\n") + 1; n < 6 {
 		t.Fatalf("%d erreur(s) seulement :\n%v", n, err)
+	}
+}
+
+// Une valeur glissée dans commande.env n'est jamais recopiée dans l'erreur.
+func TestCharger_EnvValeurJamaisCitee(t *testing.T) {
+	_, err := Charger([]byte(doc(`{"nom": "a", "transport": "stdio", "commande": {"chemin": "/x", "env": ["PISTE_CLIENT_SECRET=s3cr3t"]}, "attestation": {"mode": "binaire", "attendu": "` + h64 + `"}, "outils": [` + outil + `]}`)))
+	if err == nil || strings.Contains(err.Error(), "s3cr3t") {
+		t.Fatalf("%v", err)
+	}
+	r, err := Charger([]byte(doc(`{"nom": "a", "transport": "stdio", "commande": {"chemin": "/x", "env": ["PISTE_CLIENT_ID", "PISTE_CLIENT_SECRET"]}, "attestation": {"mode": "binaire", "attendu": "` + h64 + `"}, "outils": [` + outil + `]}`)))
+	if err != nil || len(r.Serveurs[0].Commande.Env) != 2 {
+		t.Fatalf("%v", err)
 	}
 }
