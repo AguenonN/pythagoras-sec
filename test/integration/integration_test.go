@@ -334,7 +334,7 @@ func TestDemarrage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(outils.Tools) != 13 {
+	if len(outils.Tools) != 14 {
 		t.Fatalf("%d outils exposés", len(outils.Tools))
 	}
 	entrees, _ := func() ([]journal.Entree, []journal.Entree) {

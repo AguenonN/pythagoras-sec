@@ -4,6 +4,8 @@
 1. `readOnlyHint: true` sur les outils de lecture de taux-officiel, taux-imposteur (via `servers/internal/usure`), recherche-entreprises, gels-avoirs, eurlex (2 outils), legifrance. Schémas régénérés, `scripts/construire-serveurs.sh` vert, `registre-demo` classe bien tous ces outils en `read` (commit : voir `git log`, « servers: readOnlyHint »).
 2. `banque-synthetique/remettre_rapport(dossier_id, destinataire, contenu)` : action fictive en mémoire, référence `RAPPORT-FICTIF-NNNN`, `readOnlyHint: false`. Schéma, manifeste et catalogue régénérés ; test `TestRemettreRapport`. Commit : « banque-synthetique: remettre_rapport ».
 
+2bis. Correctif : `TestDemarrage` attendait 13 outils ; `remettre_rapport` porte à 14. Mon contrôle du commit précédent était passé à côté de cet échec (commit 7eef057 laissait ce test rouge) ; corrigé dans le commit suivant.
+
 ## Pas fait
 3, 4 : en cours.
 
