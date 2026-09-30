@@ -290,18 +290,18 @@ func (g *Gate) gestionnaire(expose string) mcp.ToolHandler {
 // journal ; rien n'en est transmis au serveur.
 func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string, brut json.RawMessage, meta mcp.Meta) *mcp.CallToolResult {
 	if g.enPanne.Load() {
-		return refus("Appel refusé : le journal de l'engine est indisponible ; aucun appel n'est transmis sans preuve.")
+		return refusEngine("Appel refusé : le journal de l'engine est indisponible ; aucun appel n'est transmis sans preuve.")
 	}
 	// 1. Décomposer.
 	serveur, outil, err := nommage.Decomposer(expose)
 	b := g.backends[serveur]
 	if err != nil || b == nil {
-		return refus("Appel refusé : outil inconnu de l'engine.")
+		return refusEngine("Appel refusé : outil inconnu de l'engine.")
 	}
 	args, err := decoderArguments(brut)
 	if err != nil {
 		g.alerte(serveur, outil, "arguments illisibles, appel refusé avant la session")
-		return refus("Appel refusé : les arguments doivent former un objet JSON.")
+		return refusEngine("Appel refusé : les arguments doivent former un objet JSON.")
 	}
 
 	sousAgent, lisible := sousAgentDeclare(meta)
@@ -320,7 +320,7 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 			g.enPanne.Store(true)
 			g.log.Error("session impossible, l'engine refuse désormais tout appel", "erreur", err)
 		}
-		return refus("Appel refusé : " + motifSession(err))
+		return refusEngine("Appel refusé : " + motifSession(err))
 	}
 
 	// 3. Une seule lecture d'horloge ; dépôt au coffre avant l'entrée appel.
@@ -329,7 +329,7 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 	if err := g.coffre.Deposer(journal.Depot{TS: ts, Empreinte: origine, Outil: outil, ArgumentsOrigine: args}); err != nil {
 		g.log.Error("coffre indisponible", "erreur", err)
 		g.alerte(serveur, outil, "coffre indisponible, appel refusé")
-		return refus("Appel refusé : le coffre de l'engine est indisponible ; aucun appel n'est transmis sans preuve.")
+		return refusEngine("Appel refusé : le coffre de l'engine est indisponible ; aucun appel n'est transmis sans preuve.")
 	}
 
 	// 4. Décider, sous le jeu actif à cet instant, lu une seule fois.
@@ -361,10 +361,10 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 	var rep *mcp.CallToolResult
 	switch {
 	case parRegistre:
-		rep = refus("Appel " + dec.Motif + ".")
+		rep = g.refusRegistre(dec)
 	case dec.Effet == directive.Refuser:
 		// 5.
-		rep = refus("Appel refusé par l'engine : " + dec.Motif + ".")
+		rep = refusDirective(dec)
 	case dec.Effet == directive.AttendreValidation:
 		// 6.
 		rep = enAttente(dec)
@@ -379,7 +379,7 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 		}); err != nil {
 			g.enPanne.Store(true)
 			g.log.Error("journal indisponible, l'engine refuse désormais tout appel", "erreur", err)
-			return refus("Appel refusé : le journal de l'engine est indisponible ; rien n'est transmis sans preuve.")
+			return refusEngine("Appel refusé : le journal de l'engine est indisponible ; rien n'est transmis sans preuve.")
 		}
 		debut := time.Now()
 		c, retour := tour.Transmettre(ctx, serveur, outil, dec.EmpreinteTransmise, func(ctx context.Context) session.Retour {
@@ -397,7 +397,7 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 	if _, err := g.journal.Ecrire(entree); err != nil {
 		g.enPanne.Store(true)
 		g.log.Error("journal indisponible, l'engine refuse désormais tout appel", "erreur", err)
-		return refus("Appel non confirmé : le journal de l'engine est indisponible ; la réponse est retenue.")
+		return refusEngine("Appel non confirmé : le journal de l'engine est indisponible ; la réponse est retenue.")
 	}
 	return rep
 }
@@ -573,15 +573,15 @@ func (g *Gate) repondre(c directive.Consultation, r session.Retour, dec directiv
 	if res == nil {
 		switch c.Resultat {
 		case directive.ResultatIndisponible:
-			return refus("Source indisponible : le serveur " + c.Serveur + " n'a pas répondu.")
+			return echec("Source indisponible : le serveur " + c.Serveur + " n'a pas répondu.")
 		default:
-			return refus("Le serveur " + c.Serveur + " a répondu par une erreur que l'engine ne transmet pas.")
+			return echec("Le serveur " + c.Serveur + " a répondu par une erreur que l'engine ne transmet pas.")
 		}
 	}
 	out, err := sceller(res)
 	if err != nil {
 		g.log.Error("scellement impossible", "erreur", err)
-		return refus("Réponse retenue : l'engine n'a pas pu la sceller.")
+		return refusEngine("Réponse retenue : l'engine n'a pas pu la sceller.")
 	}
 	if dec.Effet == directive.Caviarder {
 		out.Content = append([]mcp.Content{&mcp.TextContent{Text: "Note de l'engine : " + dec.Motif + "."}}, out.Content...)
@@ -634,33 +634,6 @@ func typeContenu(c mcp.Content) string {
 		return "ressource intégrée"
 	}
 	return "non textuel"
-}
-
-func refus(motif string) *mcp.CallToolResult {
-	return &mcp.CallToolResult{IsError: true, Content: []mcp.Content{&mcp.TextContent{Text: motif}}}
-}
-
-// enAttente : la reprise avec jeton n'existe pas encore ; l'appel est
-// refusé, avec de quoi l'identifier quand elle existera.
-func enAttente(dec directive.Decision) *mcp.CallToolResult {
-	var ids []string
-	for _, a := range dec.Applications {
-		if a.Appliquee && a.Effet == directive.AttendreValidation {
-			ids = append(ids, a.ID)
-		}
-	}
-	directiveID := ""
-	if len(ids) > 0 {
-		directiveID = ids[0]
-	}
-	r := refus("Appel non transmis : " + dec.Motif + ". La reprise après validation humaine n'est pas encore disponible ; l'appel est refusé.")
-	r.StructuredContent = map[string]any{
-		"statut":              "en_attente",
-		"empreinte_transmise": dec.EmpreinteTransmise,
-		"directive":           directiveID,
-		"directives":          ids,
-	}
-	return r
 }
 
 // Servir sert le gate sur un transport jusqu'à la fin de la session.

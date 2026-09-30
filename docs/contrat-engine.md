@@ -119,6 +119,58 @@ statut incohérent avec l'effet (contrôle `statut`) :
 - une autorisation l'est toujours ;
 - une attente ne l'est qu'avec une approbation.
 
+## 6. Contrat de réponse à l'agent
+
+Tout ce que l'engine refuse ou retient rend un résultat `isError: true`.
+Son texte reprend le motif, pour un agent qui ne lit que le texte, et
+son `structuredContent` a l'une des deux formes suivantes. Les types Go
+sont `gate.Refus` et `gate.Attente`.
+
+**Refus** : l'appel n'est pas transmis.
+
+```json
+{
+  "statut": "refuse",
+  "origine": "directive",
+  "directive": "D-001",
+  "version": 1,
+  "fondement": {"texte": "RGPD", "article": "22", "url": "…"},
+  "motif": "refusé par D-001 v1 (provenance_session, RGPD art. 22)"
+}
+```
+
+| `origine` | `directive` | `version` | `fondement` |
+|---|---|---|---|
+| `directive` | identifiant de la première directive appliquée qui refuse, dans l'ordre du jeu | version de cette directive | son fondement |
+| `registre` (serveur non attesté, §5) | identifiant du registre | version du registre | `{"texte": "Registre des serveurs : attestation du serveur"}` |
+| `engine` (journal ou coffre indisponible, session fermée ou appelant changé, outil inconnu, arguments qui ne sont pas un objet JSON) | `""` | `0` | `{"texte": "Contrat de l'engine"}` |
+
+`motif` est celui de la décision journalisée (origines `directive` et
+`registre`), ou le texte du refus (origine `engine`). Il ne cite jamais
+la valeur d'un argument.
+
+**Attente** : `attendre_validation`, l'appel n'est pas transmis. La
+reprise avec jeton n'existe pas encore.
+
+```json
+{
+  "statut": "en_attente",
+  "empreinte_transmise": "…",
+  "directive": "D-002",
+  "version": 1
+}
+```
+
+`directive` et `version` désignent la première directive appliquée qui
+met en attente. `empreinte_transmise` est ce qu'un jeton d'approbation
+devra viser.
+
+**Hors contrat de refus** : un appel transmis dont le serveur n'a rien
+rendu d'utilisable (source indisponible, erreur de protocole) rend
+`isError: true` sans `structuredContent`. Ce n'est pas un refus, et le
+journal le classe `indisponible` ou `erreur`. Une réponse du serveur,
+même `isError`, est rendue scellée, sans `structuredContent` en clair.
+
 ## Rappels
 
 - L'appelant est fixé à la création de la session. Le passer tel que le
