@@ -58,6 +58,13 @@ type Consultation struct {
 	Empreinte        string // action_digest de l'appel transmis
 	Resultat         Resultat
 	EmpreinteReponse string // sha256 de la réponse canonique, "" si rien n'est revenu
+
+	// v2, consignés au journal avec la consultation. Etiquettes sont celles
+	// du registre à la consultation ; VersionRegistre vide : étiquettes
+	// inconnues. Source est ce que le serveur a déclaré de sa réponse.
+	Etiquettes      []string
+	VersionRegistre string
+	Source          *SourceReponse
 }
 
 // EtatSession est tenu par l'engine, jamais déclaré par l'agent.
@@ -74,6 +81,15 @@ type Appel struct {
 	Arguments   map[string]any
 	Attestation Attestation
 	Horodatage  time.Time
+
+	// v2 : tout vient de l'appelant de Decide, rien n'est lu par Decide.
+	// VersionRegistre vide : Acces et EtiquettesCible sont inconnus.
+	Acces            Acces
+	EtiquettesCible  []string
+	VersionRegistre  string
+	Demandeur        *Demandeur // nil : non résolu
+	Sujets           []Sujet    // personnes concernées résolues, par empreinte
+	SousAgentDeclare string     // _meta.sous_agent, déclaratif
 }
 
 // Application est une directive dont la cible correspondait, avec ce qu'elle
@@ -91,6 +107,11 @@ type Application struct {
 	RevisionEchue bool
 	ChampsRetires []string
 	Motif         string
+
+	// v2 : résultat à trois valeurs de et(cible, condition), et tous les
+	// fondements (Fondement est le premier).
+	Resultat   Trivalent
+	Fondements []Fondement
 }
 
 // Decision est le résultat de Decide.
@@ -106,6 +127,12 @@ type Decision struct {
 	Applications       []Application
 	Alertes            []string
 	Motif              string
+
+	// v2, triés. Validation n'est posée que si Effet est attendre_validation.
+	Notifications   []Notification
+	Marques         []Marque
+	Validation      *Validation
+	VersionRegistre string
 }
 
 // Decide évalue un appel contre un jeu. Pure : pas d'horloge (l'horodatage
@@ -126,6 +153,15 @@ func Decide(jeu Jeu, etat EtatSession, appel Appel) Decision {
 		}
 		if d.DateEffet.After(appel.Horodatage) {
 			continue // non-rétroactivité
+		}
+		if d.EstV2() {
+			// Schéma figé, évaluateur à venir : fermé par défaut.
+			dec.Effet = Refuser
+			dec.Applications = append(dec.Applications, Application{
+				ID: d.ID, Version: d.Version, Statut: d.Statut, Effet: Refuser,
+				Declenchee: true, Appliquee: true, Motif: "directive v2 pas encore évaluée : refus par défaut",
+			})
+			continue
 		}
 		if !cibleCorrespond(d.Cible, appel.Serveur, appel.Outil) {
 			continue

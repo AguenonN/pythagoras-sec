@@ -1,0 +1,21 @@
+{
+  "jeu": {"id": "rh-v2", "version": 1, "date_effet": "2026-09-01T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+  "directives": [
+    {
+      "id": "R-001", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Aucune décision RH si l'un des salariés concernés fait l'objet d'un contentieux en cours.",
+      "fondements": [{"texte": "Code du travail", "article": "L1121-1"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "rh-synthetique", "outil": "*"}},
+      "condition": {"existe": {"champ": "/salarie_ids", "condition": {"sujet": {"groupe": "contentieux-en-cours"}}}},
+      "effets": [{"effet": "refuser"}]
+    },
+    {
+      "id": "R-002", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Toute action RH visant un salarié protégé attend une validation humaine.",
+      "fondements": [{"texte": "Code du travail", "article": "L2411-1"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "rh-synthetique", "outil": "*", "acces": "action"}},
+      "condition": {"existe": {"champ": "/salarie_ids", "condition": {"sujet": {"groupe": "salaries-proteges"}}}},
+      "effets": [{"effet": "attendre_validation", "par_role": "drh"}]
+    }
+  ]
+}

@@ -72,7 +72,11 @@ func Valider(jeu *Jeu) error {
 			v.f("%s: identifiant en double", prefixe)
 		}
 		vus[d.ID] = true
-		validerDirective(&v, prefixe, d)
+		if d.EstV2() {
+			validerDirectiveV2(&v, prefixe, d)
+		} else {
+			validerDirective(&v, prefixe, d)
+		}
 	}
 	if err := v.err(); err != nil {
 		return err

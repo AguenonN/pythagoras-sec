@@ -1,0 +1,36 @@
+{
+  "jeu": {"id": "credit-v2", "version": 1, "date_effet": "2026-09-01T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+  "directives": [
+    {
+      "id": "C-001", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Pas d'attribution de prêt sans consultation préalable du registre des gels d'avoirs.",
+      "fondements": [{"texte": "Code monétaire et financier", "article": "L562-4"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"non": {"session.a_consulte": {"serveur": "gels-avoirs", "critere": "donnees_recues"}}},
+      "effets": [{"effet": "refuser"}]
+    },
+    {
+      "id": "C-002", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Au-delà de 500 000 euros, l'attribution d'un prêt est bloquée.",
+      "fondements": [{"texte": "Politique de crédit", "article": "3.2"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"argument": {"champ": "/montant", "op": ">", "valeur": 500000}},
+      "effets": [{"effet": "refuser"}]
+    },
+    {
+      "id": "C-003", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Un prêt attribué à partir du taux officiel attend une validation humaine.",
+      "fondements": [{"texte": "RGPD", "article": "22", "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"session.a_consulte": {"serveur": "taux-officiel", "critere": "donnees_recues"}},
+      "effets": [{"effet": "attendre_validation"}]
+    },
+    {
+      "id": "C-004", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Le serveur de recherche d'entreprises ne reçoit que le SIREN.",
+      "fondements": [{"texte": "RGPD", "article": "5"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "recherche-entreprises", "outil": "*"}},
+      "effets": [{"effet": "caviarder", "champs_autorises": ["/siren"], "mode": "caviarder"}]
+    }
+  ]
+}
