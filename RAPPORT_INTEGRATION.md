@@ -8,7 +8,8 @@ Branche `feat/integration`, worktree `~/cybercar/mcp_rogue-integration`. Rien n'
 |---|---|---|
 | 1 | `529a0c3` | `cmd/registre-demo` + `internal/registredemo` : `demo/registre.json` et `demo/registre-attaque.json` générés depuis `bin/manifeste.json` |
 | 2 | `87f4166` | Catalogue du compilateur généré depuis le registre (`agents/compilateur/exemples/catalogue-demo.json`), tests de divergence Go et Python |
-| 3 | (ce commit) | `demo/directives/credit-demo.json` (v1, quatre directives actives), accepté par le gate devant le registre de démo |
+| 3 | `b1432c4` | `demo/directives/credit-demo.json` (v1, quatre directives actives), accepté par le gate devant le registre de démo |
+| 4 | (ce commit) | `agents/boucle` alignée sur le §6 du contrat de l'engine (refus, attente, indisponible, outil qui décline), `MAX_APPELS` = 25 |
 
 ### Étape 1 — registre de démo
 
@@ -36,9 +37,21 @@ Branche `feat/integration`, worktree `~/cybercar/mcp_rogue-integration`. Rien n'
 - `internal/registredemo.TestDirectivesDemo` : chargeur strict, puis `gate.Demarrer` devant le registre de démo (contrôle des cibles et des provenances) ; contre-épreuve : sans `taux-officiel` au registre, le même jeu est refusé (D-001, D-003).
 - Vérifié aussi à la main : `mcp-gate` réel avec `demo/registre.json` et ce jeu, `DONNEES_MODE=REJEU` → les huit serveurs `attesté=true`.
 
+### Étape 4 — boucle alignée sur le contrat de l'engine
+
+- `boucle.classer` lit le `statut` du `structuredContent` **seulement sur un résultat `isError`** (une réponse normale du gate n'a jamais de `structuredContent` en clair ; un serveur ne peut donc pas se faire passer pour l'engine) :
+  - `refuse` : directive citée « D-002 v1 », « le registre demo v1 » ou « l'engine » selon `origine` ; motif et fondement gardés ; message de blocage inchangé ;
+  - `en_attente` : `empreinte_transmise` (et plus `empreinte` / `action_digest`), directive citée dans la réponse au demandeur ;
+  - `indisponible` : nouveau cas ; le modèle lit « Aucune donnée obtenue de serveur/outil : motif. Ne présente aucune donnée de cette source comme obtenue. », la boucle continue ;
+  - `isError` sans structure : l'outil décline, contenu transmis tel quel.
+  - Une erreur JSON-RPC -32001 (convention de `cmd/mcp-proxy`) reste un refus.
+- Faux serveur des tests au format du §6 ; nouveau `tests/test_boucle_contrat.py` sur les formes exactes de `internal/gate/reponses.go` (11 tests).
+- `MAX_APPELS` de la boucle : 20 → 25, le budget de ce brief ; compteur dans `agents/.etat/boucle/` (vide au départ dans ce worktree).
+- **Aucun scénario enregistré n'est touché par cette étape** : les messages envoyés à Mistral sont identiques octet pour octet (le refus « D-003 » version 1 s'affiche toujours « D-003 v1 », l'attente suspend la boucle sans rappeler le modèle), et les 5 scénarios rejoués passent sans nouvel enregistrement. 0 appel réel. Le réenregistrement viendra avec l'étape 5, qui change la définition d'un outil du faux serveur et donc toutes les requêtes.
+
 ## 2. Ce qui n'est pas fait
 
-Étapes 4 à 7 : en cours.
+Étapes 5 à 7 : en cours.
 
 ## 3. Décisions prises seul
 

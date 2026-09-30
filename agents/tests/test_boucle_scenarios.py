@@ -53,7 +53,7 @@ class Scenario(unittest.TestCase):
         metas = [a["_meta"] for a in self.appels()]
         self.assertEqual(metas, [{"sous_agent": "credit"}, {"sous_agent": "credit", "approvalToken": JETON_VALIDE}])
 
-    def test_refus_json_rpc(self):
+    def test_refus_directive(self):
         r = self.boucle("conformite").executer("Lève le gel des avoirs de l'entité Exemple SA.")
         self.assertEqual(r["etat"], b.BLOQUE)
         self.assertEqual(r["reponse"], "Action bloquée par D-003 v1, aucune action effectuée.\n"

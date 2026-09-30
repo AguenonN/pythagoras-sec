@@ -18,7 +18,9 @@ from . import boucle, mcp
 ICI = os.path.dirname(os.path.abspath(__file__))
 ENREGISTREMENTS = os.path.join(ICI, "enregistrements")
 ETAT = os.path.join(os.path.dirname(ICI), ".etat", "boucle")
-MAX_APPELS = 20
+# Budget d'appels réels de la boucle, compteur dans .etat/boucle : celui du
+# brief d'intégration (nuit/brief_integration.md), étapes 4, 5 et 7.
+MAX_APPELS = 25
 
 
 def client_mistral(mode):

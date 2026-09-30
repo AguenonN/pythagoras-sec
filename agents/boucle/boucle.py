@@ -15,12 +15,26 @@ Règles tenues par le code, jamais par le modèle :
   identifiant arrête la boucle, on n'en fabrique jamais.
 - Un appel à la fois (``parallel_tool_calls`` à false) ; si le modèle en
   propose plusieurs quand même, seul le premier est exécuté.
-- Refus : le motif est transmis au modèle ; après un refus, au plus
-  ``TENTATIVES_APRES_REFUS`` appels ; la réponse finale au demandeur est
-  alors le message de blocage, jamais le texte du modèle.
-- En attente (``structuredContent.statut == "en_attente"``) : la boucle rend
-  la main avec l'empreinte à valider ; ``reprendre`` rejoue l'appel avec le
-  jeton.
+- Contrat de réponse de l'engine (docs/contrat-engine.md §6) : tout ce que
+  l'engine refuse, retient ou ne peut obtenir est un résultat ``isError``
+  dont le ``structuredContent`` porte un ``statut``. La boucle ne lit ce
+  statut que sur un résultat ``isError`` : une réponse normale n'a jamais de
+  ``structuredContent`` en clair, et un serveur ne peut pas se faire passer
+  pour l'engine en en fabriquant un. Quatre cas :
+
+  * ``refuse`` (origine directive, registre ou engine) : le motif est
+    transmis au modèle ; après un refus, au plus ``TENTATIVES_APRES_REFUS``
+    appels ; la réponse finale au demandeur est alors le message de blocage,
+    jamais le texte du modèle ;
+  * ``en_attente`` : la boucle rend la main avec ``empreinte_transmise``, ce
+    que le jeton de validation devra viser ; ``reprendre`` rejoue l'appel
+    avec le jeton ;
+  * ``indisponible`` (source indisponible ou erreur de protocole) : le modèle
+    apprend qu'aucune donnée n'a été obtenue, et la boucle continue ;
+  * ``isError`` sans structure : l'outil a décliné ; sa réponse (scellée par
+    le gate) est transmise telle quelle.
+
+  Une erreur JSON-RPC -32001 (convention de cmd/mcp-proxy) reste un refus.
 - Pas de scellement ici : le gate scelle. La boucle transmet le résultat au
   modèle sans le modifier (textes, puis structuredContent tel quel), et sa
   consigne système reprend la clause qui fait du contenu balisé une donnée.
@@ -69,8 +83,17 @@ class ErreurBoucle(Exception):
 
 
 def _directive(motif, donnees):
-    if isinstance(donnees, dict) and donnees.get("directive"):
-        return str(donnees["directive"])
+    """Ce qui refuse, pour le demandeur : « D-002 v1 », « le registre demo
+    v1 », « l'engine ». Sans structure lisible, tiré du motif."""
+    if isinstance(donnees, dict):
+        origine, ident, version = donnees.get("origine"), donnees.get("directive"), donnees.get("version")
+        if origine == "engine":
+            return "l'engine"
+        if ident:
+            nom = str(ident)
+            if isinstance(version, int) and not isinstance(version, bool) and version > 0:
+                nom += " v%d" % version
+            return "le registre " + nom if origine == "registre" else nom
     m = _PAR.search(motif or "")
     return m.group(1) if m else "une directive non précisée"
 
@@ -84,23 +107,37 @@ def _texte(resultat):
 
 def classer(appel):
     """Transforme l'issue d'un tools/call (résultat ou ErreurMCP) en issue
-    de la boucle : ok, refus, attente ou erreur."""
+    de la boucle : ok, refus, attente, indisponible ou erreur."""
     if isinstance(appel, mcp.ErreurMCP):
         if appel.code == mcp.CODE_REFUS:
             return {"nature": "refus", "motif": appel.message,
                     "directive": _directive(appel.message, appel.data)}
         return {"nature": "erreur", "contenu": "Erreur du serveur : %s" % appel.message}
+    if not appel.get("isError"):
+        return {"nature": "ok", "contenu": _texte(appel)}
     sc = appel.get("structuredContent")
     statut = sc.get("statut") if isinstance(sc, dict) else None
     if statut == "en_attente":
-        return {"nature": "attente", "empreinte": sc.get("empreinte") or sc.get("action_digest"),
-                "motif": sc.get("motif", ""), "contenu": _texte(appel)}
+        return {"nature": "attente", "empreinte": sc.get("empreinte_transmise") or None,
+                "directive": _directive("", sc), "motif": _texte_seul(appel), "contenu": _texte(appel)}
     if statut == "refuse":
-        motif = sc.get("motif", "") or _texte(appel)
-        return {"nature": "refus", "motif": motif, "directive": _directive(motif, sc)}
-    if appel.get("isError"):
-        return {"nature": "erreur", "contenu": "L'outil a décliné : %s" % _texte(appel)}
-    return {"nature": "ok", "contenu": _texte(appel)}
+        motif = sc.get("motif") or _texte_seul(appel)
+        return {"nature": "refus", "motif": motif, "directive": _directive(motif, sc),
+                "origine": sc.get("origine") or "", "fondement": sc.get("fondement") or {}}
+    if statut == "indisponible":
+        return {"nature": "indisponible", "serveur": sc.get("serveur") or "", "outil": sc.get("outil") or "",
+                "motif": sc.get("motif") or _texte_seul(appel)}
+    return {"nature": "erreur", "contenu": "L'outil a décliné : %s" % _texte(appel)}
+
+
+def _texte_seul(resultat):
+    return "\n".join(c.get("text", "") for c in resultat.get("content") or [] if c.get("type") == "text")
+
+
+def message_indisponible(issue):
+    source = "/".join(x for x in (issue["serveur"], issue["outil"]) if x) or "la source"
+    return ("Aucune donnée obtenue de %s : %s\nNe présente aucune donnée de cette source comme obtenue."
+            % (source, issue["motif"] or "source indisponible"))
 
 
 def message_blocage(refus):
@@ -214,9 +251,10 @@ class Boucle:
         if issue["nature"] == "attente":
             return {
                 "etat": EN_ATTENTE,
-                "reponse": "Action en attente de validation humaine : %s. Empreinte à valider : %s"
-                           % (nom, issue["empreinte"] or "non fournie par le serveur"),
+                "reponse": "Action en attente de validation humaine (%s) : %s. Empreinte à valider : %s"
+                           % (issue["directive"], nom, issue["empreinte"] or "non fournie par l'engine"),
                 "empreinte": issue["empreinte"],
+                "directive": issue["directive"],
                 "outil": nom,
                 "arguments": arguments,
                 "motif": issue["motif"],
@@ -228,6 +266,8 @@ class Boucle:
             etat["refus"] = issue
             contenu = ("Refusé par %s : %s\nN'essaie pas de contourner ce refus ; explique-le au demandeur."
                        % (issue["directive"], issue["motif"]))
+        elif issue["nature"] == "indisponible":
+            contenu = message_indisponible(issue)
         else:
             contenu = issue["contenu"]
         etat["messages"].append({"role": "tool", "tool_call_id": tool_call_id, "name": nom, "content": contenu})
