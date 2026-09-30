@@ -1,6 +1,6 @@
 # Rapport — corrections et nouveaux serveurs (session « Données »)
 
-Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été poussé ni fusionné, `main` n'a pas été touchée. Le rapport de la nuit précédente reste dans `RAPPORT_NUIT.md`.
+Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été poussé ni fusionné, `main` n'a pas été touchée. Le rapport de la nuit précédente est dans `docs/rapports/donnees-nuit.md` (ex-`RAPPORT_NUIT.md`) ; ce rapport-ci y sera versé à la fin sous `docs/rapports/donnees-corrections.md`.
 
 ## 1. Fait
 
@@ -20,7 +20,8 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
 |---|---|---|
 | `3ea7a24` | 7. `DOS-FICTIF-005` | Demandeur JSC ROSOBORONEXPORT, personne morale inscrite au registre des gels (id 4493), demande fictive, constat daté dans les données |
 | `b6f1016` | 8. Personnes physiques anonymes | `verifier_gel` ne rend jamais nom ni alias d'une personne physique, en DIRECT comme en REJEU |
-| (ce commit) | 9. `Restreindre` obligatoire | Sans liste d'hôtes explicite, un client ne joint aucun hôte |
+| `4ce5f34` | 9. `Restreindre` obligatoire | Sans liste d'hôtes explicite, un client ne joint aucun hôte |
+| (ce commit) | 10. Rapports sous `docs/` | `RAPPORT_NUIT.md` → `docs/rapports/donnees-nuit.md` (note en tête) |
 
 **Mission 2 : tout est fait**, points 1 à 6. `go vet ./...` et `go test -race ./...` verts à chaque commit ; aucun fichier hors `servers/` et des rapports dans mes commits ; aucun secret, aucune clé, aucun binaire versionné (vérifié).
 
@@ -37,7 +38,7 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
   - **Tout résultat de `verifier_gel` porte `date_publication_registre` et `source.origine`** : `ok` → date du registre et `direct`/`rejeu` ; échec → date vide et `origine: "aucune"` (nouvelle valeur, `rejeu.SourceAbsente`), avec l'URL visée et le motif.
   - **Enregistrement local absent en REJEU → `statut: indisponible`, `isError: true`, et ni `nombre_correspondances` ni `correspondances`** (champs absents hors `ok`), pour qu'un registre manquant ne se lise jamais comme « aucune correspondance » (`TestLocalAbsentIndisponible`). En `ok` sans résultat : `nombre_correspondances: 0` et `correspondances: []`, explicites.
   - **Purge de l'historique de `feat/donnees`** (et d'elle seule) : le registre réel filtré (blob `8dcda2e`, 1,2 Mo, entrées de personnes morales et navires) était présent dans 8 commits, de `servers/gels-avoirs: verifier_gel…` à `recherche-entreprises: rename…`. `git filter-branch --index-filter` sur `69e32ee..feat/donnees`, qui retire le fichier **seulement quand son contenu est ce blob** (le synthétique a le même chemin). Vérifications : aucun des 34 commits atteignables depuis `feat/donnees` ne contient le blob, à aucun chemin ; le seul contenu jamais versionné à ce chemin est désormais le synthétique (`5c20f09`, 1 commit) ; l'arbre final est identique à celui d'avant la réécriture ; la sauvegarde `refs/original/` (qui contenait le registre) est supprimée ; seule `feat/donnees` contenait ces commits (aucune autre branche, aucune remise). Les recherches restantes de « JSC ROSOBORONEXPORT » ne trouvent que l'ancien `serveur_test.go` (nom de l'entité en entrée de test), pas le registre.
-  - **Identifiants réécrits** (ancien → nouveau) : `d8070b2`→`2bd1e28`, `31ec0bc`→`ef2bfec`, `6124862`→`36e7798`, `9726e1f`→`ebe58d3`, `d65a5aa`→`38c389b`, `7224805`→`c324f7a`, `6d3ce2f`→`6b33477`, `8ead51d`→`07de13f`. `7f7e928`, `9e3bdc9`, `c500c7a` sont inchangés. `RAPPORT_NUIT.md` cite les anciens identifiants (non réécrit : c'est le rapport de la nuit).
+  - **Identifiants réécrits** (ancien → nouveau) : `d8070b2`→`2bd1e28`, `31ec0bc`→`ef2bfec`, `6124862`→`36e7798`, `9726e1f`→`ebe58d3`, `d65a5aa`→`38c389b`, `7224805`→`c324f7a`, `6d3ce2f`→`6b33477`, `8ead51d`→`07de13f`. `7f7e928`, `9e3bdc9`, `c500c7a` sont inchangés. `docs/rapports/donnees-nuit.md` cite les anciens identifiants (non réécrit : c'est le rapport de la nuit ; une note en tête le signale).
   - **Conséquence** : aux commits `2bd1e28` à `07de13f`, les tests de `gels-avoirs` échouent (leur enregistrement a disparu) ; ils passent de nouveau à partir du commit du point 3. Un `git bisect` sur cette plage doit en tenir compte.
   - **L'objet reste dans la base locale** tant que le reflog le retient (`feat/donnees@{1}` et suivants). Rien n'a été poussé, donc il n'existe nulle part ailleurs. Pour l'effacer du disque (affecte tout le dépôt partagé par les worktrees, donc pas fait sans accord) : `git reflog expire --expire=now --all && git gc --prune=now`.
   - Démo : avant de lancer en REJEU, `go run ./servers/gels-avoirs preparer` (une requête réseau). Sans cela, `verifier_gel` répond `indisponible`.
@@ -87,6 +88,8 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
 - **9. `Restreindre` obligatoire** (`servers/internal/rejeu`) : un client sans appel à `Restreindre` refuse toute requête réseau (`requete_refusee`, « client sans liste d'hôtes »), en DIRECT comme en MIXTE (pas de repli sur l'enregistrement : c'est une erreur de configuration). `Restreindre()` sans hôte ne vaut pas mieux. Le REJEU n'accède pas au réseau et n'est pas concerné. Test `TestSansRestrictionAucunHote` : aucun hôte joignable (127.0.0.1, localhost, une API réelle), **aucune requête partie**. Les tests existants déclarent explicitement `127.0.0.1` (httptest). Vérifié que chaque chemin réseau des serveurs restreint son hôte (`recherche-entreprises`, `gels-avoirs` et `preparer`, `usure` pour `taux-officiel`/`taux-imposteur`, `eurlex`, `legifrance`) ; essai DIRECT réel de `recherche-entreprises` OK après le changement (l'enregistrement réécrit par cet essai a été restauré, pour ne pas mêler de mise à jour de données à ce commit).
   - Le jeton OAuth de `legifrance` ne passe pas par `rejeu` : son client ne joint que l'URL fixe `oauth.piste.gouv.fr` et ne suit aucune redirection (inchangé).
 
+- **10. Rapports** : `git mv RAPPORT_NUIT.md docs/rapports/donnees-nuit.md` (historique du fichier conservé), avec une note en tête : état de la nuit, identifiants antérieurs à la réécriture, renommage, registre hors Git. Ce rapport-ci reste à la racine jusqu'au dernier commit de la mission, puis devient `docs/rapports/donnees-corrections.md`. `nuit/00_regles_communes.md` (non versionné, pas à moi) cite encore `RAPPORT_NUIT.md` : non modifié.
+
 ## 2. Pas fait
 
 Rien du brief. Limites :
@@ -106,7 +109,7 @@ Rien du brief. Limites :
 - **Imposteur** : nom annoncé `taux-officiel`, altération +2 points, lecture seule des enregistrements officiels (choix de démo, modifiables dans `servers/taux-imposteur/serveur.go`). Voir question 3.
 - **Salariés fictifs désignés par des libellés**, pas par des noms inventés : un nom inventé peut coïncider avec une personne réelle.
 - **Groupes par salarié** choisis pour couvrir les cas : un protégé seul (002), un contentieux seul (003), les deux (004), aucun (001, 005).
-- La ligne `c500c7a` du tableau de `RAPPORT_NUIT.md` garde l'ancien nom (c'est l'historique) ; les commandes de ce rapport-là sont mises à jour.
+- La ligne `c500c7a` du tableau de `docs/rapports/donnees-nuit.md` garde l'ancien nom (c'est l'historique) ; les commandes de ce rapport-là sont mises à jour.
 
 ## 4. Blocages
 

@@ -1,5 +1,7 @@
 # Rapport de nuit — session « Données »
 
+> **Note (mission de corrections)** : ce rapport était `RAPPORT_NUIT.md` à la racine ; il est déplacé ici tel quel pour éviter les conflits à la fusion. Il décrit l'état de la nuit : depuis, l'historique de `feat/donnees` a été réécrit (identifiants de commit changés à partir de `d8070b2`, correspondance dans `donnees-corrections.md`), le serveur `entreprises` s'appelle `recherche-entreprises`, et le registre des gels n'est plus versionné (registre complet local hors Git, registre synthétique pour les tests). La suite est dans `docs/rapports/donnees-corrections.md`.
+
 Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été poussé ni fusionné.
 
 ## 1. Fait
