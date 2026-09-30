@@ -8,6 +8,8 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"mcprogue/internal/directive"
+	"mcprogue/internal/journal"
+	"mcprogue/internal/rejeu"
 )
 
 // jeuV2 lit tout ce que le gate fournit désormais à Decide : l'accès et
@@ -174,5 +176,51 @@ func TestV2_CiblesHorsRegistre(t *testing.T) {
 	// Le jeu v2 d'origine passe.
 	if err := verifierCibles(b.jeu, b.reg); err != nil {
 		t.Fatal(err)
+	}
+}
+
+// Un journal v2 se rejoue sans écart ; chaque champ v2 que Decide a lu, ou
+// qu'il a produit, est contrôlé : l'altérer fait apparaître un écart.
+func TestV2_AlterationsDetectees(t *testing.T) {
+	b := monterV2(t, nil)
+	cs := b.agent(t)
+	pret := map[string]any{"montant": 1000.0, "siren": "123456789"}
+	appelerAgent(t, cs, "banque-synthetique__attribuer_pret", pret)
+	appelerAgent(t, cs, "taux-officiel__get_taux", map[string]any{"devise": "EUR"})
+	appelerAgent(t, cs, "banque-synthetique__attribuer_pret", pret)
+	b.rejouer(t)
+
+	cas := map[string]func(appels []*journal.Entree){
+		"accès":                     func(a []*journal.Entree) { a[0].Acces = "read" },
+		"version du registre":       func(a []*journal.Entree) { a[0].VersionRegistre = "" },
+		"étiquettes de la cible":    func(a []*journal.Entree) { a[2].EtiquettesCible = nil },
+		"étiquettes consultées":     func(a []*journal.Entree) { a[2].EtatSession[0].Etiquettes = []string{"externe"} },
+		"source consultée":          func(a []*journal.Entree) { a[2].EtatSession[0].Source = nil },
+		"marque effacée":            func(a []*journal.Entree) { a[2].Decision.Marques = nil },
+		"sous-agent":                func(a []*journal.Entree) { a[1].SousAgentDeclare = "espion" },
+		"source de la consultation": func(a []*journal.Entree) { a[1].Resultat.Source.Origine = "direct" },
+	}
+	for nom, alterer := range cas {
+		t.Run(nom, func(t *testing.T) {
+			es := b.entrees(t)
+			var appels []*journal.Entree
+			for i := range es {
+				if es[i].Type == journal.AppelT {
+					appels = append(appels, &es[i])
+				}
+			}
+			alterer(appels)
+			rs, err := rejeu.RejouerJournal(es, b.coffre, rejeu.Catalogue{b.jeu}, rejeu.Options{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			n := 0
+			for _, r := range rs {
+				n += len(r.Ecarts)
+			}
+			if n == 0 {
+				t.Fatal("altération non détectée")
+			}
+		})
 	}
 }

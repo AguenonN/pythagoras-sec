@@ -279,6 +279,9 @@ func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, purges Purges, opts Op
 		ecart(CauseAlteration, ControleDecision, "la décision rejouée est %s, le journal affirme %s",
 			dec.Effet, r.Journalise)
 	}
+	if detail, ok := sortiesV2(en.Decision, dec); !ok {
+		ecart(CauseAlteration, ControleDecision, "%s", detail)
+	}
 
 	if opts.Historique() {
 		r.Rejouee = r.Origine
@@ -312,6 +315,43 @@ func AppelDepuis(en journal.Entree, args map[string]any) directive.Appel {
 		Demandeur: en.Demandeur.VersDirective(), Sujets: journal.VersSujets(en.Sujets),
 		SousAgentDeclare: en.SousAgentDeclare,
 	}
+}
+
+// sortiesV2 confronte le détail de la décision à ce que le journal
+// affirme : motif, applications (résultat à trois valeurs compris),
+// alertes, et ce que la décision demande en plus de son effet
+// (notifications, marques, validation). Un rôle de validation retiré, une
+// notification effacée ou une condition indéterminée présentée comme
+// vraie est une altération, même si l'effet est le même. Un journal
+// antérieur à la v2 ne porte pas de résultat d'application : il n'est
+// alors pas comparé.
+func sortiesV2(j *journal.Decision, dec directive.Decision) (string, bool) {
+	r := journal.DepuisDecision(dec)
+	if len(j.Applications) == len(r.Applications) {
+		for i := range j.Applications {
+			if j.Applications[i].Resultat == "" {
+				r.Applications[i].Resultat = ""
+			}
+		}
+	}
+	switch {
+	case j.Motif != r.Motif:
+		return "le motif rejoué diffère du motif journalisé", false
+	case !reflect.DeepEqual(j.Applications, r.Applications):
+		return fmt.Sprintf("les applications rejouées (%d) diffèrent de celles du journal (%d)",
+			len(r.Applications), len(j.Applications)), false
+	case !reflect.DeepEqual(j.Alertes, r.Alertes):
+		return "les alertes rejouées diffèrent de celles du journal", false
+	case !reflect.DeepEqual(j.Notifications, r.Notifications):
+		return fmt.Sprintf("la décision rejouée demande %d notification(s), le journal en consigne %d autrement",
+			len(r.Notifications), len(j.Notifications)), false
+	case !reflect.DeepEqual(j.Marques, r.Marques):
+		return fmt.Sprintf("la décision rejouée pose %d marque(s), le journal en consigne %d autrement",
+			len(r.Marques), len(j.Marques)), false
+	case !reflect.DeepEqual(j.Validation, r.Validation):
+		return "la validation demandée (rôles, quatre yeux) diffère entre le rejeu et le journal", false
+	}
+	return "", true
 }
 
 // statutCoherent confronte le statut du résultat à l'effet journalisé.
