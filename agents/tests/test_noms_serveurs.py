@@ -67,3 +67,15 @@ class TestNomsFauxServeur(unittest.TestCase):
             serveur, sep, outil = o["name"].partition("__")
             self.assertTrue(sep and outil, o["name"])
             self.assertIn(serveur, SERVEURS, o["name"])
+
+    def test_enregistrements_boucle(self):
+        dossier = os.path.join(os.path.dirname(os.path.dirname(EXEMPLES)), "boucle", "enregistrements")
+        fichiers = sorted(glob.glob(os.path.join(dossier, "*.json")))
+        self.assertTrue(fichiers)
+        for chemin in fichiers:
+            with open(chemin, encoding="utf-8") as f:
+                e = json.load(f)
+            noms = [o["function"]["name"] for o in e["requete"]["tools"]]
+            noms += [tc["function"]["name"] for tc in e["reponse"]["choices"][0]["message"].get("tool_calls") or []]
+            for n in noms:
+                self.assertIn(n.partition("__")[0], SERVEURS, chemin)
