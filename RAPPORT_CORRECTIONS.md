@@ -10,7 +10,8 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
 | `07de13f` | Renommage | `entreprises` → `recherche-entreprises` : dossier `servers/recherche-entreprises/`, binaire, constante `Nom`, commentaires d'usage, rapports. Test `TestNomLogique` (`internal/nommage`) |
 | `d35b4e6` | Gels hors Git | Registre complet dans `servers/gels-avoirs/enregistrements_locaux/` (ignoré par Git), produit par `gels-avoirs preparer` ; `enregistrements/` ne contient plus qu'un registre **synthétique** ; enregistrement réel retiré de l'historique de la branche |
 | `ebe51f3` | 4. `banque-synthetique` | `evaluer_dossier`, `get_taux_interne`, `attribuer_pret` ; 4 dossiers fictifs dont 1 piégé ; transports stdio et HTTP streamable TLS (ajoutés au lanceur commun) |
-| (ce commit) | 5. `taux-imposteur` | Mêmes outils et même `schema.json` (octet pour octet) que `taux-officiel`, seuils majorés de 2 points, binaire distinct ; cœur de `taux-officiel` déplacé dans `servers/internal/usure` |
+| `e6a4e18` | 5. `taux-imposteur` | Mêmes outils et même `schema.json` (octet pour octet) que `taux-officiel`, seuils majorés de 2 points, binaire distinct ; cœur de `taux-officiel` déplacé dans `servers/internal/usure` |
+| (ce commit) | 6a. `rh-synthetique` | `consulter_salarie` (lecture), `decider_prime`, `proposer_sanction` (actions) ; 5 salariés fictifs |
 
 ### Détails
 
@@ -48,9 +49,15 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
   - Il lit les enregistrements de `taux-officiel` (`servers/taux-officiel/enregistrements`, option `-enregistrements`) **toujours en REJEU**, quel que soit `DONNEES_MODE` (message sur stderr) : aucun réseau, et il n'écrit jamais dans le répertoire d'un autre serveur. Sa `source` recopie donc celle de l'officiel (URL Webstat, empreinte du corps réel) : l'empreinte ne correspond pas aux valeurs altérées, ce qu'un contrôle croisé peut relever.
   - Transports stdio et HTTP streamable TLS (`TestTransportHTTPTLS`).
 
+- **6a. `rh-synthetique`** (SHA-256 `-trimpath` : `2e44836cfc69832992d345d51f574628b783905e66d9e6f386ac6369ec922e55`) :
+  - Données : `servers/rh-synthetique/salaries_fictifs.json`, embarqué. « ENTREPRISE SYNTHETIQUE (fictive) », salariés `SAL-FICTIF-001` à `005`, **libellés « Salarié fictif A » à « E » plutôt que des noms** (aucun nom de personne, même inventé), postes marqués « (fictif) ». Chaque résultat porte `donnees_fictives`.
+  - Matière pour la démo dans les remarques : B (002) retards répétés, C (003) désaccord sur des heures supplémentaires, D (004) absence non justifiée ; A et E sans remarque. Les groupes (protégé, contentieux) sont dans `referentiel-rh`, pas ici : l'agent doit aller les chercher.
+  - `consulter_salarie(salarie_id)` : lecture (`readOnlyHint`). `decider_prime(salarie_ids[], montant)` : action ; refuse une liste vide, un identifiant inconnu ou en double, un montant ≤ 0 ou > 5 000 € par salarié ; rend la référence `PRIME-FICTIVE-n`, la liste et le total. `proposer_sanction(salarie_id, motif)` : action ; refuse un salarié inconnu ou un motif vide ; rend `SANCTION-FICTIVE-n` avec le statut `sanction_proposee` (une proposition, pas une décision). Aucune règle sur les salariés protégés ni sur les contentieux dans ce serveur : c'est le rôle des directives de l'engine. Actions en mémoire, une ligne sur stderr chacune.
+  - Transports stdio et HTTP streamable TLS (`TestTransportHTTPTLS`).
+
 ## 2. Pas fait
 
-En cours : `rh-synthetique`, `referentiel-rh`.
+En cours : `referentiel-rh`.
 
 ## 3. Décisions prises seul
 
@@ -62,6 +69,7 @@ En cours : `rh-synthetique`, `referentiel-rh`.
 - **Transport HTTP TLS dans le lanceur commun** : les cinq serveurs de données l'ont aussi, sans changement de leur comportement en stdio. Aucun certificat ni clé n'est versionné (les tests les créent en mémoire ; `*.pem`/`*.key` sont ignorés).
 - Le lanceur affiche « mode REJEU, enregistrements … » même pour `banque-synthetique`, qui n'utilise ni l'un ni l'autre : cosmétique, laissé tel quel.
 - **Imposteur** : nom annoncé `taux-officiel`, altération +2 points, lecture seule des enregistrements officiels (choix de démo, modifiables dans `servers/taux-imposteur/serveur.go`). Voir question 3.
+- **Salariés fictifs désignés par des libellés**, pas par des noms inventés : un nom inventé peut coïncider avec une personne réelle.
 - La ligne `c500c7a` du tableau de `RAPPORT_NUIT.md` garde l'ancien nom (c'est l'historique) ; les commandes de ce rapport-là sont mises à jour.
 
 ## 4. Blocages
@@ -99,6 +107,9 @@ bin/banque-synthetique -http 127.0.0.1:8443 -tls-cert $T/cert.pem -tls-key $T/cl
 bin/appeler -ca $T/cert.pem https://127.0.0.1:8443/mcp attribuer_pret '{"dossier_id":"DOS-FICTIF-001","siren":"405750753","montant":1000}'
 kill %1
 go build -o bin/taux-imposteur ./servers/taux-imposteur
+go build -o bin/rh-synthetique ./servers/rh-synthetique
+bin/appeler bin/rh-synthetique consulter_salarie '{"salarie_id":"SAL-FICTIF-004"}'
+bin/appeler bin/rh-synthetique proposer_sanction '{"salarie_id":"SAL-FICTIF-004","motif":"absence non justifiée"}'   # sanction_proposee
 cmp servers/taux-imposteur/schema.json servers/taux-officiel/schema.json && echo "même schéma"
 bin/appeler bin/taux-imposteur get_taux_usure '{"categorie":"decouvert-societes-non-financieres","date_reference":"2026-10-04"}'   # 21,08 % (officiel : 19,08 %)
 ```
