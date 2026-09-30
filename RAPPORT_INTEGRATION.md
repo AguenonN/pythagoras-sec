@@ -7,7 +7,8 @@ Branche `feat/integration`, worktree `~/cybercar/mcp_rogue-integration`. Rien n'
 | Étape | Commit | Objet |
 |---|---|---|
 | 1 | `529a0c3` | `cmd/registre-demo` + `internal/registredemo` : `demo/registre.json` et `demo/registre-attaque.json` générés depuis `bin/manifeste.json` |
-| 2 | (ce commit) | Catalogue du compilateur généré depuis le registre (`agents/compilateur/exemples/catalogue-demo.json`), tests de divergence Go et Python |
+| 2 | `87f4166` | Catalogue du compilateur généré depuis le registre (`agents/compilateur/exemples/catalogue-demo.json`), tests de divergence Go et Python |
+| 3 | (ce commit) | `demo/directives/credit-demo.json` (v1, quatre directives actives), accepté par le gate devant le registre de démo |
 
 ### Étape 1 — registre de démo
 
@@ -24,9 +25,20 @@ Branche `feat/integration`, worktree `~/cybercar/mcp_rogue-integration`. Rien n'
 - Tests de divergence : `internal/registredemo.TestCatalogueVersionne` (Go) et `agents/tests/test_catalogue_demo.py` (Python) redérivent le catalogue des `schema.json` versionnés, et de `demo/registre.json` quand il a été généré ; toute différence échoue.
 - `README`, `compilateur/__main__.py`, `compilateur/demo.py` et `test_cli` utilisent le catalogue généré.
 
+### Étape 3 — jeu de directives de démo
+
+- `demo/directives/credit-demo.json`, jeu `credit-demo` v1, verrous v1 existants, toutes `active`, date d'effet 2026-09-01 (passée : le gate lit l'horloge réelle) :
+  - D-001 `provenance_session` : `taux-officiel` consulté → `attendre_validation` sur `banque-synthetique/attribuer_pret` ;
+  - D-002 `seuil_argument` : `/montant > 500000` → `refuser` sur `attribuer_pret` (`si_indetermine: refuser`) ;
+  - D-003 `source_attestee` sur `taux-officiel/*` → `refuser` ;
+  - D-004 `champs_autorises_par_destination` : `/siren` seul vers `recherche-entreprises/*`, mode `caviarder`.
+- Fondements marqués dans `fondement.texte` : « RGPD — à valider par le juriste » (le schéma v1 n'a pas de champ de note, et je ne le modifie pas) ; `texte_fr` le rappelle.
+- `internal/registredemo.TestDirectivesDemo` : chargeur strict, puis `gate.Demarrer` devant le registre de démo (contrôle des cibles et des provenances) ; contre-épreuve : sans `taux-officiel` au registre, le même jeu est refusé (D-001, D-003).
+- Vérifié aussi à la main : `mcp-gate` réel avec `demo/registre.json` et ce jeu, `DONNEES_MODE=REJEU` → les huit serveurs `attesté=true`.
+
 ## 2. Ce qui n'est pas fait
 
-Étapes 3 à 7 : en cours.
+Étapes 4 à 7 : en cours.
 
 ## 3. Décisions prises seul
 
@@ -34,7 +46,6 @@ Branche `feat/integration`, worktree `~/cybercar/mcp_rogue-integration`. Rien n'
 2. **gels-avoirs pointe par défaut sur `enregistrements_locaux`** (registre complet, hors Git) dans le registre de démo ; `-gels servers/gels-avoirs/enregistrements` donne le registre synthétique, utilisé par les tests. Registre local absent → le serveur répond `indisponible` (comportement existant), jamais « aucune correspondance ».
 3. **`DONNEES_MODE` est transmis aux huit serveurs**, y compris les trois synthétiques : tous passent par `lanceur`, qui lit la variable ; elle est sans effet sur eux.
 4. **Conséquence du « fermé par défaut »** : `get_taux_usure`, `rechercher_entreprise`, `verifier_gel`, les outils eurlex et legifrance n'ont pas d'annotation `readOnlyHint` et sont donc classés `action` au registre, alors que ce sont des lectures. Je n'ai pas modifié les serveurs (hors de ma mission). Voir question 1.
-
 5. **L'ancien catalogue écrit à la main est gelé, pas supprimé** : déplacé dans `agents/tests/donnees/catalogue-enregistrements.json`. Les réponses Mistral enregistrées du compilateur (`test_scenarios`, `test_demo`) sont indexées par l'empreinte de la requête, qui contient le catalogue : le remplacer invalidait 8 enregistrements, et les réenregistrer aurait pris ~8 appels réels hors du budget de ce brief (25, répartis sur les étapes 4, 5 et 7). Ces tests gardent donc l'ancien catalogue ; tout le reste passe au catalogue généré.
 
 ## 4. Blocages
@@ -44,7 +55,6 @@ Aucun pour l'instant.
 ## 5. Questions pour Manu
 
 1. (moyenne) Ajouter `readOnlyHint: true` aux outils de lecture des serveurs de données officiels ? Aujourd'hui ils sont `action` au registre, ce qui est correct par défaut mais trompeur dans la vue « contrôles en vigueur ».
-
 2. (basse) Réenregistrer les scénarios du compilateur sur le catalogue généré (≈ 8 appels Mistral), puis supprimer `agents/tests/donnees/catalogue-enregistrements.json` ?
 
 ## 6. Vérifier en 5 minutes
