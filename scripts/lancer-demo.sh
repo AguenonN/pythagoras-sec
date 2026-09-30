@@ -18,7 +18,17 @@
 # DONNEES_MODE et les identifiants PISTE s'ils sont définis. MISTRAL_API_KEY
 # et le reste de l'environnement de l'agent ne passent pas. Journal et
 # coffre : demo/execution/ (ignoré par Git), prolongés d'une exécution à
-# l'autre ; traces du gate et des serveurs : demo/execution/mcp-gate.log.
+# l'autre : garder la même clé, ou les retirer avant de changer de clé, sans
+# quoi la chaîne ne se vérifie plus ; traces du gate et des serveurs :
+# demo/execution/mcp-gate.log.
+#
+# En MIXTE, un serveur de données écrit chaque réponse obtenue dans son
+# répertoire d'enregistrements. Pour que la démo ne réécrive jamais les
+# enregistrements versionnés (ceux que rejouent les tests), le registre de
+# démo pointe vers une copie de travail, demo/execution/enregistrements/,
+# faite une fois à la préparation. De même, la boucle affichée garde ses
+# réponses Mistral dans demo/execution/mistral/, pas dans les
+# enregistrements des tests.
 #
 # La clé du journal n'est lue que dans l'environnement ; ce script n'en
 # crée ni n'en écrit jamais.
@@ -65,7 +75,15 @@ preparer() {
 	cd "$racine"
 	scripts/construire-serveurs.sh
 	CGO_ENABLED=0 go build -trimpath -buildvcs=false -o bin/mcp-gate ./cmd/mcp-gate
-	go run ./cmd/registre-demo
+	# Copie de travail des enregistrements des serveurs de données, gardée
+	# d'une préparation à l'autre (elle accumule les réponses du MIXTE).
+	for s in taux-officiel recherche-entreprises eurlex legifrance; do
+		if [[ ! -d "$execution/enregistrements/$s" ]]; then
+			mkdir -p "$execution/enregistrements"
+			cp -R "servers/$s/enregistrements" "$execution/enregistrements/$s"
+		fi
+	done
+	go run ./cmd/registre-demo -enregistrements demo/execution/enregistrements
 
 	if [[ -z "$(ls -A "$gels_local" 2>/dev/null)" ]]; then
 		echo "lancer-demo: registre local des gels absent, téléchargement (gels-avoirs preparer)" >&2
@@ -98,7 +116,7 @@ Démonstration prête. Lancer la boucle (Mistral, appels réels comptés dans ag
 
   export MCP_GATE_CLE_JOURNAL=\$(openssl rand -hex 32)   # si ce n'est déjà fait
   cd agents
-  python3 -m boucle --sous-agent credit --mode reel \\
+  python3 -m boucle --sous-agent credit --mode reel --enregistrements ../demo/execution/mistral \\
     --demande "$demande" \\
     -- ../scripts/lancer-demo.sh gate
 

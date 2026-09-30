@@ -23,8 +23,8 @@ ETAT = os.path.join(os.path.dirname(ICI), ".etat", "boucle")
 MAX_APPELS = 25
 
 
-def client_mistral(mode):
-    return mistral.Client(mode=mode, enregistrements=ENREGISTREMENTS, etat=ETAT, max_appels=MAX_APPELS)
+def client_mistral(mode, enregistrements=ENREGISTREMENTS):
+    return mistral.Client(mode=mode, enregistrements=enregistrements, etat=ETAT, max_appels=MAX_APPELS)
 
 
 def principal(argv=None, sortie=sys.stdout):
@@ -36,6 +36,8 @@ def principal(argv=None, sortie=sys.stdout):
     ap.add_argument("--jeton", help="jeton de validation pour l'appel en attente")
     ap.add_argument("--suspendre-dans", help="où écrire l'état si la boucle se suspend")
     ap.add_argument("--mode", choices=["rejeu", "reel"], default="rejeu")
+    ap.add_argument("--enregistrements", default=ENREGISTREMENTS,
+                    help="réponses Mistral enregistrées (cache) ; défaut : celles que rejouent les tests")
     ap.add_argument("serveur", nargs="+", help="commande du serveur MCP stdio")
     a = ap.parse_args(argv)
     if bool(a.demande) == bool(a.reprendre):
@@ -44,7 +46,7 @@ def principal(argv=None, sortie=sys.stdout):
         ap.error("--reprendre exige --jeton")
 
     with mcp.ClientMCP(a.serveur) as serveur:
-        b = boucle.Boucle(serveur, client_mistral(a.mode), a.sous_agent)
+        b = boucle.Boucle(serveur, client_mistral(a.mode, a.enregistrements), a.sous_agent)
         for s in b.signalements:
             sortie.write("schéma : %s\n" % s)
         for e in b.exclus:

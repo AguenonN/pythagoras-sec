@@ -64,9 +64,10 @@ var envSupplementaire = map[string][]string{
 	"legifrance": {"PISTE_CLIENT_ID", "PISTE_CLIENT_SECRET"},
 }
 
-// Serveurs dont le répertoire d'enregistrements versionné est
-// servers/<nom>/enregistrements. gels-avoirs a le sien (Options).
-var avecEnregistrements = map[string]bool{
+// AvecEnregistrements : serveurs dont le répertoire d'enregistrements
+// versionné est servers/<nom>/enregistrements. gels-avoirs a le sien
+// (Options.Gels).
+var AvecEnregistrements = map[string]bool{
 	"taux-officiel": true, "recherche-entreprises": true, "eurlex": true, "legifrance": true,
 }
 
@@ -98,6 +99,14 @@ type Options struct {
 	// (servers/gels-avoirs/enregistrements_locaux, hors Git). Les tests
 	// passent servers/gels-avoirs/enregistrements (registre synthétique).
 	Gels string
+	// Enregistrements est le répertoire, relatif à la racine ou absolu, qui
+	// contient un sous-répertoire par serveur de données officielles
+	// (<Enregistrements>/<nom>). Vide : servers/<nom>/enregistrements, les
+	// enregistrements versionnés. En DONNEES_MODE=MIXTE, un serveur écrit
+	// chaque réponse obtenue dans son répertoire : le lanceur de démo y met
+	// une copie de travail, pour que la démo ne réécrive jamais les
+	// enregistrements versionnés que les tests rejouent.
+	Enregistrements string
 }
 
 // DossierGelsLocal est le registre des gels complet, préparé par
@@ -214,8 +223,12 @@ func Generer(m *Manifeste, o Options) (demo, attaque *registre.Registre, err err
 func commande(o Options, nom, binaire string) *registre.Commande {
 	c := &registre.Commande{Chemin: binaire, Env: append([]string{VarMode}, envSupplementaire[nom]...)}
 	switch {
-	case avecEnregistrements[nom]:
-		c.Args = []string{"-enregistrements", abs(o.Racine, filepath.Join("servers", nom, "enregistrements"))}
+	case AvecEnregistrements[nom]:
+		dir := filepath.Join("servers", nom, "enregistrements")
+		if o.Enregistrements != "" {
+			dir = filepath.Join(o.Enregistrements, nom)
+		}
+		c.Args = []string{"-enregistrements", abs(o.Racine, dir)}
 	case nom == "gels-avoirs":
 		c.Args = []string{"-enregistrements", abs(o.Racine, o.Gels)}
 	case nom == "banque-synthetique":

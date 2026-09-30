@@ -39,6 +39,7 @@ func lancer() error {
 	manifeste := flag.String("manifeste", "bin/manifeste.json", "manifeste de construction, relatif à la racine")
 	sortie := flag.String("sortie", "demo", "répertoire des registres, relatif à la racine")
 	gels := flag.String("gels", registredemo.DossierGelsLocal, "enregistrements de gels-avoirs, relatif à la racine")
+	enr := flag.String("enregistrements", "", "répertoire des copies de travail des enregistrements (<dir>/<serveur>), relatif à la racine ; vide : les enregistrements versionnés")
 	catalogue := flag.String("catalogue", "", "écrit aussi le catalogue du compilateur à ce chemin, relatif à la racine")
 	flag.Parse()
 	if flag.NArg() > 0 {
@@ -52,7 +53,7 @@ func lancer() error {
 	if err != nil {
 		return err
 	}
-	demo, attaque, err := registredemo.Generer(m, registredemo.Options{Racine: r, Gels: *gels})
+	demo, attaque, err := registredemo.Generer(m, registredemo.Options{Racine: r, Gels: *gels, Enregistrements: *enr})
 	if err != nil {
 		return err
 	}

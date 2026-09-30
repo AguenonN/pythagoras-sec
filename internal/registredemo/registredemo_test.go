@@ -157,6 +157,23 @@ func TestGenerer(t *testing.T) {
 		t.Fatalf("banque : %v", banque.Commande.Args)
 	}
 
+	// Avec un répertoire de copies de travail, les serveurs de données y
+	// lisent et écrivent ; les autres commandes ne changent pas.
+	copie, _, err := Generer(m, Options{Racine: racine, Gels: DossierGelsSynthetique, Enregistrements: "demo/execution/enregistrements"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, s := range copie.Serveurs {
+		switch {
+		case AvecEnregistrements[s.Nom]:
+			if s.Commande.Args[1] != filepath.Join(racine, "demo/execution/enregistrements", s.Nom) {
+				t.Fatalf("%s : %v", s.Nom, s.Commande.Args)
+			}
+		case !reflect.DeepEqual(s, demo.Serveurs[i]):
+			t.Fatalf("%s modifié par Enregistrements", s.Nom)
+		}
+	}
+
 	// Le registre d'attaque : la commande de taux-officiel lance
 	// l'imposteur, l'empreinte attendue reste celle de l'officiel, et rien
 	// d'autre ne change.
