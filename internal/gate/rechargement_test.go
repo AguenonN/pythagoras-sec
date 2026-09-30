@@ -244,9 +244,8 @@ func TestRecharger_BasculeAtomique(t *testing.T) {
 	}
 }
 
-// Le retour à une version inférieure est permis, et son entrée jeu_charge
-// le dit : retour_arriere, version de départ, version d'arrivée. Une
-// montée de version ne porte aucune de ces marques.
+// Toute bascule porte sa version de départ et d'arrivée ; le retour à une
+// version inférieure est permis et porte en plus retour_arriere.
 func TestRecharger_RetourArriereMarque(t *testing.T) {
 	b := monter(t, nil)
 	cs := b.agent(t)
@@ -266,14 +265,16 @@ func TestRecharger_RetourArriereMarque(t *testing.T) {
 	if len(charges) != 4 {
 		t.Fatalf("%d entrées jeu_charge", len(charges))
 	}
-	// Démarrage v1, montée v2, retour v1, montée v2.
+	// Démarrage v1, montée v2, retour v1, montée v2 : toute bascule porte
+	// départ et arrivée, le démarrage n'en porte pas, seul le retour est
+	// marqué.
+	departs, arrivees := []int{0, 1, 2, 1}, []int{0, 2, 1, 2}
 	for i, e := range charges {
-		retour := i == 2
-		if e.RetourArriere != retour {
+		if e.RetourArriere != (i == 2) {
 			t.Fatalf("jeu_charge %d (v%d) : retour_arriere %v", i, e.Jeu.Version, e.RetourArriere)
 		}
-		if !retour && (e.VersionDepart != 0 || e.VersionArrivee != 0) {
-			t.Fatalf("jeu_charge %d : versions %d → %d sur une montée", i, e.VersionDepart, e.VersionArrivee)
+		if e.VersionDepart != departs[i] || e.VersionArrivee != arrivees[i] {
+			t.Fatalf("jeu_charge %d : versions %d → %d", i, e.VersionDepart, e.VersionArrivee)
 		}
 	}
 	r := charges[2]

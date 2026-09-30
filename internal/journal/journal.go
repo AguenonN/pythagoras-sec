@@ -149,10 +149,10 @@ type Entree struct {
 
 	Jeu *RefJeu `json:"jeu,omitempty"`
 
-	// Retour arrière d'un jeu_charge : le jeu rechargé à chaud a une
-	// version inférieure à celle du jeu qu'il remplace. VersionDepart est
-	// la version remplacée, VersionArrivee celle chargée (égale à
-	// Jeu.Version).
+	// Bascule à chaud d'un jeu_charge : VersionDepart est la version
+	// remplacée, VersionArrivee celle chargée (égale à Jeu.Version).
+	// RetourArriere marque une version d'arrivée inférieure. Absents d'un
+	// jeu_charge de démarrage.
 	RetourArriere  bool `json:"retour_arriere,omitempty"`
 	VersionDepart  int  `json:"version_depart,omitempty"`
 	VersionArrivee int  `json:"version_arrivee,omitempty"`
