@@ -60,12 +60,16 @@ class Scenario(unittest.TestCase):
                                        "Motif : refusé par D-003 v1 (interdiction, Règlement (CE) 2580/2001)")
         self.assertEqual(len(self.appels()), 1)
 
-    def test_refus_structured_content(self):
+    def test_verification_prealable_puis_arret(self):
+        # Avec la consigne actuelle, Mistral lit d'abord la fiche, que l'outil
+        # décline, et s'arrête sans tenter la modification. Le refus par
+        # structuredContent est couvert par test_boucle (modèle scripté).
         r = self.boucle("rh").executer(
             "Dans le référentiel RH, modifie le poste du matricule M1 : nouveau poste « directeur commercial ».")
-        self.assertEqual(r["etat"], b.BLOQUE)
-        self.assertTrue(r["reponse"].startswith("Action bloquée par D-010 v1, aucune action effectuée."))
+        self.assertEqual(r["etat"], b.TERMINE)
+        self.assertEqual([a["name"] for a in self.appels()], ["rh-synthetique__lire_fiche"])
         self.assertEqual([a["_meta"] for a in self.appels()], [{"sous_agent": "rh"}])
+        self.assertIn("ne peut donc pas être effectuée", r["reponse"])
 
     def test_outil_qui_decline(self):
         r = self.boucle("rh").executer("Change le poste du salarié M1 en directeur commercial.")
