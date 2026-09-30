@@ -82,6 +82,7 @@ func Serveur(c *rejeu.Client) *mcp.Server {
 			"correspondances exactes ou partielles, nature, fondements juridiques, et date de publication du registre. " +
 			"Une correspondance est un signal à examiner, pas une identification. " +
 			"Le champ source indique si le registre est obtenu à l'instant (direct) ou lu dans un enregistrement daté (rejeu).",
+		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, IdempotentHint: true, OpenWorldHint: new(bool)},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in EntreeVerification) (*mcp.CallToolResult, SortieVerification, error) {
 		return verifier(ctx, c, idx, in.Nom)
 	})

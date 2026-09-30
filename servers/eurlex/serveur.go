@@ -90,6 +90,7 @@ func Serveur(c *rejeu.Client) *mcp.Server {
 		Description: "Métadonnées d'un acte de l'Union européenne par son numéro CELEX (CELLAR, Office des publications) : " +
 			"titre, dates, statut en vigueur, actes modificatifs. " +
 			"Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).",
+		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, IdempotentHint: true, OpenWorldHint: new(bool)},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in EntreeActe) (*mcp.CallToolResult, SortieActe, error) {
 		return rechercher(ctx, c, in.Celex)
 	})
@@ -98,6 +99,7 @@ func Serveur(c *rejeu.Client) *mcp.Server {
 		Description: "Texte d'un article d'un acte de l'Union européenne (numéro CELEX et numéro d'article), " +
 			"dans la version publiée au Journal officiel, non consolidée. " +
 			"Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).",
+		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, IdempotentHint: true, OpenWorldHint: new(bool)},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in EntreeArticle) (*mcp.CallToolResult, SortieArticle, error) {
 		return lire(ctx, c, in.Celex, in.Article)
 	})
