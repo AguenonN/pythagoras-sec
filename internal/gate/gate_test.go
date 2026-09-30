@@ -128,8 +128,13 @@ const jeuTest = `{
 }`
 
 type banc struct {
-	g       *Gate
-	jeu     directive.Jeu
+	g   *Gate
+	jeu directive.Jeu
+	// docJeu et reg peuvent être changés par le modificateur de monter,
+	// avant le chargement du jeu et la validation du registre.
+	docJeu  string
+	reg     *registre.Registre
+	config  func(*Config)
 	coffre  *journal.Coffre
 	journal *tampon
 	taux    *faux
@@ -147,10 +152,6 @@ func (b *banc) maintenant() time.Time {
 
 func monter(t *testing.T, modifier func(*banc)) *banc {
 	t.Helper()
-	jeu, err := directive.Charger([]byte(jeuTest))
-	if err != nil {
-		t.Fatal(err)
-	}
 	reg := &registre.Registre{
 		Meta: registre.MetaRegistre{ID: "test", Version: 1, Auteur: "ops"},
 		Serveurs: []registre.Serveur{
@@ -158,11 +159,8 @@ func monter(t *testing.T, modifier func(*banc)) *banc {
 			backendtest.HTTP("banque-synthetique", backendtest.Banque, "https://banque.lab/mcp", h64, "banque.lab"),
 		},
 	}
-	if err := registre.Valider(reg); err != nil {
-		t.Fatal(err)
-	}
 	b := &banc{
-		jeu: *jeu, journal: &tampon{},
+		docJeu: jeuTest, reg: reg, journal: &tampon{},
 		taux:    &faux{nom: "taux-officiel", att: attestee("binaire")},
 		banque:  &faux{nom: "banque-synthetique", att: attestee("tls-pin")},
 		horloge: time.Date(2026, 10, 4, 9, 0, 0, 0, time.UTC),
@@ -170,13 +168,22 @@ func monter(t *testing.T, modifier func(*banc)) *banc {
 	if modifier != nil {
 		modifier(b)
 	}
+	reg = b.reg
+	if err := registre.Valider(reg); err != nil {
+		t.Fatal(err)
+	}
+	jeu, err := directive.Charger([]byte(b.docJeu))
+	if err != nil {
+		t.Fatal(err)
+	}
+	b.jeu = *jeu
 	if b.coffre, err = journal.OuvrirCoffre(filepath.Join(t.TempDir(), "coffre.jsonl")); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { b.coffre.Fermer() })
 	j := journal.Nouveau(chaine.Nouvelle(b.journal, cle))
 	fauxParNom := map[string]*faux{"taux-officiel": b.taux, "banque-synthetique": b.banque}
-	b.g, err = Demarrer(context.Background(), Config{
+	cfg := Config{
 		Registre: reg, Jeu: b.jeu, Journal: j, Coffre: b.coffre, Appelant: AppelantStdio, Horloge: b.maintenant,
 		Connecter: func(_ context.Context, s registre.Serveur, _ backend.Options) (backend.Backend, error) {
 			f := fauxParNom[s.Nom]
@@ -185,7 +192,11 @@ func monter(t *testing.T, modifier func(*banc)) *banc {
 			}
 			return f, nil
 		},
-	})
+	}
+	if b.config != nil {
+		b.config(&cfg)
+	}
+	b.g, err = Demarrer(context.Background(), cfg)
 	if err != nil {
 		t.Fatal(err)
 	}

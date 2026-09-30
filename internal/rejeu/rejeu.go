@@ -255,10 +255,7 @@ func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, purges Purges, opts Op
 	r.Rejouable, r.Nature = true, opts.nature()
 
 	etat := directive.EtatSession{ID: en.Session, Appelant: en.Appelant, Consultations: journal.VersConsultations(en.EtatSession)}
-	appel := directive.Appel{
-		Serveur: en.Serveur, Outil: en.Outil, Arguments: args,
-		Attestation: en.Attestation.VersDirective(), Horodatage: en.TS,
-	}
+	appel := AppelDepuis(en, args)
 
 	// Contrôle 2 : sous le jeu d'origine, à la date historique, la décision
 	// retrouve empreinte_transmise et l'effet journalisé.
@@ -304,6 +301,19 @@ func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, purges Purges, opts Op
 	return r, nil
 }
 
+// AppelDepuis reconstitue l'appel que Decide a reçu, à partir de l'entrée
+// appel et des arguments d'origine : tous les champs, v2 compris (registre,
+// demandeur, personnes concernées, sous-agent déclaré).
+func AppelDepuis(en journal.Entree, args map[string]any) directive.Appel {
+	return directive.Appel{
+		Serveur: en.Serveur, Outil: en.Outil, Arguments: args,
+		Attestation: en.Attestation.VersDirective(), Horodatage: en.TS,
+		Acces: directive.Acces(en.Acces), EtiquettesCible: en.EtiquettesCible, VersionRegistre: en.VersionRegistre,
+		Demandeur: en.Demandeur.VersDirective(), Sujets: journal.VersSujets(en.Sujets),
+		SousAgentDeclare: en.SousAgentDeclare,
+	}
+}
+
 // statutCoherent confronte le statut du résultat à l'effet journalisé.
 func statutCoherent(en journal.Entree) (string, bool) {
 	if en.Resultat == nil {
@@ -344,9 +354,14 @@ func consultation(en journal.Entree) (journal.Consultation, bool) {
 	default:
 		return journal.Consultation{}, false
 	}
+	// Les compléments v2 sont ceux de l'entrée qui a produit la
+	// consultation : étiquettes et version du registre au moment de
+	// l'appel, source déclarée telle que Decide la lit.
 	return journal.Consultation{
 		Seq: en.Seq, Serveur: en.Serveur, Outil: en.Outil, TS: en.TS, Resultat: en.Resultat.Statut,
 		Empreinte: en.Appel.EmpreinteTransmise, EmpreinteReponse: en.Resultat.EmpreinteReponse,
+		Etiquettes: en.EtiquettesCible, VersionRegistre: en.VersionRegistre,
+		Source: journal.DepuisSourceReponse(en.Resultat.Source.VersDirective()),
 	}, true
 }
 

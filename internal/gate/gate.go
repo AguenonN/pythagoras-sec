@@ -96,6 +96,12 @@ type Gate struct {
 	// enPanne est posé quand le journal refuse une écriture : sans preuve,
 	// l'engine refuse tout appel.
 	enPanne atomic.Bool
+	// complements tient, par session, ce que l'engine sait d'une
+	// consultation en plus de ce que la session garde : étiquettes et
+	// version du registre au moment de l'appel, source déclarée par le
+	// serveur (voir completer).
+	complements sync.Map // id de session → *complementsSession
+	idsSession  sync.Map // *mcp.ServerSession → id de session, pour oublier les compléments
 }
 
 // Demarrer journalise le jeu et le registre, connecte chaque backend et
@@ -322,6 +328,9 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 		}
 		return refusEngine("Appel refusé : " + motifSession(err))
 	}
+	if ss != nil {
+		g.idsSession.LoadOrStore(ss, tour.SessionID())
+	}
 
 	// 3. Une seule lecture d'horloge ; dépôt au coffre avant l'entrée appel.
 	ts := g.horloge().UTC()
@@ -332,12 +341,19 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 		return refusEngine("Appel refusé : le coffre de l'engine est indisponible ; aucun appel n'est transmis sans preuve.")
 	}
 
-	// 4. Décider, sous le jeu actif à cet instant, lu une seule fois.
+	// 4. Décider, sous le jeu actif à cet instant, lu une seule fois. Tout
+	// ce que Decide v2 lit du registre vient de l'entrée épinglée du
+	// serveur : accès, étiquettes, version.
 	jeu := *g.jeu.Load()
-	etat := tour.Etat()
+	reg := g.cfg.Registre
+	srv, _ := reg.Serveur(serveur)
+	o, _ := srv.Outil(outil)
+	version, acces, etiquettes := reg.Version(), directive.Acces(o.Acces), srv.EtiquettesOutil(outil)
+	etat := g.completer(tour.Etat())
 	att := b.Attestation()
 	dec := directive.Decide(jeu, etat, directive.Appel{
 		Serveur: serveur, Outil: outil, Arguments: args, Attestation: att, Horodatage: ts,
+		Acces: acces, EtiquettesCible: etiquettes, VersionRegistre: version, SousAgentDeclare: sousAgent,
 	})
 	// Contrôle du registre, toujours actif, même sans directive
 	// source_attestee pour ce serveur : refus d'origine registre.
@@ -352,10 +368,11 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 		Jeu:              journal.DepuisJeu(jeu), Serveur: serveur, OutilExpose: expose, Outil: outil,
 		Appel: &journal.Appel{EmpreinteOrigine: dec.EmpreinteOrigine, EmpreinteTransmise: dec.EmpreinteTransmise,
 			ChampsRetires: dec.ChampsRetires},
-		Attestation: journal.DepuisAttestation(att),
-		EtatSession: journal.DepuisConsultations(etat.Consultations),
-		Decision:    decJ,
-		Resultat:    &journal.Resultat{Statut: journal.StatutNonTransmis},
+		Attestation:     journal.DepuisAttestation(att),
+		EtatSession:     journal.DepuisConsultations(etat.Consultations),
+		Decision:        decJ,
+		Resultat:        &journal.Resultat{Statut: journal.StatutNonTransmis},
+		VersionRegistre: version, Acces: string(acces), EtiquettesCible: nonVide(etiquettes),
 	}
 
 	var rep *mcp.CallToolResult
@@ -387,6 +404,7 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 		})
 		entree.Resultat = &journal.Resultat{Statut: string(c.Resultat), EmpreinteReponse: c.EmpreinteReponse,
 			DureeMs: time.Since(debut).Milliseconds(), Source: sourceDeclaree(retour.Reponse)}
+		g.retenir(entree)
 		if retour.Err != nil {
 			g.log.Warn("appel au backend", "serveur", serveur, "outil", outil, "resultat", c.Resultat, "erreur", retour.Err)
 		}
@@ -411,7 +429,69 @@ func (g *Gate) suivre(ss *mcp.ServerSession) {
 	}
 	if _, deja := g.suivies.LoadOrStore(ss, struct{}{}); !deja {
 		g.sessions.Suivre(ss)
+		go func() {
+			ss.Wait()
+			if id, ok := g.idsSession.LoadAndDelete(ss); ok {
+				g.complements.Delete(id)
+			}
+		}()
 	}
+}
+
+// complement est ce que l'engine consigne d'une consultation en plus de ce
+// que la session garde. Il est pris dans l'entrée appel qui l'a produite,
+// avec les mêmes valeurs que celles que le rejeu relit dans cette entrée
+// (rejeu.ReconstituerEtat) : étiquettes et version du registre au moment
+// de l'appel, source déclarée.
+type complement struct {
+	etiquettes []string
+	version    string
+	source     *directive.SourceReponse
+}
+
+// complementsSession est tenu verrou de session : un seul tour à la fois
+// y lit ou y écrit.
+type complementsSession struct {
+	mu     sync.Mutex
+	parSeq map[int]complement
+}
+
+// retenir garde le complément d'une consultation, à partir de l'entrée
+// appel qui la journalise.
+func (g *Gate) retenir(en journal.Entree) {
+	v, _ := g.complements.LoadOrStore(en.Session, &complementsSession{parSeq: map[int]complement{}})
+	cs := v.(*complementsSession)
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+	cs.parSeq[en.Seq] = complement{etiquettes: nonVide(en.EtiquettesCible), version: en.VersionRegistre,
+		source: en.Resultat.Source.VersDirective()}
+}
+
+// completer ajoute aux consultations de l'état ce que l'engine en a
+// retenu. Une consultation sans complément garde des étiquettes inconnues
+// (version vide) : Decide la traite comme indéterminée.
+func (g *Gate) completer(etat directive.EtatSession) directive.EtatSession {
+	v, ok := g.complements.Load(etat.ID)
+	if !ok {
+		return etat
+	}
+	cs := v.(*complementsSession)
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+	for i := range etat.Consultations {
+		if c, ok := cs.parSeq[etat.Consultations[i].Seq]; ok {
+			etat.Consultations[i].Etiquettes, etat.Consultations[i].VersionRegistre, etat.Consultations[i].Source =
+				c.etiquettes, c.version, c.source
+		}
+	}
+	return etat
+}
+
+func nonVide(l []string) []string {
+	if len(l) == 0 {
+		return nil
+	}
+	return l
 }
 
 func (g *Gate) alerte(serveur, outil, message string) {
@@ -459,8 +539,8 @@ const LongueurMaxSousAgent = 128
 // sousAgentDeclare lit _meta.sous_agent. Absent : "" et lisible. Une
 // valeur qui n'est pas une chaîne UTF-8 de 1 à 128 octets sans caractère
 // de contrôle n'est pas journalisée. La valeur n'est qu'une déclaration de
-// l'agent : elle ne passe ni à Decide, ni à l'état de session, ni au
-// serveur.
+// l'agent : elle passe à Decide (feuille sous_agent_declare, qui ne sert
+// qu'à resserrer) et au journal, jamais à l'état de session ni au serveur.
 func sousAgentDeclare(meta mcp.Meta) (string, bool) {
 	v, ok := meta[CleSousAgent]
 	if !ok || v == nil {
@@ -516,7 +596,7 @@ const (
 	OrigineDirect      = "direct" // obtenue de l'API officielle pendant ce processus
 	OrigineRejeu       = "rejeu"  // lue dans un enregistrement daté
 	OrigineAucune      = "aucune" // aucune donnée servie
-	OrigineNonDeclaree = "non_declaree"
+	OrigineNonDeclaree = journal.OrigineNonDeclaree
 )
 
 // sourceDeclaree reprend la provenance que le serveur déclare dans
