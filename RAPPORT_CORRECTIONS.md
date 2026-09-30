@@ -21,7 +21,8 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
 | `3ea7a24` | 7. `DOS-FICTIF-005` | Demandeur JSC ROSOBORONEXPORT, personne morale inscrite au registre des gels (id 4493), demande fictive, constat daté dans les données |
 | `b6f1016` | 8. Personnes physiques anonymes | `verifier_gel` ne rend jamais nom ni alias d'une personne physique, en DIRECT comme en REJEU |
 | `4ce5f34` | 9. `Restreindre` obligatoire | Sans liste d'hôtes explicite, un client ne joint aucun hôte |
-| (ce commit) | 10. Rapports sous `docs/` | `RAPPORT_NUIT.md` → `docs/rapports/donnees-nuit.md` (note en tête) |
+| `9cf9cbd` | 10. Rapports sous `docs/` | `RAPPORT_NUIT.md` → `docs/rapports/donnees-nuit.md` (note en tête) |
+| (ce commit) | 11. Construction reproductible | `scripts/construire-serveurs.sh` : 9 serveurs, schémas vérifiés, `bin/manifeste.json` |
 
 **Mission 2 : tout est fait**, points 1 à 6. `go vet ./...` et `go test -race ./...` verts à chaque commit ; aucun fichier hors `servers/` et des rapports dans mes commits ; aucun secret, aucune clé, aucun binaire versionné (vérifié).
 
@@ -90,6 +91,14 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
 
 - **10. Rapports** : `git mv RAPPORT_NUIT.md docs/rapports/donnees-nuit.md` (historique du fichier conservé), avec une note en tête : état de la nuit, identifiants antérieurs à la réécriture, renommage, registre hors Git. Ce rapport-ci reste à la racine jusqu'au dernier commit de la mission, puis devient `docs/rapports/donnees-corrections.md`. `nuit/00_regles_communes.md` (non versionné, pas à moi) cite encore `RAPPORT_NUIT.md` : non modifié.
 
+- **11. `scripts/construire-serveurs.sh`** :
+  - Compile les **neuf** serveurs listés (taux-officiel, taux-imposteur, recherche-entreprises, gels-avoirs, eurlex, legifrance, banque-synthetique, rh-synthetique, referentiel-rh ; le brief dit « huit » mais en nomme neuf : les neuf sont construits) dans `bin/`, avec `-trimpath -buildvcs=false`, `CGO_ENABLED=0` et `GOFLAGS=-mod=readonly`.
+  - Pour chacun : nom logique contrôlé (règle de `internal/nommage`), `tools/list` lu sur le stdio du binaire en REJEU (sans réseau) par `exporter-schema` et comparé **octet pour octet** à `servers/<nom>/schema.json` ; tout écart arrête le script (code 1) avec la commande de régénération, et le manifeste précédent n'est pas remplacé (vérifié en altérant un schéma, puis restauré).
+  - Écrit `bin/manifeste.json` : chaîne de construction (version de Go, OS, architecture, cgo, drapeaux) puis, dans l'ordre fixe ci-dessus, `nom`, `binaire`, `sha256`, `schema`, `schema_sha256`. Aucun horodatage : le manifeste ne dépend que des sources et de la chaîne.
+  - **Reproductibilité vérifiée** : deux exécutions successives → manifestes identiques (`cmp`) ; troisième exécution avec un cache de construction neuf (`GOCACHE` vide, recompilation complète) → identique aussi.
+  - Manifeste obtenu (go1.25.0 linux/amd64) : `taux-officiel` `5ac7974d…`, `taux-imposteur` `04455bae…`, `recherche-entreprises` `3afa1ba9…`, `gels-avoirs` `672fe28f…`, `eurlex` `9003ca67…`, `legifrance` `6407c956…`, `banque-synthetique` `08353dee…`, `rh-synthetique` `9c846fae…`, `referentiel-rh` `6f59c80b…`. `taux-officiel` et `taux-imposteur` ont le **même `schema_sha256`** (`0fa1960c…`) et des binaires différents : c'est ce que le registre du gate devra distinguer.
+  - `bin/` reste ignoré par Git (`/bin/` du `.gitignore` racine) ; ni binaire ni manifeste n'est versionné. Les empreintes de binaires citées plus haut dans ce rapport (constructions sans `-buildvcs=false` ni `CGO_ENABLED=0`) sont périmées : la référence est désormais le manifeste.
+
 ## 2. Pas fait
 
 Rien du brief. Limites :
@@ -127,7 +136,8 @@ Réponses reçues (mission 3) : registre réel local pour la démo, pas de méla
 
 ```sh
 cd ~/cybercar/mcp_rogue-donnees
-go vet ./... && go test -race ./servers/...
+go vet ./... && go test -race ./...
+scripts/construire-serveurs.sh && cp bin/manifeste.json /tmp/m1.json && scripts/construire-serveurs.sh && cmp /tmp/m1.json bin/manifeste.json && echo reproductible
 go build -o bin/appeler ./servers/appeler
 go build -o bin/taux-officiel ./servers/taux-officiel
 DONNEES_MODE=REJEU bin/appeler bin/taux-officiel get_taux_usure '{"categorie":"decouvert-societes-non-financieres","date_reference":"2026-10-04"}'   # T4, 19,08 %
