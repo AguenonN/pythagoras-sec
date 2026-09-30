@@ -38,15 +38,25 @@ type EntreeVerification struct {
 }
 
 // Correspondance est une entrée du registre qui correspond au nom.
+//
+// Pour une personne physique, seuls la correspondance, l'identifiant du
+// registre, la nature, les fondements juridiques et les références UE / ONU
+// sont rendus : ni nom, ni alias, ni aucune autre donnée d'identité.
 type Correspondance struct {
-	IDRegistre   int      `json:"id_registre"`
-	Nature       string   `json:"nature" jsonschema:"Personne morale, Personne physique ou Navire"`
-	Nom          string   `json:"nom"`
-	AliasTrouve  string   `json:"alias_trouve,omitempty" jsonschema:"alias du registre qui a correspondu, si ce n'est pas le nom"`
-	Type         string   `json:"type" jsonschema:"exacte (mêmes mots) ou partielle (tous les mots cherchés présents)"`
-	Fondements   []string `json:"fondements_juridiques"`
-	ReferencesUE []string `json:"references_ue,omitempty"`
+	IDRegistre    int      `json:"id_registre"`
+	Nature        string   `json:"nature" jsonschema:"Personne morale, Personne physique ou Navire"`
+	Nom           string   `json:"nom,omitempty" jsonschema:"nom au registre ; jamais rendu pour une personne physique"`
+	AliasTrouve   string   `json:"alias_trouve,omitempty" jsonschema:"alias du registre qui a correspondu, si ce n'est pas le nom ; jamais rendu pour une personne physique"`
+	Type          string   `json:"type" jsonschema:"exacte (mêmes mots) ou partielle (tous les mots cherchés présents)"`
+	Fondements    []string `json:"fondements_juridiques"`
+	ReferencesUE  []string `json:"references_ue,omitempty"`
+	ReferencesONU []string `json:"references_onu,omitempty"`
 }
+
+// natureNommee : les seules natures dont le nom est rendu. Toute autre
+// nature, connue ou non, est traitée comme une personne physique (fermé par
+// défaut).
+var natureNommee = map[string]bool{"Personne morale": true, "Navire": true}
 
 // SortieVerification est le résultat de verifier_gel.
 //
@@ -179,6 +189,10 @@ func (x *index) charger(rep *rejeu.Reponse) (*registre, error) {
 					if l := chaine(v["ReferenceUe"]); l != "" {
 						f.refsUE = append(f.refsUE, l)
 					}
+				case "REFERENCE_ONU":
+					if l := chaine(v["ReferenceOnu"]); l != "" {
+						f.refsONU = append(f.refsONU, l)
+					}
 				}
 			}
 		}
@@ -206,6 +220,7 @@ type fiche struct {
 	noms       []nomIndexe
 	fondements []string
 	refsUE     []string
+	refsONU    []string
 }
 
 type nomIndexe struct {
@@ -238,15 +253,18 @@ func (r *registre) chercher(cherche []string) []Correspondance {
 		if fond == nil {
 			fond = []string{}
 		}
-		out = append(out, Correspondance{
-			IDRegistre:   f.IDRegistre,
-			Nature:       f.Nature,
-			Nom:          f.Nom,
-			AliasTrouve:  alias,
-			Type:         meilleur,
-			Fondements:   fond,
-			ReferencesUE: f.refsUE,
-		})
+		c := Correspondance{
+			IDRegistre:    f.IDRegistre,
+			Nature:        f.Nature,
+			Type:          meilleur,
+			Fondements:    fond,
+			ReferencesUE:  f.refsUE,
+			ReferencesONU: f.refsONU,
+		}
+		if natureNommee[f.Nature] {
+			c.Nom, c.AliasTrouve = f.Nom, alias
+		}
+		out = append(out, c)
 	}
 	sort.SliceStable(out, func(i, j int) bool {
 		return out[i].Type == "exacte" && out[j].Type != "exacte"

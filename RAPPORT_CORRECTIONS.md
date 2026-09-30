@@ -18,7 +18,8 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
 
 | Commit | Point | Contenu |
 |---|---|---|
-| (ce commit) | 7. `DOS-FICTIF-005` | Demandeur JSC ROSOBORONEXPORT, personne morale inscrite au registre des gels (id 4493), demande fictive, constat daté dans les données |
+| `3ea7a24` | 7. `DOS-FICTIF-005` | Demandeur JSC ROSOBORONEXPORT, personne morale inscrite au registre des gels (id 4493), demande fictive, constat daté dans les données |
+| (ce commit) | 8. Personnes physiques anonymes | `verifier_gel` ne rend jamais nom ni alias d'une personne physique, en DIRECT comme en REJEU |
 
 **Mission 2 : tout est fait**, points 1 à 6. `go vet ./...` et `go test -race ./...` verts à chaque commit ; aucun fichier hors `servers/` et des rapports dans mes commits ; aucun secret, aucune clé, aucun binaire versionné (vérifié).
 
@@ -74,6 +75,13 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
   - Constat dans les données (`constat_registre_gels`, **jamais restitué** par `evaluer_dossier`) : source, id 4493, nature, nom au registre, **date de publication du registre 2026-09-29T15:47:57.8109475+02:00**, constaté le 2026-09-30, vérification faite.
   - **Vérification manuelle** (2026-09-30, registre local complet, `DONNEES_MODE=REJEU`) : `evaluer_dossier {"dossier_id":"DOS-FICTIF-005"}` → demandeur `JSC ROSOBORONEXPORT` ; `verifier_gel {"nom":"JSC ROSOBORONEXPORT"}` → `statut: ok`, **1 correspondance**, exacte, id 4493, personne morale, fondements (UE) 2022/427 et (UE) 2023/571, `date_publication_registre` 2026-09-29T15:47:57.8109475+02:00, `source.origine: rejeu`.
   - Tests hors ligne (`TestDossierEntiteInscriteAuRegistre`) : ils lisent les données du dossier, jamais le registre local ; ils vérifient que le constat ne fuit pas dans le résultat. Aucune entrée fictive n'a été ajoutée au registre réel ; le registre synthétique n'est pas modifié.
+
+- **8. Personnes physiques jamais nommées** (`gels-avoirs`) :
+  - Pour une correspondance de nature « Personne physique », le résultat ne porte que `type` (exacte/partielle), `id_registre`, `nature`, `fondements_juridiques`, `references_ue`, `references_onu` (nouveau champ, toutes natures). `nom` et `alias_trouve` sont absents ; aucune autre donnée d'identité (prénom, naissance, nationalité, adresse) n'a jamais été rendue. Personnes morales et navires gardent nom et alias.
+  - **Fermé par défaut** : seules les natures « Personne morale » et « Navire » sont nommées ; toute autre nature, même inconnue, est masquée (`TestNatureInconnueMasquee`).
+  - Le masquage est fait à la construction du résultat, donc identique en DIRECT, REJEU et MIXTE. Tests sur le registre synthétique : la personne fictive a désormais un prénom, un alias, des date et lieu de naissance, une nationalité, une adresse (tous fictifs) et des références UE/ONU ; recherchée par son nom exact, en minuscules, par son alias ou par un seul mot, elle est trouvée (id 900002) et **ni « ZETA », ni « PERSONNE FICTIVE », ni aucun de ces champs n'apparaît dans le résultat brut** (contenu structuré et texte) (`TestPersonnePhysiqueJamaisNommee`). Même vérification en DIRECT, avec un transport local qui sert le registre synthétique, sans réseau (`TestPersonnePhysiqueJamaisNommeeEnDirect`).
+  - **Vérification sur le registre réel local**, sans afficher aucun nom : 20 personnes physiques tirées au hasard, cherchées par leur nom exact : 20/20 retrouvées (id), 20/20 correspondances sans nom ni alias, 0/20 nom ou alias présent dans la sortie brute.
+  - Enregistrement synthétique régénéré (`-maj-synthetique`), `schema.json` régénéré.
 
 ## 2. Pas fait
 
