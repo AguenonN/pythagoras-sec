@@ -1,0 +1,3 @@
+IANA tzdata 2025b
+Extrait de $GOROOT/lib/time/zoneinfo.zip (Go 1.25.0, CODE=2025b DATA=2025b).
+Copie figée : ne pas mettre à jour sans nouvelle version du schéma de fuseaux et relecture des directives temps.

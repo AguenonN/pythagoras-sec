@@ -174,7 +174,10 @@ type Perimetre struct {
 	Appelants []string `json:"appelants"`
 }
 
-// Directive est une règle validée par le juriste.
+// Directive est une règle validée par le juriste. Elle est v1 (Verrou,
+// Cible, Condition, Provenance, Champs, Effet) ou v2 (Declencheur, Arbre,
+// Effets, Fondements) ; l'enveloppe est commune. Sa forme JSON est celle
+// de sa version (directive_json.go).
 type Directive struct {
 	ID        string    `json:"id"`
 	Version   int       `json:"version"`
@@ -196,7 +199,21 @@ type Directive struct {
 	Champs                 *Champs       `json:"champs,omitempty"`
 
 	Effet Effet `json:"effet"`
+
+	// v2 (docs/schema-directive-v2.md). Fondements remplace Fondement ;
+	// Arbre s'écrit "condition" dans le document v2.
+	Fondements  []Fondement      `json:"-"`
+	Declencheur *Declencheur     `json:"-"`
+	Arbre       *Noeud           `json:"-"`
+	Effets      []EffetDirective `json:"-"`
+
+	// verrouV1 est posé par ConvertirV1 : la directive v2 vient d'une v1,
+	// dont les motifs sont gardés à l'identique.
+	verrouV1 Verrou
 }
+
+// EstV2 dit si la directive est de forme v2.
+func (d *Directive) EstV2() bool { return d.Declencheur != nil }
 
 // MetaJeu identifie le jeu : c'est lui qui est versionné, daté et signé.
 type MetaJeu struct {

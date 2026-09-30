@@ -89,6 +89,11 @@ type Consultation struct {
 	Resultat         string    `json:"resultat"`
 	Empreinte        string    `json:"empreinte"`
 	EmpreinteReponse string    `json:"empreinte_reponse,omitempty"`
+
+	// v2 (docs/schema-directive-v2.md §8.5).
+	Etiquettes      []string `json:"etiquettes,omitempty"`
+	VersionRegistre string   `json:"version_registre,omitempty"`
+	Source          *Source  `json:"source,omitempty"`
 }
 
 type Application struct {
@@ -104,6 +109,11 @@ type Application struct {
 	RevisionEchue bool                `json:"revision_echue,omitempty"`
 	ChampsRetires []string            `json:"champs_retires,omitempty"`
 	Motif         string              `json:"motif"`
+
+	// v2 : résultat à trois valeurs (vrai | faux | indetermine) et tous les
+	// fondements de la directive.
+	Resultat   string                `json:"resultat,omitempty"`
+	Fondements []directive.Fondement `json:"fondements,omitempty"`
 }
 
 type Decision struct {
@@ -115,6 +125,11 @@ type Decision struct {
 	Motif        string        `json:"motif"`
 	Applications []Application `json:"applications"`
 	Alertes      []string      `json:"alertes,omitempty"`
+
+	// v2, triés.
+	Notifications []Notification `json:"notifications,omitempty"`
+	Marques       []Marque       `json:"marques,omitempty"`
+	Validation    *Validation    `json:"validation,omitempty"`
 }
 
 type Approbation struct {
@@ -177,6 +192,16 @@ type Entree struct {
 	Decision    *Decision      `json:"decision,omitempty"`
 	Approbation *Approbation   `json:"approbation,omitempty"`
 	Resultat    *Resultat      `json:"resultat,omitempty"`
+
+	// Entrées v2 de Decide, consignées pour le rejeu : version du registre
+	// (vide : accès et étiquettes inconnus), grant et étiquettes de la
+	// cible, demandeur résolu à l'ouverture de session, personnes
+	// concernées par empreinte (jamais l'identifiant en clair).
+	VersionRegistre string     `json:"version_registre,omitempty"`
+	Acces           string     `json:"acces,omitempty"`
+	EtiquettesCible []string   `json:"etiquettes_cible,omitempty"`
+	Demandeur       *Demandeur `json:"demandeur,omitempty"`
+	Sujets          []Sujet    `json:"sujets,omitempty"`
 
 	Message         string `json:"message,omitempty"`
 	NbConsultations int    `json:"nb_consultations,omitempty"`

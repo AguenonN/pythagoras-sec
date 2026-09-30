@@ -1,0 +1,13 @@
+{
+  "jeu": {"id": "weekend-v2", "version": 1, "date_effet": "2026-09-01T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+  "directives": [
+    {
+      "id": "W-001", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Aucune action d'agent le week-end, heure de Paris.",
+      "fondements": [{"texte": "Règlement intérieur", "article": "12"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "*", "outil": "*", "acces": "action"}},
+      "condition": {"temps": {"jour_semaine": ["samedi", "dimanche"], "fuseau": "Europe/Paris"}},
+      "effets": [{"effet": "refuser"}]
+    }
+  ]
+}

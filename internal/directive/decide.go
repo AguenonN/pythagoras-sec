@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"mcprogue/internal/approval"
 )
 
 // Attestation est ce que le registre a observé sur le serveur résolu, figé à
@@ -58,6 +56,13 @@ type Consultation struct {
 	Empreinte        string // action_digest de l'appel transmis
 	Resultat         Resultat
 	EmpreinteReponse string // sha256 de la réponse canonique, "" si rien n'est revenu
+
+	// v2, consignés au journal avec la consultation. Etiquettes sont celles
+	// du registre à la consultation ; VersionRegistre vide : étiquettes
+	// inconnues. Source est ce que le serveur a déclaré de sa réponse.
+	Etiquettes      []string
+	VersionRegistre string
+	Source          *SourceReponse
 }
 
 // EtatSession est tenu par l'engine, jamais déclaré par l'agent.
@@ -74,6 +79,15 @@ type Appel struct {
 	Arguments   map[string]any
 	Attestation Attestation
 	Horodatage  time.Time
+
+	// v2 : tout vient de l'appelant de Decide, rien n'est lu par Decide.
+	// VersionRegistre vide : Acces et EtiquettesCible sont inconnus.
+	Acces            Acces
+	EtiquettesCible  []string
+	VersionRegistre  string
+	Demandeur        *Demandeur // nil : non résolu
+	Sujets           []Sujet    // personnes concernées résolues, par empreinte
+	SousAgentDeclare string     // _meta.sous_agent, déclaratif
 }
 
 // Application est une directive dont la cible correspondait, avec ce qu'elle
@@ -91,6 +105,11 @@ type Application struct {
 	RevisionEchue bool
 	ChampsRetires []string
 	Motif         string
+
+	// v2 : résultat à trois valeurs de et(cible, condition), et tous les
+	// fondements (Fondement est le premier).
+	Resultat   Trivalent
+	Fondements []Fondement
 }
 
 // Decision est le résultat de Decide.
@@ -106,151 +125,12 @@ type Decision struct {
 	Applications       []Application
 	Alertes            []string
 	Motif              string
-}
 
-// Decide évalue un appel contre un jeu. Pure : pas d'horloge (l'horodatage
-// est dans l'appel), pas d'I/O, pas de vérification de jeton (l'engine la
-// fait ensuite sur EmpreinteTransmise). Les directives sont parcourues dans
-// l'ordre du jeu, ce qui rend le caviardage cumulé déterministe.
-func Decide(jeu Jeu, etat EtatSession, appel Appel) Decision {
-	args := cloner(appel.Arguments)
-	dec := Decision{
-		Effet:            Autoriser,
-		EmpreinteOrigine: approval.Digest(appel.Outil, appel.Arguments),
-	}
-	retires := map[string]bool{}
-
-	for _, d := range jeu.Directives {
-		if d.Statut != Active && d.Statut != Observation {
-			continue
-		}
-		if d.DateEffet.After(appel.Horodatage) {
-			continue // non-rétroactivité
-		}
-		if !cibleCorrespond(d.Cible, appel.Serveur, appel.Outil) {
-			continue
-		}
-		app := Application{
-			ID: d.ID, Version: d.Version, Verrou: d.Verrou, Fondement: d.Fondement,
-			Statut: d.Statut, Effet: d.Effet,
-		}
-		var notes []string
-		if d.Perimetre != nil {
-			if etat.Appelant == "" {
-				notes = append(notes, "appelant non prouvé, périmètre appliqué par défaut")
-			} else if !dansPerimetre(d.Perimetre, etat.Appelant) {
-				continue
-			}
-		}
-		if d.RevisionAvant != nil && !appel.Horodatage.Before(*d.RevisionAvant) {
-			app.RevisionEchue = true
-			dec.Alertes = append(dec.Alertes, fmt.Sprintf("%s: échéance de relecture %s dépassée, directive maintenue",
-				d.ID, d.RevisionAvant.Format(time.RFC3339)))
-		}
-
-		switch d.Verrou {
-		case Interdiction:
-			app.Declenchee = true
-			notes = append(notes, "outil interdit")
-		case ApprobationHumaine:
-			app.Declenchee = true
-			notes = append(notes, "validation humaine requise")
-		case SeuilArgument:
-			vrai, indetermine, detail := evaluerConditions(d.Condition, args)
-			notes = append(notes, detail)
-			switch {
-			case indetermine && d.SiIndetermine == IndetermineIgnorer:
-				app.Indetermine = true
-				notes = append(notes, "condition indéterminée ignorée sur validation de "+d.SiIndetermineValidePar)
-			case indetermine:
-				app.Indetermine = true
-				app.Declenchee = true
-				app.Effet = Refuser
-				notes = append(notes, "condition indéterminée, refus par défaut")
-			default:
-				app.Declenchee = vrai
-			}
-		case ProvenanceSession:
-			quoi, ok := provenanceCorrespond(d.Provenance, etat.Consultations)
-			app.Declenchee = ok
-			if ok {
-				notes = append(notes, "la session a consulté "+quoi)
-			} else {
-				notes = append(notes, "aucune consultation correspondante dans la session")
-			}
-		case SourceAttestee:
-			if !appel.Attestation.Valide() {
-				app.Declenchee = true
-				notes = append(notes, "attestation du serveur en échec ("+decrireAttestation(appel.Attestation)+")")
-			} else {
-				notes = append(notes, "serveur attesté ("+decrireAttestation(appel.Attestation)+")")
-			}
-		case ChampsAutorises:
-			filtres, enleves := filtrer(args, d.Champs.Autorises)
-			if len(enleves) == 0 {
-				notes = append(notes, "aucun champ hors liste")
-				break
-			}
-			app.Declenchee = true
-			app.ChampsRetires = enleves
-			// Le motif cite la liste autorisée, qui vient de la directive,
-			// et un nombre : jamais les clés reçues, que l'agent contrôle.
-			liste := fmt.Sprintf("%d champ(s) hors liste (autorisés : %s)", len(enleves), strings.Join(d.Champs.Autorises, ", "))
-			if d.Champs.Mode == ModeRefuser {
-				app.Effet = Refuser
-				notes = append(notes, liste)
-			} else {
-				notes = append(notes, "caviardage de "+liste)
-				if d.Statut == Active {
-					args = filtres
-					for _, p := range enleves {
-						retires[p] = true
-					}
-				}
-			}
-		}
-
-		if app.Declenchee && d.Statut == Active {
-			app.Appliquee = true
-			dec.Effet = plusFort(dec.Effet, app.Effet)
-		} else if app.Declenchee {
-			notes = append([]string{"observation, non appliquée"}, notes...)
-		}
-		app.Motif = strings.Join(notes, " ; ")
-		dec.Applications = append(dec.Applications, app)
-	}
-
-	dec.Arguments = args
-	for p := range retires {
-		dec.ChampsRetires = append(dec.ChampsRetires, p)
-	}
-	sort.Strings(dec.ChampsRetires)
-	dec.EmpreinteTransmise = approval.Digest(appel.Outil, args)
-	dec.Motif = motif(dec)
-	return dec
-}
-
-// motif résume la décision en une phrase pour l'agent et le journal.
-func motif(dec Decision) string {
-	var ids []string
-	for _, a := range dec.Applications {
-		if a.Appliquee && a.Effet == dec.Effet {
-			ids = append(ids, fmt.Sprintf("%s v%d (%s, %s)", a.ID, a.Version, a.Verrou, citer(a.Fondement)))
-		}
-	}
-	switch dec.Effet {
-	case Refuser:
-		return "refusé par " + strings.Join(ids, ", ")
-	case AttendreValidation:
-		s := "en attente de validation humaine par " + strings.Join(ids, ", ")
-		if len(dec.ChampsRetires) > 0 {
-			s += fmt.Sprintf(" ; arguments caviardés (%d champ(s))", len(dec.ChampsRetires))
-		}
-		return s
-	case Caviarder:
-		return fmt.Sprintf("autorisé après caviardage de %d champ(s) par %s", len(dec.ChampsRetires), strings.Join(ids, ", "))
-	}
-	return "autorisé : aucune directive applicable"
+	// v2, triés. Validation n'est posée que si Effet est attendre_validation.
+	Notifications   []Notification
+	Marques         []Marque
+	Validation      *Validation
+	VersionRegistre string
 }
 
 func citer(f Fondement) string {
@@ -272,10 +152,6 @@ func decrireAttestation(a Attestation) string {
 		s += " : " + a.Detail
 	}
 	return s
-}
-
-func cibleCorrespond(c Cible, serveur, outil string) bool {
-	return (c.Serveur == "*" || c.Serveur == serveur) && (c.Outil == "*" || c.Outil == outil)
 }
 
 func dansPerimetre(p *Perimetre, appelant string) bool {
@@ -306,96 +182,6 @@ func provenanceCorrespond(p *Provenance, consultations []Consultation) (string, 
 		}
 	}
 	return "", false
-}
-
-// evaluerConditions combine en ET. Une condition fausse et déterminée rend
-// faux ; sinon une condition indéterminée rend indéterminé ; sinon vrai.
-func evaluerConditions(conds []Condition, args map[string]any) (vrai, indetermine bool, detail string) {
-	var faux, indet []string
-	for _, c := range conds {
-		v, trouve := pointer(args, c.Champ)
-		res, ok := evaluer(c, v, trouve)
-		switch {
-		case !ok:
-			indet = append(indet, c.Champ+" "+string(c.Op)+" "+valeurTexte(c.Valeur)+" (champ absent ou type inattendu)")
-		case !res:
-			faux = append(faux, c.Champ+" "+string(c.Op)+" "+valeurTexte(c.Valeur)+" faux")
-		}
-	}
-	if len(faux) > 0 {
-		return false, false, strings.Join(faux, ", ")
-	}
-	if len(indet) > 0 {
-		return false, true, strings.Join(indet, ", ")
-	}
-	return true, false, "conditions satisfaites"
-}
-
-// evaluer rend (résultat, déterminé).
-func evaluer(c Condition, v any, trouve bool) (bool, bool) {
-	switch c.Op {
-	case OpPresent:
-		return trouve, true
-	case OpAbsent:
-		return !trouve, true
-	}
-	if !trouve {
-		return false, false
-	}
-	switch c.Op {
-	case OpSup, OpSupEgal, OpInf, OpInfEgal:
-		a, okA := nombre(v)
-		b, okB := nombre(c.Valeur)
-		if !okA || !okB {
-			return false, false
-		}
-		switch c.Op {
-		case OpSup:
-			return a > b, true
-		case OpSupEgal:
-			return a >= b, true
-		case OpInf:
-			return a < b, true
-		default:
-			return a <= b, true
-		}
-	case OpEgal, OpDiff:
-		eq, ok := egaux(v, c.Valeur)
-		if !ok {
-			return false, false
-		}
-		if c.Op == OpEgal {
-			return eq, true
-		}
-		return !eq, true
-	case OpDans:
-		liste, _ := c.Valeur.([]any)
-		for _, e := range liste {
-			if eq, ok := egaux(v, e); ok && eq {
-				return true, true
-			}
-		}
-		return false, true
-	}
-	return false, false
-}
-
-// egaux compare deux scalaires JSON : nombres entre eux, chaînes entre elles,
-// booléens entre eux. Types différents : indéterminé.
-func egaux(a, b any) (bool, bool) {
-	if x, ok := nombre(a); ok {
-		y, ok := nombre(b)
-		return x == y, ok
-	}
-	switch x := a.(type) {
-	case string:
-		y, ok := b.(string)
-		return x == y, ok
-	case bool:
-		y, ok := b.(bool)
-		return x == y, ok
-	}
-	return false, false
 }
 
 // nombre accepte les formes qu'un décodeur JSON produit selon ses options.
@@ -430,32 +216,6 @@ func valeurTexte(v any) string {
 		return fmt.Sprint(v)
 	}
 	return string(b)
-}
-
-// pointer résout un pointeur JSON (RFC 6901) dans les arguments. Les tableaux
-// sont indexés par entier.
-func pointer(args map[string]any, ptr string) (any, bool) {
-	var cur any = args
-	for _, seg := range strings.Split(ptr[1:], "/") {
-		seg = strings.ReplaceAll(strings.ReplaceAll(seg, "~1", "/"), "~0", "~")
-		switch n := cur.(type) {
-		case map[string]any:
-			v, ok := n[seg]
-			if !ok {
-				return nil, false
-			}
-			cur = v
-		case []any:
-			i, err := strconv.Atoi(seg)
-			if err != nil || i < 0 || i >= len(n) {
-				return nil, false
-			}
-			cur = n[i]
-		default:
-			return nil, false
-		}
-	}
-	return cur, true
 }
 
 // filtrer ne garde des arguments que ce que la liste blanche couvre. Un
