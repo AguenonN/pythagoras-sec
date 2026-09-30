@@ -6,16 +6,24 @@ import (
 	"mcprogue/internal/directive"
 )
 
-// Contrat de réponse à l'agent (docs/contrat-engine.md §6). Tout refus est
-// un résultat isError: true dont structuredContent est un Refus ; une mise
-// en attente est un résultat isError: true dont structuredContent est une
-// Attente. Le texte du résultat reprend le motif, pour un agent qui ne lit
-// que le texte.
+// Contrat de réponse à l'agent (docs/contrat-engine.md §6). Quatre cas
+// que l'agent distingue :
+//
+//   - refus : isError: true, structuredContent Refus ;
+//   - attente : isError: true, structuredContent Attente ;
+//   - échec (source indisponible, ou erreur de protocole dont l'engine ne
+//     transmet rien) : isError: true, structuredContent Echec ;
+//   - réponse de l'outil, y compris quand l'outil décline (isError) :
+//     contenu scellé, sans structuredContent.
+//
+// Le texte du résultat reprend le motif, pour un agent qui ne lit que le
+// texte.
 
 // Statuts du contrat.
 const (
-	StatutRefuse    = "refuse"
-	StatutEnAttente = "en_attente"
+	StatutRefuse       = "refuse"
+	StatutEnAttente    = "en_attente"
+	StatutIndisponible = "indisponible"
 )
 
 // Origines d'un refus.
@@ -93,8 +101,19 @@ func enAttente(dec directive.Decision) *mcp.CallToolResult {
 		Attente{Statut: StatutEnAttente, EmpreinteTransmise: dec.EmpreinteTransmise, Directive: a.ID, Version: a.Version})
 }
 
+// Echec est le structuredContent d'un appel transmis dont rien
+// d'utilisable n'est revenu. Serveur et Outil sont les noms logiques du
+// registre.
+type Echec struct {
+	Statut  string `json:"statut"`
+	Serveur string `json:"serveur"`
+	Outil   string `json:"outil"`
+	Motif   string `json:"motif"`
+}
+
 // echec : l'appel est parti, mais aucune donnée utilisable n'est revenue.
-// Ce n'est pas un refus : pas de structuredContent.
-func echec(motif string) *mcp.CallToolResult {
-	return resultatErreur(motif, nil)
+// Ce n'est ni un refus ni un outil qui décline. Le motif est de l'engine,
+// jamais du serveur.
+func echec(serveur, outil, motif string) *mcp.CallToolResult {
+	return resultatErreur(motif, Echec{Statut: StatutIndisponible, Serveur: serveur, Outil: outil, Motif: motif})
 }

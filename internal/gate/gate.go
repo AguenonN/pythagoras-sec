@@ -573,9 +573,9 @@ func (g *Gate) repondre(c directive.Consultation, r session.Retour, dec directiv
 	if res == nil {
 		switch c.Resultat {
 		case directive.ResultatIndisponible:
-			return echec("Source indisponible : le serveur " + c.Serveur + " n'a pas répondu.")
+			return echec(c.Serveur, c.Outil, "Source indisponible : le serveur "+c.Serveur+" n'a pas répondu.")
 		default:
-			return echec("Le serveur " + c.Serveur + " a répondu par une erreur que l'engine ne transmet pas.")
+			return echec(c.Serveur, c.Outil, "Le serveur "+c.Serveur+" a répondu par une erreur que l'engine ne transmet pas.")
 		}
 	}
 	out, err := sceller(res)

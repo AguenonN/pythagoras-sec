@@ -121,10 +121,10 @@ statut incohérent avec l'effet (contrôle `statut`) :
 
 ## 6. Contrat de réponse à l'agent
 
-Tout ce que l'engine refuse ou retient rend un résultat `isError: true`.
+Tout ce que l'engine refuse, retient ou ne peut obtenir rend un résultat `isError: true`.
 Son texte reprend le motif, pour un agent qui ne lit que le texte, et
-son `structuredContent` a l'une des deux formes suivantes. Les types Go
-sont `gate.Refus` et `gate.Attente`.
+son `structuredContent` a l'une des trois formes suivantes. Les types Go
+sont `gate.Refus`, `gate.Attente` et `gate.Echec`.
 
 **Refus** : l'appel n'est pas transmis.
 
@@ -165,11 +165,39 @@ reprise avec jeton n'existe pas encore.
 met en attente. `empreinte_transmise` est ce qu'un jeton d'approbation
 devra viser.
 
-**Hors contrat de refus** : un appel transmis dont le serveur n'a rien
-rendu d'utilisable (source indisponible, erreur de protocole) rend
-`isError: true` sans `structuredContent`. Ce n'est pas un refus, et le
-journal le classe `indisponible` ou `erreur`. Une réponse du serveur,
-même `isError`, est rendue scellée, sans `structuredContent` en clair.
+**Échec** : l'appel est parti, mais rien d'utilisable n'est revenu.
+
+```json
+{
+  "statut": "indisponible",
+  "serveur": "taux-officiel",
+  "outil": "get_taux",
+  "motif": "Source indisponible : le serveur taux-officiel n'a pas répondu."
+}
+```
+
+`serveur` et `outil` sont les noms logiques du registre, pas le nom
+exposé. Deux causes produisent un échec :
+
+- **source indisponible** : délai dépassé ou transport en panne ; le
+  journal dit `indisponible` ;
+- **erreur de protocole** : erreur JSON-RPC, ou demande d'entrée que
+  l'engine refuse ; le journal dit `erreur`.
+
+Le motif est écrit par l'engine et ne cite jamais le texte du serveur.
+
+**L'agent distingue quatre cas** :
+
+| Cas | `isError` | `structuredContent` |
+|---|---|---|
+| refus (directive, registre, engine) | `true` | `{statut: "refuse", …}` |
+| attente de validation | `true` | `{statut: "en_attente", …}` |
+| échec (source indisponible, erreur de protocole) | `true` | `{statut: "indisponible", …}` |
+| l'outil décline (le serveur répond `isError`) | `true` | absent : la réponse du serveur est rendue scellée |
+
+Une réponse normale de l'outil a `isError: false`. Elle est scellée et
+n'a jamais de `structuredContent` en clair : le `structuredContent` du
+serveur est rendu scellé, sous forme de texte.
 
 ## Rappels
 
