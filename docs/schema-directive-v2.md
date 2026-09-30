@@ -352,6 +352,13 @@ d'origine et transmise, **toutes** les directives évaluées
 (`Roles` triés, `QuatreYeux`) quand l'effet est `attendre_validation`,
 `VersionRegistre` recopiée, motif.
 
+Précisions (étape 2, sans changement de forme) : `Validation.Roles` réunit
+les `par_role` des directives appliquées dont l'effet est
+`attendre_validation` ; chaque rôle listé doit valider, et `QuatreYeux` vaut
+si l'une d'elles le demande. Le motif d'une directive v2 cite
+`id vN (fondement)` ; celui d'une v1 traduite reste `id vN (verrou,
+fondement)`.
+
 ### 8.4 Motifs
 
 Aucun motif ne cite une valeur d'argument, ni une clé reçue, ni un

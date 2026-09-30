@@ -83,3 +83,54 @@ func TestMotifs_SansValeurDArgument(t *testing.T) {
 		t.Error("le motif du seuil doit citer champ, opérateur et seuil de la directive")
 	}
 }
+
+// Même garantie pour chaque feuille et chaque effet v2 : les motifs ne citent
+// que la directive. Les sentinelles sont posées dans les valeurs, les clés,
+// les éléments de tableaux et les identifiants de personnes concernées.
+func TestMotifsV2_SansValeurDArgument(t *testing.T) {
+	const s = "VALEUR-SECRETE-7f3a"
+	var ds []Directive
+	for _, nom := range []string{"credit", "weekend", "top-management", "rh", "demandeur", "complet"} {
+		for _, d := range jeuV2(t, nom).Directives {
+			if d.EstV2() && d.Declencheur.Evenement == EvAppelOutil {
+				ds = append(ds, d)
+			}
+		}
+	}
+	// Sans ignorer, pour que chaque indétermination produise son motif.
+	ds[len(ds)-1].SiIndetermine, ds[len(ds)-1].SiIndetermineValidePar = "", ""
+	// Toutes ciblent l'appel. Un caviardage exige une cible nommée au
+	// chargement ; Decide ne relit pas ce contrôle.
+	for i := range ds {
+		c := *ds[i].Declencheur.Cible
+		c.Serveur, c.Outil, c.Etiquette = "*", "*", ""
+		ds[i].Declencheur = &Declencheur{Evenement: EvAppelOutil, Cible: &c}
+	}
+	args := map[string]any{
+		"montant": s, "devise": s, "code": s, "client_id": s, "siren": s, "note": s,
+		"salarie_ids": []any{s, s + "-2"},
+		"lignes":      []any{map[string]any{"beneficiaires": []any{s}}},
+		s:             map[string]any{s: s},
+	}
+	a := Appel{Serveur: "banque-synthetique", Outil: "attribuer_pret", Arguments: args, Horodatage: ts("2026-10-03T21:30:00Z"),
+		Acces: AccesAction, EtiquettesCible: []string{"sensible"}, VersionRegistre: "r", SousAgentDeclare: s,
+		Demandeur:   &Demandeur{Identite: s, Groupes: []string{"x"}},
+		Sujets:      []Sujet{{Empreinte: EmpreinteSujet(s), Groupes: []string{"contentieux-en-cours", "vip"}}},
+		Attestation: Attestation{Mode: "spiffe", Attendu: "a", Observe: "a", Schemas: true}}
+	etat := EtatSession{Appelant: "spiffe://lab/agents/x", Consultations: []Consultation{
+		{Serveur: "taux-officiel", Outil: "get_taux", Resultat: ResultatOK, VersionRegistre: "r", Etiquettes: []string{"officiel"},
+			Source: &SourceReponse{Origine: s, Date: s}}}}
+	d := Decide(jeu(ds...), etat, a)
+	if len(d.Applications) != len(ds) {
+		t.Fatalf("%d applications pour %d directives", len(d.Applications), len(ds))
+	}
+	textes := append([]string{d.Motif}, d.Alertes...)
+	for _, app := range d.Applications {
+		textes = append(textes, app.Motif)
+	}
+	for _, m := range textes {
+		if strings.Contains(m, s) {
+			t.Errorf("une valeur d'argument apparaît dans un motif : %q", m)
+		}
+	}
+}
