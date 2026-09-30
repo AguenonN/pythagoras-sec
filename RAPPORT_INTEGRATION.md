@@ -11,7 +11,8 @@ Branche `feat/integration`, worktree `~/cybercar/mcp_rogue-integration`. Rien n'
 | 3 | `b1432c4` | `demo/directives/credit-demo.json` (v1, quatre directives actives), accepté par le gate devant le registre de démo |
 | 4 | `352253e` | `agents/boucle` alignée sur le §6 du contrat de l'engine (refus, attente, indisponible, outil qui décline), `MAX_APPELS` = 25 |
 | 5 | `4d695c1` | Sondes Mistral (`boucle.sondes`), conversion relâchée (`additionalProperties` booléen, `type` `[T, "null"]`), 5 scénarios de la boucle réenregistrés |
-| 6 | (ce commit) | `test/integration/` : gate réel devant les vrais binaires, quatre scénarios, journaux vérifiés et rejoués sans écart |
+| 6 | `565c65c` | `test/integration/` : gate réel devant les vrais binaires, quatre scénarios, journaux vérifiés et rejoués sans écart |
+| 7a | (ce commit) | `scripts/lancer-demo.sh` : préparation, vérification du démarrage, sous-commande `gate` lancée par la boucle |
 
 ### Étape 1 — registre de démo
 
@@ -84,9 +85,15 @@ Mots-clés présents dans les 13 outils des huit schémas épinglés (`demo/regi
 - Pour chaque scénario : journal relu depuis le disque, **chaîne HMAC vérifiée**, **rejeu sans écart** de chaque appel (effet rejoué = effet journalisé), aucune transmission sans appel.
 - Stable sur 3 exécutions consécutives (`-count=3`).
 
+### Étape 7 — lanceur de démo
+
+- `scripts/lancer-demo.sh` : construit les serveurs (`construire-serveurs.sh`) et `bin/mcp-gate`, génère `demo/registre.json`, vérifie le registre local des gels (sinon `gels-avoirs preparer`), puis **vérifie que le gate démarre** avec ce registre et `credit-demo.json` (REJEU, journal jetable, 8/8 attestés exigés) et affiche la commande de la boucle.
+- `scripts/lancer-demo.sh gate` démarre `mcp-gate` avec les serveurs en `DONNEES_MODE=MIXTE`. Le gate est un serveur MCP stdio : c'est la boucle qui le lance (`python3 -m boucle … -- ../scripts/lancer-demo.sh gate`). Environnement **réduit** par `env -i` à la clé du journal, `DONNEES_MODE` et aux identifiants PISTE : `MISTRAL_API_KEY` ne passe pas au gate. Journal, coffre et traces dans `demo/execution/` (ignoré par Git).
+- Premier lancement : registre national des gels téléchargé (publication du 2026-09-29, 6 611 entrées) dans `servers/gels-avoirs/enregistrements_locaux/` (ignoré par Git).
+
 ## 2. Ce qui n'est pas fait
 
-Étape 7 : en cours.
+Étape 7 : passage réel en cours.
 
 ## 3. Décisions prises seul
 
@@ -97,6 +104,8 @@ Mots-clés présents dans les 13 outils des huit schémas épinglés (`demo/regi
 5. **L'ancien catalogue écrit à la main est gelé, pas supprimé** : déplacé dans `agents/tests/donnees/catalogue-enregistrements.json`. Les réponses Mistral enregistrées du compilateur (`test_scenarios`, `test_demo`) sont indexées par l'empreinte de la requête, qui contient le catalogue : le remplacer invalidait 8 enregistrements, et les réenregistrer aurait pris ~8 appels réels hors du budget de ce brief (25, répartis sur les étapes 4, 5 et 7). Ces tests gardent donc l'ancien catalogue ; tout le reste passe au catalogue généré.
 
 6. **Scénario 4 : l'attribution après la base périmée est autorisée**, et je l'ai laissée telle quelle dans le test : c'est ce que fait le jeu v1 (D-001 ne vise que `taux-officiel`). Le test documente le trou plutôt que de le masquer. Voir question 3.
+
+7. **Le lanceur exige `MCP_GATE_CLE_JOURNAL` dans l'environnement** et n'en génère jamais : une clé générée et non conservée rendrait le journal invérifiable, une clé écrite dans un fichier contredirait la règle des secrets. La commande affichée montre comment en créer une.
 
 ## 4. Blocages
 
