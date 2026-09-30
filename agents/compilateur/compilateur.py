@@ -28,7 +28,8 @@ from . import directive_go, outils, verifications
 
 QUESTIONS = "questions"
 DIRECTIVE = "directive"
-ERREURS = "erreurs"
+ERREURS = "erreurs"  # aucune proposition exploitable
+REFUSE = "refuse"    # un jeu a été construit et refusé par les vérifications
 
 ORIGINE_CODE = "compilateur"
 QUESTION_INDETERMINE = {
@@ -184,6 +185,13 @@ def _questions(appels):
     return out
 
 
+def _refuser(resultat):
+    """Marque le jeu refusé : état refuse, et le jeu quitte « jeu » pour
+    « jeu_refuse », afin qu'aucun appelant ne le reprenne par mégarde."""
+    resultat.update(etat=REFUSE, jeu_refuse=resultat["jeu"], jeu=None, relecture=None)
+    return resultat
+
+
 def _conclure(resultat, p, texte, jeu_id, auteur, date_effet, id_directive, reponses):
     """Proposition valide : pose la question du code sur si_indetermine si
     la directive a une condition, puis rend la directive et sa relecture."""
@@ -198,8 +206,8 @@ def _conclure(resultat, p, texte, jeu_id, auteur, date_effet, id_directive, repo
             jeu, _ = construire_jeu(p, texte, jeu_id, auteur, date_effet, id_directive, ignorer_valide_par=auteur)
             ok, err_go, _ = directive_go.verifier(jeu)
             if not ok:
-                resultat.update(etat=ERREURS, erreurs=err_go, jeu=jeu)
-                return resultat
+                resultat.update(erreurs=err_go, jeu=jeu)
+                return _refuser(resultat)
             resultat["jeu"] = jeu
     resultat.update(etat=DIRECTIVE, erreurs=[], relecture=directive_go.relire(resultat["jeu"]))
     return resultat
@@ -207,7 +215,7 @@ def _conclure(resultat, p, texte, jeu_id, auteur, date_effet, id_directive, repo
 
 def compiler(texte, jeu_id, catalogue, client, auteur, date_effet,
              reponses=(), id_directive="D-001"):
-    """Rend un dict : etat (questions | directive | erreurs) et le détail.
+    """Rend un dict : etat (questions | directive | refuse | erreurs) et le détail.
 
     ``date_effet`` est un horodatage RFC 3339 fixé par le juriste.
     ``reponses`` : [{"question", "reponse", "champ"?, "options"?, "origine"?}]."""
@@ -260,5 +268,4 @@ def compiler(texte, jeu_id, catalogue, client, auteur, date_effet,
                        if nom == "proposer_directive" else "Ignoré.")
             messages.append({"role": "tool", "tool_call_id": i, "name": nom, "content": contenu})
 
-    resultat.update(etat=ERREURS, jeu=resultat["jeu"])
-    return resultat
+    return _refuser(resultat)

@@ -68,8 +68,10 @@ class TestCompiler(unittest.TestCase):
         c = ClientScripte(reponse(appel("proposer_directive", mauvais, "a")),
                           reponse(appel("proposer_directive", mauvais, "b")))
         r = compiler(c)
-        self.assertEqual(r["etat"], comp.ERREURS)
+        self.assertEqual(r["etat"], comp.REFUSE)
         self.assertEqual(len(c.recus), 2, "une seule correction")
+        self.assertIsNone(r["jeu"])
+        self.assertEqual(r["jeu_refuse"]["directives"][0]["effet"], "caviarder")
         self.assertTrue(any("caviarder" in e for e in r["erreurs"]))
         self.assertIsNone(r["relecture"])
 
@@ -79,7 +81,7 @@ class TestCompiler(unittest.TestCase):
              "condition": [{"champ": "/montant", "op": ">", "valeur": 100000}]}
         c = ClientScripte(reponse(appel("proposer_directive", p)), reponse(appel("proposer_directive", p)))
         r = compiler(c)
-        self.assertEqual(r["etat"], comp.ERREURS)
+        self.assertEqual(r["etat"], comp.REFUSE)
         self.assertTrue(any("100000" in e for e in r["erreurs"]), r["erreurs"])
 
     SEUIL = {"verrou": "seuil_argument", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"},
@@ -126,7 +128,7 @@ class TestCompiler(unittest.TestCase):
         p2 = dict(self.SEUIL, si_indetermine="ignorer")
         r = compiler(ClientScripte(reponse(appel("proposer_directive", p2)), reponse(appel("proposer_directive", p2))),
                      reponses=self.REP_SEUIL + [self.code("ignorer")])
-        self.assertEqual(r["etat"], comp.ERREURS)
+        self.assertEqual(r["etat"], comp.REFUSE)
 
     def test_option_supprimee(self):
         with self.assertRaises(TypeError):

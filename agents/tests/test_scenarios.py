@@ -97,7 +97,7 @@ class TestSeuilNonChiffre(unittest.TestCase):
 class TestServeurInexistant(unittest.TestCase):
     def test_question_jamais_un_serveur_invente(self):
         r = compiler(INCONNU)
-        self.assertIn(r["etat"], (comp.QUESTIONS, comp.ERREURS))
+        self.assertIn(r["etat"], (comp.QUESTIONS, comp.REFUSE, comp.ERREURS))
         self.assertNotEqual(r["etat"], comp.DIRECTIVE)
         self.assertIn("gels-avoirs", " ".join(q["question"] for q in r["questions"]))
         self.assertIsNone(r["relecture"])
