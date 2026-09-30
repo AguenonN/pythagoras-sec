@@ -97,8 +97,48 @@ func TestRelire_JeuRefuse(t *testing.T) {
 	}
 }
 
+func TestVerifier_ExigerBrouillon(t *testing.T) {
+	// Le jeu d'exemple est actif : quatre refus, un par directive.
+	rc, out, _ := lancer(t, fixture(t), "verifier", "--exiger-brouillon")
+	var r Rapport
+	if err := json.Unmarshal([]byte(out), &r); err != nil {
+		t.Fatal(err)
+	}
+	if rc != 1 || r.OK || len(r.Erreurs) != 4 || r.Empreinte != "" {
+		t.Fatalf("rc=%d rapport=%+v", rc, r)
+	}
+	if r.Erreurs[0] != `directive: directive D-001: statut "active", brouillon exigé` {
+		t.Errorf("erreur 1 = %q", r.Erreurs[0])
+	}
+
+	brouillon := strings.ReplaceAll(fixture(t), `"statut": "active"`, `"statut": "brouillon"`)
+	if rc, out, _ := lancer(t, brouillon, "verifier", "--exiger-brouillon"); rc != 0 {
+		t.Fatalf("jeu en brouillon refusé : %s", out)
+	}
+	// Sans l'option, le statut n'est pas contrôlé.
+	if rc, _, _ := lancer(t, fixture(t), "verifier"); rc != 0 {
+		t.Fatalf("rc = %d sans --exiger-brouillon", rc)
+	}
+}
+
+// Un jeu que le chargeur refuse voit aussi ses statuts contrôlés : la liste
+// reste complète.
+func TestVerifier_ExigerBrouillon_JeuInvalide(t *testing.T) {
+	doc := `{"jeu":{"id":"t","version":1,"date_effet":"2026-10-04T08:00:00Z","auteur":"j"},"directives":[{"id":"D-1","version":1,"statut":"observation","date_effet":"2026-10-04T08:00:00Z","texte_fr":"t","fondement":{"texte":"RGPD"},"verrou":"interdiction","cible":{"serveur":"*","outil":"*"},"effet":"caviarder"}]}`
+	rc, out, _ := lancer(t, doc, "verifier", "--exiger-brouillon")
+	var r Rapport
+	if err := json.Unmarshal([]byte(out), &r); err != nil {
+		t.Fatal(err)
+	}
+	if rc != 1 || len(r.Erreurs) != 2 || !strings.Contains(r.Erreurs[0], "non admis") ||
+		!strings.Contains(r.Erreurs[1], `statut "observation", brouillon exigé`) {
+		t.Fatalf("rc=%d erreurs=%q", rc, r.Erreurs)
+	}
+}
+
 func TestUsage(t *testing.T) {
-	for _, args := range [][]string{nil, {"compiler"}, {"verifier", "x"}} {
+	for _, args := range [][]string{nil, {"compiler"}, {"verifier", "x"}, {"verifier", "--inconnu"},
+		{"relire", "--exiger-brouillon"}} {
 		if rc, _, errOut := lancer(t, "{}", args...); rc != 2 || !strings.Contains(errOut, "usage") {
 			t.Errorf("args %v : rc=%d err=%q", args, rc, errOut)
 		}

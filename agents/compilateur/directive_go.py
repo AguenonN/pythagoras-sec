@@ -32,14 +32,16 @@ def binaire():
     return chemin
 
 
-def _lancer(sous_commande, jeu):
+def _lancer(sous_commande, jeu, options=()):
     donnees = json.dumps(jeu, ensure_ascii=False).encode("utf-8")
-    return subprocess.run([binaire(), sous_commande], input=donnees, capture_output=True)
+    return subprocess.run([binaire(), sous_commande, *options], input=donnees, capture_output=True)
 
 
-def verifier(jeu):
-    """Rend (ok, erreurs, empreinte) selon le chargeur strict."""
-    r = _lancer("verifier", jeu)
+def verifier(jeu, exiger_brouillon=True):
+    """Rend (ok, erreurs, empreinte) selon le chargeur strict. Par défaut,
+    toute directive hors brouillon est aussi refusée : le compilateur ne
+    produit jamais une directive appliquée."""
+    r = _lancer("verifier", jeu, ["--exiger-brouillon"] if exiger_brouillon else [])
     if r.returncode not in (0, 1):
         raise ErreurOutil("directive verifier : " + r.stderr.decode("utf-8", "replace"))
     rapport = json.loads(r.stdout.decode("utf-8"))
