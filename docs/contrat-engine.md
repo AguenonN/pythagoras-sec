@@ -66,6 +66,139 @@ ou des arguments absents sans pierre tombale, sont des altérations. Une
 purge conforme porte la cause `purge` et aucune nature : elle n'est
 jamais une violation.
 
+## 4. Rien ne part sans une entrée transmission chaînée
+
+L'entrée `appel` porte le résultat, donc elle ne peut être écrite
+qu'après la transmission. Si le journal tombe entre les deux, un appel
+serait parti sans aucune trace. L'engine écrit donc, avant
+`Tour.Transmettre`, une entrée `transmission` qui porte la session, le
+seq, le serveur, l'outil, l'empreinte transmise et la décision.
+
+- Écrire l'entrée `transmission` verrou tenu, après `Decide` et le dépôt
+  au coffre, avec le `TS` de l'appel.
+- Si elle ne peut pas être écrite : refuser l'appel, **ne rien
+  transmettre**, et refuser tous les appels suivants (le journal n'est
+  plus fiable).
+- Un refus de l'engine (`non_transmis`) n'a pas d'entrée `transmission`.
+- L'entrée `appel` suit, comme avant. Si c'est elle qui échoue, la
+  réponse du serveur est retenue : l'agent ne reçoit pas de donnée sans
+  preuve.
+
+Au rejeu (`rejeu.RejouerJournal`, contrôle `transmission`), chacun de ces
+cas est une altération :
+
+- un appel transmis sans exactement une entrée `transmission` qui le
+  précède ;
+- une entrée `transmission` qui diffère de l'appel sur le serveur,
+  l'outil, l'empreinte transmise ou l'effet ;
+- une entrée `transmission` pour un appel `non_transmis`.
+
+Une entrée `transmission` qu'aucune entrée `appel` ne suit est un appel
+parti dont le résultat n'a pas été journalisé.
+`rejeu.TransmissionsSansAppel` les rend. Elles ne se rejouent pas, faute
+de décision complète : elles se signalent.
+
+## 5. Le refus par le registre est une décision journalisée
+
+Un serveur dont l'attestation n'est pas valide est refusé même si
+aucune directive `source_attestee` ne le cible. Ce contrôle
+s'applique après `Decide`, par `controle.Registre`, la fonction même
+qu'appelle le rejeu.
+
+- L'entrée `appel` porte `decision.effet = refuser`,
+  `decision.origine = registre` et le motif du registre ; les
+  applications restent celles de `Decide`.
+- Une directive qui refuse déjà garde la main : l'origine reste celle
+  des directives, qui citent leur fondement.
+
+Au rejeu, le contrôle est recalculé sur l'attestation que l'entrée
+porte. Une origine effacée ou inventée est une altération, tout comme un
+statut incohérent avec l'effet (contrôle `statut`) :
+
+- un refus n'est jamais transmis ;
+- une autorisation l'est toujours ;
+- une attente ne l'est qu'avec une approbation.
+
+## 6. Contrat de réponse à l'agent
+
+Tout ce que l'engine refuse, retient ou ne peut obtenir rend un résultat `isError: true`.
+Son texte reprend le motif, pour un agent qui ne lit que le texte, et
+son `structuredContent` a l'une des trois formes suivantes. Les types Go
+sont `gate.Refus`, `gate.Attente` et `gate.Echec`.
+
+**Refus** : l'appel n'est pas transmis.
+
+```json
+{
+  "statut": "refuse",
+  "origine": "directive",
+  "directive": "D-001",
+  "version": 1,
+  "fondement": {"texte": "RGPD", "article": "22", "url": "…"},
+  "motif": "refusé par D-001 v1 (provenance_session, RGPD art. 22)"
+}
+```
+
+| `origine` | `directive` | `version` | `fondement` |
+|---|---|---|---|
+| `directive` | identifiant de la première directive appliquée qui refuse, dans l'ordre du jeu | version de cette directive | son fondement |
+| `registre` (serveur non attesté, §5) | identifiant du registre | version du registre | `{"texte": "Registre des serveurs : attestation du serveur"}` |
+| `engine` (journal ou coffre indisponible, session fermée ou appelant changé, outil inconnu, arguments qui ne sont pas un objet JSON) | `""` | `0` | `{"texte": "Contrat de l'engine"}` |
+
+`motif` est celui de la décision journalisée (origines `directive` et
+`registre`), ou le texte du refus (origine `engine`). Il ne cite jamais
+la valeur d'un argument.
+
+**Attente** : `attendre_validation`, l'appel n'est pas transmis. La
+reprise avec jeton n'existe pas encore.
+
+```json
+{
+  "statut": "en_attente",
+  "empreinte_transmise": "…",
+  "directive": "D-002",
+  "version": 1
+}
+```
+
+`directive` et `version` désignent la première directive appliquée qui
+met en attente. `empreinte_transmise` est ce qu'un jeton d'approbation
+devra viser.
+
+**Échec** : l'appel est parti, mais rien d'utilisable n'est revenu.
+
+```json
+{
+  "statut": "indisponible",
+  "serveur": "taux-officiel",
+  "outil": "get_taux",
+  "motif": "Source indisponible : le serveur taux-officiel n'a pas répondu."
+}
+```
+
+`serveur` et `outil` sont les noms logiques du registre, pas le nom
+exposé. Deux causes produisent un échec :
+
+- **source indisponible** : délai dépassé ou transport en panne ; le
+  journal dit `indisponible` ;
+- **erreur de protocole** : erreur JSON-RPC, ou demande d'entrée que
+  l'engine refuse ; le journal dit `erreur`.
+
+Le motif est écrit par l'engine et ne cite jamais le texte du serveur.
+
+**L'agent distingue quatre cas** :
+
+| Cas | `isError` | `structuredContent` |
+|---|---|---|
+| refus (directive, registre, engine) | `true` | `{statut: "refuse", …}` |
+| attente de validation | `true` | `{statut: "en_attente", …}` |
+| échec (source indisponible, erreur de protocole) | `true` | `{statut: "indisponible", …}` |
+| l'outil décline (le serveur répond `isError`) | `true` | absent : la réponse du serveur est rendue scellée |
+
+Une réponse normale de l'outil a `isError: false`. Elle est scellée et
+n'a jamais de `structuredContent` en clair : le `structuredContent` du
+serveur est rendu scellé, sous forme de texte.
+
 ## Rappels
 
 - L'appelant est fixé à la création de la session. Le passer tel que le

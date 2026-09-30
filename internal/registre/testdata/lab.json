@@ -1,0 +1,52 @@
+{
+  "registre": {
+    "id": "lab",
+    "version": 1,
+    "auteur": "ops@cabinet.fr"
+  },
+  "serveurs": [
+    {
+      "nom": "taux-officiel",
+      "transport": "stdio",
+      "commande": { "chemin": "/opt/mcp/taux-officiel", "args": ["-profil", "taux"] },
+      "attestation": {
+        "mode": "binaire",
+        "attendu": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "outils": [
+        {
+          "nom": "get_taux",
+          "acces": "read",
+          "description": "Rend le taux directeur officiel pour une devise.",
+          "input_schema": {
+            "type": "object",
+            "properties": { "devise": { "type": "string" } },
+            "required": ["devise"]
+          }
+        }
+      ]
+    },
+    {
+      "nom": "banque-synthetique",
+      "transport": "http",
+      "url": "https://banque.lab:8443/mcp",
+      "attestation": {
+        "mode": "tls-pin",
+        "attendu": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "server_name": "banque.lab"
+      },
+      "outils": [
+        {
+          "nom": "attribuer_pret",
+          "acces": "action",
+          "description": "Attribue un prêt à une entreprise identifiée par son SIREN.",
+          "input_schema": {
+            "type": "object",
+            "properties": { "montant": { "type": "number" }, "siren": { "type": "string" } },
+            "required": ["montant", "siren"]
+          }
+        }
+      ]
+    }
+  ]
+}

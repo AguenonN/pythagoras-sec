@@ -41,6 +41,12 @@ const (
 	// PurgeT est écrite par chaque purge du coffre : sans elle, une pierre
 	// tombale n'est qu'une affirmation non chaînée.
 	PurgeT Type = "purge"
+	// TransmissionT est écrite avant que l'engine ne transmette un appel :
+	// session, seq, serveur, outil, empreinte transmise, décision. Si elle
+	// ne peut pas être écrite, rien ne part. Une transmission sans entrée
+	// appel qui la suive est un appel parti dont le résultat n'a pas été
+	// journalisé.
+	TransmissionT Type = "transmission"
 )
 
 // Statuts de résultat d'un appel. Les quatre premiers sont ceux d'une
@@ -101,7 +107,11 @@ type Application struct {
 }
 
 type Decision struct {
-	Effet        string        `json:"effet"`
+	Effet string `json:"effet"`
+	// Origine vaut "registre" quand l'effet est imposé par le contrôle du
+	// registre (serveur non attesté) et non par une directive ; absente,
+	// l'effet est celui des directives.
+	Origine      string        `json:"origine,omitempty"`
 	Motif        string        `json:"motif"`
 	Applications []Application `json:"applications"`
 	Alertes      []string      `json:"alertes,omitempty"`
@@ -120,7 +130,7 @@ type Approbation struct {
 // la date et l'empreinte de l'enregistrement. Le cache est une source dont
 // la fraîcheur se lit ici.
 type Source struct {
-	Origine   string `json:"origine"` // live | rejeu
+	Origine   string `json:"origine"` // direct | rejeu | aucune, déclarée par le serveur ; non_declaree sinon
 	Date      string `json:"date,omitempty"`
 	Empreinte string `json:"empreinte,omitempty"`
 }
@@ -140,7 +150,22 @@ type Entree struct {
 	Session  string    `json:"session,omitempty"`
 	Seq      int       `json:"seq,omitempty"`
 	Appelant string    `json:"appelant,omitempty"`
-	Jeu      *RefJeu   `json:"jeu,omitempty"`
+
+	// SousAgentDeclare est l'étiquette que l'agent déclare dans
+	// _meta.sous_agent d'un tools/call. Elle n'est pas prouvée et aucune
+	// décision ne la lit : l'identité prouvée est Appelant, fixée par le
+	// transport à l'ouverture de la session.
+	SousAgentDeclare string `json:"sous_agent_declare,omitempty"`
+
+	Jeu *RefJeu `json:"jeu,omitempty"`
+
+	// Bascule à chaud d'un jeu_charge : VersionDepart est la version
+	// remplacée, VersionArrivee celle chargée (égale à Jeu.Version).
+	// RetourArriere marque une version d'arrivée inférieure. Absents d'un
+	// jeu_charge de démarrage.
+	RetourArriere  bool `json:"retour_arriere,omitempty"`
+	VersionDepart  int  `json:"version_depart,omitempty"`
+	VersionArrivee int  `json:"version_arrivee,omitempty"`
 
 	Serveur     string `json:"serveur,omitempty"`
 	OutilExpose string `json:"outil_expose,omitempty"`
