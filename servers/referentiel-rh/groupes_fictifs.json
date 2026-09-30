@@ -1,0 +1,14 @@
+{
+  "avertissement": "DONNÉES FICTIVES. Groupes et appartenances inventés pour la démonstration ; les identifiants sont ceux des salariés fictifs de rh-synthetique.",
+  "groupes": {
+    "salaries-proteges": "Salariés bénéficiant d'une protection particulière (fictif : par exemple représentant du personnel) ; toute mesure les concernant suit une procédure spéciale.",
+    "contentieux-en-cours": "Salariés en litige en cours avec l'entreprise (fictif) ; toute mesure les concernant est à examiner avec le service juridique."
+  },
+  "appartenances": {
+    "SAL-FICTIF-001": [],
+    "SAL-FICTIF-002": ["salaries-proteges"],
+    "SAL-FICTIF-003": ["contentieux-en-cours"],
+    "SAL-FICTIF-004": ["salaries-proteges", "contentieux-en-cours"],
+    "SAL-FICTIF-005": []
+  }
+}

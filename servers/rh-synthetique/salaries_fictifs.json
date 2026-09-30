@@ -1,0 +1,57 @@
+{
+  "avertissement": "DONNÉES FICTIVES. Entreprise, salariés, postes, évaluations et remarques sont inventés pour la démonstration. Les noms sont des libellés (« Salarié fictif A »), pas des noms de personnes.",
+  "entreprise": "ENTREPRISE SYNTHETIQUE (fictive)",
+  "prime_max_par_salarie": 5000,
+  "salaries": [
+    {
+      "salarie_id": "SAL-FICTIF-001",
+      "libelle": "Salarié fictif A",
+      "poste": "Technicien de maintenance (fictif)",
+      "service": "Production",
+      "entree": "2019-03-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif)."
+    },
+    {
+      "salarie_id": "SAL-FICTIF-002",
+      "libelle": "Salarié fictif B",
+      "poste": "Opérateur logistique (fictif)",
+      "service": "Logistique",
+      "entree": "2016-09-15",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs atteints (fictif)",
+      "remarques": "Retards répétés signalés par le chef d'équipe au 3e trimestre (fictif)."
+    },
+    {
+      "salarie_id": "SAL-FICTIF-003",
+      "libelle": "Salarié fictif C",
+      "poste": "Comptable (fictif)",
+      "service": "Finance",
+      "entree": "2021-01-04",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+      "remarques": "Désaccord sur le paiement d'heures supplémentaires (fictif)."
+    },
+    {
+      "salarie_id": "SAL-FICTIF-004",
+      "libelle": "Salarié fictif D",
+      "poste": "Chef d'équipe (fictif)",
+      "service": "Production",
+      "entree": "2012-05-21",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs dépassés (fictif)",
+      "remarques": "Absence non justifiée d'une journée en septembre (fictif)."
+    },
+    {
+      "salarie_id": "SAL-FICTIF-005",
+      "libelle": "Salarié fictif E",
+      "poste": "Assistant commercial (fictif)",
+      "service": "Ventes",
+      "entree": "2024-02-12",
+      "contrat": "CDD",
+      "evaluation_annuelle": "Objectifs atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif)."
+    }
+  ]
+}
