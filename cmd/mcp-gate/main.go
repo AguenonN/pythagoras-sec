@@ -11,6 +11,15 @@
 // 32 octets au moins), jamais dans un fichier ni sur la ligne de commande.
 // Sans clé, sans registre ou sans jeu valide, rien ne démarre.
 //
+// SIGHUP recharge le jeu de directives depuis le même fichier, sans
+// redémarrer : le document passe par le chargeur strict, et s'il est
+// refusé l'ancien jeu reste actif (entrée alerte au journal). Un signal
+// plutôt qu'une surveillance du fichier : la bascule est un acte explicite
+// de l'opérateur une fois le jeu validé, jamais l'effet d'une sauvegarde
+// en cours d'écriture, et elle ne demande aucune dépendance.
+//
+//	kill -HUP $(pidof mcp-gate)
+//
 // stdout est le canal MCP : toutes les traces vont sur stderr.
 package main
 
@@ -60,6 +69,11 @@ func lancer() error {
 		return errors.New("-registre, -directives, -journal et -coffre sont obligatoires")
 	}
 	log := slog.New(slog.NewTextHandler(os.Stderr, nil))
+	// Écouté dès maintenant : un SIGHUP reçu pendant le démarrage ne doit
+	// pas tuer le processus (action par défaut) ; il est traité ensuite.
+	hup := make(chan os.Signal, 1)
+	signal.Notify(hup, syscall.SIGHUP)
+	defer signal.Stop(hup)
 
 	cle, err := lireCle()
 	if err != nil {
@@ -105,11 +119,32 @@ func lancer() error {
 		return err
 	}
 	defer g.Fermer()
+	go rechargerSurSignal(ctx, hup, g, *cheminJeu, log)
 	for _, s := range reg.Serveurs {
 		a := g.Backend(s.Nom).Attestation()
 		log.Info("backend", "serveur", s.Nom, "transport", s.Transport, "attesté", a.Valide(), "détail", a.Detail)
 	}
 	return g.Servir(ctx, &mcp.StdioTransport{})
+}
+
+// rechargerSurSignal recharge le jeu à chaque SIGHUP, jusqu'à la fin de
+// ctx. Les rechargements sont sérialisés par le gate.
+func rechargerSurSignal(ctx context.Context, hup <-chan os.Signal, g *gate.Gate, chemin string, log *slog.Logger) {
+	for {
+		select {
+		case <-ctx.Done():
+			return
+		case <-hup:
+			r, err := g.RechargerFichier(chemin)
+			switch {
+			case err != nil:
+				log.Error("rechargement du jeu refusé, l'ancien reste actif", "erreur", err,
+					"id", r.Jeu.Meta.ID, "version", r.Jeu.Meta.Version)
+			case !r.Bascule:
+				log.Info("rechargement : jeu identique, aucune bascule", "version", r.Jeu.Meta.Version)
+			}
+		}
+	}
 }
 
 func lireCle() ([]byte, error) {

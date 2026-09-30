@@ -74,8 +74,15 @@ type Config struct {
 
 // Gate est l'agrégateur démarré.
 type Gate struct {
-	cfg      Config
-	jeu      directive.Jeu
+	cfg Config
+	// jeu est le jeu actif. Chaque appel en prend un instantané, une fois,
+	// juste avant Decide : un rechargement bascule entre deux appels,
+	// jamais au milieu d'un.
+	jeu atomic.Pointer[directive.Jeu]
+	// recharge sérialise les rechargements et tient les versions déjà
+	// chargées (voir Recharger).
+	recharge sync.Mutex
+	charges  map[versionJeu]string
 	journal  *journal.Ecrivain
 	coffre   *journal.Coffre
 	sessions *session.Gestionnaire
@@ -113,9 +120,12 @@ func Demarrer(ctx context.Context, cfg Config) (*Gate, error) {
 		cfg.Logger = slog.New(slog.DiscardHandler)
 	}
 	g := &Gate{
-		cfg: cfg, jeu: cfg.Jeu, journal: cfg.Journal, coffre: cfg.Coffre,
+		cfg: cfg, journal: cfg.Journal, coffre: cfg.Coffre, charges: map[versionJeu]string{},
 		horloge: cfg.Horloge, log: cfg.Logger, backends: map[string]backend.Backend{},
 	}
+	jeu := cfg.Jeu
+	g.jeu.Store(&jeu)
+	g.charges[versionJeu{jeu.Meta.ID, jeu.Meta.Version}] = jeu.Meta.Empreinte
 	// Contrat §3 : le journal est attaché au coffre dès l'ouverture.
 	g.coffre.Journaliser(g.journal)
 	sc := cfg.Session
@@ -163,16 +173,25 @@ func Demarrer(ctx context.Context, cfg Config) (*Gate, error) {
 
 func (g *Gate) journaliserDemarrage() error {
 	r := g.cfg.Registre
-	if _, err := g.journal.Ecrire(journal.Entree{Type: journal.JeuCharge, Jeu: journal.DepuisJeu(g.jeu),
-		Message: fmt.Sprintf("%d directive(s), auteur %s", len(g.jeu.Directives), g.jeu.Meta.Auteur)}); err != nil {
-		return fmt.Errorf("gate: journal: %w", err)
+	if err := g.journaliserJeu(*g.jeu.Load(), "chargé au démarrage"); err != nil {
+		return err
 	}
 	if _, err := g.journal.Ecrire(journal.Entree{Type: journal.RegistreCharge,
 		Message: fmt.Sprintf("registre %s v%d %s, auteur %s : %s", r.Meta.ID, r.Meta.Version, r.Meta.Empreinte,
 			r.Meta.Auteur, strings.Join(r.Noms(), ", "))}); err != nil {
 		return fmt.Errorf("gate: journal: %w", err)
 	}
-	for _, a := range g.jeu.Alertes(g.horloge()) {
+	return nil
+}
+
+// journaliserJeu écrit l'entrée jeu_charge (identifiant, version,
+// empreinte) puis les alertes de relecture échues du jeu.
+func (g *Gate) journaliserJeu(jeu directive.Jeu, contexte string) error {
+	if _, err := g.journal.Ecrire(journal.Entree{Type: journal.JeuCharge, Jeu: journal.DepuisJeu(jeu),
+		Message: fmt.Sprintf("%s : %d directive(s), auteur %s", contexte, len(jeu.Directives), jeu.Meta.Auteur)}); err != nil {
+		return fmt.Errorf("gate: journal: %w", err)
+	}
+	for _, a := range jeu.Alertes(g.horloge()) {
 		if _, err := g.journal.Ecrire(journal.Entree{Type: journal.AlerteT, Message: a.DirectiveID + ": " + a.Message}); err != nil {
 			return fmt.Errorf("gate: journal: %w", err)
 		}
@@ -306,16 +325,17 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 		return refus("Appel refusé : le coffre de l'engine est indisponible ; aucun appel n'est transmis sans preuve.")
 	}
 
-	// 4. Décider.
+	// 4. Décider, sous le jeu actif à cet instant, lu une seule fois.
+	jeu := *g.jeu.Load()
 	etat := tour.Etat()
 	att := b.Attestation()
-	dec := directive.Decide(g.jeu, etat, directive.Appel{
+	dec := directive.Decide(jeu, etat, directive.Appel{
 		Serveur: serveur, Outil: outil, Arguments: args, Attestation: att, Horodatage: ts,
 	})
 	entree := journal.Entree{
 		TS: ts, Type: journal.AppelT, Session: tour.SessionID(), Seq: tour.Seq(), Appelant: etat.Appelant,
 		SousAgentDeclare: sousAgent,
-		Jeu:              journal.DepuisJeu(g.jeu), Serveur: serveur, OutilExpose: expose, Outil: outil,
+		Jeu:              journal.DepuisJeu(jeu), Serveur: serveur, OutilExpose: expose, Outil: outil,
 		Appel: &journal.Appel{EmpreinteOrigine: dec.EmpreinteOrigine, EmpreinteTransmise: dec.EmpreinteTransmise,
 			ChampsRetires: dec.ChampsRetires},
 		Attestation: journal.DepuisAttestation(att),
