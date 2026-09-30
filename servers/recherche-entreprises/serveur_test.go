@@ -3,6 +3,8 @@ package main
 import (
 	"testing"
 
+	"mcprogue/internal/nommage"
+
 	"mcprogue/servers/internal/essai"
 	"mcprogue/servers/internal/rejeu"
 )
@@ -64,6 +66,18 @@ func TestPasDePersonnePhysiqueEnregistree(t *testing.T) {
 	e, err := extraire([]byte(`{"results":[{"siren":"123456782","nom_complet":"JEAN X","nature_juridique":"1000","statut_diffusion":"O","etat_administratif":"A","siege":{"siret":"1","adresse":"ICI"}}]}`), "123456782")
 	if err != nil || e.Denomination != "" || e.Siege != nil || !e.PersonnePhysique {
 		t.Fatalf("personne physique restituée: %+v %v", e, err)
+	}
+}
+
+func TestNomLogique(t *testing.T) {
+	if Nom != "recherche-entreprises" {
+		t.Fatalf("nom logique %q", Nom)
+	}
+	if err := nommage.ValiderNomLogique(Nom); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := nommage.Exposer(Nom, "rechercher_entreprise"); err != nil {
+		t.Fatal(err)
 	}
 }
 

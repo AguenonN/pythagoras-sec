@@ -13,7 +13,7 @@ import (
 )
 
 // Nom est le nom logique du serveur (internal/nommage).
-const Nom = "entreprises"
+const Nom = "recherche-entreprises"
 
 // APIBase est l'API Recherche d'entreprises (sans authentification).
 const APIBase = "https://recherche-entreprises.api.gouv.fr/search"
@@ -57,7 +57,7 @@ type SortieRecherche struct {
 	Entreprise *Entreprise `json:"entreprise,omitempty"`
 }
 
-// Serveur construit le serveur MCP entreprises.
+// Serveur construit le serveur MCP recherche-entreprises.
 func Serveur(c *rejeu.Client) *mcp.Server {
 	c.Restreindre("recherche-entreprises.api.gouv.fr")
 	s := mcp.NewServer(&mcp.Implementation{Name: Nom, Version: "0.1.0"}, nil)

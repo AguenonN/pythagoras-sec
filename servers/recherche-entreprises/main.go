@@ -1,4 +1,4 @@
-// Commande entreprises : serveur MCP adaptateur de l'API Recherche
+// Commande recherche-entreprises : serveur MCP adaptateur de l'API Recherche
 // d'entreprises. Mode fixé par DONNEES_MODE (DIRECT, REJEU, MIXTE).
 package main
 

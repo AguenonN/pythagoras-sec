@@ -2,7 +2,7 @@
 // outil, pour les essais manuels. Le mode (DONNEES_MODE) et les autres
 // variables sont hérités de l'environnement.
 //
-//	DONNEES_MODE=DIRECT go run ./servers/appeler bin/entreprises rechercher_entreprise '{"siren":"405750753"}'
+//	DONNEES_MODE=DIRECT go run ./servers/appeler bin/recherche-entreprises rechercher_entreprise '{"siren":"405750753"}'
 package main
 
 import (

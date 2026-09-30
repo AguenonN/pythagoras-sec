@@ -2,7 +2,7 @@
 // envoie initialize puis tools/list en JSON-RPC brut, et écrit le champ
 // result.tools de la réponse tel qu'il a été reçu, octet pour octet.
 //
-//	go run ./servers/exporter-schema -o servers/entreprises/schema.json bin/entreprises
+//	go run ./servers/exporter-schema -o servers/recherche-entreprises/schema.json bin/recherche-entreprises
 package main
 
 import (

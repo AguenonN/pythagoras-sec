@@ -8,7 +8,7 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
 |---|---|
 | `7f7e928` | `servers/internal/rejeu` : enregistrement et rejeu (DIRECT / REJEU / MIXTE), tests sans réseau |
 | `9e3bdc9` | Outillage : `servers/internal/lanceur` (main commun), `servers/internal/essai` (aides de test), `servers/exporter-schema` (écrit `result.tools` brut de `tools/list`, lu sur le stdio du binaire), `servers/appeler` (essai manuel d'un outil) |
-| `c500c7a` | Serveur `entreprises` : `rechercher_entreprise(siren)`, 3 entreprises de démo enregistrées |
+| `c500c7a` | Serveur `entreprises` (renommé depuis `recherche-entreprises`, voir plus bas) : `rechercher_entreprise(siren)`, 3 entreprises de démo enregistrées |
 | `d8070b2` | Serveur `gels-avoirs` : `verifier_gel(nom)`, registre du 2026-09-29 enregistré (filtré) |
 | `31ec0bc` | Serveur `taux-officiel` : `get_taux_usure(categorie, date_reference?)`, 10 séries enregistrées, `instantane_trimestre_precedent.json` |
 | `6124862` | `rejeu` : chaque client limité à l'hôte de son API, redirections comprises (http→https) |
@@ -24,15 +24,15 @@ Essais manuels DIRECT du 2026-09-29 entre 22:00 et 22:15 UTC. Empreintes des bin
 
 | Serveur | Outils | DIRECT (essai manuel) | REJEU | SHA-256 du binaire |
 |---|---|---|---|---|
-| `entreprises` | `rechercher_entreprise` | OK, 3 SIREN | OK | `a5308db05f4d113773bd65349898b8c39c182bfd10bacc445f1b835d4dc27374` |
+| `recherche-entreprises` | `rechercher_entreprise` | OK, 3 SIREN | OK | `a5308db05f4d113773bd65349898b8c39c182bfd10bacc445f1b835d4dc27374` |
 | `gels-avoirs` | `verifier_gel` | OK, « Rosoboronexport » → 1 correspondance ; registre publié le 2026-09-29T15:47:57+02:00 (12 Mo, ~2 s) | OK | `65068dd2712b39aff7b0c2b30ffb31096de577af666da6ca199714359e2139b8` |
 | `taux-officiel` | `get_taux_usure` | OK, 10 catégories ; en vigueur 2026-Q3, suivant 2026-Q4 déjà publié le 2026-09-28 | OK | `bac995e8e1371ac11903faf2407cb7dcff5151379cceb85e06ea2cb32ec3bdb3` |
 | `eurlex` | `rechercher_acte`, `lire_article` | OK, 4 actes + 1 article chacun | OK | `a759b6f1224810e00f78d25ee36dde453b58a7eb69bacb61cf4a28b31c81ae75` |
 | `legifrance` | `lire_article` | OK, Code conso L314-6 (v2 et v3), CMF L313-5-1 | OK | `d4442cce94c8aba0080689dae8bf4e508dea24ab0f1300aeb9873c70291d3fe5` |
 
-**Panne simulée** (proxy injoignable, `HTTPS_PROXY=http://127.0.0.1:9`, aucun réseau réel) : en MIXTE, `taux-officiel` sert l'enregistrement en ~3 s (3 tentatives), `source.origine = rejeu`, date de l'enregistrement et `motif` (l'erreur réseau) visibles ; en DIRECT, `entreprises` rend `statut: indisponible`, `isError: true`, sans plantage.
+**Panne simulée** (proxy injoignable, `HTTPS_PROXY=http://127.0.0.1:9`, aucun réseau réel) : en MIXTE, `taux-officiel` sert l'enregistrement en ~3 s (3 tentatives), `source.origine = rejeu`, date de l'enregistrement et `motif` (l'erreur réseau) visibles ; en DIRECT, `recherche-entreprises` rend `statut: indisponible`, `isError: true`, sans plantage.
 
-Enregistrements : `entreprises` 16 Ko, `gels-avoirs` 1,2 Mo, `taux-officiel` 336 Ko, `eurlex` 3,9 Mo, `legifrance` 60 Ko.
+Enregistrements : `recherche-entreprises` 16 Ko, `gels-avoirs` 1,2 Mo, `taux-officiel` 336 Ko, `eurlex` 3,9 Mo, `legifrance` 60 Ko.
 
 **Entreprises de démo** (actives, personnes morales, diffusion publique) :
 
@@ -69,7 +69,7 @@ Tout le brief est fait. Limites connues, non traitées cette nuit :
 - **Un enregistrement par requête** (clé = SHA-256 de méthode + URL nettoyée + corps). Un nouvel appel DIRECT l'écrase ; l'historique reste dans git.
 - **Mémoïsation en mémoire 10 min** en DIRECT/MIXTE (règle « mise en cache de toute réponse déjà obtenue ») ; la réponse resservie garde `origine: direct` et **sa date d'obtention d'origine**.
 - **Filtre avant enregistrement** : un serveur peut réduire un corps avant de le versionner (retrait des personnes physiques). L'enregistrement porte alors `filtre` et `sha256_origine` (empreinte du corps reçu), et la `source` d'une réponse rejouée affiche le filtre : un rejeu filtré est partiel et le dit.
-- **`entreprises` ne restitue ni nom ni adresse d'un entrepreneur individuel** (nature juridique 1xxx) ni d'une unité en diffusion partielle, et ne les enregistre jamais. Requête `minimal=true&include=siege,complements` : pas de dirigeants dans la réponse, donc aucun nom de personne physique dans les enregistrements.
+- **`recherche-entreprises` ne restitue ni nom ni adresse d'un entrepreneur individuel** (nature juridique 1xxx) ni d'une unité en diffusion partielle, et ne les enregistre jamais. Requête `minimal=true&include=siege,complements` : pas de dirigeants dans la réponse, donc aucun nom de personne physique dans les enregistrements.
 - **SIREN contrôlé localement** (9 chiffres, clé de Luhn) avant tout appel : `requete_refusee` sans réseau.
 - **Répertoire d'enregistrements** : option `-enregistrements`, par défaut `servers/<nom>/enregistrements` relatif au répertoire courant (lancer les binaires depuis la racine du dépôt).
 - **`gels-avoirs` : l'enregistrement est filtré.** Le registre complet contient 4 648 personnes physiques : il ne peut pas être versionné tel quel. L'enregistrement ne garde que les personnes morales (1 924) et navires (39), avec nom, alias (sans commentaire), fondements juridiques, références UE/ONU et numéro OMI. Motifs, adresses, téléphones, courriels, sites et identifiants sont retirés (ils peuvent nommer des personnes). `sha256_origine` garde l'empreinte du registre complet reçu. En rejeu, la réponse porte `source.filtre` et un `avertissement` : **une absence de correspondance en rejeu n'est pas probante**.
@@ -113,9 +113,9 @@ Aucun blocage dur. Contournements, tous documentés en section 3 :
 ```sh
 cd ~/cybercar/mcp_rogue-donnees
 go vet ./... && go test -race ./servers/...
-go build -o bin/appeler ./servers/appeler && go build -o bin/entreprises ./servers/entreprises
-DONNEES_MODE=REJEU  bin/appeler bin/entreprises rechercher_entreprise '{"siren":"405750753"}'   # source.origine = rejeu
-DONNEES_MODE=DIRECT bin/appeler bin/entreprises rechercher_entreprise '{"siren":"405750753"}'   # source.origine = direct (réseau)
+go build -o bin/appeler ./servers/appeler && go build -o bin/recherche-entreprises ./servers/recherche-entreprises
+DONNEES_MODE=REJEU  bin/appeler bin/recherche-entreprises rechercher_entreprise '{"siren":"405750753"}'   # source.origine = rejeu
+DONNEES_MODE=DIRECT bin/appeler bin/recherche-entreprises rechercher_entreprise '{"siren":"405750753"}'   # source.origine = direct (réseau)
 go build -o bin/gels-avoirs ./servers/gels-avoirs
 DONNEES_MODE=REJEU  bin/appeler bin/gels-avoirs verifier_gel '{"nom":"JSC ROSOBORONEXPORT"}'   # 1 correspondance exacte, avertissement « partiel »
 go build -o bin/taux-officiel ./servers/taux-officiel
@@ -130,7 +130,7 @@ DONNEES_MODE=REJEU  bin/appeler bin/legifrance lire_article '{"identifiant":"LEG
 # Panne simulée, sans réseau réel : MIXTE bascule sur l'enregistrement et le dit
 HTTPS_PROXY=http://127.0.0.1:9 DONNEES_MODE=MIXTE bin/appeler bin/taux-officiel get_taux_usure '{"categorie":"pret-relais"}'
 # Schéma figé = tools/list brut
-go build -o bin/exporter-schema ./servers/exporter-schema && bin/exporter-schema bin/entreprises | diff - servers/entreprises/schema.json && echo schéma identique
+go build -o bin/exporter-schema ./servers/exporter-schema && bin/exporter-schema bin/recherche-entreprises | diff - servers/recherche-entreprises/schema.json && echo schéma identique
 ```
 
 Sans `DONNEES_MODE`, les serveurs sont en REJEU (aucun réseau). DIRECT et MIXTE font des appels réels (1 req/s au plus par API) ; `legifrance` y exige `PISTE_CLIENT_ID` et `PISTE_CLIENT_SECRET`. Lancer les binaires depuis la racine du dépôt (ou passer `-enregistrements`).
