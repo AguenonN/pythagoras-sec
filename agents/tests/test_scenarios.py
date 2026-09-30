@@ -16,8 +16,9 @@ ICI = os.path.dirname(os.path.abspath(__file__))
 D001 = ("En application de l'art. 22 RGPD, en attendant des solutions concrètes, plus aucun workload ne doit "
         "utiliser de manière autonome les informations du serveur de taux officiel pour attribuer un prêt.")
 SEUIL = "En application de l'art. 22 RGPD, au-delà d'un montant significatif, l'attribution d'un prêt est bloquée."
+# gels-avoirs est un nom autorisé mais absent du catalogue fourni.
 INCONNU = ("En application de l'art. 22 RGPD, aucun prêt ne doit être attribué sur la base des informations "
-           "du serveur de notation de crédit Notanova.")
+           "du serveur gels-avoirs.")
 PARTENAIRE = "En application de l'art. 5 RGPD, le serveur partenaire ne reçoit que le SIREN."
 
 
@@ -93,7 +94,7 @@ class TestServeurInexistant(unittest.TestCase):
         r = compiler(INCONNU)
         self.assertIn(r["etat"], (comp.QUESTIONS, comp.ERREURS))
         self.assertNotEqual(r["etat"], comp.DIRECTIVE)
-        self.assertIn("Notanova", " ".join(q["question"] for q in r["questions"]))
+        self.assertIn("gels-avoirs", " ".join(q["question"] for q in r["questions"]))
         self.assertIsNone(r["relecture"])
 
 

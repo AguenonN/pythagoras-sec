@@ -42,10 +42,10 @@ class TestProposition(unittest.TestCase):
         self.assertEqual(self.erreurs(), [])
 
     def test_serveur_invente(self):
-        e = self.erreurs(cible={"serveur": "notation-externe", "outil": "attribuer_pret"})
+        e = self.erreurs(cible={"serveur": "gels-avoirs", "outil": "attribuer_pret"})
         self.assertTrue(any("absente du catalogue" in x for x in e), e)
-        e = self.erreurs(provenance={"serveurs": ["notation-externe"]})
-        self.assertTrue(any("notation-externe" in x for x in e), e)
+        e = self.erreurs(provenance={"serveurs": ["gels-avoirs"]})
+        self.assertTrue(any("gels-avoirs" in x for x in e), e)
 
     def test_outil_d_un_autre_serveur(self):
         e = self.erreurs(cible={"serveur": "taux-officiel", "outil": "attribuer_pret"})

@@ -1,8 +1,8 @@
-"""Les seuls noms de serveurs du compilateur. Tout nom de serveur présent
+"""Les seuls noms de serveurs autorisés. Tout nom de serveur présent
 dans le catalogue, dans les énumérations offertes à Mistral, dans ses
 propositions enregistrées ou dans les exemples appartient à cette liste.
-Les tests négatifs emploient exprès des noms hors liste (notation-externe,
-Notanova) ; ils ne sont jamais dans ces fichiers de données."""
+Les tests négatifs emploient gels-avoirs, autorisé mais absent du catalogue
+d'exemple, pour vérifier qu'un serveur hors catalogue est refusé."""
 
 import glob
 import json
@@ -12,7 +12,7 @@ import unittest
 from .aides import EXEMPLES, catalogue_exemple
 
 SERVEURS = {"taux-officiel", "banque-synthetique", "recherche-entreprises",
-            "gels-avoirs", "eurlex", "legifrance"}
+            "gels-avoirs", "eurlex", "legifrance", "rh-synthetique", "referentiel-rh"}
 ENREGISTREMENTS = os.path.join(os.path.dirname(EXEMPLES), "enregistrements")
 
 

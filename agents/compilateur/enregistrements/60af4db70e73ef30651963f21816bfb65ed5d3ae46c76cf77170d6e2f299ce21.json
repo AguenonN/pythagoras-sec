@@ -10,10 +10,10 @@
      "tool_calls": [
       {
        "function": {
-        "arguments": "{\"question\": \"Le serveur « Notanova » correspond-il à l'un des serveurs du catalogue (banque-synthetique, recherche-entreprises, taux-officiel) ou à un outil spécifique ? Si oui, lequel ?\", \"champ\": \"cible\"}",
+        "arguments": "{\"question\": \"Le serveur « gels-avoirs » correspond-il à l'un des serveurs du catalogue (banque-synthetique, recherche-entreprises, taux-officiel) ? Si oui, lequel ?\", \"champ\": \"cible\"}",
         "name": "poser_question"
        },
-       "id": "kCoOpyEJr",
+       "id": "eeJzotXsY",
        "index": 0,
        "type": "function"
       }
@@ -21,18 +21,18 @@
     }
    }
   ],
-  "created": 1790719275,
-  "id": "64bc7aa810024309b32b622c6bf1de15",
+  "created": 1790760249,
+  "id": "7c462578fac14847be6e49c8e10b072e",
   "model": "mistral-small-latest",
   "object": "chat.completion",
   "usage": {
-   "completion_tokens": 62,
-   "prompt_tokens": 2378,
+   "completion_tokens": 58,
+   "prompt_tokens": 2375,
    "prompt_tokens_details": {
-    "cached_tokens": 2336
+    "cached_tokens": 0
    },
    "service_tier": "standard",
-   "total_tokens": 2440
+   "total_tokens": 2433
   }
  },
  "requete": {
@@ -42,7 +42,7 @@
     "role": "system"
    },
    {
-    "content": "Catalogue des serveurs et outils disponibles :\n{\n \"serveurs\": [\n  {\n   \"description\": \"Banque de démonstration : instruction et attribution de prêts aux entreprises.\",\n   \"nom\": \"banque-synthetique\",\n   \"outils\": [\n    {\n     \"arguments\": [\n      \"/siren\",\n      \"/montant\",\n      \"/duree_mois\",\n      \"/taux\",\n      \"/emprunteur\"\n     ],\n     \"description\": \"Attribue un prêt à une entreprise.\",\n     \"nom\": \"attribuer_pret\"\n    },\n    {\n     \"arguments\": [\n      \"/siren\"\n     ],\n     \"description\": \"Lit le dossier de crédit d'une entreprise.\",\n     \"nom\": \"consulter_dossier\"\n    }\n   ]\n  },\n  {\n   \"description\": \"Serveur de taux officiel : taux de référence publiés (taux d'usure, taux directeurs).\",\n   \"nom\": \"taux-officiel\",\n   \"outils\": [\n    {\n     \"arguments\": [\n      \"/type\",\n      \"/date\"\n     ],\n     \"description\": \"Rend le taux de référence en vigueur à une date.\",\n     \"nom\": \"lire_taux\"\n    }\n   ]\n  },\n  {\n   \"description\": \"Serveur partenaire de vérification d'entreprise (annuaire des entreprises, recherche par SIREN).\",\n   \"nom\": \"recherche-entreprises\",\n   \"outils\": [\n    {\n     \"arguments\": [\n      \"/siren\",\n      \"/raison_sociale\",\n      \"/adresse\",\n      \"/dirigeant\"\n     ],\n     \"description\": \"Vérifie l'existence et la situation d'une entreprise.\",\n     \"nom\": \"verifier_entreprise\"\n    }\n   ]\n  }\n ]\n}\n\nTexte de la directive, écrit par le juriste :\n<<<\nEn application de l'art. 22 RGPD, aucun prêt ne doit être attribué sur la base des informations du serveur de notation de crédit Notanova.\n>>>",
+    "content": "Catalogue des serveurs et outils disponibles :\n{\n \"serveurs\": [\n  {\n   \"description\": \"Banque de démonstration : instruction et attribution de prêts aux entreprises.\",\n   \"nom\": \"banque-synthetique\",\n   \"outils\": [\n    {\n     \"arguments\": [\n      \"/siren\",\n      \"/montant\",\n      \"/duree_mois\",\n      \"/taux\",\n      \"/emprunteur\"\n     ],\n     \"description\": \"Attribue un prêt à une entreprise.\",\n     \"nom\": \"attribuer_pret\"\n    },\n    {\n     \"arguments\": [\n      \"/siren\"\n     ],\n     \"description\": \"Lit le dossier de crédit d'une entreprise.\",\n     \"nom\": \"consulter_dossier\"\n    }\n   ]\n  },\n  {\n   \"description\": \"Serveur de taux officiel : taux de référence publiés (taux d'usure, taux directeurs).\",\n   \"nom\": \"taux-officiel\",\n   \"outils\": [\n    {\n     \"arguments\": [\n      \"/type\",\n      \"/date\"\n     ],\n     \"description\": \"Rend le taux de référence en vigueur à une date.\",\n     \"nom\": \"lire_taux\"\n    }\n   ]\n  },\n  {\n   \"description\": \"Serveur partenaire de vérification d'entreprise (annuaire des entreprises, recherche par SIREN).\",\n   \"nom\": \"recherche-entreprises\",\n   \"outils\": [\n    {\n     \"arguments\": [\n      \"/siren\",\n      \"/raison_sociale\",\n      \"/adresse\",\n      \"/dirigeant\"\n     ],\n     \"description\": \"Vérifie l'existence et la situation d'une entreprise.\",\n     \"nom\": \"verifier_entreprise\"\n    }\n   ]\n  }\n ]\n}\n\nTexte de la directive, écrit par le juriste :\n<<<\nEn application de l'art. 22 RGPD, aucun prêt ne doit être attribué sur la base des informations du serveur gels-avoirs.\n>>>",
     "role": "user"
    }
   ],
