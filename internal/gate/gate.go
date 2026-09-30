@@ -111,6 +111,9 @@ func Demarrer(ctx context.Context, cfg Config) (*Gate, error) {
 	if cfg.Jeu.Meta.Empreinte == "" {
 		return nil, errors.New("gate: jeu non validé (empreinte absente)")
 	}
+	if err := verifierCibles(cfg.Jeu, cfg.Registre); err != nil {
+		return nil, err
+	}
 	if cfg.Horloge == nil {
 		cfg.Horloge = time.Now
 	}

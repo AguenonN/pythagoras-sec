@@ -30,7 +30,8 @@ type Rechargement struct {
 }
 
 // Recharger remplace le jeu actif sans redémarrer. Le document passe par
-// le chargeur strict ; il doit garder l'identifiant du jeu actif, et une
+// le chargeur strict, ses directives ne visent que des cibles du
+// registre ; il doit garder l'identifiant du jeu actif, et une
 // version déjà chargée doit revenir à l'identique (c'est ce qui permet le
 // retour arrière). En cas d'échec, l'ancien jeu reste actif et une entrée
 // alerte est écrite. En cas de succès, l'entrée jeu_charge est écrite
@@ -46,6 +47,9 @@ func (g *Gate) Recharger(donnees []byte) (Rechargement, error) {
 	actif := *g.jeu.Load()
 
 	nouveau, err := directive.Charger(donnees)
+	if err == nil {
+		err = verifierCibles(*nouveau, g.cfg.Registre)
+	}
 	if err == nil && nouveau.Meta.ID != actif.Meta.ID {
 		err = fmt.Errorf("%w (%q au lieu de %q)", ErrJeuAutreID, nouveau.Meta.ID, actif.Meta.ID)
 	}
