@@ -10,7 +10,8 @@ et le gate ne sont pas modifiés.
 
 | Étape | Commit | Objet |
 |---|---|---|
-| 1 | (ce commit) | `internal/relecture` : relecture v2 déterministe (déclencheur, arbre, feuilles, effets, fuseau, indéterminé), fichiers attendus octet pour octet, trois fuseaux machine |
+| 1 | `cd8cf89` | `internal/relecture` : relecture v2 déterministe (déclencheur, arbre, feuilles, effets, fuseau, indéterminé), fichiers attendus octet pour octet, trois fuseaux machine |
+| 2 | (ce commit) | `cmd/directive` : `verifier` et `relire` sur jeux v2, `--exiger-brouillon` conservé, tests |
 
 ### Étape 1 — relecture v2
 
@@ -33,9 +34,20 @@ et le gate ne sont pas modifiés.
   couverture (chaque nœud, feuille, opérateur, effet et évènement employé par
   au moins un jeu relu) ; aucun gabarit de repli sur un jeu accepté.
 
+### Étape 2 — `cmd/directive` v2
+
+- `verifier` et `relire` passaient déjà par `directive.Charger`, qui accepte
+  v1 et v2 ; seule la relecture manquait (étape 1). `--exiger-brouillon` est
+  conservé et vaut pour les directives v2.
+- Tests (`main_v2_test.go`) : les six jeux v2 des scénarios acceptés et relus
+  octet pour octet comme `internal/relecture/testdata/v2/*.txt` ;
+  `--exiger-brouillon` sur un jeu v2 actif (une erreur par directive) ; erreurs
+  v2 rendues en bloc avec le chemin du nœud (`condition.et[0].temps`), statuts
+  contrôlés même quand le chargeur refuse.
+
 ## 2. Pas fait (encore)
 
-Étapes 2 à 7.
+Étapes 3 à 7.
 
 ## 3. Décisions prises seul
 

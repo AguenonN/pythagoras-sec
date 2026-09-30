@@ -1,6 +1,8 @@
 // Command directive vérifie et relit un jeu de directives lu sur l'entrée
 // standard. C'est le seul juge de ce que le compilateur propose : aucune
 // sortie de modèle n'est acceptée sans passer par le chargeur strict.
+// Un jeu peut porter des directives v1 et v2 (docs/schema-directive-v2.md) :
+// le chargeur et la relecture traitent les deux.
 //
 //	directive verifier [--exiger-brouillon] < jeu.json   {"ok":true,...} ou {"ok":false,"erreurs":[...]}
 //	directive relire   < jeu.json                       relecture en français, par gabarit
