@@ -16,11 +16,19 @@ MOIS = {
     "juillet": 7, "aout": 8, "septembre": 9, "octobre": 10, "novembre": 11, "decembre": 12,
 }
 
-_NOMBRE = re.compile(
-    r"(?<![\w,.])(\d{1,3}(?:[   .]\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)"
-    r"(?:\s*(k|m|md|mds|mille|millions?|milliards?)(?![a-z]))?",
+# Un montant : un nombre en notation française, un multiplicateur facultatif,
+# puis une unité obligatoire (€, euro(s), %). « 500 000 » seul ne justifie
+# rien, pas plus qu'un numéro d'article.
+_MONTANT = re.compile(
+    r"(?<![\w,.])(\d{1,3}(?:[ \u00a0\u202f.]\d{3})+(?:,\d+)?|\d+(?:[.,]\d+)?)"
+    r"\s*(?:(k|m|md|mds|mille|millions?|milliards?)(?![a-z])\s*)?"
+    r"(?:(?:d['’]|de\s)\s*)?"
+    r"(€|euros?(?![a-z])|%)",
     re.IGNORECASE,
 )
+# Ce qui, juste avant un nombre, en fait une référence et non une quantité :
+# « art. 22 », « article 1240 », « L561-10 », « R. 123-4 ».
+_REFERENCE = re.compile(r"(?:\b[Aa]rt(?:icle)?\.?|\b[LR]\.?)\s*[\d.\-]*\s*$")
 _MULTIPLICATEURS = {"k": 1e3, "mille": 1e3, "m": 1e6, "million": 1e6, "millions": 1e6,
                     "md": 1e9, "mds": 1e9, "milliard": 1e9, "milliards": 1e9}
 
@@ -33,12 +41,15 @@ def _normaliser(s):
     return re.sub(r"\s+", " ", sans_accents(s).lower()).strip()
 
 
-def nombres(texte):
-    """Tous les nombres écrits dans le texte, en notation française, avec et
-    sans leur multiplicateur (« 1,5 million » donne 1,5 et 1 500 000)."""
+def montants(texte):
+    """Les montants écrits dans le texte, multiplicateur appliqué
+    (« 1,5 million d'euros » donne 1 500 000, pas 1,5). Un nombre sans
+    unité (€, euro(s), %) ou précédé de art., article, L ou R n'en est pas un."""
     out = set()
-    for m in _NOMBRE.finditer(texte):
-        brut = re.sub(r"[   ]", "", m.group(1))
+    for m in _MONTANT.finditer(texte):
+        if _REFERENCE.search(texte[:m.start()]):
+            continue
+        brut = re.sub(r"[ \u00a0\u202f]", "", m.group(1))
         if re.fullmatch(r"\d{1,3}(?:\.\d{3})+", brut):
             brut = brut.replace(".", "")
         brut = brut.replace(",", ".")
@@ -46,9 +57,9 @@ def nombres(texte):
             v = float(brut)
         except ValueError:
             continue
-        out.add(v)
         if m.group(2):
-            out.add(v * _MULTIPLICATEURS[m.group(2).lower()])
+            v *= _MULTIPLICATEURS[m.group(2).lower()]
+        out.add(v)
     return out
 
 
@@ -79,7 +90,7 @@ def valeur_ecrite(v, source):
         return all(valeur_ecrite(e, source) for e in v)
     n = _nombre(v)
     if n is not None:
-        return n in nombres(source)
+        return n in montants(source)
     if isinstance(v, str):
         return _normaliser(v) in _normaliser(source)
     if isinstance(v, bool):

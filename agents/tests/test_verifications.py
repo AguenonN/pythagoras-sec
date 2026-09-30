@@ -6,19 +6,43 @@ from .aides import D001, catalogue_exemple
 
 
 class TestExtraction(unittest.TestCase):
-    def test_nombres(self):
+    def test_montants(self):
         cas = {
             "au-delà de 500 000 euros": 500000,
-            "au-delà de 500 000 €": 500000,
-            "plus de 2.000.000": 2000000,
-            "1,5 million": 1500000,
+            "au-delà de 500\u202f000 €": 500000,
+            "plus de 2.000.000 €": 2000000,
+            "1,5 million d'euros": 1500000,
+            "1,5 millions de euros": 1500000,
             "10k€": 10000,
-            "3 milliards": 3e9,
-            "0,25": 0.25,
+            "10 k€": 10000,
+            "3 milliards d’euros": 3e9,
+            "un euro, soit 1 euro": 1,
+            "un taux de 5,87 %": 5.87,
+            "5%": 5,
         }
         for texte, n in cas.items():
-            self.assertIn(float(n), v.nombres(texte), texte)
-        self.assertEqual(v.nombres("un montant significatif"), set())
+            self.assertEqual(v.montants(texte), {float(n)}, texte)
+
+    def test_sans_unite_rien(self):
+        for texte in ["un montant significatif", "au-delà de 500 000", "24 mois", "le 31/12/2026",
+                      "1,5 million", "SIREN 123456789"]:
+            self.assertEqual(v.montants(texte), set(), texte)
+
+    def test_references_rien(self):
+        for texte in ["art. 22 %", "art.22 €", "Art 22 euros", "article 1240 €", "l'article 5 %",
+                      "L561-10 €", "L. 511-1 euros", "R123-4 %", "R. 123 €", "art. 22-1 %"]:
+            self.assertEqual(v.montants(texte), set(), texte)
+        self.assertEqual(v.montants("En application de l'art. 22 RGPD, au-delà de 500 000 euros"), {500000.0})
+        self.assertEqual(v.montants("art. L561-10 : au-delà de 10 000 €"), {10000.0})
+
+    def test_valeur_ecrite(self):
+        source = "En application de l'art. 22 RGPD, au-delà de 500 000 euros ; 24 mois."
+        self.assertTrue(v.valeur_ecrite(500000, source))
+        self.assertFalse(v.valeur_ecrite(22, source), "un numéro d'article ne justifie rien")
+        self.assertFalse(v.valeur_ecrite(24, source), "un nombre sans unité ne justifie rien")
+        self.assertFalse(v.valeur_ecrite(500, source))
+        self.assertTrue(v.valeur_ecrite([500000], source))
+        self.assertFalse(v.valeur_ecrite([500000, 22], source))
 
     def test_dates(self):
         self.assertEqual(v.dates("avant le 31/12/2026"), {"2026-12-31"})
