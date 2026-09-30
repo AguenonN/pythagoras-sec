@@ -46,7 +46,7 @@ func TestVerifier_ToutesLesErreurs(t *testing.T) {
 	}{
 		{"illisible", `{"jeu":`, []string{"document illisible"}},
 		{"champ inconnu", `{"jeu":{},"directives":[],"bonus":1}`, []string{"unknown field"}},
-		{"plusieurs défauts", `{"jeu":{"id":"t","version":1,"date_effet":"2026-10-04T08:00:00Z","auteur":"j"},"directives":[{"id":"D-1","version":1,"statut":"proposee","date_effet":"2026-10-04T08:00:00Z","texte_fr":"t","fondement":{"texte":"RGPD"},"verrou":"interdiction","cible":{"serveur":"Taux","outil":"*"},"effet":"attendre_validation"}]}`,
+		{"plusieurs défauts", `{"jeu":{"id":"t","version":1,"date_effet":"2026-10-04T08:00:00Z","auteur":"j"},"directives":[{"id":"D-1","version":1,"statut":"proposee","date_effet":"2026-10-04T08:00:00Z","texte_fr":"t","fondement":{"texte":"RGPD"},"verrou":"interdiction","cible":{"serveur":"Taux-Officiel","outil":"*"},"effet":"attendre_validation"}]}`,
 			[]string{`statut "proposee" inconnu`, "cible.serveur", `effet "attendre_validation" non admis`}},
 	}
 	for _, c := range cases {
