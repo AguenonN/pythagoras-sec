@@ -1,6 +1,36 @@
 # Rapport — corrections et nouveaux serveurs (session « Données »)
 
-Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été poussé ni fusionné, `main` n'a pas été touchée. Le rapport de la nuit précédente est dans `docs/rapports/donnees-nuit.md` (ex-`RAPPORT_NUIT.md`) ; ce rapport-ci y sera versé à la fin sous `docs/rapports/donnees-corrections.md`.
+Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été poussé ni fusionné, `main` n'a pas été touchée. Ce rapport était `RAPPORT_CORRECTIONS.md` à la racine ; le rapport de la nuit est dans `docs/rapports/donnees-nuit.md`.
+
+## Résumé
+
+**Tout est fait**, missions 2 et 3. `go vet ./...` et `go test -race ./...` verts à chaque commit et à la fin. Aucun fichier hors `servers/`, `scripts/`, `docs/rapports/` et des rapports dans mes commits ; aucun secret, aucune clé, aucun binaire versionné.
+
+- **Calendrier** : instantané « base interne » = T3 2026 au 4 octobre ; en REJEU, `get_taux_usure` au 2026-10-04 sert le T4.
+- **`recherche-entreprises`** : ancien `entreprises`, renommé partout.
+- **Registre des gels** : complet et local (`gels-avoirs preparer`, hors Git) ; registre synthétique seul versionné ; enregistrement réel retiré de tout l'historique de la branche ; registre absent → `indisponible`, jamais « aucune correspondance » ; **aucun nom ni alias de personne physique rendu**, en DIRECT comme en REJEU.
+- **Nouveaux serveurs, données fictives** : `banque-synthetique` (dossier piégé 004, dossier 005 au nom d'une entité réellement gelée), `taux-imposteur` (schéma identique à `taux-officiel`, seuils +2 points), `rh-synthetique`, `referentiel-rh`. Transports stdio et HTTP streamable TLS.
+- **Réseau fermé par défaut** : un client sans liste d'hôtes ne joint rien.
+- **Construction reproductible** : `scripts/construire-serveurs.sh` → `bin/manifeste.json` (9 serveurs), identique d'une exécution à l'autre.
+
+### Commits de la branche (du plus récent au plus ancien)
+
+| Commit | Objet |
+|---|---|
+| (ce commit) | Ce rapport versé dans `docs/rapports/donnees-corrections.md`, résumé |
+| `b72b710` | `scripts/construire-serveurs.sh`, manifeste reproductible |
+| `9cf9cbd` | Rapport de nuit déplacé dans `docs/rapports/donnees-nuit.md` |
+| `4ce5f34` | `rejeu` : `Restreindre` obligatoire |
+| `b6f1016` | `gels-avoirs` : jamais de nom ni d'alias de personne physique |
+| `3ea7a24` | `banque-synthetique` : `DOS-FICTIF-005` |
+| `a343228` | `referentiel-rh` |
+| `399683f` | `rh-synthetique` |
+| `e6a4e18` | `taux-imposteur` |
+| `ebe51f3` | `banque-synthetique`, transport HTTP streamable TLS |
+| `d35b4e6` | `gels-avoirs` : registre complet hors Git, registre synthétique |
+| `07de13f` | Renommage `entreprises` → `recherche-entreprises` |
+| `6b33477` | Calendrier : instantané T3, T4 servi au 2026-10-04 |
+| `c324f7a` … `7f7e928` | Nuit : couche de rejeu et cinq serveurs de données (identifiants réécrits, voir plus bas) |
 
 ## 1. Fait
 
@@ -22,7 +52,7 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
 | `b6f1016` | 8. Personnes physiques anonymes | `verifier_gel` ne rend jamais nom ni alias d'une personne physique, en DIRECT comme en REJEU |
 | `4ce5f34` | 9. `Restreindre` obligatoire | Sans liste d'hôtes explicite, un client ne joint aucun hôte |
 | `9cf9cbd` | 10. Rapports sous `docs/` | `RAPPORT_NUIT.md` → `docs/rapports/donnees-nuit.md` (note en tête) |
-| (ce commit) | 11. Construction reproductible | `scripts/construire-serveurs.sh` : 9 serveurs, schémas vérifiés, `bin/manifeste.json` |
+| `b72b710` | 11. Construction reproductible | `scripts/construire-serveurs.sh` : 9 serveurs, schémas vérifiés, `bin/manifeste.json` |
 
 **Mission 2 : tout est fait**, points 1 à 6. `go vet ./...` et `go test -race ./...` verts à chaque commit ; aucun fichier hors `servers/` et des rapports dans mes commits ; aucun secret, aucune clé, aucun binaire versionné (vérifié).
 
@@ -125,6 +155,10 @@ Rien du brief. Limites :
 - Coupure réseau passagère le 2026-09-30 vers 11:25 (DNS `no route to host`) : `preparer` a échoué proprement après ses 3 tentatives (`indisponible`) ; relancé après retour du réseau, réussi.
 
 ## 5. Questions pour Manu
+
+Nouvelle question :
+
+- **« Huit serveurs »** : le brief du point 11 en nomme neuf ; le script et le manifeste en contiennent neuf. À confirmer pour le registre du gate.
 
 Réponses reçues (mission 3) : registre réel local pour la démo, pas de mélange avec des entrées fictives ; pas de `gc` (Manu le fera après la fusion) ; imposteur gardé à +2 points. Questions précédentes, pour mémoire :
 
