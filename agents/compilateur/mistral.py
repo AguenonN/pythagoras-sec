@@ -66,7 +66,9 @@ class Client:
         self.dormir = dormir
         self._dernier = 0.0
 
-    def completer(self, messages, outils, choix_outil="any"):
+    def completer(self, messages, outils, choix_outil="any", options=None):
+        """``options`` complète le corps (parallel_tool_calls…) ; absentes, la
+        requête et donc son empreinte sont celles d'avant leur ajout."""
         corps = {
             "model": MODELE,
             "temperature": 0,
@@ -75,6 +77,10 @@ class Client:
             "tools": outils,
             "tool_choice": choix_outil,
         }
+        for cle, valeur in (options or {}).items():
+            if cle in corps:
+                raise ValueError("option %r fixée par le client" % cle)
+            corps[cle] = valeur
         cle = empreinte(corps)
         chemin = os.path.join(self.enregistrements, cle + ".json")
         if os.path.exists(chemin):

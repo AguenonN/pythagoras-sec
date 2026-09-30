@@ -58,3 +58,12 @@ class TestNomsServeurs(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestNomsFauxServeur(unittest.TestCase):
+    def test_outils_serveur__outil(self):
+        from .faux_serveur_mcp import OUTILS
+        for o in OUTILS:
+            serveur, sep, outil = o["name"].partition("__")
+            self.assertTrue(sep and outil, o["name"])
+            self.assertIn(serveur, SERVEURS, o["name"])

@@ -21,15 +21,24 @@ def reponse(*appels):
     return {"choices": [{"message": {"role": "assistant", "content": "", "tool_calls": list(appels)}}]}
 
 
+def texte_final(contenu):
+    return {"choices": [{"message": {"role": "assistant", "content": contenu, "tool_calls": None}}]}
+
+
+FAUX_SERVEUR = os.path.join(ICI, "faux_serveur_mcp.py")
+
+
 class ClientScripte:
     """Rend les réponses dans l'ordre et garde les messages reçus."""
 
     def __init__(self, *reponses):
         self.reponses = list(reponses)
         self.recus = []
+        self.options = []
 
-    def completer(self, messages, outils):
+    def completer(self, messages, outils, **options):
         self.recus.append((json.loads(json.dumps(messages)), outils))
+        self.options.append(options)
         return self.reponses.pop(0)
 
 
