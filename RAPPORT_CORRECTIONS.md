@@ -9,7 +9,8 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
 | `6b33477` | Calendrier | `instantane_trimestre_precedent.json` régénéré au 2026-10-04 : T4 2026 en vigueur, instantané **T3 2026**. Test `TestJourDeDemoSertLeQuatriemeTrimestre` : en REJEU, `get_taux_usure` avec `date_reference = 2026-10-04` sert le T4 pour les 10 catégories, sans « suivant » |
 | `07de13f` | Renommage | `entreprises` → `recherche-entreprises` : dossier `servers/recherche-entreprises/`, binaire, constante `Nom`, commentaires d'usage, rapports. Test `TestNomLogique` (`internal/nommage`) |
 | `d35b4e6` | Gels hors Git | Registre complet dans `servers/gels-avoirs/enregistrements_locaux/` (ignoré par Git), produit par `gels-avoirs preparer` ; `enregistrements/` ne contient plus qu'un registre **synthétique** ; enregistrement réel retiré de l'historique de la branche |
-| (ce commit) | 4. `banque-synthetique` | `evaluer_dossier`, `get_taux_interne`, `attribuer_pret` ; 4 dossiers fictifs dont 1 piégé ; transports stdio et HTTP streamable TLS (ajoutés au lanceur commun) |
+| `ebe51f3` | 4. `banque-synthetique` | `evaluer_dossier`, `get_taux_interne`, `attribuer_pret` ; 4 dossiers fictifs dont 1 piégé ; transports stdio et HTTP streamable TLS (ajoutés au lanceur commun) |
+| (ce commit) | 5. `taux-imposteur` | Mêmes outils et même `schema.json` (octet pour octet) que `taux-officiel`, seuils majorés de 2 points, binaire distinct ; cœur de `taux-officiel` déplacé dans `servers/internal/usure` |
 
 ### Détails
 
@@ -39,9 +40,17 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
   - **Transport HTTP streamable TLS** (dans `servers/internal/lanceur`, donc disponible pour tous les serveurs) : `-http 127.0.0.1:8443 -tls-cert cert.pem -tls-key cle.pem`, point d'accès `/mcp`, TLS 1.2 minimum, `ReadHeaderTimeout` 10 s. `-http` sans certificat ni clé : refus au démarrage (code 2), jamais de HTTP en clair. Tests : `lanceur.TestHTTPStreamableTLS` (appel réussi, HTTP en clair refusé, certificat inconnu refusé par le client) et `TestTransportHTTPTLS` du serveur (appel et `schema.json` identique via HTTPS). Essai manuel : certificat auto-signé jetable dans le répertoire temporaire de session, `get_taux_interne` via `https://127.0.0.1:18443/mcp` OK ; `curl http://…` → 400 et « client sent an HTTP request to an HTTPS server » ; `-http` sans certificat → code 2.
   - `appeler` accepte une URL : `bin/appeler -ca cert.pem https://127.0.0.1:8443/mcp <outil> '<json>'`.
 
+- **5. `taux-imposteur`** (SHA-256 `-trimpath` : imposteur `beb7b8fdb7333a39426e35d7b6c61d9c9dd92f06171517cbc815fe773d25455c`, officiel après déplacement du code `ce776cc3670efb7afb0ae14c21d3f0710e7dbd1f8fe95426f561ac9b7c7bb6f1` : **les deux binaires diffèrent**, les schémas non) :
+  - Le cœur de `taux-officiel` est déplacé dans `servers/internal/usure` avec un crochet d'altération (`nil` pour l'officiel). `taux-officiel` en est une enveloppe : comportement, tests et `schema.json` inchangés (vérifié octet pour octet).
+  - `servers/taux-imposteur/schema.json`, produit depuis son binaire par `exporter-schema`, est **identique octet pour octet** à `servers/taux-officiel/schema.json` (`TestMemeSchemaQueTauxOfficiel`) : l'épinglage de schéma ne le distingue pas.
+  - Altération : **+2,00 points sur chaque seuil** (`en_vigueur` et `suivant`), arrondi au centième. Le 4 octobre, découverts aux sociétés non financières : 21,08 % chez l'imposteur contre 19,08 % à l'officiel ; un TEG de 20 % paraît licite chez l'imposteur et est usuraire. Tout le reste est identique (trimestre, série, dates, `source`), vérifié catégorie par catégorie.
+  - L'imposteur **s'annonce sous le nom `taux-officiel`** (`serverInfo.name`) ; seul son nom logique, `taux-imposteur`, le distingue dans le registre.
+  - Il lit les enregistrements de `taux-officiel` (`servers/taux-officiel/enregistrements`, option `-enregistrements`) **toujours en REJEU**, quel que soit `DONNEES_MODE` (message sur stderr) : aucun réseau, et il n'écrit jamais dans le répertoire d'un autre serveur. Sa `source` recopie donc celle de l'officiel (URL Webstat, empreinte du corps réel) : l'empreinte ne correspond pas aux valeurs altérées, ce qu'un contrôle croisé peut relever.
+  - Transports stdio et HTTP streamable TLS (`TestTransportHTTPTLS`).
+
 ## 2. Pas fait
 
-En cours : `taux-imposteur`, `rh-synthetique`, `referentiel-rh`.
+En cours : `rh-synthetique`, `referentiel-rh`.
 
 ## 3. Décisions prises seul
 
@@ -52,6 +61,7 @@ En cours : `taux-imposteur`, `rh-synthetique`, `referentiel-rh`.
 - **Dossiers piégé et sains** : le demandeur piégé est fictif pour ne jamais associer une entreprise réelle à des sanctions ; il n'existe qu'au registre synthétique. Voir question 2.
 - **Transport HTTP TLS dans le lanceur commun** : les cinq serveurs de données l'ont aussi, sans changement de leur comportement en stdio. Aucun certificat ni clé n'est versionné (les tests les créent en mémoire ; `*.pem`/`*.key` sont ignorés).
 - Le lanceur affiche « mode REJEU, enregistrements … » même pour `banque-synthetique`, qui n'utilise ni l'un ni l'autre : cosmétique, laissé tel quel.
+- **Imposteur** : nom annoncé `taux-officiel`, altération +2 points, lecture seule des enregistrements officiels (choix de démo, modifiables dans `servers/taux-imposteur/serveur.go`). Voir question 3.
 - La ligne `c500c7a` du tableau de `RAPPORT_NUIT.md` garde l'ancien nom (c'est l'historique) ; les commandes de ce rapport-là sont mises à jour.
 
 ## 4. Blocages
@@ -62,6 +72,7 @@ En cours : `taux-imposteur`, `rh-synthetique`, `referentiel-rh`.
 
 1. **Registre pour la démo du dossier piégé** : le demandeur piégé (`SOCIETE FICTIVE ALPHA SANCTIONNEE`) n'est trouvé par `verifier_gel` que sur le registre synthétique. Pour la démo, lancer `gels-avoirs` sur `-enregistrements servers/gels-avoirs/enregistrements` (synthétique) ou sur le registre réel local (où il est absent : le contrôle passe, c'est la directive « verifier_gel avant attribuer_pret » qui doit bloquer) ?
 2. **Effacer le registre réel du disque** : faut-il lancer `git reflog expire --expire=now --all && git gc --prune=now` ? Le dépôt est partagé par les worktrees des autres sessions : je ne l'ai pas fait.
+3. **Imposteur** : +2 points (rend licite un taux usuraire) vous convient-il, ou préférez-vous une altération dans l'autre sens (faire refuser un prêt licite) ou plus discrète ?
 
 ## 6. Vérifier en 5 minutes
 
@@ -87,4 +98,7 @@ T=$(mktemp -d) && openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 
 bin/banque-synthetique -http 127.0.0.1:8443 -tls-cert $T/cert.pem -tls-key $T/cle.pem & sleep 1
 bin/appeler -ca $T/cert.pem https://127.0.0.1:8443/mcp attribuer_pret '{"dossier_id":"DOS-FICTIF-001","siren":"405750753","montant":1000}'
 kill %1
+go build -o bin/taux-imposteur ./servers/taux-imposteur
+cmp servers/taux-imposteur/schema.json servers/taux-officiel/schema.json && echo "même schéma"
+bin/appeler bin/taux-imposteur get_taux_usure '{"categorie":"decouvert-societes-non-financieres","date_reference":"2026-10-04"}'   # 21,08 % (officiel : 19,08 %)
 ```
