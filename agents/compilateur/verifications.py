@@ -8,6 +8,7 @@ réponses, et chaque nom au catalogue. Toute valeur introuvable est une
 erreur, renvoyée à Mistral pour correction puis, au besoin, au juriste.
 """
 
+import datetime
 import re
 import unicodedata
 
@@ -29,6 +30,13 @@ _MONTANT = re.compile(
 # Ce qui, juste avant un nombre, en fait une référence et non une quantité :
 # « art. 22 », « article 1240 », « L561-10 », « R. 123-4 ».
 _REFERENCE = re.compile(r"(?:\b[Aa]rt(?:icle)?\.?|\b[LR]\.?)\s*[\d.\-]*\s*$")
+# Une durée : un nombre suivi de jour(s), mois, an(s) ou année(s). La valeur
+# est celle écrite, sans conversion (« 24 mois » justifie 24).
+_DUREE = re.compile(
+    r"(?<![\w,.])(\d+(?:,\d+)?)\s*(jours?|mois|ans|an|ann[ée]es?)(?![a-zà-ÿ])",
+    re.IGNORECASE,
+)
+_DATE_ISO = re.compile(r"^(\d{4}-\d{2}-\d{2})(?:T[\d:.]+(?:Z|[+-]\d{2}:\d{2})?)?$")
 _MULTIPLICATEURS = {"k": 1e3, "mille": 1e3, "m": 1e6, "million": 1e6, "millions": 1e6,
                     "md": 1e9, "mds": 1e9, "milliard": 1e9, "milliards": 1e9}
 
@@ -63,6 +71,35 @@ def montants(texte):
     return out
 
 
+def durees(texte):
+    """Les durées écrites dans le texte (jours, mois, ans), valeur telle
+    qu'écrite. Un nombre précédé de art., article, L ou R n'en est pas une."""
+    out = set()
+    for m in _DUREE.finditer(texte):
+        if _REFERENCE.search(texte[:m.start()]):
+            continue
+        out.add(float(m.group(1).replace(",", ".")))
+    return out
+
+
+def quantites(texte):
+    """Ce qu'une valeur numérique peut invoquer : montants et durées. Un
+    nombre sans unité ne justifie rien."""
+    return montants(texte) | durees(texte)
+
+
+def date_iso(v):
+    """AAAA-MM-JJ si ``v`` est une date ISO valide (heure facultative), sinon None."""
+    m = _DATE_ISO.match(v)
+    if not m:
+        return None
+    try:
+        datetime.date.fromisoformat(m.group(1))
+    except ValueError:
+        return None
+    return m.group(1)
+
+
 def dates(texte):
     """Toutes les dates écrites dans le texte, en AAAA-MM-JJ."""
     t = sans_accents(texte).lower()
@@ -90,8 +127,11 @@ def valeur_ecrite(v, source):
         return all(valeur_ecrite(e, source) for e in v)
     n = _nombre(v)
     if n is not None:
-        return n in montants(source)
+        return n in quantites(source)
     if isinstance(v, str):
+        d = date_iso(v)
+        if d is not None:
+            return d in dates(source)  # date écrite explicitement, quel qu'en soit le format
         return _normaliser(v) in _normaliser(source)
     if isinstance(v, bool):
         return True  # vrai / faux : porté par l'opérateur, pas une quantité

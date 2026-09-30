@@ -35,11 +35,28 @@ class TestExtraction(unittest.TestCase):
         self.assertEqual(v.montants("En application de l'art. 22 RGPD, au-delà de 500 000 euros"), {500000.0})
         self.assertEqual(v.montants("art. L561-10 : au-delà de 10 000 €"), {10000.0})
 
+    def test_durees(self):
+        cas = {"au-delà de 24 mois": 24, "pendant 30 jours": 30, "1 jour": 1, "3 ans": 3, "1 an": 1,
+               "2 années": 2, "2 annees": 2, "1,5 an": 1.5}
+        for texte, n in cas.items():
+            self.assertEqual(v.durees(texte), {float(n)}, texte)
+        for texte in ["24", "24 moisson", "art. 5 ans", "L. 12 mois", "article 3 jours", "10 semaines"]:
+            self.assertEqual(v.durees(texte), set(), texte)
+
+    def test_dates_explicites(self):
+        source = "Applicable jusqu'au 31/12/2026, puis à compter du 1er janvier 2027."
+        self.assertTrue(v.valeur_ecrite("2026-12-31", source))
+        self.assertTrue(v.valeur_ecrite("2027-01-01T00:00:00Z", source))
+        self.assertFalse(v.valeur_ecrite("2027-06-30", source), "date non écrite")
+        self.assertFalse(v.valeur_ecrite("2026-02-30", "le 30/02/2026"), "date impossible")
+        self.assertFalse(v.valeur_ecrite(2026, source), "une année seule n'est pas une quantité")
+
     def test_valeur_ecrite(self):
-        source = "En application de l'art. 22 RGPD, au-delà de 500 000 euros ; 24 mois."
+        source = "En application de l'art. 22 RGPD, au-delà de 500 000 euros ; 24 mois ; 36 prêts."
         self.assertTrue(v.valeur_ecrite(500000, source))
+        self.assertTrue(v.valeur_ecrite(24, source), "une durée avec unité justifie sa valeur")
         self.assertFalse(v.valeur_ecrite(22, source), "un numéro d'article ne justifie rien")
-        self.assertFalse(v.valeur_ecrite(24, source), "un nombre sans unité ne justifie rien")
+        self.assertFalse(v.valeur_ecrite(36, source), "un nombre sans unité ne justifie rien")
         self.assertFalse(v.valeur_ecrite(500, source))
         self.assertTrue(v.valeur_ecrite([500000], source))
         self.assertFalse(v.valeur_ecrite([500000, 22], source))
