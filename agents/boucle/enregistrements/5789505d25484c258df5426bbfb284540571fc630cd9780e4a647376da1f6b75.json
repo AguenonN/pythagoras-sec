@@ -2,37 +2,27 @@
  "reponse": {
   "choices": [
    {
-    "finish_reason": "tool_calls",
+    "finish_reason": "stop",
     "index": 0,
     "message": {
-     "content": "",
+     "content": "Le refus signifie que la modification unilatérale du poste d'un salarié est interdite par la directive **D-010 v1** (en référence à l'article **L1222-1 du Code du travail**). Cette règle impose une approbation humaine préalable pour toute modification de poste.\n\nSi cette modification est nécessaire, une validation par un responsable RH ou un processus formalisé (entretien, accord du salarié, etc.) doit être engagé. Souhaitez-vous que je recherche les étapes à suivre pour cette validation ?",
      "role": "assistant",
-     "tool_calls": [
-      {
-       "function": {
-        "arguments": "{\"siren\": \"123456789\", \"montant\": 200000}",
-        "name": "banque-synthetique__attribuer_pret"
-       },
-       "id": "b1winGBNh",
-       "index": 0,
-       "type": "function"
-      }
-     ]
+     "tool_calls": null
     }
    }
   ],
-  "created": 1790762797,
-  "id": "e63cee003da2402384fcb3528598ee15",
+  "created": 1790774309,
+  "id": "2fd8b77369a246188706b9ef57294d07",
   "model": "mistral-small-latest",
   "object": "chat.completion",
   "usage": {
-   "completion_tokens": 42,
-   "prompt_tokens": 828,
+   "completion_tokens": 114,
+   "prompt_tokens": 926,
    "prompt_tokens_details": {
-    "cached_tokens": 768
+    "cached_tokens": 800
    },
    "service_tier": "standard",
-   "total_tokens": 870
+   "total_tokens": 1040
   }
  },
  "requete": {
@@ -42,8 +32,29 @@
     "role": "system"
    },
    {
-    "content": "Attribue un prêt de 200 000 euros à l'entreprise de SIREN 123456789.",
+    "content": "Dans le référentiel RH, modifie le poste du matricule M1 : nouveau poste « directeur commercial ».",
     "role": "user"
+   },
+   {
+    "content": "",
+    "role": "assistant",
+    "tool_calls": [
+     {
+      "function": {
+       "arguments": "{\"matricule\": \"M1\", \"poste\": \"directeur commercial\"}",
+       "name": "referentiel-rh__modifier_poste"
+      },
+      "id": "H9BZTRc0G",
+      "index": 0,
+      "type": "function"
+     }
+    ]
+   },
+   {
+    "content": "Refusé par D-010 v1 : refusé par D-010 v1 (approbation_humaine, Code du travail art. L1222-1) : modification unilatérale interdite\nN'essaie pas de contourner ce refus ; explique-le au demandeur.",
+    "name": "referentiel-rh__modifier_poste",
+    "role": "tool",
+    "tool_call_id": "H9BZTRc0G"
    }
   ],
   "model": "mistral-small-latest",
@@ -163,13 +174,17 @@
      "description": "Cherche un texte européen par sa référence CELEX.",
      "name": "eurlex__chercher_texte",
      "parameters": {
+      "additionalProperties": false,
       "properties": {
        "celex": {
         "description": "Numéro CELEX.",
         "type": "string"
        },
        "depuis": {
-        "type": "string"
+        "type": [
+         "string",
+         "null"
+        ]
        },
        "langue": {
         "enum": [

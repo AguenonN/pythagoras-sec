@@ -5,24 +5,24 @@
     "finish_reason": "stop",
     "index": 0,
     "message": {
-     "content": "Le gel des avoirs de l'entité **Exemple SA** ne peut pas être levé, car cette entité est soumise à une interdiction prévue par le **Règlement (CE) n° 2580/2001**. Cette restriction est appliquée dans le cadre des mesures restrictives de l'Union européenne visant à lutter contre le terrorisme et le financement du terrorisme.\n\nSi vous pensez qu'il s'agit d'une erreur ou si vous avez des éléments à faire valoir, je vous invite à contacter les autorités compétentes ou à fournir une demande de levée de gel accompagnée d'une justification légale.",
+     "content": "Le salarié **M1** est inconnu dans le système. Pouvez-vous vérifier le matricule et me le transmettre à nouveau ?",
      "role": "assistant",
      "tool_calls": null
     }
    }
   ],
-  "created": 1790762810,
-  "id": "6d4155b7df35481b852ed835f0733057",
+  "created": 1790774312,
+  "id": "0e25d57cf7c241c998a110556ffd3f65",
   "model": "mistral-small-latest",
   "object": "chat.completion",
   "usage": {
-   "completion_tokens": 133,
-   "prompt_tokens": 891,
+   "completion_tokens": 29,
+   "prompt_tokens": 856,
    "prompt_tokens_details": {
-    "cached_tokens": 784
+    "cached_tokens": 800
    },
    "service_tier": "standard",
-   "total_tokens": 1024
+   "total_tokens": 885
   }
  },
  "requete": {
@@ -32,7 +32,7 @@
     "role": "system"
    },
    {
-    "content": "Lève le gel des avoirs de l'entité Exemple SA.",
+    "content": "Change le poste du salarié M1 en directeur commercial.",
     "role": "user"
    },
    {
@@ -41,20 +41,20 @@
     "tool_calls": [
      {
       "function": {
-       "arguments": "{\"entite\": \"Exemple SA\"}",
-       "name": "gels-avoirs__lever_gel"
+       "arguments": "{\"matricule\": \"M1\"}",
+       "name": "rh-synthetique__lire_fiche"
       },
-      "id": "QMGyJY4QK",
+      "id": "fs5XL46Q9",
       "index": 0,
       "type": "function"
      }
     ]
    },
    {
-    "content": "Refusé par D-003 v1 : refusé par D-003 v1 (interdiction, Règlement (CE) 2580/2001)\nN'essaie pas de contourner ce refus ; explique-le au demandeur.",
-    "name": "gels-avoirs__lever_gel",
+    "content": "L'outil a décliné : Salarié inconnu : M1",
+    "name": "rh-synthetique__lire_fiche",
     "role": "tool",
-    "tool_call_id": "QMGyJY4QK"
+    "tool_call_id": "fs5XL46Q9"
    }
   ],
   "model": "mistral-small-latest",
@@ -174,13 +174,17 @@
      "description": "Cherche un texte européen par sa référence CELEX.",
      "name": "eurlex__chercher_texte",
      "parameters": {
+      "additionalProperties": false,
       "properties": {
        "celex": {
         "description": "Numéro CELEX.",
         "type": "string"
        },
        "depuis": {
-        "type": "string"
+        "type": [
+         "string",
+         "null"
+        ]
        },
        "langue": {
         "enum": [

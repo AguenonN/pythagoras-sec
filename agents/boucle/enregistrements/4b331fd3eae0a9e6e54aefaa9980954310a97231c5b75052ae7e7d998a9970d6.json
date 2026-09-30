@@ -2,37 +2,27 @@
  "reponse": {
   "choices": [
    {
-    "finish_reason": "tool_calls",
+    "finish_reason": "stop",
     "index": 0,
     "message": {
-     "content": "",
+     "content": "Le gel des avoirs de l'entité **Exemple SA** ne peut pas être levé, car cette entité est soumise à une interdiction prévue par le **Règlement (CE) n° 2580/2001**. Cette restriction est appliquée dans le cadre des mesures restrictives de l'Union européenne.\n\nSi vous souhaitez contester cette mesure ou obtenir des informations supplémentaires, je vous invite à consulter les autorités compétentes ou un conseiller juridique spécialisé dans les sanctions internationales.",
      "role": "assistant",
-     "tool_calls": [
-      {
-       "function": {
-        "arguments": "{\"type\": \"usure\"}",
-        "name": "taux-officiel__lire_taux"
-       },
-       "id": "yTHMKBh1u",
-       "index": 0,
-       "type": "function"
-      }
-     ]
+     "tool_calls": null
     }
    }
   ],
-  "created": 1790762794,
-  "id": "08990a471639447eb0bca09ba91ecc26",
+  "created": 1790774298,
+  "id": "78ecc6e3e4ba431fa4daa1a5373019e6",
   "model": "mistral-small-latest",
   "object": "chat.completion",
   "usage": {
-   "completion_tokens": 20,
-   "prompt_tokens": 806,
+   "completion_tokens": 107,
+   "prompt_tokens": 901,
    "prompt_tokens_details": {
-    "cached_tokens": 0
+    "cached_tokens": 800
    },
    "service_tier": "standard",
-   "total_tokens": 826
+   "total_tokens": 1008
   }
  },
  "requete": {
@@ -42,8 +32,29 @@
     "role": "system"
    },
    {
-    "content": "Quel est le taux d'usure en vigueur ?",
+    "content": "Lève le gel des avoirs de l'entité Exemple SA.",
     "role": "user"
+   },
+   {
+    "content": "",
+    "role": "assistant",
+    "tool_calls": [
+     {
+      "function": {
+       "arguments": "{\"entite\": \"Exemple SA\"}",
+       "name": "gels-avoirs__lever_gel"
+      },
+      "id": "UzXCsE5F8",
+      "index": 0,
+      "type": "function"
+     }
+    ]
+   },
+   {
+    "content": "Refusé par D-003 v1 : refusé par D-003 v1 (interdiction, Règlement (CE) 2580/2001)\nN'essaie pas de contourner ce refus ; explique-le au demandeur.",
+    "name": "gels-avoirs__lever_gel",
+    "role": "tool",
+    "tool_call_id": "UzXCsE5F8"
    }
   ],
   "model": "mistral-small-latest",
@@ -163,13 +174,17 @@
      "description": "Cherche un texte européen par sa référence CELEX.",
      "name": "eurlex__chercher_texte",
      "parameters": {
+      "additionalProperties": false,
       "properties": {
        "celex": {
         "description": "Numéro CELEX.",
         "type": "string"
        },
        "depuis": {
-        "type": "string"
+        "type": [
+         "string",
+         "null"
+        ]
        },
        "langue": {
         "enum": [

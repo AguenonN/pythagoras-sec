@@ -2,27 +2,37 @@
  "reponse": {
   "choices": [
    {
-    "finish_reason": "stop",
+    "finish_reason": "tool_calls",
     "index": 0,
     "message": {
-     "content": "Le matricule **M1** n'est pas reconnu dans le référentiel RH. La modification du poste ne peut donc pas être effectuée.\n\nVeuillez vérifier le matricule ou contacter le service RH pour confirmer l'identifiant.",
+     "content": "",
      "role": "assistant",
-     "tool_calls": null
+     "tool_calls": [
+      {
+       "function": {
+        "arguments": "{\"matricule\": \"M1\", \"poste\": \"directeur commercial\"}",
+        "name": "referentiel-rh__modifier_poste"
+       },
+       "id": "H9BZTRc0G",
+       "index": 0,
+       "type": "function"
+      }
+     ]
     }
    }
   ],
-  "created": 1790762816,
-  "id": "0762d1dd0de24709ba4bf9f4325e0404",
+  "created": 1790774308,
+  "id": "a3fc7a6dab894e1192dcb67561b63b06",
   "model": "mistral-small-latest",
   "object": "chat.completion",
   "usage": {
-   "completion_tokens": 51,
-   "prompt_tokens": 856,
+   "completion_tokens": 29,
+   "prompt_tokens": 828,
    "prompt_tokens_details": {
-    "cached_tokens": 800
+    "cached_tokens": 784
    },
    "service_tier": "standard",
-   "total_tokens": 907
+   "total_tokens": 857
   }
  },
  "requete": {
@@ -34,27 +44,6 @@
    {
     "content": "Dans le référentiel RH, modifie le poste du matricule M1 : nouveau poste « directeur commercial ».",
     "role": "user"
-   },
-   {
-    "content": "",
-    "role": "assistant",
-    "tool_calls": [
-     {
-      "function": {
-       "arguments": "{\"matricule\": \"M1\"}",
-       "name": "rh-synthetique__lire_fiche"
-      },
-      "id": "8WBUQDrPd",
-      "index": 0,
-      "type": "function"
-     }
-    ]
-   },
-   {
-    "content": "L'outil a décliné : Salarié inconnu : M1",
-    "name": "rh-synthetique__lire_fiche",
-    "role": "tool",
-    "tool_call_id": "8WBUQDrPd"
    }
   ],
   "model": "mistral-small-latest",
@@ -174,13 +163,17 @@
      "description": "Cherche un texte européen par sa référence CELEX.",
      "name": "eurlex__chercher_texte",
      "parameters": {
+      "additionalProperties": false,
       "properties": {
        "celex": {
         "description": "Numéro CELEX.",
         "type": "string"
        },
        "depuis": {
-        "type": "string"
+        "type": [
+         "string",
+         "null"
+        ]
        },
        "langue": {
         "enum": [

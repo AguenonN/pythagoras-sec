@@ -21,13 +21,13 @@ class TestConversion(unittest.TestCase):
 
     def test_mots_cles_retires_et_signales(self):
         for cle, valeur in [("format", "date"), ("pattern", "^a$"), ("minimum", 1), ("maximum", 2),
-                            ("default", 3), ("title", "t"), ("additionalProperties", False),
+                            ("default", 3), ("title", "t"), ("additionalProperties", {"type": "string"}),
                             ("minLength", 1), ("maxItems", 3), ("examples", ["x"]), ("$schema", "u")]:
             s = {"type": "object", "properties": {"a": {"type": "string", cle: valeur}}}
             d, sig = schemas.convertir(outil(s))
             self.assertNotIn(cle, d["function"]["parameters"]["properties"]["a"], cle)
             self.assertEqual(len(sig), 1, cle)
-            self.assertIn(repr(cle), sig[0])
+            self.assertIn(cle, sig[0])
             self.assertIn("eurlex__t.properties.a." + cle, sig[0])
 
     def test_structurants_excluent_l_outil(self):
@@ -45,14 +45,44 @@ class TestConversion(unittest.TestCase):
             schemas.convertir(outil({"type": "object", "x-maison": 1}))
 
     def test_const_et_null(self):
-        s = {"type": "object", "properties": {"l": {"const": "fr"}, "d": {"type": ["string", "null"]}}}
+        s = {"type": "object", "properties": {"l": {"const": "fr"}, "d": {"type": ["string", "null"]},
+                                              "n": {"type": ["null", "array"], "items": {"type": "string"}}}}
         d, sig = schemas.convertir(outil(s))
         p = d["function"]["parameters"]["properties"]
         self.assertEqual(p["l"], {"enum": ["fr"]})
-        self.assertEqual(p["d"], {"type": "string"})
-        self.assertEqual(len(sig), 2)
-        with self.assertRaises(schemas.Exclu):
-            schemas.convertir(outil({"type": "object", "properties": {"x": {"type": ["string", "number"]}}}))
+        self.assertEqual(p["d"], {"type": ["string", "null"]}, "[T, null] accepté par l'API : conservé")
+        self.assertEqual(p["n"], {"type": ["null", "array"], "items": {"type": "string"}})
+        self.assertEqual(len(sig), 1)
+        for t in (["string", "number"], ["string", "number", "null"], ["null"], ["string", "string"]):
+            with self.assertRaises(schemas.Exclu, msg=t):
+                schemas.convertir(outil({"type": "object", "properties": {"x": {"type": t}}}))
+
+    def test_additional_properties_booleen_conserve(self):
+        for v in (False, True):
+            s = {"type": "object", "properties": {"a": {"type": "string"}}, "additionalProperties": v}
+            d, sig = schemas.convertir(outil(s))
+            self.assertEqual(d["function"]["parameters"], s)
+            self.assertEqual(sig, [])
+
+    def test_sondes_justifient_la_conservation(self):
+        # Ce qui est conservé au-delà du noyau a un verdict « accepté ».
+        from boucle import sondes
+        verdicts = sondes.lire_verdicts()
+        for nom in sondes.SONDES:
+            self.assertTrue(verdicts.get(nom, {}).get("accepte"), nom)
+
+    def test_schemas_epingles_sans_perte(self):
+        # Les vrais schémas épinglés passent sans exclusion ni signalement.
+        import glob, json, os
+        racine = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        for chemin in sorted(glob.glob(os.path.join(racine, "servers", "*", "schema.json"))):
+            serveur = os.path.basename(os.path.dirname(chemin))
+            with open(chemin, encoding="utf-8") as f:
+                for t in json.load(f):
+                    d, sig = schemas.convertir({"name": serveur + "__" + t["name"], "description": t["description"],
+                                                "inputSchema": t["inputSchema"]})
+                    self.assertEqual(sig, [], t["name"])
+                    self.assertEqual(d["function"]["parameters"], t["inputSchema"], t["name"])
 
     def test_items_tuple_exclu(self):
         with self.assertRaises(schemas.Exclu):
@@ -77,12 +107,12 @@ class TestConversion(unittest.TestCase):
         self.assertIn("eurlex__chercher_texte", noms)
         eurlex = next(d for d in defs if d["function"]["name"] == "eurlex__chercher_texte")
         self.assertEqual(eurlex["function"]["parameters"]["properties"]["langue"], {"enum": ["fr"]})
+        self.assertIs(eurlex["function"]["parameters"]["additionalProperties"], False)
+        self.assertEqual(eurlex["function"]["parameters"]["properties"]["depuis"], {"type": ["string", "null"]})
         self.assertEqual(sorted(sig), sorted([
             "eurlex__chercher_texte.$schema : mot-clé '$schema' non accepté, retiré",
-            "eurlex__chercher_texte.additionalProperties : mot-clé 'additionalProperties' non accepté, retiré",
             "eurlex__chercher_texte.properties.celex.pattern : mot-clé 'pattern' non accepté, retiré",
             "eurlex__chercher_texte.properties.depuis.format : mot-clé 'format' non accepté, retiré",
-            "eurlex__chercher_texte.properties.depuis.type : type ['string', 'null'] réduit à 'string' (null retiré)",
             "eurlex__chercher_texte.properties.langue.const : const réécrit en enum à une valeur",
             "eurlex__chercher_texte.properties.limite.default : mot-clé 'default' non accepté, retiré",
             "eurlex__chercher_texte.properties.limite.maximum : mot-clé 'maximum' non accepté, retiré",

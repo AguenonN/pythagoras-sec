@@ -9,7 +9,8 @@ Branche `feat/integration`, worktree `~/cybercar/mcp_rogue-integration`. Rien n'
 | 1 | `529a0c3` | `cmd/registre-demo` + `internal/registredemo` : `demo/registre.json` et `demo/registre-attaque.json` générés depuis `bin/manifeste.json` |
 | 2 | `87f4166` | Catalogue du compilateur généré depuis le registre (`agents/compilateur/exemples/catalogue-demo.json`), tests de divergence Go et Python |
 | 3 | `b1432c4` | `demo/directives/credit-demo.json` (v1, quatre directives actives), accepté par le gate devant le registre de démo |
-| 4 | (ce commit) | `agents/boucle` alignée sur le §6 du contrat de l'engine (refus, attente, indisponible, outil qui décline), `MAX_APPELS` = 25 |
+| 4 | `352253e` | `agents/boucle` alignée sur le §6 du contrat de l'engine (refus, attente, indisponible, outil qui décline), `MAX_APPELS` = 25 |
+| 5 | (ce commit) | Sondes Mistral (`boucle.sondes`), conversion relâchée (`additionalProperties` booléen, `type` `[T, "null"]`), 5 scénarios de la boucle réenregistrés |
 
 ### Étape 1 — registre de démo
 
@@ -49,9 +50,28 @@ Branche `feat/integration`, worktree `~/cybercar/mcp_rogue-integration`. Rien n'
 - `MAX_APPELS` de la boucle : 20 → 25, le budget de ce brief ; compteur dans `agents/.etat/boucle/` (vide au départ dans ce worktree).
 - **Aucun scénario enregistré n'est touché par cette étape** : les messages envoyés à Mistral sont identiques octet pour octet (le refus « D-003 » version 1 s'affiche toujours « D-003 v1 », l'attente suspend la boucle sans rappeler le modèle), et les 5 scénarios rejoués passent sans nouvel enregistrement. 0 appel réel. Le réenregistrement viendra avec l'étape 5, qui change la définition d'un outil du faux serveur et donc toutes les requêtes.
 
+### Étape 5 — mots-clés JSON Schema réellement utilisés
+
+Mots-clés présents dans les 13 outils des huit schémas épinglés (`demo/registre.json`), avec leur nombre d'occurrences :
+
+| Mot-clé | Occurrences | Avant | Après |
+|---|---|---|---|
+| `type` | 34 (dont 1 liste `["null","array"]`, `rh-synthetique/decider_prime`) | conservé ; la liste était **réduite** à `array` | conservé ; `[T, "null"]` conservé tel quel |
+| `description` | 18 | conservé | conservé |
+| `properties`, `required` | 13 chacun | conservés | conservés |
+| `additionalProperties` (toujours `false`) | 13 | **retiré** | conservé s'il est booléen ; sous forme de schéma, toujours retiré (forme non sondée) |
+| `enum` | 1 | conservé | conservé |
+| `items` | 1 | conservé | conservé |
+
+- Deux constructions retirées ou réduites → deux sondes (`python -m boucle.sondes --mode reel`) : requête minimale, une seule fonction portant la construction sous la forme exacte des schémas épinglés. **Les deux sont acceptées (HTTP 200)**. Verdicts dans `agents/boucle/sondes.json`, sans rien de la réponse. **3 appels réels** (une sonde a été retentée par le client : erreur transitoire).
+- `boucle/schemas.py` relâché en conséquence ; les vrais schémas passent désormais **sans aucune perte ni signalement** (test `test_schemas_epingles_sans_perte`), et un test exige un verdict « accepté » pour chaque construction conservée au-delà du noyau.
+- Conséquence : la définition d'`eurlex__chercher_texte` du faux serveur change (`additionalProperties: false` et `type: ["string","null"]` conservés), donc toutes les requêtes enregistrées des 5 scénarios. **Réenregistrés : 10 appels réels** (budget de l'étape 4), anciens enregistrements supprimés. Réenregistrement explicite par `BOUCLE_ENREGISTRER=<plafond>` ; sans cette variable, les tests restent en rejeu.
+- Observation : sur « modifie le poste du matricule M1 », Mistral lisait d'abord la fiche et s'arrêtait ; il tente maintenant directement `modifier_poste`, reçoit le refus D-010 (forme §6) et la boucle bloque. Le test a été ajusté à ce comportement (`test_refus_par_structured_content`).
+- Budget Mistral consommé à ce point : **13 / 25**.
+
 ## 2. Ce qui n'est pas fait
 
-Étapes 5 à 7 : en cours.
+Étapes 6 et 7 : en cours.
 
 ## 3. Décisions prises seul
 
