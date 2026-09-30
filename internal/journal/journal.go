@@ -126,7 +126,7 @@ type Approbation struct {
 // la date et l'empreinte de l'enregistrement. Le cache est une source dont
 // la fraîcheur se lit ici.
 type Source struct {
-	Origine   string `json:"origine"` // live | rejeu
+	Origine   string `json:"origine"` // direct | rejeu | aucune, déclarée par le serveur ; non_declaree sinon
 	Date      string `json:"date,omitempty"`
 	Empreinte string `json:"empreinte,omitempty"`
 }

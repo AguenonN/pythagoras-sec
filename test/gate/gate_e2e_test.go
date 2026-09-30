@@ -226,6 +226,14 @@ func verifierJournal(t *testing.T, cheminJ, cheminC string, jeu directive.Jeu) [
 			t.Fatalf("appel %d : %s %s seq %d attesté %v", i+1, a.Serveur, a.Resultat.Statut, a.Seq, a.Attestation.Valide)
 		}
 	}
+	// La provenance est celle que chaque serveur déclare : la banque n'en
+	// déclare pas, le taux se dit rejoué d'un enregistrement daté.
+	if s := appels[0].Resultat.Source; s == nil || s.Origine != gate.OrigineNonDeclaree {
+		t.Fatalf("source banque %+v", s)
+	}
+	if s := appels[1].Resultat.Source; s == nil || s.Origine != gate.OrigineRejeu || s.Date != backendtest.DateSourceTaux {
+		t.Fatalf("source taux %+v", s)
+	}
 	if appels[0].Attestation.Mode != "tls-pin" || appels[1].Attestation.Mode != "binaire" {
 		t.Fatalf("modes %s %s", appels[0].Attestation.Mode, appels[1].Attestation.Mode)
 	}

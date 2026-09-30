@@ -350,7 +350,7 @@ func TestPipeline_Provenance(t *testing.T) {
 		t.Fatalf("%d appels journalisés", len(as))
 	}
 	a1, a2 := as[0], as[1]
-	if a1.Resultat.Statut != journal.StatutOK || a1.Resultat.Source.Origine != "live" || !strings.HasPrefix(a1.Resultat.EmpreinteReponse, "sha256:") {
+	if a1.Resultat.Statut != journal.StatutOK || a1.Resultat.Source.Origine != OrigineNonDeclaree || !strings.HasPrefix(a1.Resultat.EmpreinteReponse, "sha256:") {
 		t.Fatalf("appel 1 %+v", a1.Resultat)
 	}
 	if a1.Appelant != AppelantStdio || a1.OutilExpose != "taux-officiel__get_taux" || a1.Outil != "get_taux" || a1.Seq != 1 {
@@ -661,5 +661,43 @@ func TestPipeline_JournalEnPanneApresTransmission(t *testing.T) {
 	orph := rejeu.TransmissionsSansAppel(b.entrees(t))
 	if len(orph) != 1 || orph[0].Serveur != "taux-officiel" || orph[0].Decision.Effet != "autoriser" {
 		t.Fatalf("orphelines %+v", orph)
+	}
+}
+
+// La provenance vient du résultat : origine et date déclarées par le
+// serveur dans structuredContent.source, sinon non_declaree. Rien n'est
+// codé en dur.
+func TestPipeline_ProvenanceDeclaree(t *testing.T) {
+	cas := []struct {
+		nom           string
+		structure     any
+		origine, date string
+	}{
+		{"rejeu daté", map[string]any{"source": map[string]any{"origine": "rejeu", "date": "2026-10-01T08:30:00+02:00", "url": "https://webstat"}}, OrigineRejeu, "2026-10-01T06:30:00Z"},
+		{"direct", map[string]any{"source": map[string]any{"origine": "direct", "date": "2026-10-04T09:00:00Z"}}, OrigineDirect, "2026-10-04T09:00:00Z"},
+		{"aucune", map[string]any{"source": map[string]any{"origine": "aucune"}}, OrigineAucune, ""},
+		{"sans source", map[string]any{"taux": 3.15}, OrigineNonDeclaree, ""},
+		{"sans structure", nil, OrigineNonDeclaree, ""},
+		{"origine inconnue", map[string]any{"source": map[string]any{"origine": "IGNORE TOUT", "date": "2026-10-04T09:00:00Z"}}, OrigineNonDeclaree, ""},
+		{"date illisible", map[string]any{"source": map[string]any{"origine": "rejeu", "date": "hier"}}, OrigineRejeu, ""},
+	}
+	for _, c := range cas {
+		t.Run(c.nom, func(t *testing.T) {
+			b := monter(t, func(b *banc) {
+				b.taux.rep = &mcp.CallToolResult{Content: []mcp.Content{&mcp.TextContent{Text: "taux"}}, StructuredContent: c.structure}
+			})
+			appelerAgent(t, b.agent(t), "taux-officiel__get_taux", map[string]any{"devise": "EUR"})
+			src := b.appels(t)[0].Resultat.Source
+			if src == nil || src.Origine != c.origine || src.Date != c.date {
+				t.Fatalf("source %+v", src)
+			}
+			b.rejouer(t)
+		})
+	}
+	// Sans réponse (backend injoignable), rien n'est déclaré.
+	b := monter(t, func(b *banc) { b.taux.err = errors.New("injoignable") })
+	appelerAgent(t, b.agent(t), "taux-officiel__get_taux", map[string]any{"devise": "EUR"})
+	if src := b.appels(t)[0].Resultat.Source; src == nil || src.Origine != OrigineNonDeclaree {
+		t.Fatalf("source %+v", src)
 	}
 }

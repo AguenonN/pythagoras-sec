@@ -378,7 +378,7 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 			return appeler(ctx, b, outil, dec.Arguments)
 		})
 		entree.Resultat = &journal.Resultat{Statut: string(c.Resultat), EmpreinteReponse: c.EmpreinteReponse,
-			DureeMs: time.Since(debut).Milliseconds(), Source: &journal.Source{Origine: "live"}}
+			DureeMs: time.Since(debut).Milliseconds(), Source: sourceDeclaree(retour.Reponse)}
 		if retour.Err != nil {
 			g.log.Warn("appel au backend", "serveur", serveur, "outil", outil, "resultat", c.Resultat, "erreur", retour.Err)
 		}
@@ -499,6 +499,46 @@ func appeler(ctx context.Context, b backend.Backend, outil string, args map[stri
 		r.Resultat = directive.ResultatErreur
 	}
 	return r
+}
+
+// Origines de la donnée, telles que les serveurs de données les déclarent
+// dans structuredContent.source.origine, et OrigineNonDeclaree quand le
+// résultat n'en déclare pas de reconnaissable.
+const (
+	OrigineDirect      = "direct" // obtenue de l'API officielle pendant ce processus
+	OrigineRejeu       = "rejeu"  // lue dans un enregistrement daté
+	OrigineAucune      = "aucune" // aucune donnée servie
+	OrigineNonDeclaree = "non_declaree"
+)
+
+// sourceDeclaree reprend la provenance que le serveur déclare dans
+// structuredContent.source : origine et date. L'engine ne l'invente pas :
+// sans déclaration, l'origine est non_declaree. Ce qui va au journal vient
+// du serveur, donc est borné : une origine hors vocabulaire vaut
+// non_declaree, une date qui n'est pas en RFC 3339 est omise.
+func sourceDeclaree(reponse any) *journal.Source {
+	src := &journal.Source{Origine: OrigineNonDeclaree}
+	res, _ := reponse.(*mcp.CallToolResult)
+	if res == nil {
+		return src
+	}
+	sc, _ := res.StructuredContent.(map[string]any)
+	decl, _ := sc["source"].(map[string]any)
+	if decl == nil {
+		return src
+	}
+	switch o, _ := decl["origine"].(string); o {
+	case OrigineDirect, OrigineRejeu, OrigineAucune:
+		src.Origine = o
+	default:
+		return src
+	}
+	if d, _ := decl["date"].(string); d != "" {
+		if t, err := time.Parse(time.RFC3339Nano, d); err == nil {
+			src.Date = t.UTC().Format(time.RFC3339Nano)
+		}
+	}
+	return src
 }
 
 // empreinteReponse : sha256 de la réponse en JSON canonique.
