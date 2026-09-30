@@ -10,7 +10,8 @@ Branche `feat/integration`, worktree `~/cybercar/mcp_rogue-integration`. Rien n'
 | 2 | `87f4166` | Catalogue du compilateur généré depuis le registre (`agents/compilateur/exemples/catalogue-demo.json`), tests de divergence Go et Python |
 | 3 | `b1432c4` | `demo/directives/credit-demo.json` (v1, quatre directives actives), accepté par le gate devant le registre de démo |
 | 4 | `352253e` | `agents/boucle` alignée sur le §6 du contrat de l'engine (refus, attente, indisponible, outil qui décline), `MAX_APPELS` = 25 |
-| 5 | (ce commit) | Sondes Mistral (`boucle.sondes`), conversion relâchée (`additionalProperties` booléen, `type` `[T, "null"]`), 5 scénarios de la boucle réenregistrés |
+| 5 | `4d695c1` | Sondes Mistral (`boucle.sondes`), conversion relâchée (`additionalProperties` booléen, `type` `[T, "null"]`), 5 scénarios de la boucle réenregistrés |
+| 6 | (ce commit) | `test/integration/` : gate réel devant les vrais binaires, quatre scénarios, journaux vérifiés et rejoués sans écart |
 
 ### Étape 1 — registre de démo
 
@@ -69,9 +70,23 @@ Mots-clés présents dans les 13 outils des huit schémas épinglés (`demo/regi
 - Observation : sur « modifie le poste du matricule M1 », Mistral lisait d'abord la fiche et s'arrêtait ; il tente maintenant directement `modifier_poste`, reçoit le refus D-010 (forme §6) et la boucle bloque. Le test a été ajusté à ce comportement (`test_refus_par_structured_content`).
 - Budget Mistral consommé à ce point : **13 / 25**.
 
+### Étape 6 — test de bout en bout, sans réseau ni Mistral (**vert**)
+
+`go test -race ./test/integration/` (≈ 6 s) :
+
+- `TestMain` construit les neuf serveurs et `cmd/mcp-gate` dans un répertoire temporaire, écrit le manifeste qui les décrit et génère les deux registres par `registredemo.Generer` (gels-avoirs sur le registre **synthétique**). Rien n'est écrit dans `bin/` ni `demo/`.
+- Chaque scénario lance le **binaire** `mcp-gate` en stdio, comme un hôte MCP, avec `demo/directives/credit-demo.json`, un environnement réduit à la clé du journal et `DONNEES_MODE=REJEU` (aucun secret PISTE). Le client MCP du SDK Go joue l'agent.
+- `TestDemarrage` : 13 outils exposés, les huit serveurs attestés (empreinte du binaire et schémas épinglés).
+- **1. Nominal** : `rechercher_entreprise` avec `raison_sociale`, `dirigeant`, `note` en trop → caviardé (note de l'engine, empreintes d'origine et transmise distinctes, `champs_retires` = `/dirigeant,/note,/raison_sociale`) → `verifier_gel` → `get_taux_usure` au 2026-10-04 → `"trimestre":"2026-Q4"`, source `rejeu` → `attribuer_pret` DOS-FICTIF-002 400 000 € → **en attente** (`statut: en_attente`, D-001 v1, `empreinte_transmise` = celle du journal, aucune transmission, état de session à trois consultations).
+- **2. Seuil** : `attribuer_pret` 900 000 € → **refusé**, `origine: directive`, D-002 v1, fondement « RGPD — à valider par le juriste » art. 22 ; le motif ne cite pas le montant ; aucune transmission.
+- **3. Attaque** (`registre-attaque.json`) : attestation de `taux-officiel` invalide, `observe` = empreinte de l'imposteur, détail « processus non lancé » ; **ni `taux-imposteur:` ni `taux-officiel: mode` sur stderr** (chaque serveur s'y annonce au démarrage ; la banque, elle, y apparaît) ; l'agent voit l'outil épinglé ; `get_taux_usure` → **refusé par D-003** (`source_attestee`, fondement cité, origine directive et non registre, conformément au §5) ; les autres serveurs restent joignables.
+- **4. Base périmée** : `get_taux_interne` → `"trimestre":"2026-Q3"` ; l'entrée `appel` (statut ok, empreinte de réponse) et son entrée `transmission` sont au journal ; l'`attribuer_pret` qui suit est **autorisé et transmis** (aucune directive ne vise la base interne) et son instantané de session montre la consultation `banque-synthetique/get_taux_interne`.
+- Pour chaque scénario : journal relu depuis le disque, **chaîne HMAC vérifiée**, **rejeu sans écart** de chaque appel (effet rejoué = effet journalisé), aucune transmission sans appel.
+- Stable sur 3 exécutions consécutives (`-count=3`).
+
 ## 2. Ce qui n'est pas fait
 
-Étapes 6 et 7 : en cours.
+Étape 7 : en cours.
 
 ## 3. Décisions prises seul
 
@@ -81,6 +96,8 @@ Mots-clés présents dans les 13 outils des huit schémas épinglés (`demo/regi
 4. **Conséquence du « fermé par défaut »** : `get_taux_usure`, `rechercher_entreprise`, `verifier_gel`, les outils eurlex et legifrance n'ont pas d'annotation `readOnlyHint` et sont donc classés `action` au registre, alors que ce sont des lectures. Je n'ai pas modifié les serveurs (hors de ma mission). Voir question 1.
 5. **L'ancien catalogue écrit à la main est gelé, pas supprimé** : déplacé dans `agents/tests/donnees/catalogue-enregistrements.json`. Les réponses Mistral enregistrées du compilateur (`test_scenarios`, `test_demo`) sont indexées par l'empreinte de la requête, qui contient le catalogue : le remplacer invalidait 8 enregistrements, et les réenregistrer aurait pris ~8 appels réels hors du budget de ce brief (25, répartis sur les étapes 4, 5 et 7). Ces tests gardent donc l'ancien catalogue ; tout le reste passe au catalogue généré.
 
+6. **Scénario 4 : l'attribution après la base périmée est autorisée**, et je l'ai laissée telle quelle dans le test : c'est ce que fait le jeu v1 (D-001 ne vise que `taux-officiel`). Le test documente le trou plutôt que de le masquer. Voir question 3.
+
 ## 4. Blocages
 
 Aucun pour l'instant.
@@ -88,6 +105,7 @@ Aucun pour l'instant.
 ## 5. Questions pour Manu
 
 1. (moyenne) Ajouter `readOnlyHint: true` aux outils de lecture des serveurs de données officiels ? Aujourd'hui ils sont `action` au registre, ce qui est correct par défaut mais trompeur dans la vue « contrôles en vigueur ».
+3. (haute, pour la v2) Un prêt fondé sur la base interne périmée passe sans validation (scénario 4) : faut-il une directive de provenance sur `banque-synthetique/get_taux_interne`, ou un verrou v2 sur la fraîcheur de la donnée ?
 2. (basse) Réenregistrer les scénarios du compilateur sur le catalogue généré (≈ 8 appels Mistral), puis supprimer `agents/tests/donnees/catalogue-enregistrements.json` ?
 
 ## 6. Vérifier en 5 minutes
@@ -99,4 +117,5 @@ go run ./cmd/registre-demo && sha256sum demo/*.json
 go run ./cmd/registre-demo && sha256sum demo/*.json   # mêmes empreintes
 go test -race ./internal/registredemo/
 (cd agents && python3 -m unittest tests.test_catalogue_demo -v)
+go test -race -count=1 -v ./test/integration/     # critère de réussite, étape 6
 ```
