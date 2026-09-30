@@ -27,14 +27,19 @@ func (c Config) Client() *rejeu.Client { return rejeu.Nouveau(c.Enregistrements,
 
 // Lancer lit les options, construit le serveur et le sert sur stdio.
 // Il ne rend la main qu'à la fin de la session ; il quitte le processus en
-// cas d'erreur.
+// cas d'erreur. Enregistrements par défaut : servers/<nom>/enregistrements.
 func Lancer(nom string, construire func(Config) (*mcp.Server, error)) {
+	LancerDepuis(nom, "servers/"+nom+"/enregistrements", construire)
+}
+
+// LancerDepuis est Lancer avec un autre répertoire d'enregistrements par
+// défaut.
+func LancerDepuis(nom, dirDefaut string, construire func(Config) (*mcp.Server, error)) {
 	if err := nommage.ValiderNomLogique(nom); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
-	dir := flag.String("enregistrements", "servers/"+nom+"/enregistrements",
-		"répertoire des enregistrements (versionné)")
+	dir := flag.String("enregistrements", dirDefaut, "répertoire des enregistrements")
 	flag.Parse()
 
 	mode, err := rejeu.ModeDepuisEnv()

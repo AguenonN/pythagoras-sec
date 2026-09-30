@@ -17,6 +17,9 @@ import (
 // Nom est le nom logique du serveur (internal/nommage).
 const Nom = "gels-avoirs"
 
+// HoteRegistre est le seul hôte que le client peut joindre.
+const HoteRegistre = "gels-avoirs.dgtresor.gouv.fr"
+
 // URLRegistre est la dernière publication du registre national des gels,
 // DG Trésor, au format JSON.
 const URLRegistre = "https://gels-avoirs.dgtresor.gouv.fr/ApiPublic/api/v1/publication/derniere-publication-flux-json"
@@ -24,9 +27,10 @@ const URLRegistre = "https://gels-avoirs.dgtresor.gouv.fr/ApiPublic/api/v1/publi
 // MaxCorrespondances borne la liste rendue ; le total est toujours donné.
 const MaxCorrespondances = 20
 
-// DescriptionFiltre figure dans chaque enregistrement et dans la source d'une
-// réponse rejouée.
-const DescriptionFiltre = "personnes physiques retirées ; seuls nom, alias, fondements juridiques et références (UE, ONU, OMI) des personnes morales et navires sont conservés"
+// DossierLocal est le répertoire par défaut du registre complet enregistré
+// (personnes physiques comprises). Il est ignoré par Git : seul
+// enregistrements/ (registre synthétique des tests) est versionné.
+const DossierLocal = "servers/gels-avoirs/enregistrements_locaux"
 
 // EntreeVerification est l'argument de verifier_gel.
 type EntreeVerification struct {
@@ -45,17 +49,21 @@ type Correspondance struct {
 }
 
 // SortieVerification est le résultat de verifier_gel.
+//
+// date_publication_registre et source figurent dans tout résultat. Hors du
+// statut ok, nombre_correspondances et correspondances sont absents : un
+// registre indisponible ne se lit jamais comme « aucune correspondance ».
 type SortieVerification struct {
 	rejeu.Entete
-	DatePublicationRegistre string           `json:"date_publication_registre,omitempty" jsonschema:"date de la publication du registre consultée"`
-	NombreCorrespondances   int              `json:"nombre_correspondances"`
-	Correspondances         []Correspondance `json:"correspondances"`
-	Avertissement           string           `json:"avertissement,omitempty"`
+	DatePublicationRegistre string            `json:"date_publication_registre" jsonschema:"date de la publication du registre consultée ; vide si aucun registre n'a pu être lu"`
+	NombreCorrespondances   *int              `json:"nombre_correspondances,omitempty" jsonschema:"présent seulement si le statut est ok"`
+	Correspondances         *[]Correspondance `json:"correspondances,omitempty" jsonschema:"présent seulement si le statut est ok (liste vide s'il n'y a aucune correspondance)"`
+	Avertissement           string            `json:"avertissement,omitempty"`
 }
 
 // Serveur construit le serveur MCP gels-avoirs.
 func Serveur(c *rejeu.Client) *mcp.Server {
-	c.Restreindre("gels-avoirs.dgtresor.gouv.fr")
+	c.Restreindre(HoteRegistre)
 	s := mcp.NewServer(&mcp.Implementation{Name: Nom, Version: "0.1.0"}, nil)
 	idx := &index{}
 	mcp.AddTool(s, &mcp.Tool{
@@ -71,38 +79,43 @@ func Serveur(c *rejeu.Client) *mcp.Server {
 }
 
 func verifier(ctx context.Context, c *rejeu.Client, idx *index, nom string) (*mcp.CallToolResult, SortieVerification, error) {
+	echec := func(err error, rep *rejeu.Reponse) (*mcp.CallToolResult, SortieVerification, error) {
+		e, res := rejeu.EnteteErreur(err)
+		if rep != nil {
+			e.Source = &rep.Source
+		} else {
+			e.Source = rejeu.SourceAbsente(URLRegistre, err)
+		}
+		return res, SortieVerification{Entete: e}, nil
+	}
 	cherche := mots(nom)
 	if len(cherche) == 0 {
-		e, res := rejeu.EnteteErreur(fmt.Errorf("%w: nom vide", rejeu.ErrRequeteRefusee))
-		return res, SortieVerification{Entete: e, Correspondances: []Correspondance{}}, nil
+		return echec(fmt.Errorf("%w: nom vide", rejeu.ErrRequeteRefusee), nil)
 	}
 	rep, err := c.Obtenir(ctx, rejeu.Requete{
 		URL:     URLRegistre,
 		Entetes: map[string][]string{"Accept": {"application/json"}},
-		Filtre:  &rejeu.Filtre{Description: DescriptionFiltre, Appliquer: filtrer},
 	})
 	if err != nil {
-		e, res := rejeu.EnteteErreur(err)
-		return res, SortieVerification{Entete: e, Correspondances: []Correspondance{}}, nil
+		return echec(err, nil)
 	}
 	reg, err := idx.charger(rep)
 	if err != nil {
-		e, res := rejeu.EnteteErreur(err)
-		e.Source = &rep.Source
-		return res, SortieVerification{Entete: e, Correspondances: []Correspondance{}}, nil
+		return echec(err, rep)
 	}
 	trouve := reg.chercher(cherche)
+	n := len(trouve)
 	out := SortieVerification{
 		Entete:                  rejeu.EnteteOK(rep),
 		DatePublicationRegistre: reg.date,
-		NombreCorrespondances:   len(trouve),
-		Correspondances:         trouve,
+		NombreCorrespondances:   &n,
 	}
-	if len(trouve) > MaxCorrespondances {
-		out.Correspondances = trouve[:MaxCorrespondances]
+	if n > MaxCorrespondances {
+		trouve = trouve[:MaxCorrespondances]
 	}
-	if rep.Source.Filtre != "" {
-		out.Avertissement = "registre rejoué partiel (" + rep.Source.Filtre + ") : l'absence de correspondance n'est pas probante, en particulier pour une personne physique"
+	out.Correspondances = &trouve
+	if rep.Source.Synthetique {
+		out.Avertissement = "registre SYNTHÉTIQUE (données fictives de test) : ni une correspondance ni son absence ne disent quoi que ce soit du registre officiel"
 	}
 	return nil, out, nil
 }
@@ -125,72 +138,6 @@ type entree struct {
 type detail struct {
 	TypeChamp string                       `json:"TypeChamp"`
 	Valeur    []map[string]json.RawMessage `json:"Valeur"`
-}
-
-// champsConserves : ce qu'un enregistrement garde d'une personne morale ou
-// d'un navire. Motifs, adresses, contacts et identifiants sont retirés : ils
-// peuvent nommer des personnes physiques.
-var champsConserves = map[string]bool{
-	"ALIAS":               true,
-	"FONDEMENT_JURIDIQUE": true,
-	"REFERENCE_UE":        true,
-	"REFERENCE_ONU":       true,
-	"NUMERO_OMI":          true,
-}
-
-// clesConservees : dans ces champs, les clés gardées. Le commentaire d'un
-// alias peut citer une personne ; il part.
-var clesConservees = map[string]bool{
-	"Alias":                   true,
-	"FondementJuridique":      true,
-	"FondementJuridiqueLabel": true,
-	"ReferenceUe":             true,
-	"ReferenceOnu":            true,
-	"NumeroOMI":               true,
-	"NumeroOmi":               true,
-}
-
-// filtrer retire du registre toute personne physique et ne garde que les
-// champs utiles au filtrage des autres entrées.
-func filtrer(corps []byte) ([]byte, error) {
-	var p publication
-	if err := json.Unmarshal(corps, &p); err != nil {
-		return nil, err
-	}
-	if len(p.Publications.PublicationDetail) == 0 {
-		return nil, fmt.Errorf("registre vide")
-	}
-	garde := make([]entree, 0, len(p.Publications.PublicationDetail))
-	for _, e := range p.Publications.PublicationDetail {
-		if e.Nature != "Personne morale" && e.Nature != "Navire" {
-			continue
-		}
-		var det []detail
-		for _, d := range e.RegistreDetail {
-			if !champsConserves[d.TypeChamp] {
-				continue
-			}
-			var vals []map[string]json.RawMessage
-			for _, v := range d.Valeur {
-				m := map[string]json.RawMessage{}
-				for k, x := range v {
-					if clesConservees[k] {
-						m[k] = x
-					}
-				}
-				if len(m) > 0 {
-					vals = append(vals, m)
-				}
-			}
-			if len(vals) > 0 {
-				det = append(det, detail{TypeChamp: d.TypeChamp, Valeur: vals})
-			}
-		}
-		e.RegistreDetail = det
-		garde = append(garde, e)
-	}
-	p.Publications.PublicationDetail = garde
-	return json.Marshal(p)
 }
 
 // index garde le dernier registre analysé, par empreinte : le corps fait

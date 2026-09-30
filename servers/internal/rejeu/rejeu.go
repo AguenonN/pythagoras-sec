@@ -68,10 +68,46 @@ func ParseMode(v string) (Mode, error) {
 	return "", fmt.Errorf("rejeu: mode %q inconnu (DIRECT, REJEU ou MIXTE)", v)
 }
 
+// SourceAbsente décrit un résultat sans donnée : origine « aucune », l'URL
+// visée et la raison.
+func SourceAbsente(urlVisee string, err error) *Source {
+	u, e := NettoyerURL(urlVisee)
+	if e != nil {
+		u = ""
+	}
+	return &Source{Origine: OrigineAucune, URL: u, Motif: err.Error()}
+}
+
+// EcrireSynthetique écrit dans dir un enregistrement fictif pour la requête
+// GET url, marqué synthetique. Réservé aux données de test : le rejeu le
+// sert avec source.synthetique = true.
+func EcrireSynthetique(dir, urlBrute, date string, corps []byte) (string, error) {
+	u, err := NettoyerURL(urlBrute)
+	if err != nil {
+		return "", err
+	}
+	c := Nouveau(dir, Rejeu)
+	cle := Cle(http.MethodGet, u, nil)
+	e := Enregistrement{
+		Cle:         cle,
+		Methode:     http.MethodGet,
+		URL:         u,
+		Date:        date,
+		Statut:      http.StatusOK,
+		TypeContenu: "application/json",
+		SHA256:      Empreinte(corps),
+		Synthetique: true,
+		Corps:       string(corps),
+	}
+	return c.chemin(cle), c.ecrire(cle, &e)
+}
+
 // Origines d'une réponse.
 const (
 	OrigineDirect = "direct"
 	OrigineRejeu  = "rejeu"
+	// OrigineAucune : aucune donnée n'a été servie (résultat indisponible).
+	OrigineAucune = "aucune"
 )
 
 // Source décrit d'où vient une réponse. Elle est recopiée telle quelle dans
@@ -79,7 +115,7 @@ const (
 type Source struct {
 	// Origine vaut "direct" (obtenue de l'API pendant ce processus) ou
 	// "rejeu" (lue dans un enregistrement).
-	Origine string `json:"origine" jsonschema:"direct (obtenue de l'API officielle pendant ce processus) ou rejeu (lue dans un enregistrement)"`
+	Origine string `json:"origine" jsonschema:"direct (obtenue de l'API officielle pendant ce processus), rejeu (lue dans un enregistrement) ou aucune (aucune donnée servie)"`
 	// URL appelée, sans secret.
 	URL string `json:"url" jsonschema:"URL de l'API officielle appelée"`
 	// Date à laquelle l'API a produit cette réponse (RFC 3339, UTC). En
@@ -92,6 +128,9 @@ type Source struct {
 	// Filtre appliqué au corps avant enregistrement, s'il y en a un. Une
 	// réponse rejouée filtrée est partielle.
 	Filtre string `json:"filtre,omitempty" jsonschema:"filtre appliqué avant enregistrement ; présent, la donnée rejouée est partielle"`
+	// Synthetique marque un enregistrement fictif (tests) : jamais une
+	// donnée officielle.
+	Synthetique bool `json:"synthetique,omitempty" jsonschema:"vrai si la donnée vient d'un enregistrement fictif écrit pour les tests : ce n'est pas une donnée officielle"`
 }
 
 // Enregistrement est le contenu d'un fichier du répertoire d'enregistrements.
@@ -109,6 +148,7 @@ type Enregistrement struct {
 	// réduit avant enregistrement.
 	SHA256Origine string `json:"sha256_origine,omitempty"`
 	Filtre        string `json:"filtre,omitempty"`
+	Synthetique   bool   `json:"synthetique,omitempty"`
 	Corps         string `json:"corps"`
 }
 
@@ -359,12 +399,13 @@ func (c *Client) lire(cle, motif string) (*Reponse, error) {
 	return &Reponse{
 		Corps: corps,
 		Source: Source{
-			Origine: OrigineRejeu,
-			URL:     e.URL,
-			Date:    e.Date,
-			SHA256:  e.SHA256,
-			Motif:   motif,
-			Filtre:  e.Filtre,
+			Origine:     OrigineRejeu,
+			URL:         e.URL,
+			Date:        e.Date,
+			SHA256:      e.SHA256,
+			Motif:       motif,
+			Filtre:      e.Filtre,
+			Synthetique: e.Synthetique,
 		},
 	}, nil
 }

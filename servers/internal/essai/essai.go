@@ -48,6 +48,16 @@ func Appeler(t *testing.T, cs *mcp.ClientSession, outil string, args any, out an
 	return res
 }
 
+// JSON sérialise v (contenu structuré d'un résultat).
+func JSON(t *testing.T, v any) []byte {
+	t.Helper()
+	b, err := json.Marshal(v)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return b
+}
+
 // VerifierSchema compare schema.json (liste tools brute) à tools/list.
 // L'égalité est testée sur la valeur JSON : le fichier est produit par
 // servers/exporter-schema, octet pour octet, depuis le binaire.

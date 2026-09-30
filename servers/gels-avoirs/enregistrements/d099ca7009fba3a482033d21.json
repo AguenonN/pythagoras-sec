@@ -1,0 +1,11 @@
+{
+  "cle": "d099ca7009fba3a482033d216e506b0558816dc80a784a58bcabb5306ac42e8e",
+  "methode": "GET",
+  "url": "https://gels-avoirs.dgtresor.gouv.fr/ApiPublic/api/v1/publication/derniere-publication-flux-json",
+  "date": "2026-09-30T00:00:00Z",
+  "statut": 200,
+  "type_contenu": "application/json",
+  "sha256": "56b559cbd3b820117592f86a60a467020fd7bdd42fa2b86198f0cb6ffcb2ac4d",
+  "synthetique": true,
+  "corps": "{\"Publications\":{\"DatePublication\":\"2026-09-01T00:00:00+02:00\",\"PublicationDetail\":[{\"IdRegistre\":900001,\"Nature\":\"Personne morale\",\"Nom\":\"SOCIETE FICTIVE ALPHA SANCTIONNEE\",\"RegistreDetail\":[{\"TypeChamp\":\"ALIAS\",\"Valeur\":[{\"Alias\":\"ALPHA FICTIVE HOLDING\"}]},{\"TypeChamp\":\"FONDEMENT_JURIDIQUE\",\"Valeur\":[{\"FondementJuridique\":1,\"FondementJuridiqueLabel\":\"Règlement fictif 0000/001 (données de test)\"}]},{\"TypeChamp\":\"REFERENCE_UE\",\"Valeur\":[{\"ReferenceUe\":\"EU.FICTIF.1\"}]}]},{\"IdRegistre\":900002,\"Nature\":\"Personne physique\",\"Nom\":\"PERSONNE FICTIVE ZETA\",\"RegistreDetail\":[{\"TypeChamp\":\"FONDEMENT_JURIDIQUE\",\"Valeur\":[{\"FondementJuridique\":2,\"FondementJuridiqueLabel\":\"Règlement fictif 0000/002 (données de test)\"}]}]},{\"IdRegistre\":900003,\"Nature\":\"Navire\",\"Nom\":\"NAVIRE FICTIF OMEGA\",\"RegistreDetail\":[{\"TypeChamp\":\"FONDEMENT_JURIDIQUE\",\"Valeur\":[{\"FondementJuridique\":3,\"FondementJuridiqueLabel\":\"Règlement fictif 0000/003 (données de test)\"}]}]}]}}"
+}
