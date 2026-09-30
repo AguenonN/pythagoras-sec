@@ -7,8 +7,10 @@ import (
 	"fmt"
 	"os"
 	"sort"
+	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 )
@@ -127,6 +129,7 @@ const (
 	StatutRefuse      = "requete_refusee"
 	StatutAttribue    = "attribue"
 	StatutDejaFait    = "deja_attribue"
+	StatutRemis       = "remis"
 )
 
 // Entete ouvre chaque résultat.
@@ -203,6 +206,23 @@ type SortieAttribution struct {
 	Horodatage   string  `json:"horodatage,omitempty"`
 }
 
+// EntreeRemise est l'argument de remettre_rapport.
+type EntreeRemise struct {
+	DossierID    string `json:"dossier_id" jsonschema:"identifiant du dossier auquel le rapport se rapporte"`
+	Destinataire string `json:"destinataire" jsonschema:"destinataire du rapport, par exemple un service de la banque"`
+	Contenu      string `json:"contenu" jsonschema:"texte du rapport remis"`
+}
+
+// SortieRemise est le résultat de remettre_rapport.
+type SortieRemise struct {
+	Entete
+	Reference    string `json:"reference,omitempty" jsonschema:"référence de la remise fictive"`
+	DossierID    string `json:"dossier_id,omitempty"`
+	Destinataire string `json:"destinataire,omitempty"`
+	Longueur     int    `json:"longueur,omitempty" jsonschema:"nombre de caractères du rapport remis"`
+	Horodatage   string `json:"horodatage,omitempty"`
+}
+
 // Banque garde les attributions de la session du processus (en mémoire).
 type Banque struct {
 	dossiers   map[string]Dossier
@@ -211,6 +231,7 @@ type Banque struct {
 
 	mu           sync.Mutex
 	attributions map[string]SortieAttribution
+	remises      []SortieRemise
 }
 
 // NouvelleBanque assemble les données.
@@ -244,6 +265,13 @@ func Serveur(b *Banque) *mcp.Server {
 		Annotations: &mcp.ToolAnnotations{Title: "Attribuer un prêt (action)", ReadOnlyHint: false, DestructiveHint: vrai(), IdempotentHint: false, OpenWorldHint: faux()},
 	}, func(_ context.Context, _ *mcp.CallToolRequest, in EntreeAttribution) (*mcp.CallToolResult, SortieAttribution, error) {
 		return b.attribuer(in)
+	})
+	mcp.AddTool(s, &mcp.Tool{
+		Name:        "remettre_rapport",
+		Description: "Remet un rapport sur un dossier à un destinataire de la banque synthétique (action fictive : le rapport est seulement enregistré en mémoire, rien n'est envoyé). Rend une référence de remise.",
+		Annotations: &mcp.ToolAnnotations{Title: "Remettre un rapport (action)", ReadOnlyHint: false, DestructiveHint: faux(), IdempotentHint: false, OpenWorldHint: faux()},
+	}, func(_ context.Context, _ *mcp.CallToolRequest, in EntreeRemise) (*mcp.CallToolResult, SortieRemise, error) {
+		return b.remettre(in)
 	})
 	return s
 }
@@ -326,5 +354,34 @@ func (b *Banque) attribuer(in EntreeAttribution) (*mcp.CallToolResult, SortieAtt
 	}
 	b.attributions[d.DossierID] = out
 	fmt.Fprintf(os.Stderr, "%s: attribution fictive %s dossier=%s montant=%.2f\n", Nom, out.Reference, d.DossierID, in.Montant)
+	return nil, out, nil
+}
+
+func (b *Banque) remettre(in EntreeRemise) (*mcp.CallToolResult, SortieRemise, error) {
+	refus := func(format string, a ...any) (*mcp.CallToolResult, SortieRemise, error) {
+		return erreur(), SortieRemise{Entete: entete(StatutRefuse, fmt.Sprintf(format, a...)), DossierID: in.DossierID}, nil
+	}
+	if _, ok := b.dossiers[in.DossierID]; !ok {
+		return refus("dossier %q inconnu", in.DossierID)
+	}
+	if strings.TrimSpace(in.Destinataire) == "" {
+		return refus("destinataire vide")
+	}
+	if strings.TrimSpace(in.Contenu) == "" {
+		return refus("contenu vide")
+	}
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	out := SortieRemise{
+		Entete:       entete(StatutRemis, "rapport fictif enregistré en mémoire : rien n'a été envoyé"),
+		Reference:    fmt.Sprintf("RAPPORT-FICTIF-%04d", len(b.remises)+1),
+		DossierID:    in.DossierID,
+		Destinataire: in.Destinataire,
+		Longueur:     utf8.RuneCountInString(in.Contenu),
+		Horodatage:   b.maintenant().UTC().Format(time.RFC3339),
+	}
+	b.remises = append(b.remises, out)
+	// Le contenu n'est pas journalisé : seulement sa longueur.
+	fmt.Fprintf(os.Stderr, "%s: remise fictive %s dossier=%s longueur=%d\n", Nom, out.Reference, in.DossierID, out.Longueur)
 	return nil, out, nil
 }

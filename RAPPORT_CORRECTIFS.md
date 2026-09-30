@@ -2,12 +2,16 @@
 
 ## Fait
 1. `readOnlyHint: true` sur les outils de lecture de taux-officiel, taux-imposteur (via `servers/internal/usure`), recherche-entreprises, gels-avoirs, eurlex (2 outils), legifrance. Schémas régénérés, `scripts/construire-serveurs.sh` vert, `registre-demo` classe bien tous ces outils en `read` (commit : voir `git log`, « servers: readOnlyHint »).
+2. `banque-synthetique/remettre_rapport(dossier_id, destinataire, contenu)` : action fictive en mémoire, référence `RAPPORT-FICTIF-NNNN`, `readOnlyHint: false`. Schéma, manifeste et catalogue régénérés ; test `TestRemettreRapport`. Commit : « banque-synthetique: remettre_rapport ».
 
 ## Pas fait
-2, 3, 4 : en cours.
+3, 4 : en cours.
 
 ## Décisions prises seul
 - `agents/compilateur/exemples/catalogue-demo.json` régénéré (`go run ./cmd/registre-demo -catalogue ...`) : le test `TestCatalogueVersionne` l'exige dès que les schémas changent. Hors liste du brief, mais fichier dérivé, seul moyen de garder `go test ./...` vert. Diff : six `acces: action` → `read`.
+
+- `remettre_rapport` : `destructiveHint: false` (elle ajoute, n'écrase rien), refus si dossier inconnu, destinataire ou contenu vide ; le contenu n'est pas écrit dans les logs (seule la longueur).
+- Le catalogue est régénéré une seconde fois pour ce point.
 
 ## Blocages
 Aucun.

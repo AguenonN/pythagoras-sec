@@ -105,6 +105,16 @@
           "arguments": [
             "/categorie"
           ]
+        },
+        {
+          "nom": "remettre_rapport",
+          "acces": "action",
+          "description": "Remet un rapport sur un dossier à un destinataire de la banque synthétique (action fictive : le rapport est seulement enregistré en mémoire, rien n'est envoyé). Rend une référence de remise.",
+          "arguments": [
+            "/contenu",
+            "/destinataire",
+            "/dossier_id"
+          ]
         }
       ]
     },
