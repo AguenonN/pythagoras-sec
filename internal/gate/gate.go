@@ -34,6 +34,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
@@ -248,16 +250,19 @@ func (g *Gate) Fermer() error {
 func (g *Gate) gestionnaire(expose string) mcp.ToolHandler {
 	return func(ctx context.Context, req *mcp.CallToolRequest) (*mcp.CallToolResult, error) {
 		var brut json.RawMessage
+		var meta mcp.Meta
 		if req.Params != nil {
-			brut = req.Params.Arguments
+			brut, meta = req.Params.Arguments, req.Params.Meta
 		}
-		return g.Traiter(ctx, req.Session, expose, brut), nil
+		return g.Traiter(ctx, req.Session, expose, brut, meta), nil
 	}
 }
 
 // Traiter fait passer un tools/call par l'engine. Il rend toujours un
 // résultat : un refus est un résultat en erreur que l'agent peut lire.
-func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string, brut json.RawMessage) *mcp.CallToolResult {
+// meta est le _meta de l'appel : seul sous_agent en est lu, pour le
+// journal ; rien n'en est transmis au serveur.
+func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string, brut json.RawMessage, meta mcp.Meta) *mcp.CallToolResult {
 	if g.enPanne.Load() {
 		return refus("Appel refusé : le journal de l'engine est indisponible ; aucun appel n'est transmis sans preuve.")
 	}
@@ -271,6 +276,11 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 	if err != nil {
 		g.alerte(serveur, outil, "arguments illisibles, appel refusé avant la session")
 		return refus("Appel refusé : les arguments doivent former un objet JSON.")
+	}
+
+	sousAgent, lisible := sousAgentDeclare(meta)
+	if !lisible {
+		g.alerte(serveur, outil, "_meta.sous_agent illisible (type, longueur ou caractères), ignoré")
 	}
 
 	// 2. Entrer : le verrou est rendu sur tous les chemins.
@@ -304,7 +314,8 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 	})
 	entree := journal.Entree{
 		TS: ts, Type: journal.AppelT, Session: tour.SessionID(), Seq: tour.Seq(), Appelant: etat.Appelant,
-		Jeu: journal.DepuisJeu(g.jeu), Serveur: serveur, OutilExpose: expose, Outil: outil,
+		SousAgentDeclare: sousAgent,
+		Jeu:              journal.DepuisJeu(g.jeu), Serveur: serveur, OutilExpose: expose, Outil: outil,
 		Appel: &journal.Appel{EmpreinteOrigine: dec.EmpreinteOrigine, EmpreinteTransmise: dec.EmpreinteTransmise,
 			ChampsRetires: dec.ChampsRetires},
 		Attestation: journal.DepuisAttestation(att),
@@ -393,6 +404,36 @@ func erreurSessionAttendue(err error) bool {
 		}
 	}
 	return false
+}
+
+// CleSousAgent est la clé de _meta où l'agent déclare le sous-agent qui
+// appelle.
+const CleSousAgent = "sous_agent"
+
+// LongueurMaxSousAgent borne l'étiquette déclarée, qui va telle quelle au
+// journal.
+const LongueurMaxSousAgent = 128
+
+// sousAgentDeclare lit _meta.sous_agent. Absent : "" et lisible. Une
+// valeur qui n'est pas une chaîne UTF-8 de 1 à 128 octets sans caractère
+// de contrôle n'est pas journalisée. La valeur n'est qu'une déclaration de
+// l'agent : elle ne passe ni à Decide, ni à l'état de session, ni au
+// serveur.
+func sousAgentDeclare(meta mcp.Meta) (string, bool) {
+	v, ok := meta[CleSousAgent]
+	if !ok || v == nil {
+		return "", true
+	}
+	s, ok := v.(string)
+	if !ok || s == "" || len(s) > LongueurMaxSousAgent || !utf8.ValidString(s) {
+		return "", false
+	}
+	for _, r := range s {
+		if unicode.IsControl(r) {
+			return "", false
+		}
+	}
+	return s, true
 }
 
 func motifSession(err error) string {

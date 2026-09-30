@@ -61,6 +61,7 @@ type faux struct {
 
 	mu    sync.Mutex
 	recus []map[string]any
+	metas []mcp.Meta
 	rep   *mcp.CallToolResult
 	err   error
 }
@@ -72,10 +73,11 @@ func (f *faux) Outils(context.Context) ([]*mcp.Tool, error) {
 	return []*mcp.Tool{{Name: "get_taux", Description: backendtest.DescriptionImposteur}}, nil
 }
 
-func (f *faux) Appeler(_ context.Context, _ string, args map[string]any, _ mcp.Meta) (*mcp.CallToolResult, error) {
+func (f *faux) Appeler(_ context.Context, _ string, args map[string]any, meta mcp.Meta) (*mcp.CallToolResult, error) {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.recus = append(f.recus, args)
+	f.metas = append(f.metas, meta)
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -475,11 +477,11 @@ func TestPipeline_Scellement(t *testing.T) {
 
 func TestPipeline_ArgumentsIllisibles(t *testing.T) {
 	b := monter(t, nil)
-	r := b.g.Traiter(context.Background(), nil, "taux-officiel__get_taux", []byte(`[1,2]`))
+	r := b.g.Traiter(context.Background(), nil, "taux-officiel__get_taux", []byte(`[1,2]`), nil)
 	if !r.IsError || !strings.Contains(texte(r), "objet JSON") {
 		t.Fatalf("%q", texte(r))
 	}
-	if r := b.g.Traiter(context.Background(), nil, "inconnu__x", nil); !r.IsError || !strings.Contains(texte(r), "inconnu") {
+	if r := b.g.Traiter(context.Background(), nil, "inconnu__x", nil, nil); !r.IsError || !strings.Contains(texte(r), "inconnu") {
 		t.Fatalf("%q", texte(r))
 	}
 	if len(b.appels(t)) != 0 {
@@ -543,4 +545,93 @@ func TestPipeline_JournalEnPanneALOuverture(t *testing.T) {
 	if !r.IsError || !b.g.EnPanne() || len(b.taux.appels()) != 0 {
 		t.Fatalf("%q, en panne %v", texte(r), b.g.EnPanne())
 	}
+}
+
+func appelerSousAgent(t *testing.T, cs *mcp.ClientSession, nom string, args map[string]any, sousAgent any) *mcp.CallToolResult {
+	t.Helper()
+	r, err := cs.CallTool(context.Background(), &mcp.CallToolParams{
+		Name: nom, Arguments: args, Meta: mcp.Meta{CleSousAgent: sousAgent},
+	})
+	if err != nil {
+		t.Fatalf("%s: %v", nom, err)
+	}
+	return r
+}
+
+// Deux sous-agents déclarés dans la même session : le journal les
+// distingue, mais la provenance reste celle de la session (ce que
+// l'analyste a consulté compte pour le décideur), l'appelant prouvé reste
+// celui du transport, et le rejeu est sans écart.
+func TestSousAgent_DeclareMaisNonDecisif(t *testing.T) {
+	b := monter(t, nil)
+	cs := b.agent(t)
+
+	r := appelerSousAgent(t, cs, "taux-officiel__get_taux", map[string]any{"devise": "EUR"}, "analyste-taux")
+	if r.IsError {
+		t.Fatalf("%q", texte(r))
+	}
+	r = appelerSousAgent(t, cs, "banque-synthetique__attribuer_pret", map[string]any{"montant": 1000.0, "siren": "552100554"}, "decideur-credit")
+	if !r.IsError || !strings.Contains(texte(r), "D-001") {
+		t.Fatalf("la provenance doit rester commune à la session : %q", texte(r))
+	}
+
+	as := b.appels(t)
+	if len(as) != 2 {
+		t.Fatalf("%d appels", len(as))
+	}
+	if as[0].SousAgentDeclare != "analyste-taux" || as[1].SousAgentDeclare != "decideur-credit" {
+		t.Fatalf("sous-agents %q %q", as[0].SousAgentDeclare, as[1].SousAgentDeclare)
+	}
+	if as[0].Session != as[1].Session || as[0].Appelant != AppelantStdio || as[1].Appelant != AppelantStdio {
+		t.Fatalf("session %q/%q, appelants %q/%q", as[0].Session, as[1].Session, as[0].Appelant, as[1].Appelant)
+	}
+	if len(as[1].EtatSession) != 1 || as[1].EtatSession[0].Serveur != "taux-officiel" {
+		t.Fatalf("état %+v", as[1].EtatSession)
+	}
+	// La déclaration ne sort pas vers le serveur.
+	for _, m := range b.taux.metas {
+		if m != nil {
+			t.Fatalf("_meta transmis au serveur : %v", m)
+		}
+	}
+	for _, r := range b.rejouer(t) {
+		if r.Rejouee.Motif != r.Origine.Motif {
+			t.Fatal("cadre historique : une seule décision")
+		}
+	}
+
+	// Rien dans la ligne brute ne la présente comme une identité.
+	brut := string(b.journal.octets())
+	if strings.Contains(brut, `"appelant":"analyste-taux"`) || strings.Contains(brut, `"appelant":"decideur-credit"`) {
+		t.Fatal("le sous-agent déclaré ne doit jamais apparaître comme appelant")
+	}
+}
+
+// Une valeur illisible n'est pas journalisée ; l'appel suit son cours et
+// une alerte le signale, sans citer la valeur.
+func TestSousAgent_Illisible(t *testing.T) {
+	b := monter(t, nil)
+	cs := b.agent(t)
+	for _, v := range []any{42, strings.Repeat("x", LongueurMaxSousAgent+1), "a\nb\u0000c"} {
+		r := appelerSousAgent(t, cs, "taux-officiel__get_taux", map[string]any{"devise": "EUR"}, v)
+		if r.IsError {
+			t.Fatalf("%v : %q", v, texte(r))
+		}
+	}
+	var alertes int
+	for _, e := range b.entrees(t) {
+		if e.Type == journal.AppelT && e.SousAgentDeclare != "" {
+			t.Fatalf("valeur illisible journalisée : %q", e.SousAgentDeclare)
+		}
+		if e.Type == journal.AlerteT && strings.Contains(e.Message, "sous_agent illisible") {
+			alertes++
+			if strings.Contains(e.Message, "xxx") {
+				t.Fatal("l'alerte ne cite pas la valeur")
+			}
+		}
+	}
+	if alertes != 3 {
+		t.Fatalf("%d alertes", alertes)
+	}
+	b.rejouer(t)
 }

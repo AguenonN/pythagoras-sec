@@ -140,7 +140,14 @@ type Entree struct {
 	Session  string    `json:"session,omitempty"`
 	Seq      int       `json:"seq,omitempty"`
 	Appelant string    `json:"appelant,omitempty"`
-	Jeu      *RefJeu   `json:"jeu,omitempty"`
+
+	// SousAgentDeclare est l'étiquette que l'agent déclare dans
+	// _meta.sous_agent d'un tools/call. Elle n'est pas prouvée et aucune
+	// décision ne la lit : l'identité prouvée est Appelant, fixée par le
+	// transport à l'ouverture de la session.
+	SousAgentDeclare string `json:"sous_agent_declare,omitempty"`
+
+	Jeu *RefJeu `json:"jeu,omitempty"`
 
 	Serveur     string `json:"serveur,omitempty"`
 	OutilExpose string `json:"outil_expose,omitempty"`
