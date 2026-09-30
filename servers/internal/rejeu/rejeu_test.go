@@ -19,6 +19,7 @@ import (
 func client(t *testing.T, dir string, mode Mode) *Client {
 	t.Helper()
 	c := Nouveau(dir, mode)
+	c.Restreindre("127.0.0.1") // httptest écoute sur 127.0.0.1
 	c.Intervalle = 0
 	c.Attente = time.Millisecond
 	c.Journal = io.Discard
@@ -248,5 +249,33 @@ func TestRestreindre(t *testing.T) {
 	}
 	if _, err := c.Obtenir(context.Background(), Requete{URL: srv.URL}); err == nil {
 		t.Fatal("redirection vers un hôte non autorisé suivie")
+	}
+}
+
+// Sans Restreindre, aucun hôte n'est joignable, quel que soit le mode, et
+// aucune requête ne part.
+func TestSansRestrictionAucunHote(t *testing.T) {
+	var appels atomic.Int32
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		appels.Add(1)
+		io.WriteString(w, "ok")
+	}))
+	defer srv.Close()
+	for _, mode := range []Mode{Direct, Mixte} {
+		c := Nouveau(t.TempDir(), mode)
+		c.Journal = io.Discard
+		for _, u := range []string{srv.URL, strings.Replace(srv.URL, "127.0.0.1", "localhost", 1), "https://recherche-entreprises.api.gouv.fr/search?q=1"} {
+			if _, err := c.Obtenir(context.Background(), Requete{URL: u}); !errors.Is(err, ErrRequeteRefusee) {
+				t.Errorf("%s %s: err = %v, attendu requete refusee", mode, u, err)
+			}
+		}
+		// Une liste vide ne vaut pas mieux.
+		c.Restreindre()
+		if _, err := c.Obtenir(context.Background(), Requete{URL: srv.URL}); !errors.Is(err, ErrRequeteRefusee) {
+			t.Errorf("%s liste vide: %v", mode, err)
+		}
+	}
+	if appels.Load() != 0 {
+		t.Fatalf("%d requêtes parties d'un client sans restriction", appels.Load())
 	}
 }

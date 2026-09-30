@@ -19,7 +19,8 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
 | Commit | Point | Contenu |
 |---|---|---|
 | `3ea7a24` | 7. `DOS-FICTIF-005` | Demandeur JSC ROSOBORONEXPORT, personne morale inscrite au registre des gels (id 4493), demande fictive, constat daté dans les données |
-| (ce commit) | 8. Personnes physiques anonymes | `verifier_gel` ne rend jamais nom ni alias d'une personne physique, en DIRECT comme en REJEU |
+| `b6f1016` | 8. Personnes physiques anonymes | `verifier_gel` ne rend jamais nom ni alias d'une personne physique, en DIRECT comme en REJEU |
+| (ce commit) | 9. `Restreindre` obligatoire | Sans liste d'hôtes explicite, un client ne joint aucun hôte |
 
 **Mission 2 : tout est fait**, points 1 à 6. `go vet ./...` et `go test -race ./...` verts à chaque commit ; aucun fichier hors `servers/` et des rapports dans mes commits ; aucun secret, aucune clé, aucun binaire versionné (vérifié).
 
@@ -82,6 +83,9 @@ Branche `feat/donnees`, worktree `~/cybercar/mcp_rogue-donnees`. Rien n'a été 
   - Le masquage est fait à la construction du résultat, donc identique en DIRECT, REJEU et MIXTE. Tests sur le registre synthétique : la personne fictive a désormais un prénom, un alias, des date et lieu de naissance, une nationalité, une adresse (tous fictifs) et des références UE/ONU ; recherchée par son nom exact, en minuscules, par son alias ou par un seul mot, elle est trouvée (id 900002) et **ni « ZETA », ni « PERSONNE FICTIVE », ni aucun de ces champs n'apparaît dans le résultat brut** (contenu structuré et texte) (`TestPersonnePhysiqueJamaisNommee`). Même vérification en DIRECT, avec un transport local qui sert le registre synthétique, sans réseau (`TestPersonnePhysiqueJamaisNommeeEnDirect`).
   - **Vérification sur le registre réel local**, sans afficher aucun nom : 20 personnes physiques tirées au hasard, cherchées par leur nom exact : 20/20 retrouvées (id), 20/20 correspondances sans nom ni alias, 0/20 nom ou alias présent dans la sortie brute.
   - Enregistrement synthétique régénéré (`-maj-synthetique`), `schema.json` régénéré.
+
+- **9. `Restreindre` obligatoire** (`servers/internal/rejeu`) : un client sans appel à `Restreindre` refuse toute requête réseau (`requete_refusee`, « client sans liste d'hôtes »), en DIRECT comme en MIXTE (pas de repli sur l'enregistrement : c'est une erreur de configuration). `Restreindre()` sans hôte ne vaut pas mieux. Le REJEU n'accède pas au réseau et n'est pas concerné. Test `TestSansRestrictionAucunHote` : aucun hôte joignable (127.0.0.1, localhost, une API réelle), **aucune requête partie**. Les tests existants déclarent explicitement `127.0.0.1` (httptest). Vérifié que chaque chemin réseau des serveurs restreint son hôte (`recherche-entreprises`, `gels-avoirs` et `preparer`, `usure` pour `taux-officiel`/`taux-imposteur`, `eurlex`, `legifrance`) ; essai DIRECT réel de `recherche-entreprises` OK après le changement (l'enregistrement réécrit par cet essai a été restauré, pour ne pas mêler de mise à jour de données à ce commit).
+  - Le jeton OAuth de `legifrance` ne passe pas par `rejeu` : son client ne joint que l'URL fixe `oauth.piste.gouv.fr` et ne suit aucune redirection (inchangé).
 
 ## 2. Pas fait
 

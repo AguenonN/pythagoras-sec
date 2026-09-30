@@ -253,8 +253,9 @@ func Nouveau(dir string, mode Mode) *Client {
 }
 
 // Restreindre limite le client à ces hôtes, redirections comprises ; une
-// redirection vers http:// sur un hôte autorisé est passée en https://. Sans
-// appel à Restreindre, tout hôte est accepté (tests).
+// redirection vers http:// sur un hôte autorisé est passée en https://. Il
+// est obligatoire : sans appel à Restreindre, le client ne joint aucun hôte
+// (le mode REJEU, qui n'accède pas au réseau, n'est pas concerné).
 func (c *Client) Restreindre(hotes ...string) {
 	c.hotes = map[string]bool{}
 	for _, h := range hotes {
@@ -291,11 +292,13 @@ func (c *Client) Obtenir(ctx context.Context, r Requete) (*Reponse, error) {
 	if c.mode == Rejeu {
 		return c.lire(cle, "")
 	}
-	if c.hotes != nil {
-		u, _ := url.Parse(r.URL)
-		if !c.hotes[strings.ToLower(u.Hostname())] {
-			return nil, fmt.Errorf("%w: hôte %s non autorisé", ErrRequeteRefusee, u.Hostname())
+	// Fermé par défaut : sans Restreindre, aucun hôte n'est joignable.
+	u, _ := url.Parse(r.URL)
+	if !c.hotes[strings.ToLower(u.Hostname())] {
+		if c.hotes == nil {
+			return nil, fmt.Errorf("%w: client sans liste d'hôtes (Restreindre non appelé), aucun hôte n'est joignable", ErrRequeteRefusee)
 		}
+		return nil, fmt.Errorf("%w: hôte %s non autorisé", ErrRequeteRefusee, u.Hostname())
 	}
 
 	if rep, ok := c.memoire(cle); ok {
