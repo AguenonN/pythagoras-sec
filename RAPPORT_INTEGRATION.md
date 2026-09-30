@@ -22,7 +22,8 @@ Branche `feat/integration`, worktree `~/cybercar/mcp_rogue-integration`. Rien n'
 | 5 | `4d695c1` | Sondes Mistral (`boucle.sondes`), conversion relâchée (`additionalProperties` booléen, `type` `[T, "null"]`), 5 scénarios de la boucle réenregistrés |
 | 6 | `565c65c` | `test/integration/` : gate réel devant les vrais binaires, quatre scénarios, journaux vérifiés et rejoués sans écart |
 | 7a | `e2250b9` | `scripts/lancer-demo.sh` : préparation, vérification du démarrage, sous-commande `gate` lancée par la boucle |
-| 7b | (ce commit) | Le MIXTE de la démo n'écrit plus dans les enregistrements versionnés (`registre-demo -enregistrements`, copie de travail, `boucle --enregistrements`) ; passage réel consigné |
+| 7b | `e99e25a` | Le MIXTE de la démo n'écrit plus dans les enregistrements versionnés (`registre-demo -enregistrements`, copie de travail, `boucle --enregistrements`) ; passage réel consigné |
+| — | (ce commit) | Rapport final, versé dans `docs/rapports/integration.md` |
 
 ### Étape 1 — registre de démo
 
