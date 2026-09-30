@@ -1,0 +1,15 @@
+Jeu variantes, version 3, en vigueur à partir du 04/10/2026 à 08:00 UTC, auteur juriste@cabinet.fr.
+Empreinte : sha256:78d9a06f44bebe3f0b30991019358558ad99ccc59f14871bf763b62900f1619c.
+3 directives, évaluées dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
+
+Directive V-001, version 2, brouillon (non appliquée tant que le juriste ne l'a pas passée en observation ou active), fondée sur l'art. L561-10 Code monétaire et financier.
+Applicable aux appels à partir du 04/10/2026 à 08:00 UTC, sans date de fin ; à relire avant le 31/12/2026 à 22:00 UTC (passée cette date, la directive reste appliquée et une alerte est émise).
+Verrou seuil_argument. Pour l'appelant spiffe://lab/agent-credit, et pour tout appelant dont l'identité n'est pas prouvée : tout appel à virer sur banque-synthetique dont l'argument /montant est strictement supérieur à 10000 et dont l'argument /pays est différent de « FR » exige une validation humaine. Si l'une de ces conditions ne peut pas être évaluée (argument absent ou de type inattendu), l'appel est refusé.
+
+Directive V-002, version 1, en observation (journalisée, non appliquée), fondée sur Politique interne.
+Applicable aux appels à partir du 04/10/2026 à 08:00 UTC, sans date de fin ; sans échéance de relecture.
+Verrou interdiction. Pour tous les appelants : tout appel à supprimer, sur tout serveur, est refusé, sans condition.
+
+Directive V-003, version 1, retirée (non appliquée), fondée sur l'art. 5.1.c RGPD.
+Applicable aux appels à partir du 04/10/2026 à 08:00 UTC, sans date de fin ; sans échéance de relecture.
+Verrou champs_autorises_par_destination. Pour tous les appelants : tout appel à un outil du serveur recherche-entreprises ne peut contenir que les champs /siren, /adresse (un champ autorisé couvre aussi tout son contenu) ; un appel qui en contient un autre est refusé.
