@@ -257,6 +257,7 @@ func (b *banc) verifier(t *testing.T) (entrees, appels []journal.Entree) {
 		t.Fatal(err)
 	}
 	defer coffre.Fermer()
+	conserver(t, b, brut)
 	jeu := chargerJeu(t)
 	rs, err := rejeu.RejouerJournal(entrees, coffre, rejeu.Catalogue{jeu}, rejeu.Options{})
 	if err != nil {
@@ -280,6 +281,32 @@ func (b *banc) verifier(t *testing.T) (entrees, appels []journal.Entree) {
 		t.Fatalf("%d transmission(s) sans appel", len(o))
 	}
 	return entrees, appels
+}
+
+// conserver copie le journal et le coffre du scénario dans
+// $MCP_CONSERVER_JOURNAUX/<scénario>/ quand cette variable est définie, pour
+// alimenter cmd/console. La clé de ces journaux est cleTest, sans valeur
+// hors des tests.
+func conserver(t *testing.T, b *banc, journalBrut []byte) {
+	t.Helper()
+	racineCopie := os.Getenv("MCP_CONSERVER_JOURNAUX")
+	if racineCopie == "" {
+		return
+	}
+	dir := filepath.Join(racineCopie, strings.ReplaceAll(strings.ToLower(t.Name()), "/", "_"))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	coffre, err := os.ReadFile(b.coffre)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "journal.jsonl"), journalBrut, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "coffre.jsonl"), coffre, 0o600); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func chargerJeu(t *testing.T) directive.Jeu {
