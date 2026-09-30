@@ -166,3 +166,49 @@ func TestCharger_EnvValeurJamaisCitee(t *testing.T) {
 		t.Fatalf("%v", err)
 	}
 }
+
+// Étiquettes : celles du serveur et de l'outil se réunissent, triées ;
+// absentes, l'empreinte d'un registre v1 ne change pas.
+func TestEtiquettes(t *testing.T) {
+	r := chargerTestdata(t)
+	avant := r.Meta.Empreinte
+	if v := r.Version(); v != "lab v1 "+avant {
+		t.Fatalf("version %q", v)
+	}
+	s, _ := r.Serveur("taux-officiel")
+	if l := s.EtiquettesOutil("get_taux"); len(l) != 0 || l == nil {
+		t.Fatalf("étiquettes sans déclaration : %#v", l)
+	}
+
+	b, _ := os.ReadFile("testdata/lab.json")
+	doc := strings.Replace(string(b), `"nom": "taux-officiel",`, `"nom": "taux-officiel", "etiquettes": ["externe", "officiel"],`, 1)
+	doc = strings.Replace(doc, `"acces": "read",`, `"acces": "read", "etiquettes": ["officiel", "donnees_client"],`, 1)
+	r2, err := Charger([]byte(doc))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r2.Meta.Empreinte == avant {
+		t.Fatal("les étiquettes doivent entrer dans l'empreinte")
+	}
+	s, _ = r2.Serveur("taux-officiel")
+	if l := strings.Join(s.EtiquettesOutil("get_taux"), ","); l != "donnees_client,externe,officiel" {
+		t.Fatalf("étiquettes de get_taux : %s", l)
+	}
+	if l := strings.Join(s.EtiquettesOutil("inconnu"), ","); l != "externe,officiel" {
+		t.Fatalf("étiquettes d'un outil inconnu : %s", l)
+	}
+	if l := strings.Join(r2.Etiquettes(), ","); l != "donnees_client,externe,officiel" {
+		t.Fatalf("étiquettes du registre : %s", l)
+	}
+	var nul *Registre
+	if nul.Version() != "" || (&Registre{}).Version() != "" {
+		t.Fatal("un registre non validé n'a pas de version")
+	}
+
+	for _, mauvais := range []string{`["Externe"]`, `["a b"]`, `["x", "x"]`, `[""]`} {
+		d := strings.Replace(string(b), `"nom": "taux-officiel",`, `"nom": "taux-officiel", "etiquettes": `+mauvais+`,`, 1)
+		if _, err := Charger([]byte(d)); err == nil || !strings.Contains(err.Error(), "étiquette") {
+			t.Fatalf("%s accepté : %v", mauvais, err)
+		}
+	}
+}

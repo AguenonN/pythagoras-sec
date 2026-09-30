@@ -76,6 +76,12 @@ func TestPointeurs(t *testing.T) {
 	}
 }
 
+// etiquettesEssai pose des étiquettes sur le faux dépôt : un serveur, un
+// outil nommé, et une règle joker qui ne touche rien.
+const etiquettesEssai = `{"version": 1,
+ "serveurs": {"rh-synthetique": ["donnees_personnelles"]},
+ "outils": {"banque-synthetique/lire": ["donnees_client"], "*/agir": ["action_essai"], "*/remettre_rapport": ["production_rapport"]}}`
+
 // banc écrit un faux dépôt : un binaire (quelques octets) et un schéma par
 // serveur attendu, et le manifeste qui les décrit.
 func banc(t *testing.T) (string, *Manifeste) {
@@ -90,6 +96,7 @@ func banc(t *testing.T) (string, *Manifeste) {
 		m.Serveurs = append(m.Serveurs, EntreeManifeste{Nom: nom, Binaire: bin, SHA256: sha(t, "binaire "+nom),
 			Schema: sch, SchemaSHA256: sha(t, schemaEssai)})
 	}
+	ecrire(t, filepath.Join(racine, FichierEtiquettes), etiquettesEssai)
 	return racine, m
 }
 
@@ -280,5 +287,112 @@ func TestSchemasVersionnes(t *testing.T) {
 		if err != nil || len(outils) == 0 {
 			t.Fatalf("%s : %v", nom, err)
 		}
+	}
+}
+
+// Les étiquettes du fichier sont posées au registre généré, et entrent
+// dans son empreinte.
+func TestGenerer_Etiquettes(t *testing.T) {
+	racine, m := banc(t)
+	demo, attaque, err := Generer(m, Options{Racine: racine, Gels: DossierGelsSynthetique})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range []*registre.Registre{demo, attaque} {
+		rh, _ := r.Serveur("rh-synthetique")
+		if got := strings.Join(rh.EtiquettesOutil("agir"), ","); got != "action_essai,donnees_personnelles" {
+			t.Fatalf("rh/agir : %s", got)
+		}
+		if got := strings.Join(rh.EtiquettesOutil("lire"), ","); got != "donnees_personnelles" {
+			t.Fatalf("rh/lire : %s", got)
+		}
+		b, _ := r.Serveur("banque-synthetique")
+		if got := strings.Join(b.EtiquettesOutil("lire"), ","); got != "donnees_client" {
+			t.Fatalf("banque/lire : %s", got)
+		}
+		if got := strings.Join(b.EtiquettesOutil("chercher"), ","); got != "" {
+			t.Fatalf("banque/chercher : %s", got)
+		}
+	}
+	if demo.Meta.Version != 2 || demo.Version() == "" {
+		t.Fatalf("version %d %q", demo.Meta.Version, demo.Version())
+	}
+
+	// Sans étiquettes, l'empreinte diffère : elles sont couvertes.
+	ecrire(t, filepath.Join(racine, "vide.json"), `{"version": 1, "serveurs": {}, "outils": {}}`)
+	nu, _, err := Generer(m, Options{Racine: racine, Gels: DossierGelsSynthetique, Etiquettes: "vide.json"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if nu.Meta.Empreinte == demo.Meta.Empreinte {
+		t.Fatal("les étiquettes n'entrent pas dans l'empreinte")
+	}
+
+	// Un nom inconnu, une clé mal formée, une étiquette invalide, un
+	// fichier absent ou un champ inconnu : refusé.
+	for nom, doc := range map[string]string{
+		"serveur":  `{"version": 1, "serveurs": {"inconnu": ["x"]}, "outils": {}}`,
+		"outil":    `{"version": 1, "serveurs": {}, "outils": {"banque-synthetique/inconnu": ["x"]}}`,
+		"cle":      `{"version": 1, "serveurs": {}, "outils": {"sans-barre": ["x"]}}`,
+		"format":   `{"version": 1, "serveurs": {"eurlex": ["Pas Bon"]}, "outils": {}}`,
+		"champ":    `{"version": 1, "serveurs": {}, "outils": {}, "autre": 1}`,
+		"version0": `{"serveurs": {}, "outils": {}}`,
+	} {
+		ecrire(t, filepath.Join(racine, nom+".json"), doc)
+		if _, _, err := Generer(m, Options{Racine: racine, Gels: DossierGelsSynthetique, Etiquettes: nom + ".json"}); err == nil {
+			t.Errorf("%s : accepté", nom)
+		}
+	}
+	if _, _, err := Generer(m, Options{Racine: racine, Gels: DossierGelsSynthetique, Etiquettes: "absent.json"}); err == nil {
+		t.Error("fichier absent accepté")
+	}
+}
+
+// Le fichier versionné, appliqué au registre des schémas versionnés, pose
+// les étiquettes du brief.
+func TestEtiquettesVersionnees(t *testing.T) {
+	racine, err := filepath.Abs("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	r := registreSchemas(t, racine)
+	e, err := LireEtiquettes(filepath.Join(racine, FichierEtiquettes))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Appliquer(r); err != nil {
+		t.Fatal(err)
+	}
+	r.Meta.Empreinte = ""
+	if err := registre.Valider(r); err != nil {
+		t.Fatal(err)
+	}
+	attendu := map[string]string{
+		"recherche-entreprises/rechercher_entreprise": "donnees_client,externe",
+		"banque-synthetique/evaluer_dossier":          "donnees_client",
+		"banque-synthetique/attribuer_pret":           "",
+		"banque-synthetique/get_taux_interne":         "",
+		"gels-avoirs/verifier_gel":                    "externe",
+		"taux-officiel/get_taux_usure":                "externe",
+		"eurlex/lire_article":                         "externe",
+		"legifrance/lire_article":                     "externe",
+		"rh-synthetique/decider_prime":                "donnees_personnelles",
+		"referentiel-rh/groupes_salarie":              "",
+	}
+	for so, e := range attendu {
+		nom, outil, _ := strings.Cut(so, "/")
+		s, _ := r.Serveur(nom)
+		if got := strings.Join(s.EtiquettesOutil(outil), ","); got != e {
+			t.Errorf("%s : %q, attendu %q", so, got, e)
+		}
+	}
+	// Une règle */remettre_rapport qui toucherait un outil de ce nom.
+	s := &r.Serveurs[0]
+	s.Outils = append(s.Outils, registre.Outil{Nom: "remettre_rapport", Acces: registre.Action})
+	if err := e.Appliquer(r); err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Join(r.Serveurs[0].EtiquettesOutil("remettre_rapport"), ","); !strings.Contains(got, "production_rapport") {
+		t.Fatalf("remettre_rapport : %s", got)
 	}
 }
