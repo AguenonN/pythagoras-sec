@@ -41,6 +41,12 @@ const (
 	// PurgeT est écrite par chaque purge du coffre : sans elle, une pierre
 	// tombale n'est qu'une affirmation non chaînée.
 	PurgeT Type = "purge"
+	// TransmissionT est écrite avant que l'engine ne transmette un appel :
+	// session, seq, serveur, outil, empreinte transmise, décision. Si elle
+	// ne peut pas être écrite, rien ne part. Une transmission sans entrée
+	// appel qui la suive est un appel parti dont le résultat n'a pas été
+	// journalisé.
+	TransmissionT Type = "transmission"
 )
 
 // Statuts de résultat d'un appel. Les quatre premiers sont ceux d'une

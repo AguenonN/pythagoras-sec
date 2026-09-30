@@ -64,6 +64,8 @@ type faux struct {
 	metas []mcp.Meta
 	rep   *mcp.CallToolResult
 	err   error
+	// pendant, s'il est posé, est appelé pendant la transmission.
+	pendant func()
 }
 
 func (f *faux) Nom() string                        { return f.nom }
@@ -78,6 +80,9 @@ func (f *faux) Appeler(_ context.Context, _ string, args map[string]any, meta mc
 	defer f.mu.Unlock()
 	f.recus = append(f.recus, args)
 	f.metas = append(f.metas, meta)
+	if f.pendant != nil {
+		f.pendant()
+	}
 	if f.err != nil {
 		return nil, f.err
 	}
@@ -489,15 +494,15 @@ func TestPipeline_ArgumentsIllisibles(t *testing.T) {
 	}
 }
 
-// Un journal qui refuse d'écrire : la réponse est retenue, et plus rien
-// ne part ensuite.
+// Un journal qui refuse d'écrire : l'entrée transmission échoue, donc rien
+// ne part, ni cet appel ni les suivants.
 func TestPipeline_JournalEnPanne(t *testing.T) {
 	b := monter(t, nil)
 	cs := b.agent(t)
 	appelerAgent(t, cs, "taux-officiel__get_taux", map[string]any{"devise": "EUR"})
 	b.journal.casser(errors.New("disque plein"))
 	r := appelerAgent(t, cs, "taux-officiel__get_taux", map[string]any{"devise": "EUR"})
-	if !r.IsError || !strings.Contains(texte(r), "journal") || strings.Contains(texte(r), "réponse de") {
+	if !r.IsError || !strings.Contains(texte(r), "rien n'est transmis") || strings.Contains(texte(r), "réponse de") {
 		t.Fatalf("%q", texte(r))
 	}
 	if !b.g.EnPanne() {
@@ -508,9 +513,10 @@ func TestPipeline_JournalEnPanne(t *testing.T) {
 	if !r.IsError {
 		t.Fatal("refus attendu")
 	}
+	// Seul l'appel d'avant la panne est parti : aucun pendant la panne.
 	n := len(b.taux.appels())
-	if n != 2 {
-		t.Fatalf("%d appels transmis", n)
+	if n != 1 {
+		t.Fatalf("%d appel(s) transmis, dont %d pendant la panne", n, n-1)
 	}
 	r = appelerAgent(t, cs, "taux-officiel__get_taux", map[string]any{"devise": "EUR"})
 	if !r.IsError || len(b.taux.appels()) != n {
@@ -634,4 +640,26 @@ func TestSousAgent_Illisible(t *testing.T) {
 		t.Fatalf("%d alertes", alertes)
 	}
 	b.rejouer(t)
+}
+
+// Le journal tombe pendant la transmission, après l'entrée transmission :
+// l'appel est parti, sa réponse est retenue, et le journal montre une
+// transmission sans entrée appel.
+func TestPipeline_JournalEnPanneApresTransmission(t *testing.T) {
+	var b *banc
+	b = monter(t, func(bb *banc) {
+		bb.taux.pendant = func() { bb.journal.casser(errors.New("disque plein")) }
+	})
+	cs := b.agent(t)
+	r := appelerAgent(t, cs, "taux-officiel__get_taux", map[string]any{"devise": "EUR"})
+	if !r.IsError || !strings.Contains(texte(r), "réponse est retenue") || strings.Contains(texte(r), "réponse de") {
+		t.Fatalf("%q", texte(r))
+	}
+	if !b.g.EnPanne() || len(b.taux.appels()) != 1 {
+		t.Fatalf("en panne %v, %d appel(s)", b.g.EnPanne(), len(b.taux.appels()))
+	}
+	orph := rejeu.TransmissionsSansAppel(b.entrees(t))
+	if len(orph) != 1 || orph[0].Serveur != "taux-officiel" || orph[0].Decision.Effet != "autoriser" {
+		t.Fatalf("orphelines %+v", orph)
+	}
 }

@@ -11,7 +11,8 @@
 //  4. Decide, avec cette date, l'état de session et l'attestation ;
 //  5. refuser : entrée appel non_transmis, erreur à l'agent avec le motif ;
 //  6. attendre_validation : refus explicite et champ structuré en_attente ;
-//  7. sinon, transmettre les arguments décidés et sceller le résultat ;
+//  7. sinon, écrire l'entrée transmission (refus si elle échoue), puis
+//     transmettre les arguments décidés et sceller le résultat ;
 //  8. écrire l'entrée appel à la date passée à Decide, puis Terminer.
 //
 // L'engine n'expose jamais ce qu'un serveur annonce : l'agent voit le
@@ -360,7 +361,18 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 		// 6.
 		rep = enAttente(dec)
 	default:
-		// 7.
+		// 7. D'abord la trace chaînée de ce qui va partir : sans elle,
+		// rien ne part.
+		if _, err := g.journal.Ecrire(journal.Entree{
+			TS: ts, Type: journal.TransmissionT, Session: entree.Session, Seq: entree.Seq, Appelant: entree.Appelant,
+			Jeu: entree.Jeu, Serveur: serveur, OutilExpose: expose, Outil: outil,
+			Appel:    &journal.Appel{EmpreinteTransmise: dec.EmpreinteTransmise},
+			Decision: entree.Decision,
+		}); err != nil {
+			g.enPanne.Store(true)
+			g.log.Error("journal indisponible, l'engine refuse désormais tout appel", "erreur", err)
+			return refus("Appel refusé : le journal de l'engine est indisponible ; rien n'est transmis sans preuve.")
+		}
 		debut := time.Now()
 		c, retour := tour.Transmettre(ctx, serveur, outil, dec.EmpreinteTransmise, func(ctx context.Context) session.Retour {
 			return appeler(ctx, b, outil, dec.Arguments)

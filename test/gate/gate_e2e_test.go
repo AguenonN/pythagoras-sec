@@ -245,6 +245,17 @@ func verifierJournal(t *testing.T, cheminJ, cheminC string, jeu directive.Jeu) [
 		t.Fatalf("décision %+v", a3.Decision)
 	}
 
+	// Les deux appels transmis ont chacun leur entrée transmission, et
+	// aucune n'est orpheline.
+	nbTransmissions := 0
+	for _, e := range entrees {
+		if e.Type == journal.TransmissionT {
+			nbTransmissions++
+		}
+	}
+	if nbTransmissions != 2 || len(rejeu.TransmissionsSansAppel(entrees)) != 0 {
+		t.Fatalf("%d transmission(s), %d orpheline(s)", nbTransmissions, len(rejeu.TransmissionsSansAppel(entrees)))
+	}
 	rs, err := rejeu.RejouerJournal(entrees, coffre, rejeu.Catalogue{jeu}, rejeu.Options{})
 	if err != nil {
 		t.Fatal(err)

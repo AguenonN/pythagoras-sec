@@ -111,6 +111,14 @@ func derouler(t *testing.T) *scenario {
 		}
 		res := &journal.Resultat{Statut: journal.StatutNonTransmis}
 		if dec.Effet != directive.Refuser {
+			if _, err := j.Ecrire(journal.Entree{
+				TS: maintenant, Type: journal.TransmissionT, Session: tour.SessionID(), Seq: tour.Seq(), Appelant: etat.Appelant,
+				Jeu: journal.DepuisJeu(sc.jeu), Serveur: a.serveur, Outil: a.outil,
+				Appel:    &journal.Appel{EmpreinteTransmise: dec.EmpreinteTransmise},
+				Decision: journal.DepuisDecision(dec),
+			}); err != nil {
+				t.Fatal(err)
+			}
 			c, _ := tour.Transmettre(context.Background(), a.serveur, a.outil, dec.EmpreinteTransmise,
 				func(context.Context) session.Retour {
 					return session.Retour{Resultat: directive.ResultatOK, EmpreinteReponse: "rep-" + a.outil}
@@ -466,5 +474,98 @@ func TestComparer_NouveauJeuEtPurge(t *testing.T) {
 	}
 	if nb != 4 || cmp.Transitions[0] != (Transition{string(directive.Autoriser), NonRejouable, 1}) {
 		t.Fatalf("transitions %+v", cmp.Transitions)
+	}
+}
+
+// Chaque appel transmis est précédé de son entrée transmission, et un appel
+// non transmis n'en a pas : tout autre agencement est une altération.
+func TestRejouerJournal_Transmission(t *testing.T) {
+	sc := derouler(t)
+	jeux := Catalogue{sc.jeu}
+	// relu rend une copie fraîche du journal, qu'un cas peut altérer.
+	relu := func() []journal.Entree {
+		sc.relire(t)
+		return sc.entrees
+	}
+	ecarts := func(es []journal.Entree, seq int) []Ecart {
+		t.Helper()
+		rs, err := RejouerJournal(es, sc.coffre, jeux, Options{})
+		if err != nil {
+			t.Fatal(err)
+		}
+		for _, r := range rs {
+			if r.Seq == seq {
+				return r.Ecarts
+			}
+		}
+		t.Fatalf("pas de rejeu %d", seq)
+		return nil
+	}
+	rang := func(es []journal.Entree, typ journal.Type, seq int) int {
+		for i, e := range es {
+			if e.Type == typ && e.Seq == seq {
+				return i
+			}
+		}
+		t.Fatalf("pas d'entrée %s %d", typ, seq)
+		return -1
+	}
+	transmission := func(e []Ecart) bool {
+		return len(e) == 1 && e[0].Cause == CauseAlteration && e[0].Controle == ControleTransmission
+	}
+
+	// Le journal honnête : aucune transmission orpheline, aucun écart.
+	es := relu()
+	if n := len(TransmissionsSansAppel(es)); n != 0 {
+		t.Fatalf("%d orphelines", n)
+	}
+	for _, seq := range []int{1, 2, 3, 4} {
+		if e := ecarts(es, seq); len(e) != 0 {
+			t.Fatalf("seq %d : %+v", seq, e)
+		}
+	}
+
+	// Transmission retirée d'un appel transmis.
+	es = relu()
+	i := rang(es, journal.TransmissionT, 1)
+	es = append(es[:i:i], es[i+1:]...)
+	if e := ecarts(es, 1); !transmission(e) || !strings.Contains(e[0].Detail, "0 entrée(s)") {
+		t.Fatalf("retirée : %+v", e)
+	}
+
+	// Transmission ajoutée à un appel refusé par l'engine (seq 3).
+	es = relu()
+	faux := es[rang(es, journal.TransmissionT, 2)]
+	faux.Seq = 3
+	j := rang(es, journal.AppelT, 3)
+	es = append(es[:j:j], append([]journal.Entree{faux}, es[j:]...)...)
+	if e := ecarts(es, 3); !transmission(e) || !strings.Contains(e[0].Detail, "non transmis") {
+		t.Fatalf("ajoutée : %+v", e)
+	}
+
+	// Empreinte transmise différente entre les deux entrées.
+	es = relu()
+	k := rang(es, journal.TransmissionT, 4)
+	es[k].Appel = &journal.Appel{EmpreinteTransmise: "autre"}
+	if e := ecarts(es, 4); !transmission(e) || !strings.Contains(e[0].Detail, "empreinte transmise") {
+		t.Fatalf("empreinte : %+v", e)
+	}
+
+	// Transmission placée après l'appel.
+	es = relu()
+	k, l := rang(es, journal.TransmissionT, 2), rang(es, journal.AppelT, 2)
+	es[k], es[l] = es[l], es[k]
+	if e := ecarts(es, 2); !transmission(e) || !strings.Contains(e[0].Detail, "suit l'entrée appel") {
+		t.Fatalf("ordre : %+v", e)
+	}
+
+	// Entrée appel disparue après la transmission : l'appel est parti sans
+	// résultat journalisé, et cela se voit.
+	es = relu()
+	l = rang(es, journal.AppelT, 2)
+	es = append(es[:l:l], es[l+1:]...)
+	orph := TransmissionsSansAppel(es)
+	if len(orph) != 1 || orph[0].Seq != 2 || orph[0].Serveur != "banque-synthetique" {
+		t.Fatalf("orphelines %+v", orph)
 	}
 }

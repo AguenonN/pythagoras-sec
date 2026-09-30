@@ -66,6 +66,38 @@ ou des arguments absents sans pierre tombale, sont des altérations. Une
 purge conforme porte la cause `purge` et aucune nature : elle n'est
 jamais une violation.
 
+## 4. Rien ne part sans une entrée transmission chaînée
+
+L'entrée `appel` porte le résultat, donc elle ne peut être écrite
+qu'après la transmission. Si le journal tombe entre les deux, un appel
+serait parti sans aucune trace. L'engine écrit donc, avant
+`Tour.Transmettre`, une entrée `transmission` qui porte la session, le
+seq, le serveur, l'outil, l'empreinte transmise et la décision.
+
+- Écrire l'entrée `transmission` verrou tenu, après `Decide` et le dépôt
+  au coffre, avec le `TS` de l'appel.
+- Si elle ne peut pas être écrite : refuser l'appel, **ne rien
+  transmettre**, et refuser tous les appels suivants (le journal n'est
+  plus fiable).
+- Un refus de l'engine (`non_transmis`) n'a pas d'entrée `transmission`.
+- L'entrée `appel` suit, comme avant. Si c'est elle qui échoue, la
+  réponse du serveur est retenue : l'agent ne reçoit pas de donnée sans
+  preuve.
+
+Au rejeu (`rejeu.RejouerJournal`, contrôle `transmission`), chacun de ces
+cas est une altération :
+
+- un appel transmis sans exactement une entrée `transmission` qui le
+  précède ;
+- une entrée `transmission` qui diffère de l'appel sur le serveur,
+  l'outil, l'empreinte transmise ou l'effet ;
+- une entrée `transmission` pour un appel `non_transmis`.
+
+Une entrée `transmission` qu'aucune entrée `appel` ne suit est un appel
+parti dont le résultat n'a pas été journalisé.
+`rejeu.TransmissionsSansAppel` les rend. Elles ne se rejouent pas, faute
+de décision complète : elles se signalent.
+
 ## Rappels
 
 - L'appelant est fixé à la création de la session. Le passer tel que le

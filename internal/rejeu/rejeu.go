@@ -73,6 +73,10 @@ const (
 	ControleTransmis  = "transmis"
 	ControleDecision  = "decision"
 	ControleEtat      = "etat"
+	// ControleTransmission : un appel transmis doit être précédé de son
+	// entrée transmission (même session, seq, serveur, outil, empreinte
+	// transmise, effet) ; un appel non transmis ne doit pas en avoir.
+	ControleTransmission = "transmission"
 )
 
 // NonRejouable remplace l'effet dans les vues quand les arguments manquent.
@@ -331,13 +335,84 @@ func ReconstituerEtat(entrees []journal.Entree, session string, avantSeq int) (d
 	return etat, nil
 }
 
+// cleAppel identifie un appel dans le journal.
+type cleAppel struct {
+	session string
+	seq     int
+}
+
+// transmissions indexe les entrées transmission par appel, avec leur rang
+// dans le journal.
+func transmissions(entrees []journal.Entree) map[cleAppel][]int {
+	out := map[cleAppel][]int{}
+	for i, en := range entrees {
+		if en.Type == journal.TransmissionT {
+			k := cleAppel{en.Session, en.Seq}
+			out[k] = append(out[k], i)
+		}
+	}
+	return out
+}
+
+// controlerTransmission confronte l'entrée appel de rang i aux entrées
+// transmission du même appel.
+func controlerTransmission(entrees []journal.Entree, i int, tr map[cleAppel][]int) (string, bool) {
+	en := entrees[i]
+	rangs := tr[cleAppel{en.Session, en.Seq}]
+	_, transmis := consultation(en)
+	if !transmis {
+		if len(rangs) > 0 {
+			return "une transmission est journalisée pour un appel déclaré non transmis", false
+		}
+		return "", true
+	}
+	if len(rangs) != 1 {
+		return fmt.Sprintf("appel transmis avec %d entrée(s) transmission au lieu d'une", len(rangs)), false
+	}
+	t := entrees[rangs[0]]
+	switch {
+	case rangs[0] > i:
+		return "l'entrée transmission suit l'entrée appel au lieu de la précéder", false
+	case t.Serveur != en.Serveur || t.Outil != en.Outil:
+		return fmt.Sprintf("la transmission vise %s/%s, l'appel %s/%s", t.Serveur, t.Outil, en.Serveur, en.Outil), false
+	case t.Appel == nil || t.Appel.EmpreinteTransmise != en.Appel.EmpreinteTransmise:
+		return "l'empreinte transmise diffère entre la transmission et l'appel", false
+	case t.Decision == nil || t.Decision.Effet != en.Decision.Effet:
+		return "l'effet diffère entre la transmission et l'appel", false
+	}
+	return "", true
+}
+
+// TransmissionsSansAppel rend les entrées transmission qu'aucune entrée
+// appel du même (session, seq) ne suit : des appels partis dont le
+// résultat n'a pas été journalisé (panne du journal ou arrêt entre les
+// deux écritures). Elles ne se rejouent pas, faute de décision complète ;
+// elles se signalent.
+func TransmissionsSansAppel(entrees []journal.Entree) []journal.Entree {
+	appels := map[cleAppel]bool{}
+	for _, en := range entrees {
+		if en.Type == journal.AppelT {
+			appels[cleAppel{en.Session, en.Seq}] = true
+		}
+	}
+	var out []journal.Entree
+	for _, en := range entrees {
+		if en.Type == journal.TransmissionT && !appels[cleAppel{en.Session, en.Seq}] {
+			out = append(out, en)
+		}
+	}
+	return out
+}
+
 // RejouerJournal rejoue chaque entrée appel et confronte, en plus des deux
 // contrôles, l'instantané de session enregistré à l'état reconstitué à
-// partir des entrées précédentes de la même session.
+// partir des entrées précédentes de la même session, et l'appel à son
+// entrée transmission.
 func RejouerJournal(entrees []journal.Entree, res Resolveur, jeux Jeux, opts Options) ([]Rejeu, error) {
 	var out []Rejeu
 	purges := PurgesChainees(entrees)
-	for _, en := range entrees {
+	tr := transmissions(entrees)
+	for i, en := range entrees {
 		if en.Type != journal.AppelT {
 			continue
 		}
@@ -355,6 +430,9 @@ func RejouerJournal(entrees []journal.Entree, res Resolveur, jeux Jeux, opts Opt
 		} else if etat.Appelant != en.Appelant {
 			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleEtat,
 				Detail: fmt.Sprintf("l'appel est attribué à %q, la session a été ouverte par %q", en.Appelant, etat.Appelant)})
+		}
+		if detail, ok := controlerTransmission(entrees, i, tr); !ok {
+			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleTransmission, Detail: detail})
 		}
 		out = append(out, r)
 	}
