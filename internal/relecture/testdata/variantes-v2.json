@@ -1,0 +1,82 @@
+{
+  "jeu": {"id": "variantes-v2", "version": 2, "date_effet": "2026-10-04T10:00:00+02:00", "auteur": "juriste@cabinet.fr"},
+  "directives": [
+    {
+      "id": "W-001", "version": 3, "statut": "observation", "date_effet": "2026-10-04T10:00:00+02:00",
+      "revision_avant": "2027-03-31T23:30:00-04:00",
+      "texte_fr": "Hors des heures de bureau, heure de New York, les appels en lecture du référentiel RH sont refusés.",
+      "fondements": [{"texte": "Charte informatique"}],
+      "perimetre": {"appelants": ["spiffe://lab/agents/rh"]},
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "referentiel-rh", "acces": "read"}},
+      "condition": {"ou": [
+        {"temps": {"heure": {"de": "08:00", "a": "19:00"}, "fuseau": "America/New_York"}},
+        {"non": {"temps": {"jour_semaine": ["lundi", "mardi", "mercredi", "jeudi", "vendredi"], "fuseau": "America/New_York"}}},
+        {"temps": {"date": {"op": "<", "valeur": "2026-01-05"}, "fuseau": "UTC"}}
+      ]},
+      "effets": [{"effet": "refuser"}]
+    },
+    {
+      "id": "W-002", "version": 1, "statut": "retiree", "date_effet": "2026-10-04T08:00:00Z",
+      "texte_fr": "Variantes de feuilles.",
+      "fondements": [{"texte": "RGPD", "article": "art. 5.1.c"}, {"texte": "Code civil", "article": "9"}],
+      "si_indetermine": "ignorer", "si_indetermine_valide_par": "Me Dupont",
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"et": [
+        {"appelant": {"egal": "spiffe://lab/agents/credit"}},
+        {"sous_agent_declare": {"egal": "analyste"}},
+        {"demandeur": {"identite": {"dans": ["alice@cabinet.fr", "bob@cabinet.fr"]}}},
+        {"non": {"demandeur": {"groupe": "stagiaires"}}},
+        {"attestation": {"verifiee": false}},
+        {"attestation": {"verifiee": false, "mode": "binaire"}},
+        {"non": {"etiquette_cible": {"contient": "test"}}},
+        {"non": {"sujet": {"groupe": "gel", "champ": "/client_id"}}},
+        {"non": {"ou": [{"argument": {"champ": "/montant", "op": "<=", "valeur": 0}}, {"argument": {"champ": "/urgent", "op": "==", "valeur": true}}, {"argument": {"champ": "/duree", "op": "<", "valeur": 12}}, {"argument": {"champ": "/devise", "op": "!=", "valeur": "EUR"}}]}},
+        {"session.a_consulte": {"etiquette": "officiel", "critere": "transmis"}},
+        {"non": {"session.a_consulte": {"outil": "gels-avoirs/verifier_gel", "critere": "transmis"}}},
+        {"metadonnee_reponse": {"serveur": "taux-officiel", "champ": "source.origine", "op": "!=", "valeur": "rejeu"}},
+        {"metadonnee_reponse": {"serveur": "taux-officiel", "champ": "source.origine", "op": "dans", "valeur": ["direct", "cache"]}},
+        {"metadonnee_reponse": {"serveur": "taux-officiel", "champ": "source.origine", "op": "prefixe", "valeur": "dir"}},
+        {"metadonnee_reponse": {"serveur": "taux-officiel", "champ": "source.date", "op": ">", "valeur": "2026-06-30T22:00:00-02:00"}},
+        {"existe": {"champ": "/lignes", "condition": {"et": [
+          {"argument": {"champ": "/montant", "op": ">", "valeur": 100}},
+          {"argument": {"champ": "", "op": "present"}},
+          {"sujet": {"groupe": "vip", "champ": "/client"}}
+        ]}}}
+      ]},
+      "effets": [
+        {"effet": "caviarder", "champs_autorises": ["/montant"], "mode": "refuser"},
+        {"effet": "marquer", "etiquette": "sensible"},
+        {"effet": "notifier", "destinataire_role": "rssi", "rythme": "temps_reel", "si_echec": "continuer"}
+      ]
+    },
+    {
+      "id": "W-003", "version": 1, "statut": "brouillon", "date_effet": "2026-10-04T08:00:00Z",
+      "texte_fr": "Évènements réservés.",
+      "fondements": [{"texte": "Politique interne"}],
+      "declencheur": {"evenement": "attestation_echouee", "cible": {"serveur": "taux-officiel"}},
+      "effets": [{"effet": "notifier", "destinataire_role": "rssi", "rythme": "temps_reel", "si_echec": "refuser"}]
+    },
+    {
+      "id": "W-004", "version": 1, "statut": "brouillon", "date_effet": "2026-10-04T08:00:00Z",
+      "texte_fr": "Évènements réservés.",
+      "fondements": [{"texte": "Politique interne"}],
+      "declencheur": {"evenement": "purge"},
+      "effets": [{"effet": "marquer", "etiquette": "purge"}]
+    },
+    {
+      "id": "W-005", "version": 1, "statut": "active", "date_effet": "2026-10-04T08:00:00Z",
+      "texte_fr": "Sans condition, cible par étiquette et serveur.",
+      "fondements": [{"texte": "Politique interne"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "etiquette": "donnees_client"}},
+      "effets": [{"effet": "attendre_validation", "quatre_yeux": false}]
+    },
+    {
+      "id": "W-006", "version": 1, "statut": "active", "date_effet": "2026-10-04T08:00:00Z",
+      "texte_fr": "Tous les éléments.",
+      "fondements": [{"texte": "Politique interne"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "*", "outil": "*"}},
+      "condition": {"tous": {"champ": "/ids", "condition": {"ou": [{"sujet": {"groupe": "a"}}, {"tous": {"champ": "", "condition": {"argument": {"champ": "", "op": "dans", "valeur": [1, 2.5, "x", false]}}}}]}}},
+      "effets": [{"effet": "refuser"}, {"effet": "marquer", "etiquette": "vu"}]
+    }
+  ]
+}

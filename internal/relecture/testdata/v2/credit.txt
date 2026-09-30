@@ -1,0 +1,39 @@
+Jeu credit-v2, version 1, en vigueur à partir du 01/09/2026 à 00:00 UTC, auteur juriste@cabinet.fr.
+Empreinte : sha256:4f98028554089f9b1651e0cf2df5e606f64cf211aa75975224c939ff0b231b8b.
+4 directives, évaluées dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
+Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.
+
+Directive C-001, version 1, active (appliquée), fondée sur l'art. L562-4 Code monétaire et financier.
+Applicable aux appels à partir du 01/09/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Pour tous les appelants.
+Quand : tout appel à l'outil attribuer_pret sur le serveur banque-synthetique.
+Si la session n'a reçu aucune donnée du serveur gels-avoirs
+Alors :
+  - l'appel est refusé
+Si la règle ne peut pas être évaluée pour un appel (information absente, illisible ou inconnue du registre), l'appel est refusé.
+
+Directive C-002, version 1, active (appliquée), fondée sur l'art. 3.2 Politique de crédit.
+Applicable aux appels à partir du 01/09/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Pour tous les appelants.
+Quand : tout appel à l'outil attribuer_pret sur le serveur banque-synthetique.
+Si l'argument /montant est strictement supérieur à 500000
+Alors :
+  - l'appel est refusé
+Si la règle ne peut pas être évaluée pour un appel (information absente, illisible ou inconnue du registre), l'appel est refusé.
+
+Directive C-003, version 1, active (appliquée), fondée sur l'art. 22 RGPD (source : https://eur-lex.europa.eu/eli/reg/2016/679/oj).
+Applicable aux appels à partir du 01/09/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Pour tous les appelants.
+Quand : tout appel à l'outil attribuer_pret sur le serveur banque-synthetique.
+Si la session a reçu des données du serveur taux-officiel
+Alors :
+  - l'appel attend une validation humaine par tout validateur
+Si la règle ne peut pas être évaluée pour un appel (information absente, illisible ou inconnue du registre), l'appel est refusé.
+
+Directive C-004, version 1, active (appliquée), fondée sur l'art. 5 RGPD.
+Applicable aux appels à partir du 01/09/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Pour tous les appelants.
+Quand : tout appel d'outil du serveur recherche-entreprises.
+Condition : aucune, la directive s'applique à chaque fois.
+Alors :
+  - seul le champ /siren est transmis (un champ autorisé couvre aussi tout son contenu) ; tout autre champ est retiré avant transmission

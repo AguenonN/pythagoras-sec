@@ -28,15 +28,24 @@ func Jeu(j *directive.Jeu) string {
 		"l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).\n",
 		compte(len(j.Directives), "directive", "directives"), s(len(j.Directives)))
 	for _, d := range j.Directives {
+		if d.EstV2() {
+			b.WriteString("Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.\n")
+			break
+		}
+	}
+	for _, d := range j.Directives {
 		b.WriteString("\n")
 		b.WriteString(Directive(d))
 	}
 	return b.String()
 }
 
-// Directive rend une directive en trois lignes : identité et fondement,
-// validité, règle.
+// Directive rend une directive v1 en trois lignes : identité et fondement,
+// validité, règle. Une directive v2 est rendue par directiveV2.
 func Directive(d directive.Directive) string {
+	if d.EstV2() {
+		return directiveV2(d)
+	}
 	var b strings.Builder
 	fmt.Fprintf(&b, "Directive %s, version %d, %s, fondée sur %s.\n",
 		d.ID, d.Version, statut(d.Statut), fondement(d.Fondement))
