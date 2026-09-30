@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"os"
+	"slices"
+	"sort"
 	"strings"
 	"testing"
 )
@@ -89,5 +91,20 @@ func TestV2_ErreursEnBloc(t *testing.T) {
 	}
 	if rc, _, errOut := lancer(t, doc, "relire"); rc != 1 || !strings.Contains(errOut, "fuseau obligatoire") {
 		t.Fatalf("relire d'un jeu v2 refusé : rc=%d err=%q", rc, errOut)
+	}
+}
+
+// fuseaux rend la liste fermée du chargeur, triée.
+func TestFuseaux(t *testing.T) {
+	rc, out, _ := lancer(t, "", "fuseaux")
+	var l []string
+	if err := json.Unmarshal([]byte(out), &l); rc != 0 || err != nil {
+		t.Fatalf("rc=%d err=%v sortie=%s", rc, err, out)
+	}
+	if len(l) == 0 || !sort.StringsAreSorted(l) || !slices.Contains(l, "Europe/Paris") || !slices.Contains(l, "UTC") {
+		t.Fatalf("liste inattendue : %v", l)
+	}
+	if rc, _, errOut := lancer(t, "", "fuseaux", "x"); rc != 2 || !strings.Contains(errOut, "usage") {
+		t.Fatalf("argument en trop accepté : rc=%d", rc)
 	}
 }

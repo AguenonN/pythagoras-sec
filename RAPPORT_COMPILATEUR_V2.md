@@ -11,7 +11,8 @@ et le gate ne sont pas modifiés.
 | Étape | Commit | Objet |
 |---|---|---|
 | 1 | `cd8cf89` | `internal/relecture` : relecture v2 déterministe (déclencheur, arbre, feuilles, effets, fuseau, indéterminé), fichiers attendus octet pour octet, trois fuseaux machine |
-| 2 | (ce commit) | `cmd/directive` : `verifier` et `relire` sur jeux v2, `--exiger-brouillon` conservé, tests |
+| 2 | `cd8917a` | `cmd/directive` : `verifier` et `relire` sur jeux v2, `--exiger-brouillon` conservé, tests |
+| 3 | (ce commit) | Schéma de function calling sans récursion : arbre à plat reconstruit par le code (`arbre.py`), énumérations tirées du vocabulaire (`vocabulaire.py`, `outils_v2.py`), `directive fuseaux` |
 
 ### Étape 1 — relecture v2
 
@@ -45,9 +46,36 @@ et le gate ne sont pas modifiés.
   v2 rendues en bloc avec le chemin du nœud (`condition.et[0].temps`), statuts
   contrôlés même quand le chargeur refuse.
 
+### Étape 3 — function calling sans récursion
+
+- `agents/compilateur/arbre.py` : la condition arrive **à plat** (`noeuds` :
+  liste de `{id, type, enfants, paramètres}`, `racine` : identifiant). Le code
+  reconstruit l'arbre v2 et refuse, avant le chargeur Go : identifiant absent
+  ou en double, enfant ou racine inconnus, cycle, nœud à deux parents, nœud
+  non rattaché, mauvais nombre d'enfants, enfant d'une feuille, paramètre non
+  admis pour le type ou manquant, profondeur > 6, plus de 64 nœuds. Chaque
+  nœud n'ayant qu'un parent, la reconstruction ne peut pas boucler.
+- `agents/compilateur/outils_v2.py` : trois outils (`proposer_jeu`,
+  `poser_question`, `signaler_non_observable`) et la consigne. Aucun `$ref`,
+  `anyOf`, ni schéma récursif. Énumérations : types de nœuds (les 15 du
+  schéma), opérateurs, effets, jours, modes d'attestation, serveurs, outils
+  (simples et qualifiés), arguments, étiquettes, rôles, groupes, fuseaux.
+  Absents des outils : statut, version, identifiants, `texte_fr`,
+  `date_effet`, `si_indetermine`, `rythme`, `si_echec`, `evenement`.
+- `agents/compilateur/vocabulaire.py` : réunit le catalogue généré
+  (`catalogue-demo.json`, inchangé), un complément écrit à la main
+  (`exemples/vocabulaire-demo.json` : étiquettes, rôles, groupes) et la liste
+  des fuseaux **du chargeur Go**, obtenue par la nouvelle sous-commande
+  `directive fuseaux` (pas de copie tenue à la main).
+- Tests : `agents/tests/test_arbre.py` (14 : chaque type accepté par le
+  chargeur une fois reconstruit ; cycles, deux parents, orphelins,
+  profondeur 7, 65 nœuds, arité, paramètres) et `test_outils_v2.py` (8 :
+  aucune récursion, énumérations égales au vocabulaire et aux fuseaux Go, ce
+  que Mistral ne fixe jamais) ; `cmd/directive` : `TestFuseaux`.
+
 ## 2. Pas fait (encore)
 
-Étapes 3 à 7.
+Étapes 4 à 7.
 
 ## 3. Décisions prises seul
 
@@ -58,6 +86,19 @@ et le gate ne sont pas modifiés.
    indéterminé (condition présente, ou cible portant sur `etiquette`/`acces`) ;
    la mention « les notifications et marques s'appliquent aussi » seulement si
    la directive en a.
+3. **Étiquettes, rôles, groupes : un complément écrit à la main.** Le
+   registre de démo et le catalogue généré ne portent ni étiquettes, ni
+   rôles, ni groupes, et je n'ai pas le droit de modifier `cmd/registre-demo`.
+   Je les tiens dans `agents/compilateur/exemples/vocabulaire-demo.json`,
+   marqué « écrit à la main, à générer dès que le registre les portera ».
+   Les groupes RH sont ceux de `servers/referentiel-rh` ; les autres noms
+   (`donnees_client`, `production_rapport`, `prestataires-externes`,
+   `directeur-risques`, `juridique`…) reprennent ceux des scénarios v2.
+4. **Fuseaux tirés du Go** par une sous-commande `directive fuseaux` ajoutée
+   à `cmd/directive` (périmètre autorisé), plutôt qu'une copie en Python.
+5. **Seul l'évènement `appel_outil` est offert à Mistral** : les autres ne
+   sont pas évalués par l'engine ; une règle qui en relèverait doit être
+   signalée, pas compilée en une directive qui aurait l'air de compter.
 
 ## 4. Blocages
 

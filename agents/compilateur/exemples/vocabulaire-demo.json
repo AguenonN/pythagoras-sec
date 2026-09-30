@@ -1,0 +1,24 @@
+{
+  "origine": "écrit à la main pour la démonstration : le registre de démo ne porte encore ni étiquettes, ni rôles, ni groupes ; à générer depuis le registre et l'annuaire dès qu'ils les porteront",
+  "etiquettes": [
+    {"nom": "donnees_client", "description": "serveur qui sert des données relatives aux clients (dossiers, fiches, comptes)"},
+    {"nom": "production_rapport", "description": "outil qui rédige ou produit un rapport, une note ou un document"},
+    {"nom": "officiel", "description": "serveur qui sert une source officielle (administration, journal officiel, banque centrale)"},
+    {"nom": "donnees_rh", "description": "serveur qui sert des données relatives aux salariés"}
+  ],
+  "roles": [
+    {"nom": "directeur-risques", "description": "directeur ou directrice des risques"},
+    {"nom": "juridique", "description": "direction juridique"},
+    {"nom": "conformite", "description": "responsable de la conformité"},
+    {"nom": "dpo", "description": "délégué à la protection des données"},
+    {"nom": "drh", "description": "direction des ressources humaines"},
+    {"nom": "rssi", "description": "responsable de la sécurité des systèmes d'information"}
+  ],
+  "groupes": [
+    {"nom": "prestataires-externes", "description": "annuaire : personnes extérieures à l'entreprise (prestataires, intérimaires)"},
+    {"nom": "stagiaires", "description": "annuaire : stagiaires et alternants"},
+    {"nom": "comite-direction", "description": "annuaire : membres du comité de direction (top management)"},
+    {"nom": "salaries-proteges", "description": "référentiel RH : salariés bénéficiant d'une protection particulière (représentants du personnel)"},
+    {"nom": "contentieux-en-cours", "description": "référentiel RH : salariés en litige en cours avec l'entreprise"}
+  ]
+}
