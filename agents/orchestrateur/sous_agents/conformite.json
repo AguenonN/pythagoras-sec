@@ -1,0 +1,17 @@
+{
+  "nom": "conformite",
+  "role": "contrôle une entreprise : fiche officielle par son SIREN et registre national des gels des avoirs.",
+  "consigne": "Tu es le sous-agent conformité. Pour l'entreprise indiquée : si un SIREN est fourni, lis sa fiche avec recherche-entreprises__rechercher_entreprise ; puis cherche toujours sa dénomination dans le registre national des gels des avoirs avec gels-avoirs__verifier_gel. Conclus sur le gel : aucun, correspondance exacte ou correspondance partielle. N'invente aucun résultat.",
+  "outils": ["recherche-entreprises__rechercher_entreprise", "gels-avoirs__verifier_gel"],
+  "schema_sortie": {
+    "type": "object",
+    "properties": {
+      "siren": {"type": ["string", "null"]},
+      "denomination": {"type": "string"},
+      "entreprise_trouvee": {"type": "boolean"},
+      "gel": {"type": "string", "enum": ["aucun", "correspondance_exacte", "correspondance_partielle", "non_verifie"]},
+      "detail": {"type": "string"}
+    },
+    "required": ["denomination", "gel", "detail"]
+  }
+}
