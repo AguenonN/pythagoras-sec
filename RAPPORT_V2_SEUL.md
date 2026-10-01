@@ -106,6 +106,7 @@ sous les jeux v2.
 |---|---|---|
 | 713bc7a | Inventaire (§1) | docs seules ; base verte |
 | dc2e65f | Étape 2 : jeux v1 des tests réécrits en v2, **mêmes attentes** : `jeuTest`/`jeuTestV2`/`jeuCible`/`jeuProvenance` (gate), `jeuProvenance`/`jeuSansProvenance`/`jeuImposteur`/`jeuProvenanceV2` (`test/gate`), aides de `TestDecide_Table` et `TestMotifs_SansValeurDArgument`, `TestAlertes`. `demo/directives/credit-demo.json` et `credit-demo-v2.json` réécrits en v2 et déplacés dans `test/integration/testdata/` ; intégration et `internal/registredemo` les lisent là. | vet, `go test -race -count=1 ./...`, Python : verts |
+| efc0ddf | Étape 4 : `journal.Application.Verrou` n'est plus écrit ni lu (`json:"-"`) ; `DepuisDecision`/`VersDirective` ne le recopient plus ; le rejeu (`sorties`, ex-`sortiesV2`) ne dispense plus de comparer un résultat d'application absent (c'était la branche « journal antérieur à la v2 ») : l'effacer est une altération (nouveau cas dans `TestV2_AlterationsDetectees`). | vet, race, Python : verts |
 
 **Preuve du « même comportement »** (étape 2) :
 
