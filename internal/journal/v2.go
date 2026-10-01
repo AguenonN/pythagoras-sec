@@ -2,9 +2,9 @@ package journal
 
 import "mcprogue/internal/directive"
 
-// Types des champs v2 de l'entrée (docs/schema-directive-v2.md §8.5). Tous
-// sont portés par des champs omitempty : un journal v1 se relit à
-// l'identique.
+// Types des champs v2 de l'entrée (docs/schema-directive-v2.md §8.5),
+// portés par des champs omitempty : une entrée qui ne les renseigne pas
+// (appel sans registre, sans demandeur...) n'en écrit aucun.
 
 // Demandeur est la personne pour qui l'agent travaille, résolue par
 // l'annuaire à l'ouverture de session.

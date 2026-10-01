@@ -39,11 +39,11 @@ func TestAppelDepuis_ChampsV2(t *testing.T) {
 	if got := AppelDepuis(relue, attendu.Arguments); !reflect.DeepEqual(got, attendu) {
 		t.Fatalf("appel reconstitué\n%+v\nattendu\n%+v", got, attendu)
 	}
-	// Un journal v1 ne porte aucun champ v2 : l'appel reconstitué n'en a
-	// pas non plus (registre inconnu, demandeur non résolu).
-	v1 := AppelDepuis(journal.Entree{TS: t0, Serveur: "s", Outil: "o"}, nil)
-	if v1.VersionRegistre != "" || v1.Acces != "" || v1.Demandeur != nil || v1.Sujets != nil || v1.EtiquettesCible != nil {
-		t.Fatalf("appel v1 : %+v", v1)
+	// Une entrée sans compléments (registre inconnu, demandeur non résolu)
+	// rend un appel qui n'en a pas non plus.
+	nu := AppelDepuis(journal.Entree{TS: t0, Serveur: "s", Outil: "o"}, nil)
+	if nu.VersionRegistre != "" || nu.Acces != "" || nu.Demandeur != nil || nu.Sujets != nil || nu.EtiquettesCible != nil {
+		t.Fatalf("appel sans compléments : %+v", nu)
 	}
 }
 

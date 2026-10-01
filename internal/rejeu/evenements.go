@@ -68,7 +68,7 @@ func RejouerEvenements(entrees []journal.Entree, jeux Jeux) ([]RejeuEvenement, e
 		if parNotification != (en.Decision.Origine == journal.OrigineNotification) || (en.Decision.Origine != "" && en.Decision.Origine != journal.OrigineNotification) {
 			ecart(ControleDecision, "origine de décision %q incohérente avec les remises", en.Decision.Origine)
 		}
-		if detail, ok := sortiesV2(en.Decision, dec); !ok {
+		if detail, ok := sorties(en.Decision, dec); !ok {
 			ecart(ControleDecision, "%s", detail)
 		}
 		var remises []journal.Notification

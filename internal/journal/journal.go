@@ -109,7 +109,6 @@ type Consultation struct {
 type Application struct {
 	ID            string              `json:"id"`
 	Version       int                 `json:"version"`
-	Verrou        string              `json:"verrou"`
 	Fondement     directive.Fondement `json:"fondement"`
 	Statut        string              `json:"statut"`
 	Effet         string              `json:"effet"`
@@ -120,10 +119,15 @@ type Application struct {
 	ChampsRetires []string            `json:"champs_retires,omitempty"`
 	Motif         string              `json:"motif"`
 
-	// v2 : résultat à trois valeurs (vrai | faux | indetermine) et tous les
+	// Résultat à trois valeurs (vrai | faux | indetermine) et tous les
 	// fondements de la directive.
 	Resultat   string                `json:"resultat,omitempty"`
 	Fondements []directive.Fondement `json:"fondements,omitempty"`
+
+	// Verrou n'est plus jamais écrit ni lu (json:"-") : le format de
+	// directive v1, qui le portait, est retiré. Le champ Go reste le temps
+	// que internal/console (session C) cesse de le lire ; il vaut toujours "".
+	Verrou string `json:"-"`
 }
 
 type Decision struct {
@@ -285,7 +289,7 @@ func DepuisDecision(d directive.Decision) *Decision {
 	out := &Decision{Effet: string(d.Effet), Motif: d.Motif, Alertes: d.Alertes, Applications: []Application{}}
 	for _, a := range d.Applications {
 		out.Applications = append(out.Applications, Application{
-			ID: a.ID, Version: a.Version, Verrou: string(a.Verrou), Fondement: a.Fondement,
+			ID: a.ID, Version: a.Version, Fondement: a.Fondement,
 			Statut: string(a.Statut), Effet: string(a.Effet), Declenchee: a.Declenchee, Appliquee: a.Appliquee,
 			Indetermine: a.Indetermine, RevisionEchue: a.RevisionEchue, ChampsRetires: a.ChampsRetires, Motif: a.Motif,
 			Resultat: a.Resultat.String(), Fondements: a.Fondements,
@@ -311,7 +315,7 @@ func (d *Decision) VersDirective() directive.Decision {
 	out := directive.Decision{Effet: directive.Effet(d.Effet), Motif: d.Motif, Alertes: d.Alertes}
 	for _, a := range d.Applications {
 		out.Applications = append(out.Applications, directive.Application{
-			ID: a.ID, Version: a.Version, Verrou: directive.Verrou(a.Verrou), Fondement: a.Fondement,
+			ID: a.ID, Version: a.Version, Fondement: a.Fondement,
 			Statut: directive.Statut(a.Statut), Effet: directive.Effet(a.Effet), Declenchee: a.Declenchee,
 			Appliquee: a.Appliquee, Indetermine: a.Indetermine, RevisionEchue: a.RevisionEchue,
 			ChampsRetires: a.ChampsRetires, Motif: a.Motif,
@@ -331,8 +335,8 @@ func (d *Decision) VersDirective() directive.Decision {
 	return out
 }
 
-// trivalent relit le résultat d'une application. Un journal v1 n'en
-// porte pas : faux, comme une directive qui ne s'est pas déclenchée.
+// trivalent relit le résultat d'une application. Absent ou inconnu : faux ;
+// le rejeu, qui confronte le journal à la décision rejouée, le signale.
 func trivalent(s string) directive.Trivalent {
 	switch s {
 	case "vrai":
