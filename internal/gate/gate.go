@@ -370,6 +370,10 @@ func (g *Gate) gestionnaire(expose string) mcp.ToolHandler {
 // meta est le _meta de l'appel : seul sous_agent en est lu, pour le
 // journal ; rien n'en est transmis au serveur.
 func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string, brut json.RawMessage, meta mcp.Meta) *mcp.CallToolResult {
+	// Mesure de l'évaluation : horloge monotone du processus, jamais
+	// l'horloge de l'engine (qui peut être simulée) ; ne sert qu'au
+	// journal, jamais à Decide.
+	entreePipeline := time.Now()
 	if g.enPanne.Load() {
 		return refusEngine("Appel refusé : le journal de l'engine est indisponible ; aucun appel n'est transmis sans preuve.")
 	}
@@ -457,6 +461,11 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 	case parNotification:
 		decJ.Origine = journal.OrigineNotification
 	}
+	// La décision est rendue : contrôles du registre et des notifications
+	// compris. La durée inclut l'attente du verrou de session, le dépôt au
+	// coffre, la résolution des personnes concernées et la remise des
+	// notifications ; pas la transmission.
+	decJ.DureeUs = (time.Since(entreePipeline).Nanoseconds() + 999) / 1000
 	entree := journal.Entree{
 		TS: ts, Type: journal.AppelT, Session: tour.SessionID(), Seq: tour.Seq(), Appelant: etat.Appelant,
 		SousAgentDeclare: sousAgent,

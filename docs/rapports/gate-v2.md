@@ -36,6 +36,7 @@ défaut.
 | — | fd4e06f | gofmt d'un fichier de test. |
 | retour 5 | bfbfff9 | `mcp-gate -journaux-precedents <motif>` : au démarrage, relecture (chaîne vérifiée, même clé) des entrées `approbation` acceptées des journaux désignés ; un jeton déjà consommé est refusé, avec une entrée `approbation` refusée « jeton déjà utilisé ». Journal précédent rompu ou illisible : démarrage refusé, avec un message qui le nomme. Test de bout en bout : deux processus `mcp-gate` successifs, même jeton, le second refuse ; et refus de démarrer sur un journal rompu. |
 | retour 2 | f7eaf46 | `docs/contrat-engine.md` §8 : résolution des personnes concernées, et sa limite connue (pas d'entrée chaînée avant l'appel au résolveur). |
+| avant fusion | commit « decision.duree_us » (dernier de la branche) | `decision.duree_us` sur chaque entrée `appel` : durée de l'évaluation, de l'entrée dans le pipeline (`Gate.Traiter`) jusqu'à la décision rendue (contrôles du registre et des notifications compris), en µs arrondies au supérieur. **Ajout `omitempty` dans `internal/journal`** (`Decision.DureeUs`), signalé ici. Le rejeu ne le compare jamais. Tests : présent sur chaque appel (gate et binaire réel en intégration) ; chaîne vérifiée ; journal rejoué sans écart, et sans écart non plus quand la durée est modifiée. |
 
 ## 2. Pas fait, ou fait autrement que le brief
 
@@ -196,6 +197,16 @@ défaut.
     ne désigne aucun fichier est admis (premier lancement).
 36. **Motif de refus « jeton déjà utilisé (jeton N) »**, pour un jeton
     consommé dans ce processus comme dans un précédent.
+37. **`decision.duree_us`** : mesurée sur l'horloge monotone du processus,
+    jamais sur l'horloge de l'engine (qui peut être simulée) ; elle inclut
+    l'attente du verrou de session, le dépôt au coffre, la résolution des
+    personnes concernées et la remise des notifications, mais pas la
+    transmission. Arrondie au supérieur, pour qu'une évaluation de moins
+    d'une microseconde ne disparaisse pas sous `omitempty`. Elle est aussi
+    présente sur l'entrée `transmission`, qui reprend la décision. Le rejeu
+    n'est pas modifié : il compare la décision champ par champ (effet,
+    origine, motif, applications, alertes, notifications, marques,
+    validation), jamais l'objet entier.
 
 ## 4. Blocages
 

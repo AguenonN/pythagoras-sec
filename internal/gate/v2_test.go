@@ -224,3 +224,34 @@ func TestV2_AlterationsDetectees(t *testing.T) {
 		})
 	}
 }
+
+// Chaque entrée appel porte la durée de l'évaluation ; c'est une mesure,
+// que le rejeu ne compare pas : la modifier ne crée aucun écart, et la
+// chaîne du journal se vérifie.
+func TestDureeEvaluation(t *testing.T) {
+	b := monterV2(t, nil)
+	cs := b.agent(t)
+	appelerAgent(t, cs, "banque-synthetique__attribuer_pret", map[string]any{"montant": 1.0, "siren": "1"})
+	appelerAgent(t, cs, "taux-officiel__get_taux", map[string]any{"devise": "EUR"})
+	for _, a := range b.appels(t) { // b.entrees vérifie la chaîne
+		if a.Decision.DureeUs <= 0 {
+			t.Fatalf("seq %d : durée %d", a.Seq, a.Decision.DureeUs)
+		}
+	}
+	b.rejouer(t)
+	es := b.entrees(t)
+	for i := range es {
+		if es[i].Decision != nil {
+			es[i].Decision.DureeUs = 999999999
+		}
+	}
+	rs, err := rejeu.RejouerJournal(es, b.coffre, rejeu.Catalogue{b.jeu}, rejeu.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range rs {
+		if len(r.Ecarts) != 0 {
+			t.Fatalf("la durée entre dans la comparaison : %+v", r.Ecarts)
+		}
+	}
+}

@@ -319,6 +319,10 @@ func (b *banc) verifier(t *testing.T) (entrees, appels []journal.Entree) {
 	for _, e := range entrees {
 		if e.Type == journal.AppelT {
 			appels = append(appels, e)
+			// La durée de l'évaluation est consignée (mesure, hors rejeu).
+			if e.Decision.DureeUs <= 0 {
+				t.Fatalf("seq %d : decision.duree_us absente", e.Seq)
+			}
 		}
 	}
 	if len(rs) != len(appels) || len(rs) == 0 {

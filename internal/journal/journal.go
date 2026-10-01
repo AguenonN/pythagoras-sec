@@ -140,6 +140,12 @@ type Decision struct {
 	Notifications []Notification `json:"notifications,omitempty"`
 	Marques       []Marque       `json:"marques,omitempty"`
 	Validation    *Validation    `json:"validation,omitempty"`
+
+	// DureeUs est la durée de l'évaluation, en microsecondes arrondies au
+	// supérieur, de l'entrée de l'appel dans le pipeline de l'engine
+	// jusqu'à la décision rendue. C'est une mesure, pas une décision : le
+	// rejeu ne la compare jamais.
+	DureeUs int64 `json:"duree_us,omitempty"`
 }
 
 type Approbation struct {
