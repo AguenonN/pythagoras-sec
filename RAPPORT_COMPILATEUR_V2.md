@@ -17,7 +17,7 @@ générations interrompues côté Mistral pour l'un, budget de 30 appels épuis�
 pour l'autre.
 
 - `go vet ./...` et `go test -race ./...` sont verts à chaque commit, ainsi que
-  les **182 tests Python** (113 avant la session).
+  les **184 tests Python** (113 avant la session).
 - **Mistral : 30 appels réels sur 30.** Les tests rejouent les réponses
   enregistrées et ne font jamais d'appel réel.
 - Aucun secret, binaire, `.env` ni donnée réelle de personne physique n'est
@@ -34,7 +34,8 @@ pour l'autre.
 | 6 | `d3fa1d2` | Scénarios crédit et week-end enregistrés et rejoués ; durcissements trouvés en mode réel |
 | 6, 7 | `b1a5f00` | Top management (partiel) ; contrôle « source désignée » ; aucune génération en erreur mise en cache ; démo texte `--v2` |
 | 6 | `d77df35` | Scénarios demandeur (complet) et RH (partiel) |
-| — | (ce commit) | Rapport final |
+| — | `f402647` | Rapport final |
+| 7 | `4823844` | Démo en v2 par défaut, `--v1` disponible (décision de Manu) |
 
 ### Étape 1 — relecture v2 (`internal/relecture/relecture_v2.go`)
 
@@ -153,15 +154,23 @@ dans `agents/tests/attendus/v2/`.
 La commande est la suivante :
 
 ```sh
-python -m compilateur.demo --v2 --jeu <id> --catalogue compilateur/exemples/catalogue-demo.json \
-    --auteur … --sortie jeu.json [--texte …] [--date-effet …] [--prefixe-id W] [--mode reel]
+python -m compilateur.demo --jeu <id> --catalogue compilateur/exemples/catalogue-demo.json \
+    --auteur … --sortie jeu.json [--texte …] [--date-effet …] [--prefixe-id W] [--mode reel] [--v1]
 ```
+
+**Le v2 est le parcours par défaut** (décision de Manu). `--v1` garde
+l'ancien parcours (une directive à verrou unique). `--v2` reste accepté, et
+les deux options sont exclusives.
 
 Déroulé : texte → refus motivés et questions de Mistral → questions fermées
 du code (une réponse hors options est redemandée) → relecture v2 côte à côte
 → jeu en brouillon. La consignation est écrite dans
-`<sortie>.reponses.json`. Test : parcours week-end rejoué de bout en bout
-(`test_demo_v2.py`).
+`<sortie>.reponses.json`. Tests (`test_demo_v2.py`) :
+- parcours week-end rejoué de bout en bout ;
+- v2 par défaut sans option ;
+- `--v1` et `--v2` exclusifs.
+
+`agents/tests/test_demo.py` passe désormais `--v1`.
 
 ## 2. Ce qui n'est pas fait, et pourquoi
 
@@ -212,9 +221,9 @@ du code (une réponse hors options est redemandée) → relecture v2 côte à c�
     `critere: transmis` seulement s'il est écrit (sinon `donnees_recues`) ;
     `acces` refusé s'il ne restreint rien (il ajouterait un indéterminé) ;
     source de `a_consulte` désignée par le juriste.
-11. **La démo v2 passe par `--v2`, et le défaut reste v1.** Je n'ai modifié
-    aucun fichier existant de `agents/tests` ni `agents/README.md` ; j'ai
-    seulement ajouté des tests.
+11. **La démo est passée en v2 par défaut** sur décision de Manu, et `--v1`
+    reste disponible. Seul fichier existant modifié dans `agents/tests` :
+    `test_demo.py`, qui passe `--v1`. `agents/README.md` n'est pas modifié.
 12. **J'ai écrit moi-même les textes des scénarios.** Le dépôt ne contient ni
     « la politique de crédit complète » ni « la règle RH des groupes X et
     Y » : je les ai rédigés d'après `docs/orchestration/brief_v2.md` et les
@@ -235,25 +244,27 @@ du code (une réponse hors options est redemandée) → relecture v2 côte à c�
   reposées, une proposition hallucinée (trois directives inventées), une
   condition ajoutée. Le code a refusé chacun de ces cas.
 
-## 5. Questions pour Manu (par urgence)
+## 5. Questions pour Manu — réponses reçues
 
-1. **Budget de 5 appels pour terminer RH et top management ?** Les commandes
-   sont prêtes (voir §2).
-2. **Faut-il générer étiquettes, rôles et groupes depuis le registre et
-   l'annuaire ?** Ce serait dans `cmd/registre-demo`, hors de mon périmètre.
-   Le complément écrit à la main est provisoire.
-3. **La démo doit-elle passer en v2 par défaut ?** Il faudrait alors adapter
-   `agents/tests/test_demo.py`.
-4. **Un modèle plus capable que `mistral-small` pour le compilateur v2 ?** Les
-   contrôles tiennent, mais beaucoup de propositions sont refusées.
-5. **`si_indetermine` : une question par jeu ou une par directive ?**
+1. **Budget pour finir RH et top management** : aucun appel maintenant. Une
+   autre session s'en chargera après la fusion (commandes prêtes, voir §2).
+2. **Vocabulaire généré depuis le registre et l'annuaire** : oui, mais après
+   la fusion, car il dépend de fichiers d'une autre branche. Je n'y ai pas
+   touché.
+3. **Démo en v2 par défaut** : fait (`4823844`). `--v1` reste disponible, et
+   `test_demo.py` est adapté.
+4. **Choix du modèle** (`mistral-small` ou `mistral-medium`) : après la
+   fusion, sur mesures.
+5. **`si_indetermine`** : une seule question par jeu, gardé tel quel.
+
+Plus aucune question ouverte.
 
 ## 6. Vérifier en 5 minutes
 
 ```sh
 cd ~/cybercar/mcp_rogue-compilateur-v2
 go vet ./... && go test -race -count=1 ./internal/relecture ./cmd/directive
-(cd agents && python3 -m unittest discover -s tests -t .)          # 182 tests, rejeu, aucun appel
+(cd agents && python3 -m unittest discover -s tests -t .)          # 184 tests, rejeu, aucun appel
 go run ./cmd/directive relire < internal/directive/testdata/v2/rh.json
 cd agents && python3 -m compilateur.scenarios_v2 credit             # déroulé rejoué + jeu + relecture
 python3 -m compilateur.scenarios_v2 weekend
