@@ -61,11 +61,18 @@ def message_utilisateur(texte, vocab, reponses):
         texte,
         ">>>",
     ]
-    reponses = [r for r in reponses if not _du_code(r)]
-    if reponses:
+    vues, uniques = set(), []
+    for r in reponses:
+        cle = (r["question"].strip(), r["reponse"].strip())
+        if not _du_code(r) and cle not in vues:
+            vues.add(cle)
+            uniques.append(r)
+    if uniques:
         parts += ["", "Réponses du juriste à tes questions :"]
-        for r in reponses:
+        for r in uniques:
             parts += ["- Question : " + r["question"], "  Réponse : " + r["reponse"]]
+        parts += ["", "Ces réponses sont définitives : ne repose pas ces questions. Si chaque valeur est "
+                      "maintenant déterminée, appelle proposer_jeu."]
     return "\n".join(parts)
 
 
@@ -167,10 +174,10 @@ def questions_du_code(jeu):
     ids = [d["id"] for d in jeu["directives"] if _peut_etre_indeterminee(d)]
     if ids:
         out.append({
-            "question": ("Si une condition de %s ne peut pas être évaluée pour un appel (information absente, "
+            "question": ("Si une condition %s ne peut pas être évaluée pour un appel (information absente, "
                          "illisible ou inconnue du registre), faut-il refuser l'appel (choix par défaut) ou "
                          "ignorer la directive pour cet appel ? Répondez « refuser » ou « ignorer »."
-                         % ((("la directive " if len(ids) == 1 else "les directives ") + ", ".join(ids)))),
+                         % ((("de la directive " if len(ids) == 1 else "des directives ") + ", ".join(ids)))),
             "champ": "si_indetermine",
             "options": ["refuser", "ignorer"],
             "origine": ORIGINE_CODE,
@@ -283,7 +290,8 @@ def compiler_jeu(texte, jeu_id, vocab, client, auteur, date_effet, reponses=(), 
 
     for tentative in (1, 2):
         resultat["tentatives"] = tentative
-        message, appels = _appels(client.completer(messages, offerts))
+        reponse = client.completer(messages, offerts)
+        message, appels = _appels(reponse)
         non_obs = [a for _, n, a in appels if n == "signaler_non_observable"]
         questions = [{"question": a.get("question", ""), "sujet": a.get("sujet", "autre"),
                       "extrait": a.get("extrait", ""), "options": list(a.get("options") or [])}
@@ -298,12 +306,21 @@ def compiler_jeu(texte, jeu_id, vocab, client, auteur, date_effet, reponses=(), 
                          for a in non_obs] + questions
             resultat.update(etat=NON_OBSERVABLE, questions=questions)
             return resultat
+        repondues = {r["question"].strip() for r in reponses if not _du_code(r)}
+        reposees = [q for q in questions if q["question"].strip() in repondues]
+        questions = [q for q in questions if q["question"].strip() not in repondues]
         if questions:
             resultat.update(etat=QUESTIONS, questions=questions)
             return resultat
+        if reposees and not any(n == "proposer_jeu" for _, n, _ in appels):
+            resultat.update(etat=ERREURS, erreurs=["Mistral repose des questions auxquelles le juriste a déjà "
+                                                   "répondu : " + " | ".join(q["question"] for q in reposees)])
+            return resultat
         propositions = [a for _, n, a in appels if n == "proposer_jeu"]
         if not propositions:
-            resultat.update(etat=ERREURS, erreurs=["Mistral n'a appelé aucun des trois outils"])
+            fin = (reponse.get("choices") or [{}])[0].get("finish_reason") if isinstance(reponse, dict) else None
+            resultat.update(etat=ERREURS, erreurs=["Mistral n'a appelé aucun des trois outils" +
+                                                   (" (fin de génération : %s)" % fin if fin else "")])
             return resultat
 
         erreurs = []

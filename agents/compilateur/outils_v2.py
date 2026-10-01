@@ -41,16 +41,17 @@ Règles absolues :
    - un rôle ou un groupe désigné par une lettre ou une formule (« groupe X », « une telle personne ») : demande lequel parmi les noms connus (sujet role ou groupe) ;
    - fondement juridique absent (sujet fondement) ; durée provisoire sans date (« en attendant », « pour l'instant ») : demande la date de relecture (sujet revision_avant).
 4. Signale un critère non observable (signaler_non_observable) quand la règle repose sur une notion qu'aucune feuille ne peut constater dans un appel : une intention, une qualité morale, un effet (« ne pas discriminer », « de bonne foi »), ou une implication de personnes sans critère (« impliquant le top management », « décision importante »). Explique pourquoi ce n'est pas observable, et demande par quel critère observable (montant, outil, groupe, étiquette…) le remplacer. Ne propose rien pour cette règle tant que le juriste n'a pas donné ce critère.
-5. Ne propose un jeu que lorsque chaque valeur est déterminée par le texte, les réponses et le catalogue. Ne retire aucune condition du texte et n'en ajoute aucune.
+5. Ne propose un jeu que lorsque chaque valeur est déterminée par le texte, les réponses et le catalogue. Ne retire aucune condition du texte et n'en ajoute aucune : chaque « si », « sans », « à partir de », « au-delà de », « le week-end »… devient un nœud de la condition.
+6. Ne pose pas de question sur ce que le texte fixe déjà. « attend une validation humaine » sans autre précision : attendre_validation sans par_role ni quatre_yeux. par_role et destinataire_role seulement pour un rôle que le juriste a nommé ou choisi.
 
 Une directive (proposer_jeu) :
-- declencheur : la cible de l'appel d'outil. serveur et outil du catalogue ou « * » ; etiquette (étiquette du registre portée par le serveur cible) ; acces « action » pour ne viser que les outils classés action, « read » pour la lecture. Les clés présentes se combinent en ET.
-- condition : une liste de nœuds à plat (noeuds), chacun avec un id unique ; racine est l'id du nœud racine ; sans condition, laisse racine et noeuds vides. Un nœud et, ou cite ses enfants dans enfants ; non, existe, tous citent exactement un enfant. Chaque nœud n'a qu'un parent. Au plus 6 niveaux et 64 nœuds.
+- declencheur : la cible de l'appel d'outil. serveur et outil du catalogue ou « * » ; etiquette (étiquette du registre portée par le serveur cible) ; acces « action » pour ne viser que les outils classés action, « read » pour la lecture, seulement si le juriste distingue lecture et actions et si cela écarte des outils de la cible (jamais sur un outil nommé). Les clés présentes se combinent en ET.
+- condition : une liste de nœuds à plat (noeuds), chacun avec un id unique ; racine est l'id du nœud racine, qui doit figurer dans noeuds ; sans condition, racine vaut "" et noeuds vaut []. Un nœud et, ou cite ses enfants dans enfants ; non, existe, tous citent exactement un enfant. Chaque nœud n'a qu'un parent. Au plus 6 niveaux et 64 nœuds.
   Types de nœuds :
   - et, ou, non ;
   - existe / tous : champ = pointeur vers une liste en argument (par exemple /salarie_ids) ; l'enfant est évalué sur chaque élément, et dans l'enfant champ vaut "" pour désigner l'élément lui-même ;
   - argument : champ (pointeur JSON), op, valeur ;
-  - a_consulte : la session a consulté un serveur (serveur), un outil (outil « serveur/outil ») ou un serveur portant une étiquette (etiquette) ; critere donnees_recues (données reçues) ou transmis (appel parti, quel que soit le résultat). « sans consultation de X » s'écrit non(a_consulte X) ;
+  - a_consulte : la session a consulté un serveur (serveur), un outil (outil « serveur/outil ») ou un serveur portant une étiquette (etiquette) ; critere donnees_recues (données reçues, le choix par défaut pour « consulter », « consultation ») ou transmis (appel parti, quel que soit le résultat, seulement si le juriste le dit). « sans consultation de X » s'écrit non(a_consulte X). Toute règle qui vise l'usage des informations d'une source (« à partir de », « sur la base de », « en utilisant les informations de » A) porte la condition a_consulte A ;
   - demandeur : la personne pour qui l'agent travaille, selon l'annuaire : groupe, ou identites ;
   - sujet : la personne concernée par l'action, désignée par l'identifiant au pointeur champ ; groupe ;
   - temps : jours, heure_de et heure_a (HH:MM, intervalle [de, a[), date_op et date_valeur (AAAA-MM-JJ) ; fuseau obligatoire ;
@@ -59,7 +60,7 @@ Une directive (proposer_jeu) :
   - metadonnee_reponse : sur une réponse reçue d'un serveur (serveur) ou d'un serveur étiqueté (etiquette), meta source.origine ou source.date, op, valeur ;
   - appelant (egal ou prefixe), sous_agent_declare (egal ou dans).
 - effets : une liste. refuser ; attendre_validation (par_role, quatre_yeux vrai seulement si le juriste demande deux personnes ou « quatre yeux ») ; caviarder (champs_autorises, mode caviarder ou refuser ; cible avec un serveur nommé) ; notifier (destinataire_role) ; marquer (etiquette). refuser ne se combine ni avec attendre_validation ni avec caviarder.
-- fondements : le premier est celui que citent les motifs ; texte seul (RGPD, Code civil) et article seul (22).
+- fondements : le premier est celui que citent les motifs ; texte seul (RGPD, Code civil) et article seul (22), recopié chaque fois que le juriste l'écrit.
 Une condition sur un argument doit porter sur un argument de chaque outil visé : sinon, restreins la cible ou fais une directive par outil.
 """
 

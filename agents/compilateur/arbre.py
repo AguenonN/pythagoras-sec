@@ -141,7 +141,9 @@ def reconstruire(noeuds, racine, prefixe=""):
         index[nid] = n
     if len(noeuds) > NOEUDS_MAX:
         err("%d nœuds (au plus %d)" % (len(noeuds), NOEUDS_MAX))
-    if racine not in index:
+    if not index:
+        err("racine %s sans aucun nœud : sans condition, racine vaut \"\" ; sinon décris les nœuds de la condition" % racine)
+    elif racine not in index:
         err("racine %s : aucun nœud ne porte cet identifiant" % racine)
     if erreurs:
         return None, erreurs

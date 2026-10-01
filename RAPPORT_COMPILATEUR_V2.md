@@ -13,6 +13,8 @@ et le gate ne sont pas modifiés.
 | 1 | `cd8cf89` | `internal/relecture` : relecture v2 déterministe (déclencheur, arbre, feuilles, effets, fuseau, indéterminé), fichiers attendus octet pour octet, trois fuseaux machine |
 | 2 | `cd8917a` | `cmd/directive` : `verifier` et `relire` sur jeux v2, `--exiger-brouillon` conservé, tests |
 | 3 | `dafdb6e` | Schéma de function calling sans récursion : arbre à plat reconstruit par le code (`arbre.py`), énumérations tirées du vocabulaire (`vocabulaire.py`, `outils_v2.py`), `directive fuseaux` |
+| 4, 5 | `1a37a2b` | Un texte → un jeu v2 complet en brouillon ; refus motivés (`signaler_non_observable`) ; vérifications v2 ; questions fermées du code |
+| 6a | (ce commit) | Scénarios enregistrés crédit et week-end, rejoués ; durcissements trouvés en mode réel |
 
 ### Étape 1 — relecture v2
 
@@ -98,11 +100,44 @@ et le gate ne sont pas modifiés.
   choisir), quatre yeux, fondements, identités ; une condition sur un
   argument doit porter sur un argument de **chaque** outil visé (sinon elle
   serait indéterminée, donc refusée, sur les autres).
-- Tests : `agents/tests/test_compilateur_v2.py` (23, client scripté).
+- Tests : `agents/tests/test_compilateur_v2.py` (client scripté).
+
+### Étape 6 — scénarios enregistrés (crédit, week-end)
+
+- `agents/compilateur/scenarios_v2.py` déroule un scénario
+  (`exemples/scenarios-v2/<nom>.json` : texte, réponses du juriste) tour par
+  tour ; les réponses aux questions de Mistral sont retrouvées par le texte
+  de la question, celles du code par leur champ. Les réponses ont été écrites
+  en mode réel au fil des questions, puis sont rejouées par les tests sans
+  appel. `python -m compilateur.scenarios_v2 <nom>` affiche le déroulé.
+- **Crédit** (un texte → 4 directives `C-001`…`C-004`) : questions de
+  Mistral (seuil, taux officiel, recherche d'entreprises), puis question du
+  code `si_indetermine`, puis jeu : `non(a_consulte gels-avoirs/verifier_gel,
+  donnees_recues)` → refus ; `/montant > 500000` → refus ;
+  `a_consulte taux-officiel` → attente ; caviardage `/siren` vers
+  `recherche-entreprises`. Fondements avec articles. Chaque `texte_fr` est un
+  extrait mot pour mot du paragraphe.
+- **Week-end** (« Désormais aucune exécution de workflow agentique le
+  week-end. ») : question consultation/production ; la première proposition
+  (sans fuseau ni fondement écrits) est refusée par le code, et la correction
+  pose les questions **fuseau** et **fondement** ; puis `si_indetermine` ;
+  jeu identique (déclencheur, condition, effets, fondements) à
+  `internal/directive/testdata/v2/weekend.json`.
+- Tests : `agents/tests/test_scenarios_v2.py` (questions attendues tour par
+  tour, jeu accepté par le chargeur, relecture égale à
+  `agents/tests/attendus/v2/<nom>.txt` sur trois déroulés).
+- Durcissements trouvés en mode réel (chacun testé) : article de fondement
+  omis alors qu'écrit ; `acces` qui ne restreint rien (refusé : il ajouterait
+  un indéterminé) ; `critere: transmis` non écrit par le juriste (« consulter »
+  = `donnees_recues`, le plus fermé) ; racine sans nœuds ; réponses
+  dédoublonnées et déclarées définitives ; question déjà répondue écartée ;
+  `finish_reason: error` de Mistral signalé.
+- Les enregistrements devenus inutiles après chaque changement de consigne
+  (8 fichiers non versionnés) ont été déplacés hors du dépôt, pas commités.
 
 ## 2. Pas fait (encore)
 
-Étapes 6 (scénarios enregistrés) et 7 (démo).
+Étape 6 : top management, RH, demandeur (et un refus « ne pas discriminer ») ; étape 7 (démo).
 
 ## 3. Décisions prises seul
 
@@ -140,7 +175,9 @@ et le gate ne sont pas modifiés.
 
 ## 4. Blocages
 
-Aucun.
+Aucun bloquant. Budget Mistral : **15 appels réels sur 30** après crédit et
+week-end (compteur `agents/.etat/compilateur-v2/budget.json`). Un appel a
+rendu `finish_reason: error` sans contenu (côté Mistral).
 
 ## 5. Questions pour Manu
 

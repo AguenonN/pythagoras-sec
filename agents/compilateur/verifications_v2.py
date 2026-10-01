@@ -79,6 +79,21 @@ def heures_ecrites(source):
     return out
 
 
+def article_ecrit_apres(texte, source):
+    """L'article que le juriste écrit juste après le nom du texte (« Code du
+    travail, art. L1121-1 »), ou None."""
+    m = re.search(re.escape(texte) + r"\s*,?\s*(?:l['’])?art(?:icle|\.)?\s*([A-Za-z]?\d[\w.\-]*\w)", source,
+                  re.IGNORECASE)
+    return m.group(1) if m else None
+
+
+def transmis_ecrit(source):
+    """Le juriste a-t-il dit qu'un appel parti suffit, quel qu'en soit le
+    résultat ? Sinon « consulté » veut dire « données reçues », le plus fermé."""
+    t = sans_accents(source).lower()
+    return bool(re.search(r"\btransmis\b|quel(?:le)?s? qu.en soit le resultat|quel que soit (?:le|son) resultat|meme sans (?:reponse|resultat)", t))
+
+
 def quatre_yeux_ecrit(source):
     return bool(_QUATRE_YEUX.search(sans_accents(source).lower()))
 
@@ -119,6 +134,11 @@ def verifier_directive(p, d, vocab, source, prefixe):
     if cible.get("etiquette"):
         v.nom_ferme("etiquette", cible["etiquette"], vocab.etiquettes)
     vises = vocab.outils_vises(cible)
+    if cible.get("acces"):
+        sans = vocab.outils_vises({k: x for k, x in cible.items() if k != "acces"})
+        if sans and sans == vises:
+            v.err("declencheur : acces %s ne restreint rien (tous les outils visés sont déjà classés %s) ; "
+                  "le retirer : une donnée du registre absente rendrait la cible indéterminée", cible["acces"], cible["acces"])
     if not vises and not cible.get("etiquette"):
         v.err("declencheur : la cible ne vise aucun outil du catalogue")
 
@@ -145,6 +165,9 @@ def verifier_directive(p, d, vocab, source, prefixe):
             if "valeur" in f:
                 v.valeur(ou, f["valeur"])
         elif cle == "session.a_consulte":
+            if f.get("critere") == "transmis" and not transmis_ecrit(source):
+                v.err("%s : critere transmis (un appel parti suffit, même sans réponse) n'est pas écrit par le juriste ; "
+                      "« consulter » s'écrit donnees_recues", ou)
             if f.get("etiquette"):
                 v.nom_ferme("etiquette", f["etiquette"], vocab.etiquettes)
         elif cle in ("appelant", "sous_agent_declare"):
@@ -216,6 +239,10 @@ def verifier_directive(p, d, vocab, source, prefixe):
             x = f.get(cle)
             if x and _normaliser(x) not in _normaliser(source):
                 v.err("fondements[%d].%s : %r n'est pas écrit par le juriste", i, cle, x)
+        if f.get("texte") and not f.get("article"):
+            omis = article_ecrit_apres(f["texte"], source)
+            if omis:
+                v.err("fondements[%d] : le juriste cite l'article %s de %s ; recopie-le dans article", i, omis, f["texte"])
     rev = p.get("revision_avant")
     if rev and rev not in dates(source):
         v.err("revision_avant : la date %s n'est pas écrite par le juriste ; pose une question", rev)

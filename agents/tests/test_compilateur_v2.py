@@ -300,3 +300,49 @@ class TestJustifications(unittest.TestCase):
         self.assertTrue(quatre_yeux_ecrit("validation en quatre yeux"))
         self.assertTrue(quatre_yeux_ecrit("par deux personnes distinctes"))
         self.assertFalse(quatre_yeux_ecrit("une validation"))
+
+
+class TestCibleEtCritere(Base):
+    def test_acces_superflu(self):
+        p = d_seuil()
+        p["declencheur"]["acces"] = "action"   # attribuer_pret est déjà classé action
+        r = self.compiler(CREDIT, ClientScripte(jeu(p), jeu(p)))
+        self.assertEqual(r["etat"], c2.REFUSE)
+        self.assertTrue(any("acces action ne restreint rien" in e for e in r["erreurs"]), r["erreurs"])
+
+    def test_acces_qui_restreint_admis(self):
+        from compilateur.verifications_v2 import verifier_directive
+        d = {"declencheur": {"evenement": "appel_outil", "cible": {"serveur": "rh-synthetique", "acces": "action"}},
+             "effets": [{"effet": "refuser"}], "fondements": []}
+        self.assertEqual(verifier_directive({}, d, self.vocab, "x", ""), [])
+
+    def test_transmis_doit_etre_ecrit(self):
+        p = d_gels()
+        p["noeuds"][1]["critere"] = "transmis"
+        r = self.compiler(CREDIT, ClientScripte(jeu(p), jeu(p)))
+        self.assertTrue(any("critere transmis" in e for e in r["erreurs"]), r["erreurs"])
+        r = self.compiler(CREDIT, ClientScripte(jeu(p)), [
+            {"question": "Critère ?", "reponse": "Un appel transmis suffit, quel qu'en soit le résultat."},
+            {"question": "q", "reponse": "refuser", "champ": "si_indetermine", "origine": "compilateur"}])
+        self.assertEqual(r["etat"], c2.JEU, r["erreurs"])
+
+
+class TestQuestionsReposees(Base):
+    def test_question_deja_repondue_ecartee(self):
+        q = appel("poser_question", {"question": "Quel seuil ?", "sujet": "seuil"})
+        r = self.compiler(CREDIT, ClientScripte(reponse(q)), [{"question": "Quel seuil ? ", "reponse": "500 000 euros"}])
+        self.assertEqual(r["etat"], c2.ERREURS)
+        self.assertIn("déjà répondu", r["erreurs"][0])
+
+    def test_reponses_dedoublonnees_et_definitives(self):
+        cl = ClientScripte(jeu(d_seuil()))
+        rep = {"question": "Quel seuil ?", "reponse": "500 000 euros"}
+        self.compiler(CREDIT, cl, [rep, dict(rep)])
+        contenu = cl.recus[0][0][1]["content"]
+        self.assertEqual(contenu.count("Quel seuil ?"), 1)
+        self.assertIn("ne repose pas ces questions", contenu)
+
+    def test_fin_en_erreur_signalee(self):
+        r = self.compiler(CREDIT, ClientScripte({"choices": [{"finish_reason": "error", "message": {"content": ""}}]}))
+        self.assertEqual(r["etat"], c2.ERREURS)
+        self.assertIn("error", r["erreurs"][0])

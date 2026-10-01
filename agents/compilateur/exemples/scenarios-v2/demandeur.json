@@ -1,0 +1,8 @@
+{
+ "texte": "Si l'utilisateur est membre du groupe X, toute rédaction de rapport basée sur des données client est bloquée pour lui.",
+ "jeu": "demandeur",
+ "prefixe_id": "U",
+ "auteur": "juriste@cabinet.fr",
+ "date_effet": "2026-10-05T00:00:00Z",
+ "reponses": []
+}
