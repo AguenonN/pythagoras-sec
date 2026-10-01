@@ -57,7 +57,7 @@
     return h('div', { class: 'carte compacte' },
       h('div', { class: 'gras' }, versionTexte(a.id, a.version) + (a.texte ? ' · ' + Titre(a.texte) : '')),
       h('div', { class: 'moyen second' }, 'Fondement : ' + fondementTexte(a.fondement)),
-      h('div', { class: 'moyen' }, 'Motif : ' + a.motif),
+      h('div', { class: 'moyen' }, 'Motif : ' + motifAffiche(a.motif)),
       a.appliquee ? null : h('div', { class: 'moyen second' }, 'Directive en observation : décision journalisée, jamais appliquée.'),
       origine.length ? h('div', { class: 'moyen', style: 'color:var(--accent)' },
         'Consultation à l\'origine : ' + origine.map(l => '#' + l.seq).join(', ')) : null);
@@ -89,7 +89,7 @@
       h('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap' }, badge(e.badge, e.badge === 'en_attente' ? 'En attente de validation' : null, 'grand'),
         h('span', { class: 'moyen second' }, heureSec(e.ts) + ' · Europe/Paris')),
       appliquees.length ? appliquees.map(a => carteDirective(a, liens)) :
-        h('div', { class: 'carte compacte' }, h('div', { class: 'moyen' }, e.motif), h('div', { class: 'moyen second' }, 'Aucune directive appliquée à cet appel.')),
+        h('div', { class: 'carte compacte' }, h('div', { class: 'moyen' }, motifAffiche(e.motif)), h('div', { class: 'moyen second' }, 'Aucune directive appliquée à cet appel.')),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('div', { class: 'kv' }, h('span', {}, 'Rôle requis'), roles ? h('span', {}, roles) : nd()),
         h('div', { class: 'kv' }, h('span', {}, 'Directives évaluées'), h('span', {},

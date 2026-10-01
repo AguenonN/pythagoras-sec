@@ -94,6 +94,13 @@ function fondementTexte(f) {
   return [f.texte, f.article ? 'art. ' + f.article : ''].filter(Boolean).join(', ');
 }
 const versionTexte = (id, version) => id + ', version ' + version;
+// Le motif est celui que l'engine a journalisé ; à l'écran, la version d'une
+// directive s'écrit en toutes lettres et le nom technique du verrou est omis.
+function motifAffiche(m) {
+  return String(m || '')
+    .replace(/\b([A-Z]+-\d+) v(\d+)\b/g, '$1, version $2')
+    .replace(/\((interdiction|seuil_argument|provenance_session|approbation_humaine|champs_autorises_par_destination|source_attestee), /g, '(');
+}
 function humanise(nom) { return String(nom || '').replace(/_/g, ' '); }
 
 function badge(cle, texte, extra) {
