@@ -53,6 +53,10 @@ import (
 	"mcprogue/internal/session"
 )
 
+// DelaiGraceFermeture sépare la fermeture forcée d'une session de celle
+// de sa connexion : le temps que la réponse de l'appel en cours parte.
+const DelaiGraceFermeture = time.Second
+
 // AppelantStdio est l'appelant d'une session servie en stdio : le processus
 // parent, seul à tenir les tubes.
 const AppelantStdio = "local-process"
@@ -176,10 +180,13 @@ func Demarrer(ctx context.Context, cfg Config) (*Gate, error) {
 		if fermeture != nil {
 			fermeture(ss, motif)
 		}
-		// Hors du gestionnaire de l'appel : la fermeture forcée est
-		// demandée pendant un tools/call, et ServerSession.Close attend la
-		// fin de tous les gestionnaires, celui-ci compris.
-		go ss.Close()
+		// Ni dans le gestionnaire de l'appel (ServerSession.Close attend
+		// la fin de tous les gestionnaires, celui-ci compris :
+		// interblocage), ni tout de suite après (le SDK retire l'appel des
+		// requêtes en cours juste avant d'écrire sa réponse : la fermeture
+		// la couperait). La session est déjà fermée pour l'engine, qui
+		// refuse tout appel ; la connexion suit après un délai de grâce.
+		time.AfterFunc(DelaiGraceFermeture, func() { ss.Close() })
 	}
 	g.sessions = session.Nouveau(sc, g.journal)
 

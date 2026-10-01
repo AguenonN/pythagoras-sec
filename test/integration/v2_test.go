@@ -18,6 +18,7 @@ import (
 	"context"
 	"crypto/ed25519"
 	"encoding/hex"
+	"encoding/json"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -29,6 +30,8 @@ import (
 
 	"mcprogue/internal/annuaire"
 	"mcprogue/internal/journal"
+	"mcprogue/internal/registre"
+	"mcprogue/internal/registredemo"
 )
 
 // preparerAnnuaire génère l'annuaire de démo signé et ses clés dans dir.
@@ -354,4 +357,113 @@ func TestRH_PersonnesConcernees(t *testing.T) {
 	}
 	b.verifier(t)
 	b.commandeJournal(t)
+}
+
+// cheminRapports est le registre de démo augmenté du serveur fictif
+// rapports, dont l'outil remettre_rapport est étiqueté production_rapport
+// par demo/etiquettes.json.
+var cheminRapports string
+
+func preparerRegistreRapports(dir string, demo *registre.Registre) error {
+	bin := filepath.Join(dir, "rapports")
+	ctx, annuler := context.WithTimeout(context.Background(), 30*time.Second)
+	defer annuler()
+	// Le catalogue épinglé est celui que le serveur annonce.
+	cs, err := mcp.NewClient(&mcp.Implementation{Name: "preparation", Version: "0"}, nil).
+		Connect(ctx, &mcp.CommandTransport{Command: exec.Command(bin)}, nil)
+	if err != nil {
+		return err
+	}
+	liste, err := cs.ListTools(ctx, nil)
+	cs.Close()
+	if err != nil {
+		return err
+	}
+	brut, err := json.Marshal(liste.Tools)
+	if err != nil {
+		return err
+	}
+	outils, err := registredemo.Convertir(brut)
+	if err != nil {
+		return err
+	}
+	h, err := empreinte(bin)
+	if err != nil {
+		return err
+	}
+	r := *demo
+	r.Serveurs = append(append([]registre.Serveur{}, demo.Serveurs...), registre.Serveur{
+		Nom: "rapports", Transport: registre.Stdio, Commande: &registre.Commande{Chemin: bin},
+		Attestation: registre.Attestation{Mode: registre.ModeBinaire, Attendu: "sha256:" + h}, Outils: outils,
+	})
+	e, err := registredemo.LireEtiquettes(filepath.Join(racine, registredemo.FichierEtiquettes))
+	if err != nil {
+		return err
+	}
+	if err := e.Appliquer(&r); err != nil {
+		return err
+	}
+	r.Meta.Empreinte = ""
+	if err := registre.Valider(&r); err != nil {
+		return err
+	}
+	b, err := registredemo.Encoder(&r)
+	if err != nil {
+		return err
+	}
+	cheminRapports = filepath.Join(dir, "registre-rapports.json")
+	return os.WriteFile(cheminRapports, b, 0o600)
+}
+
+const jeuRapport = "demo/directives/rapport.json"
+
+// Demandeur du groupe prestataires-externes, données client reçues, puis
+// rapport : refus, et le DPO est notifié.
+func TestDemandeur_RapportSurDonneesClient(t *testing.T) {
+	rechercher := func(b *banc) {
+		if r := b.appeler(t, "recherche-entreprises__rechercher_entreprise", map[string]any{"siren": "382891752"}); r.IsError {
+			t.Fatalf("recherche : %s", texte(r))
+		}
+	}
+	rapport := map[string]any{"titre": "Synthèse", "contenu": "Analyse du dossier."}
+	cas := []struct {
+		nom, demandeur string
+		consulter      bool
+		refus          bool
+	}{
+		{"prestataire, données client reçues", "bruno.prestataire@exemple.test", true, true},
+		{"prestataire, sans données client", "bruno.prestataire@exemple.test", false, false},
+		{"analyste, données client reçues", "claire.analyste@exemple.test", true, false},
+	}
+	for _, c := range cas {
+		t.Run(c.nom, func(t *testing.T) {
+			b := demarrerAvec(t, lancement{registre: cheminRapports, jeu: jeuRapport, demandeur: c.demandeur, ecran: true})
+			if c.consulter {
+				rechercher(b)
+			}
+			r := b.appeler(t, "rapports__remettre_rapport", rapport)
+			sc, _ := r.StructuredContent.(map[string]any)
+			if c.refus != (sc != nil && sc["statut"] == "refuse" && sc["directive"] == "U-001") {
+				t.Fatalf("%v %s", sc, texte(r))
+			}
+			entrees, appels := b.verifier(t)
+			dernier := appels[len(appels)-1]
+			if strings.Join(dernier.EtiquettesCible, ",") != "production_rapport" || dernier.Demandeur == nil {
+				t.Fatalf("appel %+v", dernier)
+			}
+			notes := 0
+			for _, e := range entrees {
+				if e.Type == journal.NotificationT && e.Notification.DestinataireRole == "dpo" {
+					notes++
+					if e.Notification.Statut != journal.RemiseFaite {
+						t.Fatalf("remise %+v", e.Notification)
+					}
+				}
+			}
+			if (notes == 1) != c.refus {
+				t.Fatalf("%d notification(s) au DPO", notes)
+			}
+			b.commandeJournal(t)
+		})
+	}
 }

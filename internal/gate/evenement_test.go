@@ -160,14 +160,25 @@ func TestFermetureForcee_SansInterblocage(t *testing.T) {
 		b.config = func(c *Config) { c.Session.MaxConsultations = 1 }
 	})
 	cs := b.agent(t)
-	fait := make(chan struct{})
+	fait := make(chan error, 1)
 	go func() {
-		defer close(fait)
-		cs.CallTool(context.Background(), &mcp.CallToolParams{Name: "taux-officiel__get_taux", Arguments: map[string]any{"devise": "EUR"}})
+		_, err := cs.CallTool(context.Background(), &mcp.CallToolParams{Name: "taux-officiel__get_taux", Arguments: map[string]any{"devise": "EUR"}})
+		fait <- err
 	}()
 	select {
-	case <-fait:
+	case err := <-fait:
+		if err != nil {
+			t.Fatalf("la réponse de l'appel qui atteint la borne est perdue : %v", err)
+		}
 	case <-time.After(10 * time.Second):
 		t.Fatal("interblocage à la fermeture forcée")
+	}
+	// Puis la connexion est fermée.
+	fini := make(chan struct{})
+	go func() { cs.Wait(); close(fini) }()
+	select {
+	case <-fini:
+	case <-time.After(10 * time.Second):
+		t.Fatal("connexion jamais fermée")
 	}
 }

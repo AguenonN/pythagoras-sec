@@ -82,7 +82,7 @@ func preparer(m *testing.M) int {
 	defer os.RemoveAll(dir)
 
 	noms := append(append([]string{}, registredemo.Serveurs...), registredemo.Imposteur)
-	paquets := []string{"./cmd/mcp-gate", "./cmd/journal"}
+	paquets := []string{"./cmd/mcp-gate", "./cmd/journal", "./test/integration/rapports"}
 	for _, n := range noms {
 		paquets = append(paquets, "./servers/"+n)
 	}
@@ -133,6 +133,10 @@ func preparer(m *testing.M) int {
 			fmt.Fprintln(os.Stderr, err)
 			return 1
 		}
+	}
+	if err := preparerRegistreRapports(dir, demo); err != nil {
+		fmt.Fprintln(os.Stderr, "registre avec rapports :", err)
+		return 1
 	}
 	return m.Run()
 }
