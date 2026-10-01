@@ -51,6 +51,9 @@ var (
 	// Registres générés depuis ces binaires.
 	cheminRegistre, cheminAttaque string
 	empreinteImposteur            string
+	// Annuaire de démonstration, généré avec des clés neuves.
+	cheminAnnuaire, cheminAutorite, dirCles string
+	binaireJournal                         string
 	// Clé de test, sans valeur hors de ce fichier.
 	cleTest = []byte(strings.Repeat("integ-", 6))
 )
@@ -79,7 +82,7 @@ func preparer(m *testing.M) int {
 	defer os.RemoveAll(dir)
 
 	noms := append(append([]string{}, registredemo.Serveurs...), registredemo.Imposteur)
-	paquets := []string{"./cmd/mcp-gate"}
+	paquets := []string{"./cmd/mcp-gate", "./cmd/journal"}
 	for _, n := range noms {
 		paquets = append(paquets, "./servers/"+n)
 	}
@@ -92,6 +95,11 @@ func preparer(m *testing.M) int {
 		return 1
 	}
 	binaireGate = filepath.Join(dir, "mcp-gate")
+	binaireJournal = filepath.Join(dir, "journal")
+	if err := preparerAnnuaire(dir); err != nil {
+		fmt.Fprintln(os.Stderr, "annuaire :", err)
+		return 1
+	}
 
 	man := &registredemo.Manifeste{}
 	for _, n := range noms {
@@ -167,6 +175,22 @@ type banc struct {
 	stderr          *tampon
 	journal, coffre string
 	ferme           bool
+	jeu             string // chemin du jeu, relatif à la racine
+	notifications   string // écran des notifications, s'il y en a un
+}
+
+// lancement décrit un gate à démarrer.
+type lancement struct {
+	registre string
+	jeu      string // relatif à la racine ; défaut cheminDirectives
+	// depart, s'il est posé, est l'instant de départ de l'horloge simulée.
+	depart string
+	// annuaire charge l'annuaire de démo ; demandeur, s'il est posé, est
+	// l'identité dont le jeton (signé par elle-même) est remis au gate.
+	annuaire  bool
+	demandeur string
+	// ecran abonne un écran de notifications au journal.
+	ecran bool
 }
 
 // demarrer lance cmd/mcp-gate comme un hôte MCP le lancerait, avec un
@@ -174,12 +198,33 @@ type banc struct {
 // registre transmet par nom aux serveurs. Aucun secret PISTE : legifrance
 // ne sert que ses enregistrements.
 func demarrer(t *testing.T, cheminReg string) *banc {
+	return demarrerAvec(t, lancement{registre: cheminReg})
+}
+
+func demarrerAvec(t *testing.T, l lancement) *banc {
 	t.Helper()
 	dir := t.TempDir()
-	b := &banc{stderr: &tampon{}, journal: filepath.Join(dir, "journal.jsonl"), coffre: filepath.Join(dir, "coffre.jsonl")}
-	cmd := exec.Command(binaireGate, "-registre", cheminReg, "-directives", filepath.Join(racine, cheminDirectives),
-		"-journal", b.journal, "-coffre", b.coffre)
-	cmd.Env = []string{"MCP_GATE_CLE_JOURNAL=" + hex.EncodeToString(cleTest), "DONNEES_MODE=REJEU"}
+	if l.jeu == "" {
+		l.jeu = cheminDirectives
+	}
+	b := &banc{stderr: &tampon{}, journal: filepath.Join(dir, "journal.jsonl"), coffre: filepath.Join(dir, "coffre.jsonl"), jeu: l.jeu}
+	args := []string{"-registre", l.registre, "-directives", filepath.Join(racine, l.jeu), "-journal", b.journal, "-coffre", b.coffre}
+	env := []string{"MCP_GATE_CLE_JOURNAL=" + hex.EncodeToString(cleTest), "DONNEES_MODE=REJEU"}
+	if l.depart != "" {
+		args = append(args, "-horloge-depart", l.depart)
+	}
+	if l.annuaire || l.demandeur != "" {
+		args = append(args, "-annuaire", cheminAnnuaire, "-annuaire-autorite", cheminAutorite)
+	}
+	if l.demandeur != "" {
+		env = append(env, "MCP_GATE_JETON_DEMANDEUR="+jetonIdentite(t, l.demandeur, l.depart))
+	}
+	if l.ecran {
+		b.notifications = filepath.Join(dir, "notifications.jsonl")
+		args = append(args, "-notifications", b.notifications)
+	}
+	cmd := exec.Command(binaireGate, args...)
+	cmd.Env = env
 	cmd.Stderr = b.stderr
 	ctx, annuler := context.WithTimeout(context.Background(), 60*time.Second)
 	defer annuler()
@@ -257,7 +302,7 @@ func (b *banc) verifier(t *testing.T) (entrees, appels []journal.Entree) {
 		t.Fatal(err)
 	}
 	defer coffre.Fermer()
-	jeu := chargerJeu(t)
+	jeu := chargerJeuChemin(t, b.jeu)
 	rs, err := rejeu.RejouerJournal(entrees, coffre, rejeu.Catalogue{jeu}, rejeu.Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -282,9 +327,9 @@ func (b *banc) verifier(t *testing.T) (entrees, appels []journal.Entree) {
 	return entrees, appels
 }
 
-func chargerJeu(t *testing.T) directive.Jeu {
+func chargerJeuChemin(t *testing.T, chemin string) directive.Jeu {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join(racine, cheminDirectives))
+	b, err := os.ReadFile(filepath.Join(racine, chemin))
 	if err != nil {
 		t.Fatal(err)
 	}
