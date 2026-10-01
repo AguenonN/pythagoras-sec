@@ -140,3 +140,70 @@ func TestDirectivesDemo(t *testing.T) {
 		t.Fatalf("jeu accepté sans taux-officiel : %v", err)
 	}
 }
+
+// Tous les jeux de demo/directives passent le chargeur strict et le
+// démarrage du gate devant le registre de démo étiqueté (schémas et
+// étiquettes versionnés), et devant demo/registre.json s'il a été
+// régénéré (go run ./cmd/registre-demo). Le registre de démo porte
+// production_rapport sur banque-synthetique/remettre_rapport et
+// donnees_client sur evaluer_dossier, que rapport.json vise.
+func TestTousLesJeuxDemo(t *testing.T) {
+	racine, err := filepath.Abs("../..")
+	if err != nil {
+		t.Fatal(err)
+	}
+	reg := registreSchemas(t, racine)
+	e, err := LireEtiquettes(filepath.Join(racine, FichierEtiquettes))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := e.Appliquer(reg); err != nil {
+		t.Fatal(err)
+	}
+	reg.Meta.Empreinte = ""
+	if err := registre.Valider(reg); err != nil {
+		t.Fatal(err)
+	}
+	registres := map[string]*registre.Registre{"schémas versionnés": reg}
+	if b, err := os.ReadFile(filepath.Join(racine, "demo", "registre.json")); err == nil {
+		r, err := registre.Charger(b)
+		if err != nil {
+			t.Fatalf("demo/registre.json : %v", err)
+		}
+		registres["demo/registre.json"] = r
+	} else {
+		t.Log("demo/registre.json absent : seul le registre des schémas est essayé")
+	}
+	for nom, r := range registres {
+		b, _ := r.Serveur("banque-synthetique")
+		for outil, attendu := range map[string]string{"remettre_rapport": "production_rapport", "evaluer_dossier": "donnees_client"} {
+			if got := strings.Join(b.EtiquettesOutil(outil), ","); got != attendu {
+				t.Errorf("%s : banque-synthetique/%s porte %q, attendu %q", nom, outil, got, attendu)
+			}
+		}
+	}
+
+	jeux, err := filepath.Glob(filepath.Join(racine, "demo", "directives", "*.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(jeux) == 0 {
+		t.Fatal("aucun jeu dans demo/directives")
+	}
+	for _, chemin := range jeux {
+		b, err := os.ReadFile(chemin)
+		if err != nil {
+			t.Fatal(err)
+		}
+		jeu, err := directive.Charger(b)
+		if err != nil {
+			t.Errorf("%s : %v", filepath.Base(chemin), err)
+			continue
+		}
+		for nom, r := range registres {
+			if err := demarrer(t, r, *jeu); err != nil {
+				t.Errorf("%s devant %s : %v", filepath.Base(chemin), nom, err)
+			}
+		}
+	}
+}
