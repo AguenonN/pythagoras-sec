@@ -54,6 +54,9 @@ const (
 	// des jetons d'approbation : acceptée (avant l'entrée transmission) ou
 	// refusée (l'appel reste en attente).
 	ApprobationT Type = "approbation"
+	// NotificationT est écrite pour chaque notification qu'une décision
+	// demande : destinataire, rythme, statut de remise.
+	NotificationT Type = "notification"
 )
 
 // Statuts de résultat d'un appel. Les quatre premiers sont ceux d'une
@@ -240,6 +243,10 @@ type Entree struct {
 	// valideurs sont vérifiés.
 	SourceIdentite string       `json:"source_identite,omitempty"`
 	Annuaire       *RefAnnuaire `json:"annuaire,omitempty"`
+
+	// Notification : une notification demandée par une directive, et ce
+	// qu'il en est advenu.
+	Notification *Remise `json:"notification,omitempty"`
 
 	Message         string `json:"message,omitempty"`
 	NbConsultations int    `json:"nb_consultations,omitempty"`

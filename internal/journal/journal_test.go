@@ -46,7 +46,7 @@ func TestEcrivain_EcritChaineEtPublie(t *testing.T) {
 	att := directive.Attestation{Mode: "binaire", Attendu: "a", Observe: "a", Schemas: true, Verifiee: false}
 	appel, err := e.Ecrire(Entree{
 		Type: AppelT, Session: "s1", Seq: 1, Appelant: "spiffe://lab/a",
-		Jeu: &RefJeu{ID: "credit-pme", Version: 1, Empreinte: "sha256:x"},
+		Jeu:     &RefJeu{ID: "credit-pme", Version: 1, Empreinte: "sha256:x"},
 		Serveur: "banque", Outil: "attribuer_pret", OutilExpose: "banque__attribuer_pret",
 		Appel:       &Appel{EmpreinteOrigine: "o", EmpreinteTransmise: "t", ChampsRetires: []string{"/nom"}},
 		Attestation: DepuisAttestation(att),

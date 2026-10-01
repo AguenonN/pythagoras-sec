@@ -45,3 +45,21 @@ type RefAnnuaire struct {
 	Version   int    `json:"version"`
 	Empreinte string `json:"empreinte"`
 }
+
+// Statuts de remise d'une notification.
+const (
+	RemiseFaite     = "remise"    // remise au canal, au moins un destinataire l'a reçue
+	RemiseEchec     = "echec"     // le canal n'a pu la remettre à personne
+	RemisePlanifiee = "planifiee" // rythme synthese : regroupée, remise plus tard
+)
+
+// Remise est une notification et son statut de remise.
+type Remise struct {
+	Notification
+	Statut string `json:"statut"`
+	Canal  string `json:"canal"`
+	Remis  int    `json:"remis,omitempty"` // nombre de destinataires atteints
+	// Evenement est l'évènement qui l'a demandée : appel_outil (défaut),
+	// ouverture_session, attestation_echouee, purge.
+	Evenement string `json:"evenement,omitempty"`
+}
