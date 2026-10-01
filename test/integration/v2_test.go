@@ -303,3 +303,55 @@ func TestTopManagement_SansEcranRefus(t *testing.T) {
 	b.verifier(t)
 	b.commandeJournal(t)
 }
+
+const jeuRH = "demo/directives/rh.json"
+
+// RH : le gate résout les groupes des salariés désignés par
+// personnes_concernees auprès de referentiel-rh (attesté) avant Decide.
+func TestRH_PersonnesConcernees(t *testing.T) {
+	cas := []struct {
+		nom       string
+		ids       []any
+		statut    string // refuse | en_attente | "" (transmis)
+		directive string
+		resolus   int
+	}{
+		{"un salarié en contentieux dans la liste", []any{"SAL-FICTIF-001", "SAL-FICTIF-003"}, "refuse", "R-001", 2},
+		{"un salarié protégé dans la liste", []any{"SAL-FICTIF-001", "SAL-FICTIF-002"}, "en_attente", "R-002", 2},
+		{"un salarié introuvable", []any{"SAL-FICTIF-001", "SAL-FICTIF-999"}, "refuse", "R-001", 1},
+		{"aucun groupe", []any{"SAL-FICTIF-001", "SAL-FICTIF-005"}, "", "", 2},
+	}
+	for _, c := range cas {
+		t.Run(c.nom, func(t *testing.T) {
+			b := demarrerAvec(t, lancement{registre: cheminRegistre, jeu: jeuRH})
+			r := b.appeler(t, "rh-synthetique__decider_prime", map[string]any{"salarie_ids": c.ids, "montant": 500})
+			sc, _ := r.StructuredContent.(map[string]any)
+			if c.statut == "" {
+				if sc != nil {
+					t.Fatalf("transmis attendu : %v", sc)
+				}
+			} else if sc == nil || sc["statut"] != c.statut || sc["directive"] != c.directive {
+				t.Fatalf("%v %s", sc, texte(r))
+			}
+			_, appels := b.verifier(t)
+			a := appels[0]
+			if len(a.Sujets) != c.resolus || len(a.Sujets)+len(a.SujetsNonResolus) != len(c.ids) {
+				t.Fatalf("sujets %+v, non résolus %v", a.Sujets, a.SujetsNonResolus)
+			}
+			// Jamais l'identifiant en clair : seulement son empreinte.
+			brut, _ := os.ReadFile(b.journal)
+			if bytes.Contains(brut, []byte("SAL-FICTIF")) {
+				t.Fatal("un identifiant de salarié est écrit en clair au journal")
+			}
+			b.commandeJournal(t)
+		})
+	}
+	// Sanction : identifiant seul (pas une liste).
+	b := demarrerAvec(t, lancement{registre: cheminRegistre, jeu: jeuRH})
+	r := b.appeler(t, "rh-synthetique__proposer_sanction", map[string]any{"salarie_id": "SAL-FICTIF-002", "motif": "retards"})
+	if sc := structure(t, r); sc["directive"] != "R-003" {
+		t.Fatalf("%v", sc)
+	}
+	b.verifier(t)
+	b.commandeJournal(t)
+}

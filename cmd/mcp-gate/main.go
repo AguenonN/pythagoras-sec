@@ -145,6 +145,7 @@ func lancer() error {
 		Session: session.Config{DelaiBackend: *delai, MaxConsultations: *maxConsultations, AgeMax: *ageMax},
 		Backend: backend.Options{Stderr: os.Stderr, Logger: log},
 		Logger:  log, Annuaire: src, JetonDemandeur: os.Getenv(VarJetonDemandeur), Horloge: horloge,
+		Resolveur: resolveur(reg),
 	})
 	if err != nil {
 		return err
@@ -205,6 +206,18 @@ func ecranNotifications(j *journal.Ecrivain, chemin string) (func(), error) {
 		<-fini
 		f.Close()
 	}, nil
+}
+
+// resolveur rend le résolveur des personnes concernées : l'outil
+// groupes_salarie de referentiel-rh, si le registre le déclare.
+func resolveur(reg *registre.Registre) gate.Resolveur {
+	r := gate.ResolveurReferentielRH
+	if s, ok := reg.Serveur(r.Serveur); ok {
+		if _, ok := s.Outil(r.Outil); ok {
+			return r
+		}
+	}
+	return gate.Resolveur{}
 }
 
 // horlogeSimulee rend une horloge qui part de depart et avance au rythme

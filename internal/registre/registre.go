@@ -104,6 +104,11 @@ type Outil struct {
 	// etiquette_cible, session.a_consulte) ; elles s'ajoutent à celles du
 	// serveur. Absentes, l'empreinte d'un registre v1 est inchangée.
 	Etiquettes []string `json:"etiquettes,omitempty"`
+	// PersonnesConcernees est le pointeur JSON (RFC 6901) de l'argument qui
+	// désigne la ou les personnes concernées par l'appel : un identifiant
+	// (chaîne ou entier) ou une liste d'identifiants. L'engine résout leurs
+	// groupes avant Decide (feuille sujet).
+	PersonnesConcernees string `json:"personnes_concernees,omitempty"`
 }
 
 // Empreinte est le pin de l'outil, calculé comme toolpin.Hash sur les trois
@@ -398,6 +403,9 @@ func validerServeur(v *validation, p string, s *Serveur) {
 			v.f("%s: description manquante", q)
 		}
 		validerEtiquettes(v, q, o.Etiquettes)
+		if p := o.PersonnesConcernees; p != "" && (!strings.HasPrefix(p, "/") || len(p) > 256) {
+			v.f("%s: personnes_concernees %q doit être un pointeur JSON commençant par /", q, p)
+		}
 		if o.InputSchema == nil {
 			v.f("%s: input_schema manquant", q)
 		} else if o.InputSchema["type"] != "object" {

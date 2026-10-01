@@ -205,6 +205,10 @@ func TestEtiquettes(t *testing.T) {
 		t.Fatal("un registre non validé n'a pas de version")
 	}
 
+	d := strings.Replace(string(b), `"acces": "read",`, `"acces": "read", "personnes_concernees": "salarie_id",`, 1)
+	if _, err := Charger([]byte(d)); err == nil || !strings.Contains(err.Error(), "personnes_concernees") {
+		t.Fatalf("pointeur sans / accepté : %v", err)
+	}
 	for _, mauvais := range []string{`["Externe"]`, `["a b"]`, `["x", "x"]`, `[""]`} {
 		d := strings.Replace(string(b), `"nom": "taux-officiel",`, `"nom": "taux-officiel", "etiquettes": `+mauvais+`,`, 1)
 		if _, err := Charger([]byte(d)); err == nil || !strings.Contains(err.Error(), "étiquette") {

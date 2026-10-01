@@ -386,6 +386,12 @@ func TestEtiquettesVersionnees(t *testing.T) {
 			t.Errorf("%s : %q, attendu %q", so, got, e)
 		}
 	}
+	rh, _ := r.Serveur("rh-synthetique")
+	for outil, ptr := range map[string]string{"decider_prime": "/salarie_ids", "proposer_sanction": "/salarie_id", "consulter_salarie": "/salarie_id"} {
+		if o, _ := rh.Outil(outil); o.PersonnesConcernees != ptr {
+			t.Errorf("%s : personnes concernées %q", outil, o.PersonnesConcernees)
+		}
+	}
 	// Une règle */remettre_rapport qui toucherait un outil de ce nom.
 	s := &r.Serveurs[0]
 	s.Outils = append(s.Outils, registre.Outil{Nom: "remettre_rapport", Acces: registre.Action})

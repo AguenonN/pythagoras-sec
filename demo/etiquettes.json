@@ -1,5 +1,5 @@
 {
-  "commentaire": "Étiquettes du registre de démonstration, lues par internal/registredemo. Une étiquette de serveur vaut pour tous ses outils ; une étiquette d'outil s'y ajoute. « */outil » vaut pour l'outil de ce nom sur tout serveur.",
+  "commentaire": "Étiquettes du registre de démonstration, lues par internal/registredemo. Une étiquette de serveur vaut pour tous ses outils ; une étiquette d'outil s'y ajoute. « */outil » vaut pour l'outil de ce nom sur tout serveur. personnes_concernees : pointeur de l'argument qui désigne la personne concernée, par outil.",
   "version": 1,
   "serveurs": {
     "recherche-entreprises": ["donnees_client", "externe"],
@@ -12,5 +12,10 @@
   "outils": {
     "banque-synthetique/evaluer_dossier": ["donnees_client"],
     "*/remettre_rapport": ["production_rapport"]
+  },
+  "personnes_concernees": {
+    "rh-synthetique/consulter_salarie": "/salarie_id",
+    "rh-synthetique/decider_prime": "/salarie_ids",
+    "rh-synthetique/proposer_sanction": "/salarie_id"
   }
 }

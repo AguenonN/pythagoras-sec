@@ -237,6 +237,10 @@ type Entree struct {
 	EtiquettesCible []string   `json:"etiquettes_cible,omitempty"`
 	Demandeur       *Demandeur `json:"demandeur,omitempty"`
 	Sujets          []Sujet    `json:"sujets,omitempty"`
+	// SujetsNonResolus : empreintes des personnes concernées que le
+	// résolveur n'a pas résolues (introuvables, résolveur non attesté ou
+	// sans réponse) ; Decide ne les a pas reçues.
+	SujetsNonResolus []string `json:"sujets_non_resolus,omitempty"`
 
 	// Source d'identité (annuaire_charge, session_ouverte) : nom de la
 	// source et référence de l'annuaire contre lequel le demandeur et les

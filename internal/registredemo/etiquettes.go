@@ -24,6 +24,9 @@ type Etiquettes struct {
 	Version     int                 `json:"version"`
 	Serveurs    map[string][]string `json:"serveurs"`
 	Outils      map[string][]string `json:"outils"`
+	// PersonnesConcernees donne, par "serveur/outil", le pointeur de
+	// l'argument qui désigne les personnes concernées.
+	PersonnesConcernees map[string]string `json:"personnes_concernees,omitempty"`
 }
 
 // LireEtiquettes lit et décode le fichier des étiquettes, strictement.
@@ -88,6 +91,26 @@ func (e *Etiquettes) Appliquer(r *registre.Registre) error {
 		}
 		if !trouve && serveur != "*" {
 			errs = append(errs, fmt.Errorf("registredemo: étiquettes : outil %s absent du registre", cle))
+		}
+	}
+	cles := make([]string, 0, len(e.PersonnesConcernees))
+	for k := range e.PersonnesConcernees {
+		cles = append(cles, k)
+	}
+	sort.Strings(cles)
+	for _, cle := range cles {
+		serveur, outil, _ := strings.Cut(cle, "/")
+		trouve := false
+		for i := range r.Serveurs {
+			for j := range r.Serveurs[i].Outils {
+				if r.Serveurs[i].Nom == serveur && r.Serveurs[i].Outils[j].Nom == outil {
+					r.Serveurs[i].Outils[j].PersonnesConcernees = e.PersonnesConcernees[cle]
+					trouve = true
+				}
+			}
+		}
+		if !trouve {
+			errs = append(errs, fmt.Errorf("registredemo: personnes concernées : outil %s absent du registre", cle))
 		}
 	}
 	return errors.Join(errs...)

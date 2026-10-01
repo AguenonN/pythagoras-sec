@@ -80,6 +80,9 @@ type Config struct {
 	// lancement, signé par une identité de l'annuaire. Vide : pas de
 	// demandeur, et les directives qui le lisent sont indéterminées.
 	JetonDemandeur string
+	// Resolveur rend les groupes des personnes concernées (outils dont le
+	// registre déclare personnes_concernees). Zéro : aucune n'est résolue.
+	Resolveur Resolveur
 }
 
 // Gate est l'agrégateur démarré.
@@ -387,10 +390,11 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 	etat := g.completer(tour.Etat())
 	att := b.Attestation()
 	demandeur := g.demandeur(tour.SessionID())
+	sujets, nonResolus := g.resoudreSujets(ctx, o, args)
 	dec := directive.Decide(jeu, etat, directive.Appel{
 		Serveur: serveur, Outil: outil, Arguments: args, Attestation: att, Horodatage: ts,
 		Acces: acces, EtiquettesCible: etiquettes, VersionRegistre: version, SousAgentDeclare: sousAgent,
-		Demandeur: demandeur,
+		Demandeur: demandeur, Sujets: sujets,
 	})
 	// Contrôle du registre, toujours actif, même sans directive
 	// source_attestee pour ce serveur : refus d'origine registre.
@@ -428,6 +432,7 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 		Resultat:        &journal.Resultat{Statut: journal.StatutNonTransmis},
 		VersionRegistre: version, Acces: string(acces), EtiquettesCible: nonVide(etiquettes),
 		Demandeur: journal.DepuisDemandeur(demandeur), Remises: remises,
+		Sujets: journal.DepuisSujets(sujets), SujetsNonResolus: nonResolus,
 	}
 
 	var rep *mcp.CallToolResult
