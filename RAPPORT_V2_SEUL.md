@@ -102,7 +102,30 @@ sous les jeux v2.
 
 ## 2. Ce qui est fait
 
-(mis à jour après chaque commit)
+| Commit | Contenu | Contrôle |
+|---|---|---|
+| 713bc7a | Inventaire (§1) | docs seules ; base verte |
+| dc2e65f | Étape 2 : jeux v1 des tests réécrits en v2, **mêmes attentes** : `jeuTest`/`jeuTestV2`/`jeuCible`/`jeuProvenance` (gate), `jeuProvenance`/`jeuSansProvenance`/`jeuImposteur`/`jeuProvenanceV2` (`test/gate`), aides de `TestDecide_Table` et `TestMotifs_SansValeurDArgument`, `TestAlertes`. `demo/directives/credit-demo.json` et `credit-demo-v2.json` réécrits en v2 et déplacés dans `test/integration/testdata/` ; intégration et `internal/registredemo` les lisent là. | vet, `go test -race -count=1 ./...`, Python : verts |
+
+**Preuve du « même comportement »** (étape 2) :
+
+- Les tests réécrits gardent leurs attentes d'origine : effet, directives
+  appliquées, arguments transmis, champs retirés, empreintes, directive
+  citée et fondement. Seule différence voulue : le motif ne cite plus le
+  verrou (`refusé par D-001 v1 (RGPD art. 22)` au lieu de
+  `refusé par D-001 v1 (provenance_session, RGPD art. 22)`), comme le
+  schéma v2 le prévoit (§8.3) ; les tests vérifient désormais la phrase
+  exacte au lieu de trois fragments.
+- Contrôle croisé ponctuel, avant suppression de l'oracle v1 : sur
+  80 000 décisions aléatoires (graine fixe), `DecideV1Ref` sur chaque jeu
+  v1 (`credit-pme`, `credit-demo` v1 et v2) et `Decide` sur sa réécriture
+  v2 rendent le même effet, les mêmes arguments, la même empreinte
+  transmise, les mêmes applications (id, version, déclenchée, appliquée,
+  effet, indéterminée, champs retirés, fondement, statut, échéance) et le
+  même motif au nom du verrou près. Toutes les directives s'y déclenchent
+  (D-001 : 129 à 145 fois, D-005 : 43 fois, refus, caviardages, attentes).
+  Ce test dépendait de l'oracle v1 qui disparaît ; il n'est pas versionné.
+  La conversion suit la table §9 du schéma (traduction mécanique).
 
 ## 3. Décisions prises seul
 
