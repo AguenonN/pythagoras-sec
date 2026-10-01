@@ -37,6 +37,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"mcprogue/internal/annuaire"
 	"mcprogue/internal/backend"
 	"mcprogue/internal/directive"
 	"mcprogue/internal/gate"
@@ -63,6 +64,8 @@ func lancer() error {
 	delai := flag.Duration("delai-backend", session.DelaiBackendDefaut, "durée maximale d'un appel à un serveur")
 	maxConsultations := flag.Int("max-consultations", 0, "ferme la session après ce nombre de consultations (0 : sans borne)")
 	ageMax := flag.Duration("age-max", 0, "ferme la session passé cet âge (0 : sans borne)")
+	cheminAnnuaire := flag.String("annuaire", "", "annuaire des habilitations signé (JSON) ; exige -annuaire-autorite")
+	cheminAutorite := flag.String("annuaire-autorite", "", "clé publique Ed25519 (base64) de l'autorité qui signe l'annuaire")
 	flag.Parse()
 	if *cheminRegistre == "" || *cheminJeu == "" || *cheminJournal == "" || *cheminCoffre == "" {
 		flag.Usage()
@@ -94,6 +97,10 @@ func lancer() error {
 	if err != nil {
 		return err
 	}
+	src, err := chargerAnnuaire(*cheminAnnuaire, *cheminAutorite)
+	if err != nil {
+		return err
+	}
 	j, err := journal.Ouvrir(*cheminJournal, cle)
 	if err != nil {
 		return err
@@ -113,7 +120,7 @@ func lancer() error {
 		Registre: reg, Jeu: *jeu, Journal: j, Coffre: coffre, Appelant: gate.AppelantStdio,
 		Session: session.Config{DelaiBackend: *delai, MaxConsultations: *maxConsultations, AgeMax: *ageMax},
 		Backend: backend.Options{Stderr: os.Stderr, Logger: log},
-		Logger:  log,
+		Logger:  log, Annuaire: src,
 	})
 	if err != nil {
 		return err
@@ -145,6 +152,31 @@ func rechargerSurSignal(ctx context.Context, hup <-chan os.Signal, g *gate.Gate,
 			}
 		}
 	}
+}
+
+// chargerAnnuaire charge l'annuaire et vérifie sa signature avec la clé
+// de l'autorité, fournie à part. Sans annuaire, la source est nulle : pas
+// de demandeur, pas de validation.
+func chargerAnnuaire(chemin, autorite string) (annuaire.Source, error) {
+	if chemin == "" && autorite == "" {
+		return nil, nil
+	}
+	if chemin == "" || autorite == "" {
+		return nil, errors.New("-annuaire et -annuaire-autorite vont ensemble")
+	}
+	cle, err := annuaire.LireClePublique(autorite)
+	if err != nil {
+		return nil, err
+	}
+	b, err := os.ReadFile(chemin)
+	if err != nil {
+		return nil, err
+	}
+	l, err := annuaire.Charger(b, cle)
+	if err != nil {
+		return nil, err
+	}
+	return l, nil
 }
 
 func lireCle() ([]byte, error) {

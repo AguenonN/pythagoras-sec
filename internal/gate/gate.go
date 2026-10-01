@@ -41,6 +41,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"mcprogue/internal/annuaire"
 	"mcprogue/internal/approval"
 	"mcprogue/internal/backend"
 	"mcprogue/internal/controle"
@@ -72,6 +73,9 @@ type Config struct {
 	// Backend est passé à chaque connexion (Stderr, Logger, délai).
 	Backend backend.Options
 	Logger  *slog.Logger
+	// Annuaire est la source d'identité (demandeur, valideurs). Nulle :
+	// aucun demandeur n'est résolu et aucune validation n'est possible.
+	Annuaire annuaire.Source
 }
 
 // Gate est l'agrégateur démarré.
@@ -191,6 +195,14 @@ func (g *Gate) journaliserDemarrage() error {
 		Message: fmt.Sprintf("registre %s v%d %s, auteur %s : %s", r.Meta.ID, r.Meta.Version, r.Meta.Empreinte,
 			r.Meta.Auteur, strings.Join(r.Noms(), ", "))}); err != nil {
 		return fmt.Errorf("gate: journal: %w", err)
+	}
+	if a := g.cfg.Annuaire; a != nil {
+		ref := a.Reference()
+		if _, err := g.journal.Ecrire(journal.Entree{Type: journal.AnnuaireCharge, SourceIdentite: a.Nom(),
+			Annuaire: &journal.RefAnnuaire{ID: ref.ID, Version: ref.Version, Empreinte: ref.Empreinte},
+			Message:  fmt.Sprintf("annuaire %s v%d %s (source %s)", ref.ID, ref.Version, ref.Empreinte, a.Nom())}); err != nil {
+			return fmt.Errorf("gate: journal: %w", err)
+		}
 	}
 	return nil
 }

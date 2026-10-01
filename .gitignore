@@ -42,3 +42,7 @@ pyagent/__pycache__/
 /demo/registre-attaque.json
 # Journal, coffre et traces des exécutions de scripts/lancer-demo.sh
 /demo/execution/
+# Annuaire de démonstration signé et clés fictives : générés par
+# mcp-approve annuaire-demo, jamais versionnés (la source sans clé l'est).
+/demo/annuaire.json
+*.cle

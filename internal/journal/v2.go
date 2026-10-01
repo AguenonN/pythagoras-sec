@@ -38,3 +38,10 @@ type Validation struct {
 	Roles      []string `json:"roles,omitempty"`
 	QuatreYeux bool     `json:"quatre_yeux,omitempty"`
 }
+
+// RefAnnuaire identifie la version de l'annuaire utilisée.
+type RefAnnuaire struct {
+	ID        string `json:"id"`
+	Version   int    `json:"version"`
+	Empreinte string `json:"empreinte"`
+}

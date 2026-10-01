@@ -47,6 +47,9 @@ const (
 	// appel qui la suive est un appel parti dont le résultat n'a pas été
 	// journalisé.
 	TransmissionT Type = "transmission"
+	// AnnuaireCharge est écrite au démarrage quand une source d'identité
+	// est configurée : nom de la source, identifiant, version, empreinte.
+	AnnuaireCharge Type = "annuaire_charge"
 )
 
 // Statuts de résultat d'un appel. Les quatre premiers sont ceux d'une
@@ -202,6 +205,12 @@ type Entree struct {
 	EtiquettesCible []string   `json:"etiquettes_cible,omitempty"`
 	Demandeur       *Demandeur `json:"demandeur,omitempty"`
 	Sujets          []Sujet    `json:"sujets,omitempty"`
+
+	// Source d'identité (annuaire_charge, session_ouverte) : nom de la
+	// source et référence de l'annuaire contre lequel le demandeur et les
+	// valideurs sont vérifiés.
+	SourceIdentite string       `json:"source_identite,omitempty"`
+	Annuaire       *RefAnnuaire `json:"annuaire,omitempty"`
 
 	Message         string `json:"message,omitempty"`
 	NbConsultations int    `json:"nb_consultations,omitempty"`
