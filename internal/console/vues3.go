@@ -92,13 +92,24 @@ func File(nom string, st *Etat) []Attente {
 // Écran 6 : rédaction
 // ---------------------------------------------------------------------------
 
+// DirRelue est une directive acceptée par le chargeur strict, relue.
+type DirRelue struct {
+	ID        string `json:"id"`
+	Version   int    `json:"version"`
+	Statut    string `json:"statut"`
+	Texte     string `json:"texte"`
+	Relecture string `json:"relecture"`
+}
+
 // Redaction est le retour de la relecture d'un texte de jeu.
 type Redaction struct {
 	Valide    bool     `json:"valide"`
 	Erreurs   []string `json:"erreurs,omitempty"`
 	Relecture string   `json:"relecture,omitempty"`
 	Empreinte string   `json:"empreinte,omitempty"`
-	Questions []string `json:"questions"`
+	// Directives : chacune avec sa relecture en français.
+	Directives []DirRelue `json:"directives,omitempty"`
+	Questions  []string   `json:"questions"`
 }
 
 // Relire passe le texte au chargeur strict, le seul juge, puis à la
@@ -124,6 +135,9 @@ func Relire(texte string) Redaction {
 	r.Valide = true
 	r.Empreinte = jeu.Meta.Empreinte
 	r.Relecture = relecture.Jeu(jeu)
+	for _, d := range jeu.Directives {
+		r.Directives = append(r.Directives, DirRelue{ID: d.ID, Version: d.Version, Statut: string(d.Statut), Texte: d.TexteFR, Relecture: regleEnFrancais(d)})
+	}
 	return r
 }
 

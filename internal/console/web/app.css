@@ -167,3 +167,5 @@ select.champ { background: #fff; padding: 8px 10px; min-height: 40px; width: aut
 }
 
 .principal > .chaine { align-self: flex-start; }
+
+.volet, .carte { overflow-wrap: anywhere; min-width: 0; }

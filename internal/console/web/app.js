@@ -98,6 +98,7 @@ const versionTexte = (id, version) => id + ', version ' + version;
 // directive s'écrit en toutes lettres et le nom technique du verrou est omis.
 function motifAffiche(m) {
   return String(m || '')
+    .replace(/sha256:([0-9a-f]{8})[0-9a-f]{8,}/g, 'sha256:$1…')
     .replace(/\b([A-Z]+-\d+) v(\d+)\b/g, '$1, version $2')
     .replace(/\((interdiction|seuil_argument|provenance_session|approbation_humaine|champs_autorises_par_destination|source_attestee), /g, '(');
 }
