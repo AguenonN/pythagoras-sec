@@ -32,6 +32,28 @@ Message final : « Le découvert demandé dans le dossier DOS-FICTIF-002 pour BI
 
 Vérifié : chaîne intègre (27 entrées), 7 appels rejoués sans écart ; rejeu hors ligne `20261001-215430-nominal-rejeu` : même réponse, `comparer` : aucun écart.
 
+## Scénario 3 — top management (`demo/scenarios/top-management.json`)
+
+**Passage retenu : 01/10/2026 21:55, session `20261001-215531-top-management`, enregistrement `demo/scenarios/enregistrements/top-management/20261001-215531.json`. 13 appels Mistral.** Demandeuse : diane.risques (directrice des risques).
+
+| # | Sous-agent | Outil | Décision de l'engine |
+|---|---|---|---|
+| 1 | analyse-dossier | banque-synthetique/evaluer_dossier | autorisé |
+| 2 | analyse-dossier | banque-synthetique/get_taux_interne | autorisé (non demandé) |
+| 3 | conformite | recherche-entreprises/rechercher_entreprise | autorisé |
+| 4 | conformite | gels-avoirs/verifier_gel | autorisé, données reçues |
+| 5 | credit | taux-officiel/get_taux_usure | autorisé (19,08 %) |
+| 6 | credit | banque-synthetique/attribuer_pret (2 400 000 €) | **en attente, D-002 et D-005** : rôles analyste-risques et directeur-risques, quatre yeux ; **notification D-005 remise** à direction-juridique |
+| — | (humain) | jetons de claire.analyste et de **diane.risques** (la demandeuse) | approbation **refusée** : « jeton 2 : le valideur diane.risques@exemple.test est le demandeur » ; notification remise |
+| — | (humain) | jetons de claire.analyste et de **paul.risques** (second directeur) | approbation acceptée ; notification remise |
+| 7-8 | credit | banque-synthetique/attribuer_pret (reprises) | transmis à la seconde, PRET-FICTIF-0001 |
+
+Message final : « Le découvert demandé dans le dossier DOS-FICTIF-006 pour TRICOTS SAINT-JAMES (SIREN : 405750753) d'un montant de 2 400 000 € peut être accordé. La décision d'attribution a été prise sous la référence PRET-FICTIF-0001, car le taux proposé (18,2 %) respecte le seuil de l'usure officiel (19,08 % au 2026-10-01) et aucun gel n'est enregistré pour cette entreprise. » + relevé des décisions (dont la validation refusée et son motif).
+
+Vérifié : chaîne intègre (32 entrées, notifications : remise 3, approbations : acceptée 1, refusée 1), 8 appels rejoués sans écart ; rejeu hors ligne `20261001-215626-top-management-rejeu` (les deux validations redéposées, la première de nouveau refusée) : `comparer` : aucun écart.
+
+À noter pour la scène : la notification D-005 part à **chaque** présentation de l'appel à l'engine (attente, reprise refusée, reprise acceptée) : trois remises pour une attribution.
+
 ### Passages précédents (archivés dans `demo/scenarios/enregistrements/archives/`, non retenus)
 
 Informations pour la scène, pas des échecs de l'engine :
