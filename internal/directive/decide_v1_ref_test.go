@@ -464,3 +464,19 @@ func clonerValeurV1Ref(v any) any {
 	}
 	return v
 }
+
+// dirV1 construit une directive v1 pour l'oracle (TestRejeu_V1IdentiqueSousV2).
+func dirV1(id string, verrou Verrou, effet Effet, mod func(*Directive)) Directive {
+	d := Directive{
+		ID: id, Version: 1, Statut: Active, DateEffet: t0.Add(-time.Hour),
+		TexteFR:   "texte " + id,
+		Fondement: Fondement{Texte: "RGPD", Article: "22"},
+		Verrou:    verrou,
+		Cible:     Cible{Serveur: "banque", Outil: "attribuer_pret"},
+		Effet:     effet,
+	}
+	if mod != nil {
+		mod(&d)
+	}
+	return d
+}

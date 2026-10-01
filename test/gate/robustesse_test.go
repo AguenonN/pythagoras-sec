@@ -60,7 +60,7 @@ func TestRobustesse_DelaiBackend(t *testing.T) {
 
 // Un serveur attesté qui change son catalogue en cours de session : la
 // quarantaine est journalisée, et ses appels suivants sont refusés par
-// source_attestee.
+// la directive d'attestation D-003.
 func TestRobustesse_QuarantaineEnSession(t *testing.T) {
 	reg := registreSimple(t)
 	b := demarrer(t, reg, jeuImposteur)

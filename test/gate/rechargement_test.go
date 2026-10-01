@@ -26,8 +26,9 @@ var jeuProvenanceV2 = strings.Replace(
 	"\n  ]\n}", `,
     {"id": "D-009", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Le taux officiel ne doit plus être consulté.",
-     "fondement": {"texte": "Circulaire interne", "article": "3"},
-     "verrou": "interdiction", "cible": {"serveur": "taux-officiel", "outil": "get_taux"}, "effet": "refuser"}
+     "fondements": [{"texte": "Circulaire interne", "article": "3"}],
+     "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "taux-officiel", "outil": "get_taux"}},
+     "effets": [{"effet": "refuser"}]}
   ]
 }`, 1)
 

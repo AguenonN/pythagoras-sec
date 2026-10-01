@@ -11,19 +11,30 @@ import (
 
 var t0 = time.Date(2026, 10, 4, 9, 0, 0, 0, time.UTC)
 
-func dir(id string, verrou Verrou, effet Effet, mod func(*Directive)) Directive {
+// dir construit une directive sur banque/attribuer_pret, sans condition,
+// avec les effets donnés.
+func dir(id string, effets []EffetDirective, mod func(*Directive)) Directive {
 	d := Directive{
 		ID: id, Version: 1, Statut: Active, DateEffet: t0.Add(-time.Hour),
-		TexteFR:   "texte " + id,
-		Fondement: Fondement{Texte: "RGPD", Article: "22"},
-		Verrou:    verrou,
-		Cible:     Cible{Serveur: "banque", Outil: "attribuer_pret"},
-		Effet:     effet,
+		TexteFR:     "texte " + id,
+		Fondements:  []Fondement{{Texte: "RGPD", Article: "22"}},
+		Declencheur: &Declencheur{Evenement: EvAppelOutil, Cible: &CibleV2{Serveur: "banque", Outil: "attribuer_pret"}},
+		Effets:      effets,
 	}
 	if mod != nil {
 		mod(&d)
 	}
 	return d
+}
+
+// interdire refuse l'outil ciblé, sans condition.
+func interdire(id string, mod func(*Directive)) Directive {
+	return dir(id, []EffetDirective{{Effet: Refuser}}, mod)
+}
+
+// valider met l'outil ciblé en attente de validation, sans condition.
+func valider(id string, mod func(*Directive)) Directive {
+	return dir(id, []EffetDirective{{Effet: AttendreValidation}}, mod)
 }
 
 func jeu(ds ...Directive) Jeu {
@@ -37,9 +48,16 @@ func appel(args map[string]any) Appel {
 	}
 }
 
+// arg est une feuille argument.
+func arg(champ string, op Op, valeur any) *Noeud {
+	return &Noeud{Argument: &Condition{Champ: champ, Op: op, Valeur: valeur}}
+}
+
+// seuil : et(/montant > 500000), auquel mod peut ajouter des conditions
+// (d.Arbre.Et).
 func seuil(id string, effet Effet, mod func(*Directive)) Directive {
-	return dir(id, SeuilArgument, effet, func(d *Directive) {
-		d.Condition = []Condition{{Champ: "/montant", Op: OpSup, Valeur: 500000.0}}
+	return dir(id, []EffetDirective{{Effet: effet}}, func(d *Directive) {
+		d.Arbre = &Noeud{Et: []*Noeud{arg("/montant", OpSup, 500000.0)}}
 		if mod != nil {
 			mod(d)
 		}
@@ -47,18 +65,29 @@ func seuil(id string, effet Effet, mod func(*Directive)) Directive {
 }
 
 func champs(id string, mode ModeChamps, autorises ...string) Directive {
-	effet := Caviarder
-	if mode == ModeRefuser {
-		effet = Refuser
-	}
-	return dir(id, ChampsAutorises, effet, func(d *Directive) {
-		d.Champs = &Champs{Autorises: autorises, Mode: mode}
+	return dir(id, []EffetDirective{{Effet: Caviarder, ChampsAutorises: autorises, Mode: mode}}, nil)
+}
+
+// provenance : ou(session.a_consulte de chaque serveur, puis de chaque outil).
+func provenance(id string, effet Effet, critere Critere, serveurs []string, outils []string) Directive {
+	return dir(id, []EffetDirective{{Effet: effet}}, func(d *Directive) {
+		var ou []*Noeud
+		for _, s := range serveurs {
+			ou = append(ou, &Noeud{AConsulte: &FeuilleConsultation{Serveur: s, Critere: critere}})
+		}
+		for _, o := range outils {
+			ou = append(ou, &Noeud{AConsulte: &FeuilleConsultation{Outil: o, Critere: critere}})
+		}
+		d.Arbre = &Noeud{Ou: ou}
 	})
 }
 
-func provenance(id string, effet Effet, critere Critere, serveurs []string, outils []string) Directive {
-	return dir(id, ProvenanceSession, effet, func(d *Directive) {
-		d.Provenance = &Provenance{Serveurs: serveurs, Outils: outils, Critere: critere}
+// sourceAttestee refuse tout appel vers serveur dont l'attestation échoue.
+func sourceAttestee(id, serveur string) Directive {
+	faux := false
+	return dir(id, []EffetDirective{{Effet: Refuser}}, func(d *Directive) {
+		d.Declencheur.Cible = &CibleV2{Serveur: serveur, Outil: "*"}
+		d.Arbre = &Noeud{Attestation: &FeuilleAttestation{Verifiee: &faux}}
 	})
 }
 
@@ -92,18 +121,18 @@ func TestDecide_Table(t *testing.T) {
 		// Précédence.
 		{
 			nom:   "précédence : refuser > attendre > caviarder",
-			jeu:   jeu(champs("C", ModeCaviarder, "/siren"), dir("A", ApprobationHumaine, AttendreValidation, nil), dir("I", Interdiction, Refuser, nil)),
+			jeu:   jeu(champs("C", ModeCaviarder, "/siren"), valider("A", nil), interdire("I", nil)),
 			appel: appel(base), effet: Refuser, appliquees: []string{"C", "A", "I"},
 			args: map[string]any{"siren": "552100554"},
 			verif: func(t *testing.T, d Decision) {
-				if !strings.HasPrefix(d.Motif, "refusé par I v1 (interdiction, RGPD art. 22)") {
+				if !strings.HasPrefix(d.Motif, "refusé par I v1 (RGPD art. 22)") {
 					t.Errorf("motif %q", d.Motif)
 				}
 			},
 		},
 		{
 			nom:   "précédence : attendre > caviarder",
-			jeu:   jeu(champs("C", ModeCaviarder, "/siren"), dir("A", ApprobationHumaine, AttendreValidation, nil)),
+			jeu:   jeu(champs("C", ModeCaviarder, "/siren"), valider("A", nil)),
 			appel: appel(base), effet: AttendreValidation, appliquees: []string{"C", "A"},
 		},
 		{
@@ -123,14 +152,10 @@ func TestDecide_Table(t *testing.T) {
 		{nom: "seuil strict : égalité n'est pas au-delà", jeu: jeu(seuil("S", Refuser, nil)), appel: appel(map[string]any{"montant": 500000.0}), effet: Autoriser},
 		{nom: "seuil en attente", jeu: jeu(seuil("S", AttendreValidation, nil)), appel: appel(base), effet: AttendreValidation, appliquees: []string{"S"}},
 		{nom: "seuil : conditions en ET", jeu: jeu(seuil("S", Refuser, func(d *Directive) {
-			d.Condition = append(d.Condition, Condition{Champ: "/nom", Op: OpEgal, Valeur: "autre"})
+			d.Arbre.Et = append(d.Arbre.Et, arg("/nom", OpEgal, "autre"))
 		})), appel: appel(base), effet: Autoriser},
-		{nom: "seuil : in / present / absent", jeu: jeu(seuil("S", Refuser, func(d *Directive) {
-			d.Condition = []Condition{
-				{Champ: "/nom", Op: OpDans, Valeur: []any{"X", "Z"}},
-				{Champ: "/siren", Op: OpPresent},
-				{Champ: "/inconnu", Op: OpAbsent},
-			}
+		{nom: "seuil : dans / present / absent", jeu: jeu(seuil("S", Refuser, func(d *Directive) {
+			d.Arbre.Et = []*Noeud{arg("/nom", OpDansV2, []any{"X", "Z"}), arg("/siren", OpPresent, nil), arg("/inconnu", OpAbsent, nil)}
 		})), appel: appel(base), effet: Refuser, appliquees: []string{"S"}},
 
 		// Indéterminé.
@@ -169,7 +194,7 @@ func TestDecide_Table(t *testing.T) {
 		{
 			nom: "indéterminé : une condition fausse déterminée l'emporte",
 			jeu: jeu(seuil("S", Refuser, func(d *Directive) {
-				d.Condition = append(d.Condition, Condition{Champ: "/absent", Op: OpSup, Valeur: 1.0})
+				d.Arbre.Et = append(d.Arbre.Et, arg("/absent", OpSup, 1.0))
 			})), appel: appel(map[string]any{"montant": 100.0}), effet: Autoriser,
 			verif: func(t *testing.T, d Decision) {
 				if d.Applications[0].Indetermine {
@@ -179,29 +204,30 @@ func TestDecide_Table(t *testing.T) {
 		},
 
 		// Non-rétroactivité et statuts.
-		{nom: "non-rétroactif : date_effet future ignorée", jeu: jeu(dir("I", Interdiction, Refuser, func(d *Directive) { d.DateEffet = t0.Add(time.Minute) })),
+		{nom: "non-rétroactif : date_effet future ignorée", jeu: jeu(interdire("I", func(d *Directive) { d.DateEffet = t0.Add(time.Minute) })),
 			appel: appel(base), effet: Autoriser, verif: func(t *testing.T, d Decision) {
 				if len(d.Applications) != 0 {
 					t.Error("une directive future ne doit pas être journalisée comme applicable")
 				}
 			}},
-		{nom: "date_effet égale à l'appel s'applique", jeu: jeu(dir("I", Interdiction, Refuser, func(d *Directive) { d.DateEffet = t0 })),
+		{nom: "date_effet égale à l'appel s'applique", jeu: jeu(interdire("I", func(d *Directive) { d.DateEffet = t0 })),
 			appel: appel(base), effet: Refuser, appliquees: []string{"I"}},
 		{nom: "brouillon et retirée ignorés", jeu: jeu(
-			dir("B", Interdiction, Refuser, func(d *Directive) { d.Statut = Brouillon }),
-			dir("R", Interdiction, Refuser, func(d *Directive) { d.Statut = Retiree }),
+			interdire("B", func(d *Directive) { d.Statut = Brouillon }),
+			interdire("R", func(d *Directive) { d.Statut = Retiree }),
 		), appel: appel(base), effet: Autoriser},
-		{nom: "observation : journalisée, non appliquée", jeu: jeu(dir("O", Interdiction, Refuser, func(d *Directive) { d.Statut = Observation })),
+		{nom: "observation : journalisée, non appliquée", jeu: jeu(interdire("O", func(d *Directive) { d.Statut = Observation })),
 			appel: appel(base), effet: Autoriser, verif: func(t *testing.T, d Decision) {
 				a := d.Applications[0]
 				if !a.Declenchee || a.Appliquee || !strings.HasPrefix(a.Motif, "observation") {
 					t.Errorf("application %+v", a)
 				}
 			}},
-		{nom: "observation : ne caviarde pas", jeu: jeu(dir("O", ChampsAutorises, Caviarder, func(d *Directive) {
+		{nom: "observation : ne caviarde pas", jeu: jeu(func() Directive {
+			d := champs("O", ModeCaviarder, "/siren")
 			d.Statut = Observation
-			d.Champs = &Champs{Autorises: []string{"/siren"}, Mode: ModeCaviarder}
-		})), appel: appel(base), effet: Autoriser, args: base, verif: func(t *testing.T, d Decision) {
+			return d
+		}()), appel: appel(base), effet: Autoriser, args: base, verif: func(t *testing.T, d Decision) {
 			if len(d.ChampsRetires) != 0 || len(d.Applications[0].ChampsRetires) != 3 {
 				t.Errorf("décision %+v", d)
 			}
@@ -222,7 +248,7 @@ func TestDecide_Table(t *testing.T) {
 		},
 		{
 			nom:   "caviardage + validation humaine : attente, arguments déjà caviardés, jeton sur l'empreinte transmise",
-			jeu:   jeu(champs("C", ModeCaviarder, "/siren"), dir("A", ApprobationHumaine, AttendreValidation, nil)),
+			jeu:   jeu(champs("C", ModeCaviarder, "/siren"), valider("A", nil)),
 			appel: appel(base), effet: AttendreValidation, appliquees: []string{"C", "A"},
 			args: map[string]any{"siren": "552100554"}, retires: []string{"/adresse", "/montant", "/nom"},
 			verif: func(t *testing.T, d Decision) {
@@ -277,7 +303,7 @@ func TestDecide_Table(t *testing.T) {
 		// Source attestée.
 		{
 			nom: "source_attestee : attestation en échec refuse en citant le fondement",
-			jeu: jeu(dir("T", SourceAttestee, Refuser, func(d *Directive) { d.Cible = Cible{Serveur: "taux-officiel", Outil: "*"} })),
+			jeu: jeu(sourceAttestee("T", "taux-officiel")),
 			appel: func() Appel {
 				a := appel(nil)
 				a.Serveur, a.Outil = "taux-officiel", "get_taux"
@@ -292,7 +318,7 @@ func TestDecide_Table(t *testing.T) {
 		},
 		{
 			nom: "source_attestee : Verifiee déclaré vrai mais attendu != observé, refus",
-			jeu: jeu(dir("T", SourceAttestee, Refuser, func(d *Directive) { d.Cible = Cible{Serveur: "banque", Outil: "*"} })),
+			jeu: jeu(sourceAttestee("T", "banque")),
 			appel: func() Appel {
 				a := appel(base)
 				a.Attestation = Attestation{Mode: "spiffe", Attendu: "spiffe://lab/taux", Observe: "spiffe://lab/autre", Schemas: true, Verifiee: true}
@@ -301,7 +327,7 @@ func TestDecide_Table(t *testing.T) {
 		},
 		{
 			nom: "source_attestee : Verifiee déclaré vrai mais schémas non conformes, refus",
-			jeu: jeu(dir("T", SourceAttestee, Refuser, func(d *Directive) { d.Cible = Cible{Serveur: "banque", Outil: "*"} })),
+			jeu: jeu(sourceAttestee("T", "banque")),
 			appel: func() Appel {
 				a := appel(base)
 				a.Attestation = Attestation{Mode: "binaire", Attendu: "a", Observe: "a", Schemas: false, Verifiee: true}
@@ -310,7 +336,7 @@ func TestDecide_Table(t *testing.T) {
 		},
 		{
 			nom: "source_attestee : Verifiee déclaré vrai mais mode inconnu, refus",
-			jeu: jeu(dir("T", SourceAttestee, Refuser, func(d *Directive) { d.Cible = Cible{Serveur: "banque", Outil: "*"} })),
+			jeu: jeu(sourceAttestee("T", "banque")),
 			appel: func() Appel {
 				a := appel(base)
 				a.Attestation = Attestation{Mode: "aucune", Attendu: "a", Observe: "a", Schemas: true, Verifiee: true}
@@ -319,7 +345,7 @@ func TestDecide_Table(t *testing.T) {
 		},
 		{
 			nom: "source_attestee : Verifiee faux mais attestation cohérente, autorisé",
-			jeu: jeu(dir("T", SourceAttestee, Refuser, func(d *Directive) { d.Cible = Cible{Serveur: "banque", Outil: "*"} })),
+			jeu: jeu(sourceAttestee("T", "banque")),
 			appel: func() Appel {
 				a := appel(base)
 				a.Attestation = Attestation{Mode: "binaire", Attendu: "a", Observe: "a", Schemas: true, Verifiee: false}
@@ -328,12 +354,12 @@ func TestDecide_Table(t *testing.T) {
 		},
 		{
 			nom:   "source_attestee : serveur attesté",
-			jeu:   jeu(dir("T", SourceAttestee, Refuser, func(d *Directive) { d.Cible = Cible{Serveur: "banque", Outil: "*"} })),
+			jeu:   jeu(sourceAttestee("T", "banque")),
 			appel: appel(base), effet: Autoriser,
 		},
 
 		// Périmètre.
-		{nom: "périmètre : appelant hors liste, directive ignorée", jeu: jeu(dir("I", Interdiction, Refuser, func(d *Directive) {
+		{nom: "périmètre : appelant hors liste, directive ignorée", jeu: jeu(interdire("I", func(d *Directive) {
 			d.Perimetre = &Perimetre{Appelants: []string{"spiffe://lab/a"}}
 		})), etat: EtatSession{Appelant: "spiffe://lab/b"}, appel: appel(base), effet: Autoriser,
 			verif: func(t *testing.T, d Decision) {
@@ -341,10 +367,10 @@ func TestDecide_Table(t *testing.T) {
 					t.Error("hors périmètre ne doit pas être journalisé comme applicable")
 				}
 			}},
-		{nom: "périmètre : appelant dans la liste", jeu: jeu(dir("I", Interdiction, Refuser, func(d *Directive) {
+		{nom: "périmètre : appelant dans la liste", jeu: jeu(interdire("I", func(d *Directive) {
 			d.Perimetre = &Perimetre{Appelants: []string{"spiffe://lab/a"}}
 		})), etat: EtatSession{Appelant: "spiffe://lab/a"}, appel: appel(base), effet: Refuser, appliquees: []string{"I"}},
-		{nom: "périmètre : appelant non prouvé, appliqué par défaut", jeu: jeu(dir("I", Interdiction, Refuser, func(d *Directive) {
+		{nom: "périmètre : appelant non prouvé, appliqué par défaut", jeu: jeu(interdire("I", func(d *Directive) {
 			d.Perimetre = &Perimetre{Appelants: []string{"spiffe://lab/a"}}
 		})), appel: appel(base), effet: Refuser, appliquees: []string{"I"},
 			verif: func(t *testing.T, d Decision) {
@@ -354,7 +380,7 @@ func TestDecide_Table(t *testing.T) {
 			}},
 
 		// Échéance de relecture.
-		{nom: "révision échue : alerte, directive maintenue", jeu: jeu(dir("I", Interdiction, Refuser, func(d *Directive) {
+		{nom: "révision échue : alerte, directive maintenue", jeu: jeu(interdire("I", func(d *Directive) {
 			d.DateEffet = t0.Add(-2 * time.Hour)
 			r := t0.Add(-time.Hour)
 			d.RevisionAvant = &r
@@ -366,9 +392,9 @@ func TestDecide_Table(t *testing.T) {
 			}},
 
 		// Cible.
-		{nom: "cible joker", jeu: jeu(dir("I", Interdiction, Refuser, func(d *Directive) { d.Cible = Cible{Serveur: "*", Outil: "*"} })),
+		{nom: "cible joker", jeu: jeu(interdire("I", func(d *Directive) { d.Declencheur.Cible = &CibleV2{Serveur: "*", Outil: "*"} })),
 			appel: appel(base), effet: Refuser, appliquees: []string{"I"}},
-		{nom: "cible autre outil", jeu: jeu(dir("I", Interdiction, Refuser, func(d *Directive) { d.Cible.Outil = "autre" })),
+		{nom: "cible autre outil", jeu: jeu(interdire("I", func(d *Directive) { d.Declencheur.Cible.Outil = "autre" })),
 			appel: appel(base), effet: Autoriser},
 	}
 

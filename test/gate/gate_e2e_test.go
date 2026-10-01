@@ -73,13 +73,15 @@ const jeuProvenance = `{
   "directives": [
     {"id": "D-001", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Aucun prêt ne doit être attribué de manière autonome à partir des informations du serveur de taux officiel.",
-     "fondement": {"texte": "RGPD", "article": "22", "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"},
-     "verrou": "provenance_session", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"},
-     "provenance": {"serveurs": ["taux-officiel"]}, "effet": "refuser"},
+     "fondements": [{"texte": "RGPD", "article": "22", "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"}],
+     "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+     "condition": {"session.a_consulte": {"serveur": "taux-officiel", "critere": "donnees_recues"}},
+     "effets": [{"effet": "refuser"}]},
     {"id": "D-003", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Toute source de taux non attestée est rejetée.",
-     "fondement": {"texte": "RGPD", "article": "5"},
-     "verrou": "source_attestee", "cible": {"serveur": "taux-officiel", "outil": "*"}, "effet": "refuser"}
+     "fondements": [{"texte": "RGPD", "article": "5"}],
+     "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "taux-officiel", "outil": "*"}},
+     "condition": {"attestation": {"verifiee": false}}, "effets": [{"effet": "refuser"}]}
   ]
 }`
 
@@ -89,8 +91,9 @@ const jeuSansProvenance = `{
   "directives": [
     {"id": "D-003", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Toute source de taux non attestée est rejetée.",
-     "fondement": {"texte": "RGPD", "article": "5"},
-     "verrou": "source_attestee", "cible": {"serveur": "taux-officiel", "outil": "*"}, "effet": "refuser"}
+     "fondements": [{"texte": "RGPD", "article": "5"}],
+     "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "taux-officiel", "outil": "*"}},
+     "condition": {"attestation": {"verifiee": false}}, "effets": [{"effet": "refuser"}]}
   ]
 }`
 
@@ -179,7 +182,7 @@ func scenario(t *testing.T, cs *mcp.ClientSession) {
 	// 3. Action sur B après consultation de A : la décision cite la provenance.
 	r = appeler(t, cs, "banque-synthetique__attribuer_pret", map[string]any{"montant": 2000, "siren": "552100554"})
 	m := texte(r)
-	for _, attendu := range []string{"D-001 v1", "provenance_session", "RGPD art. 22"} {
+	for _, attendu := range []string{"refusé par D-001 v1 (RGPD art. 22)"} {
 		if !r.IsError || !strings.Contains(m, attendu) {
 			t.Fatalf("prêt 2 : %q ne cite pas %q", m, attendu)
 		}

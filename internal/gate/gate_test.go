@@ -107,23 +107,27 @@ const jeuTest = `{
   "directives": [
     {"id": "D-001", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Pas de prêt décidé à partir du taux officiel sans humain.",
-     "fondement": {"texte": "RGPD", "article": "22"},
-     "verrou": "provenance_session", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"},
-     "provenance": {"serveurs": ["taux-officiel"]}, "effet": "refuser"},
+     "fondements": [{"texte": "RGPD", "article": "22"}],
+     "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+     "condition": {"session.a_consulte": {"serveur": "taux-officiel", "critere": "donnees_recues"}},
+     "effets": [{"effet": "refuser"}]},
     {"id": "D-002", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Au-delà de 500 000 euros, validation humaine.",
-     "fondement": {"texte": "Politique crédit"},
-     "verrou": "seuil_argument", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"},
-     "condition": [{"champ": "/montant", "op": ">", "valeur": 500000}], "effet": "attendre_validation"},
+     "fondements": [{"texte": "Politique crédit"}],
+     "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+     "condition": {"argument": {"champ": "/montant", "op": ">", "valeur": 500000}},
+     "effets": [{"effet": "attendre_validation"}]},
     {"id": "D-003", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Toute source de taux non attestée est rejetée.",
-     "fondement": {"texte": "RGPD", "article": "5"},
-     "verrou": "source_attestee", "cible": {"serveur": "taux-officiel", "outil": "*"}, "effet": "refuser"},
+     "fondements": [{"texte": "RGPD", "article": "5"}],
+     "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "taux-officiel", "outil": "*"}},
+     "condition": {"attestation": {"verifiee": false}},
+     "effets": [{"effet": "refuser"}]},
     {"id": "D-004", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "La banque ne reçoit que le montant et le SIREN.",
-     "fondement": {"texte": "RGPD", "article": "5"},
-     "verrou": "champs_autorises_par_destination", "cible": {"serveur": "banque-synthetique", "outil": "*"},
-     "champs": {"autorises": ["/montant", "/siren"], "mode": "caviarder"}, "effet": "caviarder"}
+     "fondements": [{"texte": "RGPD", "article": "5"}],
+     "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "*"}},
+     "effets": [{"effet": "caviarder", "champs_autorises": ["/montant", "/siren"], "mode": "caviarder"}]}
   ]
 }`
 
@@ -349,7 +353,7 @@ func TestPipeline_Provenance(t *testing.T) {
 	}
 	r = appelerAgent(t, cs, "banque-synthetique__attribuer_pret", map[string]any{"montant": 1000.0, "siren": "552100554"})
 	m := texte(r)
-	if !r.IsError || !strings.Contains(m, "D-001") || !strings.Contains(m, "provenance_session") || !strings.Contains(m, "RGPD art. 22") {
+	if !r.IsError || !strings.Contains(m, "refusé par D-001 v1 (RGPD art. 22)") {
 		t.Fatalf("refus %q", m)
 	}
 	if strings.Contains(m, "552100554") {
@@ -423,7 +427,7 @@ func TestPipeline_SourceAttestee(t *testing.T) {
 	cs := b.agent(t)
 	r := appelerAgent(t, cs, "taux-officiel__get_taux", map[string]any{"devise": "EUR"})
 	m := texte(r)
-	if !r.IsError || !strings.Contains(m, "D-003") || !strings.Contains(m, "source_attestee") || !strings.Contains(m, "RGPD art. 5") {
+	if !r.IsError || !strings.Contains(m, "refusé par D-003 v1 (RGPD art. 5)") {
 		t.Fatalf("refus %q", m)
 	}
 	if len(b.taux.appels()) != 0 {

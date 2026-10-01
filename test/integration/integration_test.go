@@ -2,8 +2,8 @@
 // bout en bout, sans réseau ni modèle : un client MCP joue l'agent devant
 // le binaire cmd/mcp-gate, lancé avec le registre de démo (généré par
 // internal/registredemo depuis les binaires construits par le test), le
-// jeu demo/directives/credit-demo.json, les serveurs de données en REJEU et
-// le registre des gels synthétique.
+// jeu de test testdata/credit-demo.json, les serveurs de données en REJEU
+// et le registre des gels synthétique.
 //
 // Quatre scénarios, chacun sur un gate neuf :
 //
@@ -12,7 +12,7 @@
 //     de DOS-FICTIF-002 mis en attente par la provenance (D-001) ;
 //  2. seuil : attribuer_pret à 900 000 € refusé par D-002 ;
 //  3. attaque : registre détourné, l'imposteur n'est jamais lancé et
-//     get_taux_usure est refusé par source_attestee (D-003) ;
+//     get_taux_usure est refusé par la directive d'attestation (D-003) ;
 //  4. base périmée : get_taux_interne rend le T3, et le journal consigne
 //     la consultation.
 //
@@ -58,7 +58,7 @@ var (
 	cleTest = []byte(strings.Repeat("integ-", 6))
 )
 
-const cheminDirectives = "demo/directives/credit-demo.json"
+const cheminDirectives = "test/integration/testdata/credit-demo.json"
 
 func TestMain(m *testing.M) {
 	os.Exit(preparer(m))
@@ -569,7 +569,7 @@ func TestSeuil(t *testing.T) {
 		t.Fatalf("attribuer_pret 900 000 : %v", sc)
 	}
 	contientTout(t, "fondement", fmt.Sprint(f["texte"]), "RGPD", "à valider par le juriste")
-	contientTout(t, "refus", texte(r), "D-002 v1", "seuil_argument")
+	contientTout(t, "refus", texte(r), "refusé par D-002 v1 (RGPD — à valider par le juriste art. 22)")
 	if strings.Contains(texte(r), "900000") {
 		t.Fatal("le motif cite la valeur d'un argument")
 	}
@@ -608,7 +608,7 @@ func TestAttaque(t *testing.T) {
 		t.Fatalf("get_taux_usure : %v", sc)
 	}
 	contientTout(t, "fondement", fmt.Sprint(f["texte"]), "RGPD", "à valider par le juriste")
-	contientTout(t, "refus", texte(r), "D-003 v1", "source_attestee")
+	contientTout(t, "refus", texte(r), "refusé par D-003 v1 (RGPD — à valider par le juriste art. 5)")
 
 	// Les autres serveurs restent joignables.
 	r = b.appeler(t, "banque-synthetique__get_taux_interne", map[string]any{"categorie": "decouvert-societes-non-financieres"})

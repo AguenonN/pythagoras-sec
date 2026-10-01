@@ -17,8 +17,9 @@ import (
 	"mcprogue/internal/registre"
 )
 
-// cheminDirectives est le jeu de démonstration, relatif à la racine.
-const cheminDirectives = "demo/directives/credit-demo.json"
+// cheminDirectives est le jeu de test des scénarios d'intégration, relatif à
+// la racine.
+const cheminDirectives = "test/integration/testdata/credit-demo.json"
 
 // registreSchemas est le registre de démo tel que Generer le produirait,
 // sans binaires : les outils viennent des schema.json versionnés, les
@@ -87,10 +88,10 @@ func demarrer(t *testing.T, reg *registre.Registre, jeu directive.Jeu) error {
 	return err
 }
 
-// Le jeu de démonstration passe le chargeur strict et le démarrage du gate
-// devant le registre de démo, contrôle des cibles et des provenances
-// compris.
-func TestDirectivesDemo(t *testing.T) {
+// Le jeu des scénarios d'intégration passe le chargeur strict et le
+// démarrage du gate devant le registre de démo, contrôle des cibles et des
+// consultations attendues compris.
+func TestJeuIntegrationDevantRegistreDemo(t *testing.T) {
 	racine, err := filepath.Abs("../..")
 	if err != nil {
 		t.Fatal(err)
@@ -103,18 +104,18 @@ func TestDirectivesDemo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	attendu := map[string]directive.Verrou{
-		"D-001": directive.ProvenanceSession, "D-002": directive.SeuilArgument,
-		"D-003": directive.SourceAttestee, "D-004": directive.ChampsAutorises,
+	attendu := map[string]directive.Effet{
+		"D-001": directive.AttendreValidation, "D-002": directive.Refuser,
+		"D-003": directive.Refuser, "D-004": directive.Caviarder,
 	}
 	if len(jeu.Directives) != len(attendu) {
 		t.Fatalf("%d directives", len(jeu.Directives))
 	}
 	for _, d := range jeu.Directives {
-		if d.Verrou != attendu[d.ID] || d.Statut != directive.Active {
-			t.Fatalf("%s : %s %s", d.ID, d.Verrou, d.Statut)
+		if len(d.Effets) != 1 || d.Effets[0].Effet != attendu[d.ID] || d.Statut != directive.Active {
+			t.Fatalf("%s : %+v %s", d.ID, d.Effets, d.Statut)
 		}
-		if !strings.Contains(d.Fondement.Texte, "à valider par le juriste") {
+		if !strings.Contains(d.Fondements[0].Texte, "à valider par le juriste") {
 			t.Fatalf("%s : fondement non marqué « à valider par le juriste »", d.ID)
 		}
 	}
@@ -124,7 +125,7 @@ func TestDirectivesDemo(t *testing.T) {
 	}
 
 	// Le contrôle est bien actif : sans taux-officiel au registre, le même
-	// jeu est refusé (D-001 l'attend en provenance, D-003 le vise).
+	// jeu est refusé (D-001 l'attend dans sa condition, D-003 le vise).
 	sans := &registre.Registre{Meta: reg.Meta}
 	for _, s := range reg.Serveurs {
 		if s.Nom != "taux-officiel" {

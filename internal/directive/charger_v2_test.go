@@ -72,9 +72,8 @@ func TestChargerV2_AllerRetour(t *testing.T) {
 // existants citent ces empreintes. Valeurs calculées par le code d'avant la v2.
 func TestChargerV1_EmpreintesInchangees(t *testing.T) {
 	cas := map[string]string{
-		"testdata/credit-pme.json":               "sha256:78fd3b304e0eb6502891bb215d365a3e4a4e03c7f079e766b231523da325ed21",
-		"../../demo/directives/credit-demo.json": "sha256:abd47c5303db3e8b1b9b1bdb86b978458377a100a16fdaceb20b1ef680e802e5",
-		"../relecture/testdata/variantes.json":   "sha256:78d9a06f44bebe3f0b30991019358558ad99ccc59f14871bf763b62900f1619c",
+		"testdata/credit-pme.json":             "sha256:78fd3b304e0eb6502891bb215d365a3e4a4e03c7f079e766b231523da325ed21",
+		"../relecture/testdata/variantes.json": "sha256:78d9a06f44bebe3f0b30991019358558ad99ccc59f14871bf763b62900f1619c",
 	}
 	for f, veut := range cas {
 		b, err := os.ReadFile(f)
@@ -297,7 +296,7 @@ func TestFuseaux_BaseFigee(t *testing.T) {
 // ConvertirV1 couvre les six verrous et garde le verrou d'origine.
 func TestConvertirV1_SixVerrous(t *testing.T) {
 	var toutes []Directive
-	for _, f := range []string{"testdata/credit-pme.json", "../relecture/testdata/variantes.json", "../../demo/directives/credit-demo.json"} {
+	for _, f := range []string{"testdata/credit-pme.json", "../relecture/testdata/variantes.json"} {
 		b, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)

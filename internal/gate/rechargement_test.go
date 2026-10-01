@@ -20,8 +20,9 @@ var jeuTestV2 = strings.Replace(
 	"\n  ]\n}", `,
     {"id": "D-009", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Le taux officiel ne doit plus être consulté.",
-     "fondement": {"texte": "Circulaire interne", "article": "3"},
-     "verrou": "interdiction", "cible": {"serveur": "taux-officiel", "outil": "get_taux"}, "effet": "refuser"}
+     "fondements": [{"texte": "Circulaire interne", "article": "3"}],
+     "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "taux-officiel", "outil": "get_taux"}},
+     "effets": [{"effet": "refuser"}]}
   ]
 }`, 1)
 
@@ -138,9 +139,9 @@ func TestRecharger_Refus(t *testing.T) {
 		motif    string
 	}{
 		{"illisible", `{"jeu": `, nil, "document illisible"},
-		{"invalide", strings.Replace(jeuTestV2, `"effet": "refuser"}
-  ]`, `"effet": "autoriser"}
-  ]`, 1), nil, "non admis"},
+		{"invalide", strings.Replace(jeuTestV2, `"effets": [{"effet": "refuser"}]}
+  ]`, `"effets": [{"effet": "autoriser"}]}
+  ]`, 1), nil, "autoriser n'est pas un effet"},
 		{"autre identifiant", autreID, ErrJeuAutreID, "identifiant"},
 		{"version réécrite", v1Reecrite, ErrVersionReecrite, "autre empreinte"},
 	}
