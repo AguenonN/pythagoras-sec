@@ -1,0 +1,16 @@
+{
+  "jeu": {"id": "top-management-demo", "version": 1, "date_effet": "2026-09-01T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+  "directives": [
+    {
+      "id": "T-001", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Au-delà de 2 000 000 euros, l'attribution est réservée au directeur des risques, quatre yeux, avec notification au juridique. (Démonstration : fondements à valider par le juriste.)",
+      "fondements": [{"texte": "Politique de crédit — à valider par le juriste", "article": "7.1"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"argument": {"champ": "/montant", "op": ">", "valeur": 2000000}},
+      "effets": [
+        {"effet": "attendre_validation", "par_role": "directeur-risques", "quatre_yeux": true},
+        {"effet": "notifier", "destinataire_role": "juridique", "rythme": "temps_reel", "si_echec": "refuser"}
+      ]
+    }
+  ]
+}

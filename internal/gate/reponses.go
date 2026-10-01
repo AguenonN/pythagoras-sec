@@ -4,6 +4,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"mcprogue/internal/directive"
+	"mcprogue/internal/journal"
 )
 
 // Contrat de réponse à l'agent (docs/contrat-engine.md §6). Quatre cas
@@ -31,6 +32,10 @@ const (
 	OrigineRefusDirective = "directive" // une directive du jeu, qui cite son fondement
 	OrigineRefusRegistre  = "registre"  // le contrôle du registre : serveur non attesté
 	OrigineRefusEngine    = "engine"    // l'engine lui-même : journal, coffre, session, appel mal formé
+	// OrigineRefusNotification : une directive demandait une notification
+	// à remettre avant la transmission (si_echec: refuser), et elle n'a pas
+	// pu l'être. Directive, Version et Fondement sont les siens.
+	OrigineRefusNotification = "notification"
 )
 
 // Refus est le structuredContent d'un refus.
@@ -135,4 +140,22 @@ type Echec struct {
 // jamais du serveur.
 func echec(serveur, outil, motif string) *mcp.CallToolResult {
 	return resultatErreur(motif, Echec{Statut: StatutIndisponible, Serveur: serveur, Outil: outil, Motif: motif})
+}
+
+// refusNotification : la notification d'une directive n'a pas pu être
+// remise et son échec refuse l'appel.
+func refusNotification(dec directive.Decision, remises []journal.Remise) *mcp.CallToolResult {
+	r := Refus{Statut: StatutRefuse, Origine: OrigineRefusNotification, Motif: dec.Motif}
+	for _, x := range remises {
+		if x.SiEchec == string(directive.EchecRefuser) && x.Statut != journal.RemiseFaite {
+			r.Directive, r.Version = x.Directive, x.Version
+			for _, a := range dec.Applications {
+				if a.ID == x.Directive && a.Version == x.Version {
+					r.Fondement = a.Fondement
+				}
+			}
+			break
+		}
+	}
+	return resultatErreur("Appel "+dec.Motif+".", r)
 }

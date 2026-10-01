@@ -132,15 +132,17 @@ type banc struct {
 	jeu directive.Jeu
 	// docJeu et reg peuvent être changés par le modificateur de monter,
 	// avant le chargement du jeu et la validation du registre.
-	docJeu  string
-	reg     *registre.Registre
-	config  func(*Config)
-	coffre  *journal.Coffre
-	journal *tampon
-	taux    *faux
-	banque  *faux
-	horloge time.Time
-	mu      sync.Mutex
+	docJeu string
+	reg    *registre.Registre
+	config func(*Config)
+	// ecrivain est le journal du gate, pour s'y abonner.
+	ecrivain *journal.Ecrivain
+	coffre   *journal.Coffre
+	journal  *tampon
+	taux     *faux
+	banque   *faux
+	horloge  time.Time
+	mu       sync.Mutex
 }
 
 func (b *banc) maintenant() time.Time {
@@ -182,6 +184,7 @@ func monter(t *testing.T, modifier func(*banc)) *banc {
 	}
 	t.Cleanup(func() { b.coffre.Fermer() })
 	j := journal.Nouveau(chaine.Nouvelle(b.journal, cle))
+	b.ecrivain = j
 	fauxParNom := map[string]*faux{"taux-officiel": b.taux, "banque-synthetique": b.banque}
 	cfg := Config{
 		Registre: reg, Jeu: b.jeu, Journal: j, Coffre: b.coffre, Appelant: AppelantStdio, Horloge: b.maintenant,

@@ -247,6 +247,11 @@ type Entree struct {
 	// Notification : une notification demandée par une directive, et ce
 	// qu'il en est advenu.
 	Notification *Remise `json:"notification,omitempty"`
+	// Remises, sur une entrée appel : le sort de chaque notification que
+	// la décision a demandée, tel que les entrées notification chaînées
+	// avant l'appel le consignent. Le rejeu en recalcule le refus
+	// (ControleNotifications).
+	Remises []Remise `json:"remises,omitempty"`
 
 	Message         string `json:"message,omitempty"`
 	NbConsultations int    `json:"nb_consultations,omitempty"`
@@ -491,6 +496,69 @@ func (e *Ecrivain) Ecrire(en Entree) (Entree, error) {
 		en = ecrite
 	}
 	e.publier(en)
+	return en, nil
+}
+
+// CanalAbonnes est le canal de notification de démonstration : les
+// abonnés du journal (écrans temps réel).
+const CanalAbonnes = "abonnes-journal"
+
+// EcrireRemise écrit une entrée notification en la remettant aux abonnés
+// du journal, et y consigne le statut de remise. Le compte est exact : les
+// abonnés qui ont de la place sont comptés, l'entrée est écrite et leur
+// est publiée sans que rien ne puisse s'intercaler ; un abonné saturé ne
+// compte pas. Au moins un abonné atteint : remise ; aucun : échec. Une
+// notification au rythme synthese est planifiée (Remis 0) sauf si son
+// échec doit refuser l'appel : elle est alors remise tout de suite.
+func (e *Ecrivain) EcrireRemise(en Entree) (Entree, error) {
+	if e == nil {
+		return en, nil
+	}
+	if en.Notification == nil {
+		return en, fmt.Errorf("journal: entrée notification sans notification")
+	}
+	if en.TS.IsZero() {
+		en.TS = e.horloge().UTC()
+	}
+	en.Type, en.Prev, en.MAC = NotificationT, "", ""
+	n := *en.Notification
+	n.Canal = CanalAbonnes
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	var cibles []chan Entree
+	if n.Rythme == string(directive.Synthese) && n.SiEchec != string(directive.EchecRefuser) {
+		n.Statut, n.Remis = RemisePlanifiee, 0
+	} else {
+		for _, ch := range e.abonnes {
+			if len(ch) < cap(ch) {
+				cibles = append(cibles, ch)
+			}
+		}
+		n.Statut, n.Remis = RemiseEchec, len(cibles)
+		if len(cibles) > 0 {
+			n.Statut = RemiseFaite
+		}
+	}
+	en.Notification = &n
+	ligne, err := e.chaine.Ajouter(en)
+	if err != nil {
+		return en, fmt.Errorf("journal: %w", err)
+	}
+	if ligne != nil {
+		var ecrite Entree
+		if err := json.Unmarshal(ligne, &ecrite); err != nil {
+			return en, fmt.Errorf("journal: relire l'entrée écrite: %w", err)
+		}
+		en = ecrite
+	}
+	// Publiée à tous ; seuls les abonnés comptés avaient la place garantie.
+	for _, ch := range e.abonnes {
+		select {
+		case ch <- en:
+		default:
+			e.perdues.Add(1)
+		}
+	}
 	return en, nil
 }
 

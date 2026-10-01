@@ -143,6 +143,7 @@ sont `gate.Refus`, `gate.Attente` et `gate.Echec`.
 |---|---|---|---|
 | `directive` | identifiant de la première directive appliquée qui refuse, dans l'ordre du jeu | version de cette directive | son fondement |
 | `registre` (serveur non attesté, §5) | identifiant du registre | version du registre | `{"texte": "Registre des serveurs : attestation du serveur"}` |
+| `notification` (une directive demande une notification `si_echec: refuser`, non remise) | identifiant de cette directive | sa version | son fondement |
 | `engine` (journal ou coffre indisponible, session fermée ou appelant changé, outil inconnu, arguments qui ne sont pas un objet JSON) | `""` | `0` | `{"texte": "Contrat de l'engine"}` |
 
 `motif` est celui de la décision journalisée (origines `directive` et
@@ -219,6 +220,28 @@ Le motif est écrit par l'engine et ne cite jamais le texte du serveur.
 Une réponse normale de l'outil a `isError: false`. Elle est scellée et
 n'a jamais de `structuredContent` en clair : le `structuredContent` du
 serveur est rendu scellé, sous forme de texte.
+
+## 7. Les notifications sont remises avant la transmission
+
+Une directive appliquée qui porte l'effet `notifier` demande une
+notification, quel que soit l'effet final de la décision.
+
+- Après `Decide` et le contrôle du registre, et avant toute transmission,
+  l'engine écrit une entrée `notification` par notification de la
+  décision (dans l'ordre de la décision), avec son statut de remise :
+  `remise` (au moins un destinataire atteint), `echec`, ou `planifiee`
+  (rythme `synthese` sans conséquence en cas d'échec).
+- Canal de démonstration : les abonnés du journal
+  (`journal.Ecrivain.EcrireRemise`, compte exact des abonnés atteints).
+  `mcp-gate -notifications <fichier>` y abonne un écran.
+- Une notification `si_echec: refuser` non remise refuse l'appel
+  (`journal.ControleNotifications`, la fonction même qu'appelle le
+  rejeu) : `decision.origine = notification`, réponse `refuse` d'origine
+  `notification`.
+- L'entrée `appel` porte les `remises`. Au rejeu (contrôle
+  `notification`), elles doivent être celles des entrées `notification`
+  chaînées avant l'appel, et couvrir exactement les notifications de la
+  décision.
 
 ## Rappels
 

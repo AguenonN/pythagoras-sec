@@ -89,6 +89,10 @@ const (
 	// demandeur ; avec un annuaire, chaque valideur détenait son rôle à la
 	// date de validation.
 	ControleApprobation = "approbation"
+	// ControleNotification : les remises que l'entrée appel porte sont
+	// celles des entrées notification chaînées avant elle pour le même
+	// appel, et couvrent exactement les notifications de la décision.
+	ControleNotification = "notification"
 )
 
 // NonRejouable remplace l'effet dans les vues quand les arguments manquent.
@@ -273,14 +277,25 @@ func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, purges Purges, opts Op
 	// Le contrôle du registre s'applique après Decide, comme dans l'engine,
 	// sur l'attestation que l'entrée porte.
 	dec, parRegistre := controle.Registre(directive.Decide(origine, etat, appel), en.Serveur, appel.Attestation)
+	// Puis la règle si_echec: refuser, sur les remises que l'entrée porte
+	// (le contrôle notification de RejouerJournal les confronte aux
+	// entrées notification chaînées).
+	parNotification := false
+	if !parRegistre {
+		dec, parNotification = journal.ControleNotifications(dec, en.Remises)
+	}
 	r.Origine = &dec
 	switch origineJ := en.Decision.Origine; {
-	case origineJ != "" && origineJ != controle.OrigineRegistre:
+	case origineJ != "" && origineJ != controle.OrigineRegistre && origineJ != journal.OrigineNotification:
 		ecart(CauseAlteration, ControleDecision, "origine de décision %q inconnue", origineJ)
 	case parRegistre && origineJ != controle.OrigineRegistre:
 		ecart(CauseAlteration, ControleDecision, "le serveur n'est pas attesté : le refus est d'origine registre, le journal ne le dit pas")
 	case !parRegistre && origineJ == controle.OrigineRegistre:
 		ecart(CauseAlteration, ControleDecision, "le journal attribue la décision au registre, le rejeu à une directive")
+	case parNotification && origineJ != journal.OrigineNotification:
+		ecart(CauseAlteration, ControleDecision, "une notification si_echec refuser n'a pas été remise : le refus est d'origine notification, le journal ne le dit pas")
+	case !parNotification && origineJ == journal.OrigineNotification:
+		ecart(CauseAlteration, ControleDecision, "le journal attribue la décision à une notification non remise, le rejeu non")
 	}
 	if dec.EmpreinteTransmise != en.Appel.EmpreinteTransmise {
 		ecart(CauseAlteration, ControleTransmis, "la décision rejouée transmet %s, le journal cite %s",
@@ -509,6 +524,35 @@ func controlerTransmission(entrees []journal.Entree, i int, tr map[cleAppel][]in
 	return "", true
 }
 
+// controlerRemises confronte les remises de l'entrée appel de rang i aux
+// entrées notification chaînées avant elle pour le même appel, et aux
+// notifications que la décision journalisée demande.
+func controlerRemises(entrees []journal.Entree, i int) (string, bool) {
+	en := entrees[i]
+	var chainees []journal.Remise
+	for j := 0; j < i; j++ {
+		e := entrees[j]
+		if e.Type == journal.NotificationT && e.Session == en.Session && e.Seq == en.Seq && e.Notification != nil {
+			chainees = append(chainees, *e.Notification)
+		}
+	}
+	if !reflect.DeepEqual(chainees, en.Remises) && (len(chainees) > 0 || len(en.Remises) > 0) {
+		return fmt.Sprintf("l'appel porte %d remise(s), le journal en chaîne %d autrement", len(en.Remises), len(chainees)), false
+	}
+	var demandees []journal.Notification
+	if en.Decision != nil {
+		demandees = en.Decision.Notifications
+	}
+	var remises []journal.Notification
+	for _, r := range en.Remises {
+		remises = append(remises, r.Notification)
+	}
+	if !reflect.DeepEqual(remises, demandees) {
+		return "les notifications remises ne sont pas celles que la décision demande", false
+	}
+	return "", true
+}
+
 // controlerApprobation confronte l'entrée appel de rang i à son
 // approbation. Seuls les appels en attente de validation sont concernés.
 // Une approbation d'un autre mécanisme (sans statut) n'est contrôlée que
@@ -649,6 +693,9 @@ func RejouerJournal(entrees []journal.Entree, res Resolveur, jeux Jeux, opts Opt
 		}
 		if detail, ok := controlerTransmission(entrees, i, tr); !ok {
 			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleTransmission, Detail: detail})
+		}
+		if detail, ok := controlerRemises(entrees, i); !ok {
+			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleNotification, Detail: detail})
 		}
 		if detail, ok := controlerApprobation(entrees, i, tr, opts.Annuaire); !ok {
 			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleApprobation, Detail: detail})

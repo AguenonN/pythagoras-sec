@@ -31,6 +31,7 @@ package main
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -74,6 +75,8 @@ func lancer() error {
 	delai := flag.Duration("delai-backend", session.DelaiBackendDefaut, "durée maximale d'un appel à un serveur")
 	maxConsultations := flag.Int("max-consultations", 0, "ferme la session après ce nombre de consultations (0 : sans borne)")
 	ageMax := flag.Duration("age-max", 0, "ferme la session passé cet âge (0 : sans borne)")
+	cheminNotifications := flag.String("notifications", "", "démonstration : écran des destinataires, abonné au journal ; chaque notification reçue y est ajoutée (JSONL). Sans écran, aucune notification n'est remise")
+	depart := flag.String("horloge-depart", "", "démonstration et tests : horloge simulée qui part de cet instant (RFC 3339) et avance au rythme réel ; signalée au journal")
 	cheminAnnuaire := flag.String("annuaire", "", "annuaire des habilitations signé (JSON) ; exige -annuaire-autorite")
 	cheminAutorite := flag.String("annuaire-autorite", "", "clé publique Ed25519 (base64) de l'autorité qui signe l'annuaire")
 	flag.Parse()
@@ -111,6 +114,10 @@ func lancer() error {
 	if err != nil {
 		return err
 	}
+	horloge, err := horlogeSimulee(*depart, time.Now)
+	if err != nil {
+		return err
+	}
 	j, err := journal.Ouvrir(*cheminJournal, cle)
 	if err != nil {
 		return err
@@ -121,6 +128,13 @@ func lancer() error {
 		return err
 	}
 	defer coffre.Fermer()
+	if *cheminNotifications != "" {
+		arret, err := ecranNotifications(j, *cheminNotifications)
+		if err != nil {
+			return err
+		}
+		defer arret()
+	}
 
 	ctx, arreter := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer arreter()
@@ -130,10 +144,13 @@ func lancer() error {
 		Registre: reg, Jeu: *jeu, Journal: j, Coffre: coffre, Appelant: gate.AppelantStdio,
 		Session: session.Config{DelaiBackend: *delai, MaxConsultations: *maxConsultations, AgeMax: *ageMax},
 		Backend: backend.Options{Stderr: os.Stderr, Logger: log},
-		Logger:  log, Annuaire: src, JetonDemandeur: os.Getenv(VarJetonDemandeur),
+		Logger:  log, Annuaire: src, JetonDemandeur: os.Getenv(VarJetonDemandeur), Horloge: horloge,
 	})
 	if err != nil {
 		return err
+	}
+	if horloge != nil {
+		g.Alerter("horloge simulée : départ " + *depart + " ; les horodatages de ce journal ne sont pas ceux de l'horloge réelle")
 	}
 	defer g.Fermer()
 	go rechargerSurSignal(ctx, hup, g, *cheminJeu, log)
@@ -162,6 +179,46 @@ func rechargerSurSignal(ctx context.Context, hup <-chan os.Signal, g *gate.Gate,
 			}
 		}
 	}
+}
+
+// ecranNotifications abonne un écran de démonstration au journal : chaque
+// entrée notification reçue est ajoutée au fichier. C'est le canal de
+// démonstration : une notification n'est remise que s'il y a un abonné.
+func ecranNotifications(j *journal.Ecrivain, chemin string) (func(), error) {
+	f, err := os.OpenFile(chemin, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	if err != nil {
+		return nil, err
+	}
+	ch, desabonner := j.Abonner(256)
+	fini := make(chan struct{})
+	go func() {
+		defer close(fini)
+		enc := json.NewEncoder(f)
+		for en := range ch {
+			if en.Type == journal.NotificationT {
+				enc.Encode(en)
+			}
+		}
+	}()
+	return func() {
+		desabonner()
+		<-fini
+		f.Close()
+	}, nil
+}
+
+// horlogeSimulee rend une horloge qui part de depart et avance au rythme
+// de maintenant ; nil si depart est vide (horloge réelle).
+func horlogeSimulee(depart string, maintenant func() time.Time) (func() time.Time, error) {
+	if depart == "" {
+		return nil, nil
+	}
+	d, err := time.Parse(time.RFC3339Nano, depart)
+	if err != nil {
+		return nil, fmt.Errorf("-horloge-depart : %w", err)
+	}
+	t0 := maintenant()
+	return func() time.Time { return d.Add(maintenant().Sub(t0)) }, nil
 }
 
 // chargerAnnuaire charge l'annuaire et vérifie sa signature avec la clé

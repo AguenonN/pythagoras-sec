@@ -395,9 +395,26 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 	// Contrôle du registre, toujours actif, même sans directive
 	// source_attestee pour ce serveur : refus d'origine registre.
 	dec, parRegistre := controle.Registre(dec, serveur, att)
+	// Notifications des directives appliquées : remises avant toute
+	// transmission, chacune journalisée avec son statut de remise. Une
+	// notification si_echec: refuser non remise refuse l'appel.
+	remises, err := g.notifier(dec, journal.Entree{TS: ts, Session: tour.SessionID(), Seq: tour.Seq(), Appelant: etat.Appelant,
+		Serveur: serveur, OutilExpose: expose, Outil: outil})
+	if err != nil {
+		g.enPanne.Store(true)
+		g.log.Error("journal indisponible, l'engine refuse désormais tout appel", "erreur", err)
+		return refusEngine("Appel refusé : le journal de l'engine est indisponible ; rien n'est transmis sans preuve.")
+	}
+	parNotification := false
+	if !parRegistre {
+		dec, parNotification = journal.ControleNotifications(dec, remises)
+	}
 	decJ := journal.DepuisDecision(dec)
-	if parRegistre {
+	switch {
+	case parRegistre:
 		decJ.Origine = controle.OrigineRegistre
+	case parNotification:
+		decJ.Origine = journal.OrigineNotification
 	}
 	entree := journal.Entree{
 		TS: ts, Type: journal.AppelT, Session: tour.SessionID(), Seq: tour.Seq(), Appelant: etat.Appelant,
@@ -410,7 +427,7 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 		Decision:        decJ,
 		Resultat:        &journal.Resultat{Statut: journal.StatutNonTransmis},
 		VersionRegistre: version, Acces: string(acces), EtiquettesCible: nonVide(etiquettes),
-		Demandeur: journal.DepuisDemandeur(demandeur),
+		Demandeur: journal.DepuisDemandeur(demandeur), Remises: remises,
 	}
 
 	var rep *mcp.CallToolResult
@@ -418,6 +435,8 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 	switch {
 	case parRegistre:
 		rep = g.refusRegistre(dec)
+	case parNotification:
+		rep = refusNotification(dec, remises)
 	case dec.Effet == directive.Refuser:
 		// 5.
 		rep = refusDirective(dec)
@@ -604,6 +623,27 @@ func nonVide(l []string) []string {
 	}
 	return l
 }
+
+// notifier remet chaque notification que la décision demande, dans
+// l'ordre canonique de la décision, par le canal des abonnés du journal.
+// base porte la session, le seq et la cible.
+func (g *Gate) notifier(dec directive.Decision, base journal.Entree) ([]journal.Remise, error) {
+	var out []journal.Remise
+	for _, n := range journal.DepuisDecision(dec).Notifications {
+		en := base
+		en.Notification = &journal.Remise{Notification: n}
+		ecrite, err := g.journal.EcrireRemise(en)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *ecrite.Notification)
+	}
+	return out, nil
+}
+
+// Alerter écrit une entrée alerte au journal (par exemple, pour signaler
+// une horloge simulée).
+func (g *Gate) Alerter(message string) { g.alerte("", "", message) }
 
 func (g *Gate) alerte(serveur, outil, message string) {
 	if _, err := g.journal.Ecrire(journal.Entree{Type: journal.AlerteT, Serveur: serveur, Outil: outil, Message: message}); err != nil {
