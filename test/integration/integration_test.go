@@ -165,6 +165,7 @@ func (t *tampon) String() string {
 type banc struct {
 	cs              *mcp.ClientSession
 	stderr          *tampon
+	directives      string
 	journal, coffre string
 	ferme           bool
 }
@@ -175,9 +176,16 @@ type banc struct {
 // ne sert que ses enregistrements.
 func demarrer(t *testing.T, cheminReg string) *banc {
 	t.Helper()
+	return demarrerAvec(t, cheminReg, cheminDirectives)
+}
+
+// demarrerAvec lance le gate avec le jeu de directives donné (chemin
+// relatif à la racine du dépôt).
+func demarrerAvec(t *testing.T, cheminReg, directives string) *banc {
+	t.Helper()
 	dir := t.TempDir()
-	b := &banc{stderr: &tampon{}, journal: filepath.Join(dir, "journal.jsonl"), coffre: filepath.Join(dir, "coffre.jsonl")}
-	cmd := exec.Command(binaireGate, "-registre", cheminReg, "-directives", filepath.Join(racine, cheminDirectives),
+	b := &banc{stderr: &tampon{}, directives: directives, journal: filepath.Join(dir, "journal.jsonl"), coffre: filepath.Join(dir, "coffre.jsonl")}
+	cmd := exec.Command(binaireGate, "-registre", cheminReg, "-directives", filepath.Join(racine, directives),
 		"-journal", b.journal, "-coffre", b.coffre)
 	cmd.Env = []string{"MCP_GATE_CLE_JOURNAL=" + hex.EncodeToString(cleTest), "DONNEES_MODE=REJEU"}
 	cmd.Stderr = b.stderr
@@ -257,7 +265,7 @@ func (b *banc) verifier(t *testing.T) (entrees, appels []journal.Entree) {
 		t.Fatal(err)
 	}
 	defer coffre.Fermer()
-	jeu := chargerJeu(t)
+	jeu := chargerJeu(t, b.directives)
 	rs, err := rejeu.RejouerJournal(entrees, coffre, rejeu.Catalogue{jeu}, rejeu.Options{})
 	if err != nil {
 		t.Fatal(err)
@@ -282,9 +290,9 @@ func (b *banc) verifier(t *testing.T) (entrees, appels []journal.Entree) {
 	return entrees, appels
 }
 
-func chargerJeu(t *testing.T) directive.Jeu {
+func chargerJeu(t *testing.T, directives string) directive.Jeu {
 	t.Helper()
-	b, err := os.ReadFile(filepath.Join(racine, cheminDirectives))
+	b, err := os.ReadFile(filepath.Join(racine, directives))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -334,7 +342,7 @@ func TestDemarrage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(outils.Tools) != 13 {
+	if len(outils.Tools) != 14 {
 		t.Fatalf("%d outils exposés", len(outils.Tools))
 	}
 	entrees, _ := func() ([]journal.Entree, []journal.Entree) {

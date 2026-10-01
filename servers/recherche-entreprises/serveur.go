@@ -66,6 +66,7 @@ func Serveur(c *rejeu.Client) *mcp.Server {
 		Description: "Fiche d'une entreprise française par son SIREN, depuis l'API Recherche d'entreprises " +
 			"(données SIRENE/RNE) : dénomination, forme juridique, état administratif, siège, activité. " +
 			"Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).",
+		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, IdempotentHint: true, OpenWorldHint: new(bool)},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in EntreeRecherche) (*mcp.CallToolResult, SortieRecherche, error) {
 		return rechercher(ctx, c, in.Siren)
 	})

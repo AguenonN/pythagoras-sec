@@ -6,7 +6,7 @@
       "outils": [
         {
           "nom": "get_taux_usure",
-          "acces": "action",
+          "acces": "read",
           "description": "Seuil de l'usure en vigueur pour une catégorie de crédit (Banque de France, séries trimestrielles Webstat) : seuil, trimestre, date de publication, identifiant de série. Signale aussi un seuil déjà publié pour le trimestre suivant. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).",
           "arguments": [
             "/categorie",
@@ -20,7 +20,7 @@
       "outils": [
         {
           "nom": "rechercher_entreprise",
-          "acces": "action",
+          "acces": "read",
           "description": "Fiche d'une entreprise française par son SIREN, depuis l'API Recherche d'entreprises (données SIRENE/RNE) : dénomination, forme juridique, état administratif, siège, activité. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).",
           "arguments": [
             "/siren"
@@ -33,7 +33,7 @@
       "outils": [
         {
           "nom": "verifier_gel",
-          "acces": "action",
+          "acces": "read",
           "description": "Cherche un nom dans le registre national des gels des avoirs (DG Trésor) : correspondances exactes ou partielles, nature, fondements juridiques, et date de publication du registre. Une correspondance est un signal à examiner, pas une identification. Le champ source indique si le registre est obtenu à l'instant (direct) ou lu dans un enregistrement daté (rejeu).",
           "arguments": [
             "/nom"
@@ -46,7 +46,7 @@
       "outils": [
         {
           "nom": "lire_article",
-          "acces": "action",
+          "acces": "read",
           "description": "Texte d'un article d'un acte de l'Union européenne (numéro CELEX et numéro d'article), dans la version publiée au Journal officiel, non consolidée. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).",
           "arguments": [
             "/article",
@@ -55,7 +55,7 @@
         },
         {
           "nom": "rechercher_acte",
-          "acces": "action",
+          "acces": "read",
           "description": "Métadonnées d'un acte de l'Union européenne par son numéro CELEX (CELLAR, Office des publications) : titre, dates, statut en vigueur, actes modificatifs. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).",
           "arguments": [
             "/celex"
@@ -68,7 +68,7 @@
       "outils": [
         {
           "nom": "lire_article",
-          "acces": "action",
+          "acces": "read",
           "description": "Texte d'un article de loi ou de règlement français (Légifrance, DILA) par son identifiant LEGIARTI : texte de la version en vigueur à la date de référence, numéro de version, dates de début et de fin, et version suivante déjà publiée. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).",
           "arguments": [
             "/date_reference",
@@ -104,6 +104,16 @@
           "description": "Seuil de l'usure pour une catégorie de crédit, selon la base interne de la banque synthétique (données fictives).",
           "arguments": [
             "/categorie"
+          ]
+        },
+        {
+          "nom": "remettre_rapport",
+          "acces": "action",
+          "description": "Remet un rapport sur un dossier à un destinataire de la banque synthétique (action fictive : le rapport est seulement enregistré en mémoire, rien n'est envoyé). Rend une référence de remise.",
+          "arguments": [
+            "/contenu",
+            "/destinataire",
+            "/dossier_id"
           ]
         }
       ]

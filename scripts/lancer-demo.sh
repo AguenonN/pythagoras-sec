@@ -6,6 +6,15 @@
 #	scripts/lancer-demo.sh            # prépare, puis affiche comment lancer la boucle
 #	scripts/lancer-demo.sh gate       # démarre mcp-gate sur stdio (c'est la boucle qui le lance)
 #
+# Options (avec « prépare » comme avec « gate » ; la commande de boucle
+# affichée les reprend) :
+#	--directives JEU    jeu de directives : un nom de demo/directives/ (credit-demo,
+#	                    credit-demo-v2) ou un chemin de fichier (défaut : credit-demo)
+#	--registre normal|attaque
+#	                    registre normal (défaut), ou registre d'attaque, où taux-officiel
+#	                    est détourné vers l'imposteur (demo/registre-attaque.json) :
+#	                    le gate doit le refuser, sept serveurs sur huit sont attestés
+#
 # Préparation : construit les serveurs (scripts/construire-serveurs.sh) et
 # mcp-gate dans bin/, génère demo/registre.json, vérifie que le registre
 # local des gels est présent (sinon lance « gels-avoirs preparer », qui
@@ -35,11 +44,30 @@
 set -euo pipefail
 
 racine="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-registre="$racine/demo/registre.json"
-directives="$racine/demo/directives/credit-demo.json"
+mode_registre="normal"
+jeu="credit-demo"
 execution="$racine/demo/execution"
 gels_local="$racine/servers/gels-avoirs/enregistrements_locaux"
 demande="Peut-on accorder le découvert demandé dans le dossier DOS-FICTIF-002 ?"
+
+usage() {
+	echo "usage : scripts/lancer-demo.sh [--directives JEU] [--registre normal|attaque] [gate]" >&2
+	exit 2
+}
+
+# resoudre_jeu : un nom de demo/directives/ ou un chemin de fichier ; rend le
+# chemin absolu.
+resoudre_jeu() {
+	local j="$1"
+	if [[ -f "$racine/demo/directives/$j.json" ]]; then
+		echo "$racine/demo/directives/$j.json"
+	elif [[ -f "$j" ]]; then
+		echo "$(cd "$(dirname "$j")" && pwd)/$(basename "$j")"
+	else
+		echo "lancer-demo: jeu de directives introuvable : $j" >&2
+		exit 2
+	fi
+}
 
 exiger_cle() {
 	if [[ -z "${MCP_GATE_CLE_JOURNAL:-}" ]]; then
@@ -104,8 +132,8 @@ preparer() {
 		exit 1
 	fi
 	attestes="$(grep -c 'attesté=true' "$essai/log" || true)"
-	echo "lancer-demo: gate prêt, $attestes serveur(s) attesté(s) sur 8" >&2
-	if [[ "$attestes" != 8 ]]; then
+	echo "lancer-demo: gate prêt (registre $mode_registre, jeu $directives), $attestes serveur(s) attesté(s) sur 8" >&2
+	if [[ "$attestes" != "$attestes_attendus" ]]; then
 		grep 'msg=backend' "$essai/log" >&2 || true
 		exit 1
 	fi
@@ -118,17 +146,52 @@ Démonstration prête. Lancer la boucle (Mistral, appels réels comptés dans ag
   cd agents
   python3 -m boucle --sous-agent credit --mode reel --enregistrements ../demo/execution/mistral \\
     --demande "$demande" \\
-    -- ../scripts/lancer-demo.sh gate
+    -- ../scripts/lancer-demo.sh gate --directives "$directives" --registre $mode_registre
 
 Journal : demo/execution/journal.jsonl ; traces : demo/execution/mcp-gate.log
 EOF
 }
 
-case "${1:-}" in
-	"") preparer ;;
-	gate) gate ;;
+commande=""
+while (( $# > 0 )); do
+	case "$1" in
+		--directives)
+			(( $# >= 2 )) || usage
+			jeu="$2"
+			shift 2
+			;;
+		--directives=*)
+			jeu="${1#*=}"
+			shift
+			;;
+		--registre)
+			(( $# >= 2 )) || usage
+			mode_registre="$2"
+			shift 2
+			;;
+		--registre=*)
+			mode_registre="${1#*=}"
+			shift
+			;;
+		gate)
+			commande="gate"
+			shift
+			;;
+		*) usage ;;
+	esac
+done
+
+directives="$(resoudre_jeu "$jeu")"
+case "$mode_registre" in
+	normal) registre="$racine/demo/registre.json"; attestes_attendus=8 ;;
+	attaque) registre="$racine/demo/registre-attaque.json"; attestes_attendus=7 ;;
 	*)
-		echo "usage : scripts/lancer-demo.sh [gate]" >&2
+		echo "lancer-demo: --registre normal ou attaque, pas « $mode_registre »" >&2
 		exit 2
 		;;
+esac
+
+case "$commande" in
+	"") preparer ;;
+	gate) gate ;;
 esac

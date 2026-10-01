@@ -127,13 +127,37 @@ func TestAttribuerPret(t *testing.T) {
 	}
 }
 
+func TestRemettreRapport(t *testing.T) {
+	cs := session(t)
+	args := map[string]any{"dossier_id": "DOS-FICTIF-001", "destinataire": "comité des risques", "contenu": "Rapport d'analyse — é"}
+	var out SortieRemise
+	res := essai.Appeler(t, cs, "remettre_rapport", args, &out)
+	if res.IsError || out.Statut != StatutRemis || out.Reference != "RAPPORT-FICTIF-0001" || out.Horodatage != "2026-10-04T09:00:00Z" || out.Longueur != 21 {
+		t.Fatalf("%+v", out)
+	}
+	var suite SortieRemise
+	if res := essai.Appeler(t, cs, "remettre_rapport", args, &suite); res.IsError || suite.Reference != "RAPPORT-FICTIF-0002" {
+		t.Fatalf("deuxième remise: %+v", suite)
+	}
+	for _, a := range []map[string]any{
+		{"dossier_id": "DOS-X", "destinataire": "d", "contenu": "c"},
+		{"dossier_id": "DOS-FICTIF-001", "destinataire": " ", "contenu": "c"},
+		{"dossier_id": "DOS-FICTIF-001", "destinataire": "d", "contenu": ""},
+	} {
+		var o SortieRemise
+		if res := essai.Appeler(t, cs, "remettre_rapport", a, &o); !res.IsError || o.Statut != StatutRefuse {
+			t.Errorf("%v: %+v", a, o)
+		}
+	}
+}
+
 func TestAnnotations(t *testing.T) {
 	cs := session(t)
 	res, err := cs.ListTools(t.Context(), nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	lecture := map[string]bool{"evaluer_dossier": true, "get_taux_interne": true, "attribuer_pret": false}
+	lecture := map[string]bool{"evaluer_dossier": true, "get_taux_interne": true, "attribuer_pret": false, "remettre_rapport": false}
 	for _, o := range res.Tools {
 		attendu, ok := lecture[o.Name]
 		if !ok || o.Annotations == nil || o.Annotations.ReadOnlyHint != attendu {

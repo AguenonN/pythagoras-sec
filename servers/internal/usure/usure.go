@@ -107,6 +107,7 @@ func Serveur(nomAnnonce string, c *rejeu.Client, maintenant func() time.Time, al
 			"seuil, trimestre, date de publication, identifiant de série. Signale aussi un seuil déjà publié pour le trimestre suivant. " +
 			"Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).",
 		InputSchema: entree,
+		Annotations: &mcp.ToolAnnotations{ReadOnlyHint: true, IdempotentHint: true, OpenWorldHint: new(bool)},
 	}, func(ctx context.Context, _ *mcp.CallToolRequest, in EntreeTaux) (*mcp.CallToolResult, SortieTaux, error) {
 		return taux(ctx, c, maintenant, alterer, in)
 	})
