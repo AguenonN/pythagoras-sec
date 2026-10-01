@@ -673,6 +673,8 @@ type Coffre struct {
 	purgees map[string]time.Time
 	horloge func() time.Time
 	journal *Ecrivain
+	// avantPurge complète l'entrée purge (voir AvantPurge).
+	avantPurge func(*Entree)
 }
 
 // OuvrirCoffre ouvre ou crée le coffre et charge son index.

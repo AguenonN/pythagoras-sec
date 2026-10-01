@@ -163,6 +163,7 @@ func Demarrer(ctx context.Context, cfg Config) (*Gate, error) {
 	g.charges[versionJeu{jeu.Meta.ID, jeu.Meta.Version}] = jeu.Meta.Empreinte
 	// Contrat §3 : le journal est attaché au coffre dès l'ouverture.
 	g.coffre.Journaliser(g.journal)
+	g.coffre.AvantPurge(g.avantPurge)
 	sc := cfg.Session
 	if sc.Horloge == nil {
 		// Une seule horloge : l'ouverture de session (qui date la
@@ -175,7 +176,10 @@ func Demarrer(ctx context.Context, cfg Config) (*Gate, error) {
 		if fermeture != nil {
 			fermeture(ss, motif)
 		}
-		ss.Close()
+		// Hors du gestionnaire de l'appel : la fermeture forcée est
+		// demandée pendant un tools/call, et ServerSession.Close attend la
+		// fin de tous les gestionnaires, celui-ci compris.
+		go ss.Close()
 	}
 	g.sessions = session.Nouveau(sc, g.journal)
 
@@ -251,13 +255,28 @@ func (g *Gate) journaliserJeu(base journal.Entree, jeu directive.Jeu, contexte s
 }
 
 func (g *Gate) journaliserAttestation(nom string, a directive.Attestation, message string) error {
-	if _, err := g.journal.Ecrire(journal.Entree{Type: journal.AttestationT, Serveur: nom,
-		Attestation: journal.DepuisAttestation(a), Message: message}); err != nil {
+	en := journal.Entree{TS: g.horloge().UTC(), Type: journal.AttestationT, Serveur: nom,
+		Attestation: journal.DepuisAttestation(a), Message: message}
+	if !a.Valide() {
+		// Directives de l'évènement attestation_echouee.
+		if _, err := g.evenement(&en, directive.EntreeEvenement{Evenement: directive.EvAttestationEchouee,
+			Horodatage: en.TS, Serveur: nom, Attestation: a}); err != nil {
+			return fmt.Errorf("gate: journal: %w", err)
+		}
+	}
+	if _, err := g.journal.Ecrire(en); err != nil {
 		g.enPanne.Store(true)
 		g.log.Error("journal indisponible", "erreur", err)
 		return fmt.Errorf("gate: journal: %w", err)
 	}
 	return nil
+}
+
+// avantPurge consigne dans l'entrée purge la décision des directives de
+// l'évènement purge. Une purge n'est jamais refusée par une directive :
+// elle est notifiée et marquée.
+func (g *Gate) avantPurge(en *journal.Entree) {
+	g.evenement(en, directive.EntreeEvenement{Evenement: directive.EvPurge, Horodatage: en.TS})
 }
 
 // construireServeur expose chaque outil épinglé sous serveur__outil. Deux
@@ -403,7 +422,7 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 	// transmission, chacune journalisée avec son statut de remise. Une
 	// notification si_echec: refuser non remise refuse l'appel.
 	remises, err := g.notifier(dec, journal.Entree{TS: ts, Session: tour.SessionID(), Seq: tour.Seq(), Appelant: etat.Appelant,
-		Serveur: serveur, OutilExpose: expose, Outil: outil})
+		Serveur: serveur, OutilExpose: expose, Outil: outil}, directive.EvAppelOutil)
 	if err != nil {
 		g.enPanne.Store(true)
 		g.log.Error("journal indisponible, l'engine refuse désormais tout appel", "erreur", err)
@@ -541,28 +560,70 @@ func (g *Gate) suivre(ss *mcp.ServerSession) {
 // plus (expiré depuis le lancement) laisse la session sans demandeur ; le
 // message le dit, sans citer le jeton.
 func (g *Gate) ouvrir(en *journal.Entree) string {
-	a := g.cfg.Annuaire
-	if a == nil {
-		return ""
+	var d *directive.Demandeur
+	if a := g.cfg.Annuaire; a != nil {
+		ref := a.Reference()
+		en.SourceIdentite = a.Nom()
+		en.Annuaire = &journal.RefAnnuaire{ID: ref.ID, Version: ref.Version, Empreinte: ref.Empreinte}
+		if g.cfg.JetonDemandeur == "" {
+			en.Message = "aucun jeton de demandeur : demandeur non résolu"
+		} else if id, err := annuaire.VerifierIdentite(a, g.cfg.JetonDemandeur, en.TS); err != nil {
+			en.Message = "jeton du demandeur refusé (" + err.Error() + ") : demandeur non résolu"
+		} else {
+			fiche, _ := a.Resoudre(id.Demandeur, en.TS)
+			d = &directive.Demandeur{Identite: fiche.Identite, Groupes: fiche.Groupes}
+			en.Demandeur = journal.DepuisDemandeur(d)
+			en.Message = "demandeur " + id.Demandeur + " (jeton signé par " + id.Emetteur + ")"
+			g.demandeurs.Store(en.Session, d)
+		}
 	}
-	ref := a.Reference()
-	en.SourceIdentite = a.Nom()
-	en.Annuaire = &journal.RefAnnuaire{ID: ref.ID, Version: ref.Version, Empreinte: ref.Empreinte}
-	if g.cfg.JetonDemandeur == "" {
-		en.Message = "aucun jeton de demandeur : demandeur non résolu"
-		return ""
-	}
-	id, err := annuaire.VerifierIdentite(a, g.cfg.JetonDemandeur, en.TS)
+	// Directives de l'évènement ouverture_session.
+	dec, err := g.evenement(en, directive.EntreeEvenement{Evenement: directive.EvOuvertureSession, Horodatage: en.TS,
+		Appelant: en.Appelant, Demandeur: d})
 	if err != nil {
-		en.Message = "jeton du demandeur refusé (" + err.Error() + ") : demandeur non résolu"
-		return ""
+		return "ouverture refusée : journal indisponible"
 	}
-	fiche, _ := a.Resoudre(id.Demandeur, en.TS)
-	d := &directive.Demandeur{Identite: fiche.Identite, Groupes: fiche.Groupes}
-	en.Demandeur = journal.DepuisDemandeur(d)
-	en.Message = "demandeur " + id.Demandeur + " (jeton signé par " + id.Emetteur + ")"
-	g.demandeurs.Store(en.Session, d)
+	if dec.Effet == directive.Refuser {
+		return "ouverture refusée : " + dec.Motif
+	}
 	return ""
+}
+
+// evenement évalue un évènement (autre qu'appel_outil) sous le jeu actif,
+// remet ses notifications et consigne la décision dans en, l'entrée qui
+// journalise l'évènement (session_ouverte, attestation, purge) : jeu,
+// décision, remises. Rien n'est consigné si aucune directive du jeu ne
+// porte sur l'évènement. Une notification si_echec: refuser non remise
+// refuse l'ouverture.
+func (g *Gate) evenement(en *journal.Entree, e directive.EntreeEvenement) (directive.Decision, error) {
+	jeu := *g.jeu.Load()
+	if !porteSur(jeu, e.Evenement) {
+		return directive.Decision{Effet: directive.Autoriser}, nil
+	}
+	dec := directive.DecideEvenement(jeu, e)
+	remises, err := g.notifier(dec, journal.Entree{TS: e.Horodatage, Session: en.Session, Appelant: en.Appelant, Serveur: en.Serveur}, e.Evenement)
+	if err != nil {
+		g.enPanne.Store(true)
+		g.log.Error("journal indisponible, l'engine refuse désormais tout appel", "erreur", err)
+		return dec, err
+	}
+	dec, parNotification := journal.ControleNotifications(dec, remises)
+	en.Jeu, en.Decision, en.Remises = journal.DepuisJeu(jeu), journal.DepuisDecision(dec), remises
+	if parNotification {
+		en.Decision.Origine = journal.OrigineNotification
+	}
+	return dec, nil
+}
+
+// porteSur dit si une directive du jeu, quel que soit son statut, porte
+// sur l'évènement.
+func porteSur(jeu directive.Jeu, ev directive.Evenement) bool {
+	for _, d := range jeu.Directives {
+		if d.EstV2() && d.Declencheur.Evenement == ev {
+			return true
+		}
+	}
+	return false
 }
 
 // demandeur rend le demandeur résolu à l'ouverture de la session, ou nil.
@@ -632,11 +693,15 @@ func nonVide(l []string) []string {
 // notifier remet chaque notification que la décision demande, dans
 // l'ordre canonique de la décision, par le canal des abonnés du journal.
 // base porte la session, le seq et la cible.
-func (g *Gate) notifier(dec directive.Decision, base journal.Entree) ([]journal.Remise, error) {
+func (g *Gate) notifier(dec directive.Decision, base journal.Entree, ev directive.Evenement) ([]journal.Remise, error) {
 	var out []journal.Remise
+	evenement := ""
+	if ev != directive.EvAppelOutil {
+		evenement = string(ev)
+	}
 	for _, n := range journal.DepuisDecision(dec).Notifications {
 		en := base
-		en.Notification = &journal.Remise{Notification: n}
+		en.Notification = &journal.Remise{Notification: n, Evenement: evenement}
 		ecrite, err := g.journal.EcrireRemise(en)
 		if err != nil {
 			return nil, err

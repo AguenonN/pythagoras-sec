@@ -18,6 +18,12 @@ import (
 // Toute directive est évaluée sous sa forme v2 : une directive v1 est
 // d'abord traduite par ConvertirV1, et garde ses motifs v1 à l'identique.
 func Decide(jeu Jeu, etat EtatSession, appel Appel) Decision {
+	return decider(jeu, etat, appel, EvAppelOutil)
+}
+
+// decider évalue les directives dont le déclencheur porte l'évènement ev.
+// Decide l'appelle pour appel_outil, DecideEvenement pour les autres.
+func decider(jeu Jeu, etat EtatSession, appel Appel, ev Evenement) Decision {
 	args := cloner(appel.Arguments)
 	dec := Decision{
 		Effet:            Autoriser,
@@ -36,8 +42,8 @@ func Decide(jeu Jeu, etat EtatSession, appel Appel) Decision {
 		if d.DateEffet.After(appel.Horodatage) {
 			continue // non-rétroactivité
 		}
-		if d.Declencheur.Evenement != EvAppelOutil {
-			continue // évènement réservé, pas un tools/call
+		if d.Declencheur.Evenement != ev {
+			continue // un autre évènement
 		}
 		rCible, noteCible := cibleV2(d.Declencheur.Cible, &appel)
 		if rCible == Faux {

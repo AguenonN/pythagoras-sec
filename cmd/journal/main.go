@@ -338,6 +338,28 @@ func rejouer(chemin string, brut, cle []byte, o options, out io.Writer) (int, er
 		fmt.Fprintf(out, "ATTENTION : %d transmission(s) sans entrée appel\n", len(o))
 		n += len(o)
 	}
+	evs, err := rejeu.RejouerEvenements(es, jeux)
+	if err != nil {
+		return 2, err
+	}
+	if len(evs) > 0 {
+		fmt.Fprintf(out, "\nÉvènements rejoués : %d\n", len(evs))
+		for _, ev := range evs {
+			quoi := ev.Session
+			if ev.Serveur != "" {
+				quoi = ev.Serveur
+			}
+			etat := "conforme"
+			if len(ev.Ecarts) > 0 {
+				etat = fmt.Sprintf("%d écart(s)", len(ev.Ecarts))
+			}
+			fmt.Fprintf(out, "  %s %s %s : %s, %s\n", ev.TS.UTC().Format("2006-01-02 15:04:05"), ev.Type, court(quoi), ev.Effet, etat)
+			for _, e := range ev.Ecarts {
+				fmt.Fprintf(out, "    [%s, contrôle %s] %s\n", e.Cause, e.Controle, e.Detail)
+				n++
+			}
+		}
+	}
 
 	if len(jeux) == 2 {
 		apres := jeux[1]

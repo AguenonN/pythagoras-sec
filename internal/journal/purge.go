@@ -38,6 +38,12 @@ type DemandePurge struct {
 	Auteur string
 }
 
+// AvantPurge pose un crochet appelé sur l'entrée purge juste avant son
+// écriture (TS, empreintes, motif, auteur posés) : l'engine y évalue les
+// directives de l'évènement purge et y consigne sa décision. Le crochet ne
+// doit pas appeler le coffre.
+func (c *Coffre) AvantPurge(f func(*Entree)) { c.avantPurge = f }
+
 // Journaliser attache le journal où chaque purge écrit son entrée.
 func (c *Coffre) Journaliser(e *Ecrivain) { c.journal = e }
 
@@ -147,9 +153,14 @@ func (c *Coffre) purger(dem DemandePurge, avant *time.Time, retenir func(Depot) 
 		l := avant.UTC()
 		limite = &l
 	}
-	if _, err := c.journal.Ecrire(Entree{
+	en := Entree{
 		TS: maintenant, Type: PurgeT, Empreintes: purgees, Motif: dem.Motif, Auteur: dem.Auteur, PurgeAvant: limite,
-	}); err != nil {
+	}
+	if c.avantPurge != nil {
+		c.avantPurge(&en)
+		en.TS, en.Type, en.Empreintes, en.Motif, en.Auteur, en.PurgeAvant = maintenant, PurgeT, purgees, dem.Motif, dem.Auteur, limite
+	}
+	if _, err := c.journal.Ecrire(en); err != nil {
 		return nil, fmt.Errorf("coffre: purge non chaînée, rien n'est effacé: %w", err)
 	}
 	f, err := c.reecrire(nouvIndex, nouvPurgees)

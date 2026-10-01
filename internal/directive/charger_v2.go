@@ -58,6 +58,54 @@ func validerDirectiveV2(v *validation, p string, d *Directive) {
 	}
 
 	validerEffets(v, p, d.Effets, nomme)
+	if d.Declencheur != nil && d.Declencheur.Evenement != EvAppelOutil {
+		validerEvenement(v, p, d)
+	}
+}
+
+// validerEvenement restreint une directive d'évènement (autre
+// qu'appel_outil) à ce que son évaluateur renseigne : feuilles de
+// FeuillesAdmises sous et / ou / non (pas de quantificateur : il n'y a pas
+// d'arguments), effets notifier et marquer, refuser pour
+// ouverture_session seulement ; une notification si_echec: refuser n'a de
+// sens que si quelque chose peut être refusé (l'ouverture).
+func validerEvenement(v *validation, p string, d *Directive) {
+	ev := d.Declencheur.Evenement
+	admises := map[string]bool{"et": true, "ou": true, "non": true}
+	for _, f := range FeuillesAdmises(ev) {
+		admises[f] = true
+	}
+	var parcourir func(q string, nd *Noeud)
+	parcourir = func(q string, nd *Noeud) {
+		if nd == nil {
+			return
+		}
+		for _, cle := range clesNoeud(nd) {
+			if !admises[cle] {
+				v.f("%s: %s n'est pas renseigné par l'évènement %s (admis : %s)", q, cle, ev, strings.Join(FeuillesAdmises(ev), ", "))
+			}
+		}
+		for i, e := range nd.Et {
+			parcourir(fmt.Sprintf("%s.et[%d]", q, i), e)
+		}
+		for i, e := range nd.Ou {
+			parcourir(fmt.Sprintf("%s.ou[%d]", q, i), e)
+		}
+		parcourir(q+".non", nd.Non)
+	}
+	parcourir(p+": condition", d.Arbre)
+	for i, e := range d.Effets {
+		q := fmt.Sprintf("%s: effets[%d] (%s)", p, i, e.Effet)
+		switch {
+		case e.Effet == Notifier || e.Effet == Marquer:
+		case e.Effet == Refuser && ev == EvOuvertureSession:
+		default:
+			v.f("%s: effet non admis pour l'évènement %s (notifier, marquer ; refuser pour ouverture_session)", q, ev)
+		}
+		if e.Effet == Notifier && e.SiEchec == EchecRefuser && ev != EvOuvertureSession {
+			v.f("%s: si_echec: refuser n'a pas d'objet pour l'évènement %s (rien à refuser)", q, ev)
+		}
+	}
 }
 
 // validerEnveloppe contrôle ce que v1 et v2 partagent.
@@ -127,9 +175,6 @@ func validerDeclencheur(v *validation, p string, d *Directive) bool {
 	default:
 		v.f("%s: evenement %q inconnu", p, dc.Evenement)
 		return false
-	}
-	if dc.Evenement != EvAppelOutil && d.Statut != Brouillon {
-		v.f("%s: l'évènement %s est défini par le schéma mais pas encore évalué par l'engine : seul le statut brouillon est admis", p, dc.Evenement)
 	}
 	if c == nil {
 		return false

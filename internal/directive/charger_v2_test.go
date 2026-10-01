@@ -147,7 +147,10 @@ func TestChargerV2_Refus(t *testing.T) {
 		{"cible vide", doc(`{` + baseV2 + `, "declencheur": {"evenement": "appel_outil", "cible": {}}, "effets": ` + refuser + `}`), "cible vide"},
 		{"accès inconnu", doc(`{` + baseV2 + `, "declencheur": {"evenement": "appel_outil", "cible": {"acces": "write"}}, "effets": ` + refuser + `}`), "acces"},
 		{"serveur invalide", doc(`{` + baseV2 + `, "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "Taux"}}, "effets": ` + refuser + `}`), "invalide"},
-		{"évènement réservé actif", doc(`{` + baseV2 + `, "declencheur": {"evenement": "purge"}, "effets": ` + refuser + `}`), "pas encore évalué"},
+		{"purge qui refuse", doc(`{` + baseV2 + `, "declencheur": {"evenement": "purge"}, "effets": ` + refuser + `}`), "effet non admis"},
+		{"attestation qui lit un argument", doc(`{` + baseV2 + `, "declencheur": {"evenement": "attestation_echouee"}, "condition": {"argument": {"champ": "/a", "op": "present"}}, "effets": [{"effet": "marquer", "etiquette": "x"}]}`), "n'est pas renseigné"},
+		{"ouverture avec quantificateur", doc(`{` + baseV2 + `, "declencheur": {"evenement": "ouverture_session"}, "condition": {"existe": {"champ": "/a", "condition": {"temps": {"jour_semaine": ["lundi"], "fuseau": "Europe/Paris"}}}}, "effets": ` + refuser + `}`), "n'est pas renseigné"},
+		{"purge si_echec refuser", doc(`{` + baseV2 + `, "declencheur": {"evenement": "purge"}, "effets": [{"effet": "notifier", "destinataire_role": "dpo", "rythme": "temps_reel", "si_echec": "refuser"}]}`), "rien à refuser"},
 		{"ouverture avec cible", doc(`{"id": "V-1", "version": 1, "statut": "brouillon", "date_effet": "2026-10-04T08:00:00Z", "texte_fr": "t", "fondements": [{"texte": "x"}], "declencheur": {"evenement": "ouverture_session", "cible": {"serveur": "*"}}, "effets": ` + refuser + `}`), "n'admet pas de cible"},
 		// Arbre.
 		{"nœud à deux clés", doc(dv2(`{"non": {"argument": {"champ": "/a", "op": "present"}}, "argument": {"champ": "/a", "op": "present"}}`, refuser)), "plusieurs clés"},
