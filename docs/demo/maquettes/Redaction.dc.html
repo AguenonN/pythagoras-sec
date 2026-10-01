@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Juriste — rédaction</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1D4F7A}a:hover{color:#123452}
+</style>
+</helmet>
+<div style="width: 1440px; height: 980px; box-sizing: border-box; background: #F6F5F1; color: #17191C; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; display: flex; flex-direction: column">
+
+<header style="height: 60px; box-sizing: border-box; padding: 0 28px; background: #FFFFFF; border-bottom: 1px solid #DAD7CE; display: flex; align-items: center; gap: 32px">
+<div style="font-family: 'Source Serif 4', serif; font-size: 20px; font-weight: 600">[Nom du produit]</div>
+<nav style="display: flex; gap: 24px; font-size: 14px">
+<a href="Main.dc.html" style="color: #5B6068; text-decoration: none; padding: 19px 0">Journal</a>
+<a href="Conseiller.dc.html" style="color: #5B6068; text-decoration: none; padding: 19px 0">Poste conseiller</a>
+<a href="Regles.dc.html" style="color: #5B6068; text-decoration: none; padding: 19px 0">Règles</a>
+<a href="AvantApres.dc.html" style="color: #5B6068; text-decoration: none; padding: 19px 0">Avant / après</a>
+<a href="Superviseur.dc.html" style="color: #5B6068; text-decoration: none; padding: 19px 0">Validation</a>
+<a href="Redaction.dc.html" style="color: #17191C; font-weight: 600; text-decoration: none; border-bottom: 2px solid #1D4F7A; padding: 19px 0 17px">Rédaction</a>
+</nav>
+<div style="margin-left: auto; font-size: 13px; color: #5B6068">Connecté : <b style="color: #17191C">J. Juriste (fictif)</b> · direction-juridique</div>
+</header>
+
+<div style="flex-grow: 1; display: grid; grid-template-columns: 420px minmax(0, 1fr) 440px; min-height: 0">
+
+<section style="box-sizing: border-box; border-right: 1px solid #DAD7CE; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; gap: 6px; background: #ECEAE3; border-radius: 8px; padding: 4px">
+<button type="button" style="flex-grow: 1; font: inherit; font-size: 13px; font-weight: 600; background: #FFFFFF; color: #17191C; border: 0; border-radius: 6px; min-height: 36px; cursor: pointer">Écrire une directive</button>
+<button type="button" style="flex-grow: 1; font: inherit; font-size: 13px; background: transparent; color: #4A4E55; border: 0; border-radius: 6px; min-height: 36px; cursor: pointer">Propositions de l'Analyste · 1</button>
+</div>
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5B6068">1 · Votre directive</div>
+<label for="texte" style="font-size: 13px; color: #5B6068">Écrivez la règle en français, avec son fondement.</label>
+<textarea id="texte" rows="7" style="font-family: 'Source Serif 4', serif; font-size: 18px; line-height: 1.5; padding: 14px; border: 1px solid #C9C5BA; border-radius: 6px; background: #FFFFFF; resize: none">Si l'utilisateur est membre du groupe X, toute rédaction de rapport basée sur des données client est bloquée pour lui.</textarea>
+<label for="fondement" style="font-size: 13px; color: #5B6068">Fondement</label>
+<input id="fondement" type="text" value="[Politique interne d'habilitation, réf. à compléter]" style="font: inherit; padding: 11px 12px; border: 1px solid #C9C5BA; border-radius: 6px; background: #FFFFFF">
+<button type="button" style="font: inherit; font-weight: 600; background: #1D4F7A; color: #FFFFFF; border: 0; border-radius: 6px; min-height: 44px; cursor: pointer">Compiler</button>
+<div style="margin-top: auto; background: #FBE4E1; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<b style="color: #A1261B">Exemple de refus motivé</b>
+<span style="font-size: 13px; line-height: 1.5">« Les agents ne doivent pas discriminer » : critère non observable dans un appel d'outil. Le compilateur ne produit rien et explique ce qu'il faudrait nommer (un champ, un groupe, une source).</span>
+</div>
+</section>
+
+<section style="box-sizing: border-box; padding: 24px 28px; display: flex; flex-direction: column; gap: 14px; min-width: 0">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5B6068">2 · Questions du compilateur</div>
+<div style="font-size: 13px; color: #5B6068">Le compilateur ne devine rien : chaque valeur absente du texte devient une question.</div>
+
+<div style="background: #FFFFFF; border: 1px solid #DAD7CE; border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<b>« L'utilisateur » désigne-t-il la personne qui lance les agents, ou la personne dont parle le rapport ?</b>
+<div style="display: flex; gap: 8px"><span style="background: #1D4F7A; color: #FFFFFF; border-radius: 14px; padding: 5px 12px; font-size: 13px">Le demandeur de la session</span><span style="border: 1px solid #C9C5BA; border-radius: 14px; padding: 5px 12px; font-size: 13px">La personne concernée</span></div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #DAD7CE; border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<b>Quel groupe de l'annuaire correspond au « groupe X » ?</b>
+<div style="display: flex; gap: 8px"><span style="background: #1D4F7A; color: #FFFFFF; border-radius: 14px; padding: 5px 12px; font-size: 13px">prestataires-externes</span><span style="border: 1px solid #C9C5BA; border-radius: 14px; padding: 5px 12px; font-size: 13px">stagiaires</span><span style="border: 1px solid #C9C5BA; border-radius: 14px; padding: 5px 12px; font-size: 13px">agence-paris</span></div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #DAD7CE; border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<b>« Données client » : sources étiquetées donnees_client (recherche-entreprises, banque-synthetique / evaluer_dossier) ?</b>
+<div style="display: flex; gap: 8px"><span style="background: #1D4F7A; color: #FFFFFF; border-radius: 14px; padding: 5px 12px; font-size: 13px">Oui</span><span style="border: 1px solid #C9C5BA; border-radius: 14px; padding: 5px 12px; font-size: 13px">Choisir d'autres sources</span></div>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #DAD7CE; border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<b>Bloquer la consultation des données client, ou seulement la production du rapport ?</b>
+<div style="display: flex; gap: 8px"><span style="border: 1px solid #C9C5BA; border-radius: 14px; padding: 5px 12px; font-size: 13px">La consultation</span><span style="background: #1D4F7A; color: #FFFFFF; border-radius: 14px; padding: 5px 12px; font-size: 13px">La production seulement</span></div>
+</div>
+<div style="background: #FFFFFF; border: 1px dashed #8A8F97; border-radius: 8px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px">
+<b>Si le demandeur est inconnu (condition indéterminée) : refuser ou laisser passer ?</b>
+<div style="display: flex; gap: 8px"><span style="background: #1D4F7A; color: #FFFFFF; border-radius: 14px; padding: 5px 12px; font-size: 13px">Refuser (défaut)</span><span style="border: 1px solid #C9C5BA; border-radius: 14px; padding: 5px 12px; font-size: 13px">Laisser passer</span></div>
+<span style="font-size: 12px; color: #5B6068">Question posée par le code, jamais par le modèle. Réponse consignée à votre nom.</span>
+</div>
+</section>
+
+<section style="box-sizing: border-box; border-left: 1px solid #DAD7CE; background: #FFFFFF; padding: 24px; display: flex; flex-direction: column; gap: 14px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5B6068">3 · Ce qui sera appliqué</div>
+<div style="display: flex; gap: 8px; align-items: center"><b>D-150 v1</b><span style="background: #ECECEA; color: #4A4E55; border-radius: 12px; padding: 3px 10px; font-size: 12px; font-weight: 600">brouillon</span><span style="font-size: 12px; color: #1E6B3C; font-weight: 600">accepté par le chargeur strict</span></div>
+<div style="line-height: 1.6; display: flex; flex-direction: column; gap: 10px">
+<p style="margin: 0"><b>Déclencheur :</b> tout appel à un outil étiqueté <i>production_rapport</i>.</p>
+<p style="margin: 0"><b>Condition :</b> le demandeur appartient au groupe <i>prestataires-externes</i> <b>et</b> la session a reçu des données d'une source étiquetée <i>donnees_client</i>.</p>
+<p style="margin: 0"><b>Effets :</b> refuser l'appel ; notifier le rôle <i>direction-juridique</i> en temps réel (si la notification échoue : refuser).</p>
+<p style="margin: 0"><b>Indéterminé :</b> refuser.</p>
+</div>
+<div style="font-size: 12px; color: #5B6068; border-top: 1px solid #ECEAE3; padding-top: 10px">Relecture produite par gabarit, sans IA. Le texte d'origine est conservé tel quel dans la directive.</div>
+<div style="background: #F6F5F1; border-radius: 8px; padding: 12px 14px; font-size: 13px; line-height: 1.5">Essai sur le journal d'hier : <b>2 appels</b> auraient été refusés (sessions S-18b2, S-40e7). <a href="AvantApres.dc.html">Voir l'avant / après</a></div>
+<div style="margin-top: auto; display: flex; flex-direction: column; gap: 10px">
+<button type="button" style="font: inherit; font-weight: 600; background: #FFFFFF; color: #1D4F7A; border: 1px solid #1D4F7A; border-radius: 6px; min-height: 44px; cursor: pointer">Mettre en observation</button>
+<button type="button" style="font: inherit; font-weight: 600; background: #1D4F7A; color: #FFFFFF; border: 0; border-radius: 6px; min-height: 44px; cursor: pointer">Activer (signé J. Juriste)</button>
+<span style="font-size: 12px; color: #5B6068; text-align: center">Observation : décision journalisée, jamais appliquée.</span>
+</div>
+</section>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

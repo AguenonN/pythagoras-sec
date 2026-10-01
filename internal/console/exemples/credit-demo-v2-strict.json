@@ -1,0 +1,101 @@
+{
+  "jeu": {
+    "id": "credit-demo",
+    "version": 2,
+    "date_effet": "2026-09-01T00:00:00Z",
+    "auteur": "juriste@cabinet.fr (variante plus stricte, exemple)"
+  },
+  "directives": [
+    {
+      "id": "D-001",
+      "version": 2,
+      "statut": "active",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Aucun prêt ne peut être attribué à partir des informations du serveur de taux officiel : l'attribution est refusée. (Variante stricte de démonstration.)",
+      "fondement": {
+        "texte": "RGPD — à valider par le juriste",
+        "article": "22",
+        "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+      },
+      "verrou": "provenance_session",
+      "cible": {
+        "serveur": "banque-synthetique",
+        "outil": "attribuer_pret"
+      },
+      "provenance": {
+        "serveurs": [
+          "taux-officiel"
+        ]
+      },
+      "effet": "refuser"
+    },
+    {
+      "id": "D-002",
+      "version": 2,
+      "statut": "active",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Au-delà de 50 000 euros, l'attribution d'un prêt est bloquée. (Variante stricte de démonstration.)",
+      "fondement": {
+        "texte": "RGPD — à valider par le juriste",
+        "article": "22",
+        "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+      },
+      "verrou": "seuil_argument",
+      "cible": {
+        "serveur": "banque-synthetique",
+        "outil": "attribuer_pret"
+      },
+      "condition": [
+        {
+          "champ": "/montant",
+          "op": ">",
+          "valeur": 50000
+        }
+      ],
+      "si_indetermine": "refuser",
+      "effet": "refuser"
+    },
+    {
+      "id": "D-003",
+      "version": 1,
+      "statut": "active",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Toute source de taux non attestée est rejetée. (Démonstration : fondement à valider par le juriste.)",
+      "fondement": {
+        "texte": "RGPD — à valider par le juriste",
+        "article": "5",
+        "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+      },
+      "verrou": "source_attestee",
+      "cible": {
+        "serveur": "taux-officiel",
+        "outil": "*"
+      },
+      "effet": "refuser"
+    },
+    {
+      "id": "D-004",
+      "version": 1,
+      "statut": "active",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Le serveur de vérification d'entreprise ne reçoit que le SIREN ; tout autre champ est retiré avant l'envoi. (Démonstration : fondement à valider par le juriste.)",
+      "fondement": {
+        "texte": "RGPD — à valider par le juriste",
+        "article": "5",
+        "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+      },
+      "verrou": "champs_autorises_par_destination",
+      "cible": {
+        "serveur": "recherche-entreprises",
+        "outil": "*"
+      },
+      "champs": {
+        "autorises": [
+          "/siren"
+        ],
+        "mode": "caviarder"
+      },
+      "effet": "caviarder"
+    }
+  ]
+}

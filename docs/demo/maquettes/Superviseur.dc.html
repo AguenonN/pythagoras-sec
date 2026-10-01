@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>File du superviseur</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&amp;family=IBM+Plex+Sans:wght@400;500;600&amp;family=Source+Serif+4:opsz,wght@8..60,500;8..60,600&amp;display=swap">
+<style>
+body{margin:0}
+a{color:#1D4F7A}a:hover{color:#123452}
+</style>
+</helmet>
+<div style="width: 1440px; height: 980px; box-sizing: border-box; background: #F6F5F1; color: #17191C; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; display: flex; flex-direction: column">
+
+<header style="height: 60px; box-sizing: border-box; padding: 0 28px; background: #FFFFFF; border-bottom: 1px solid #DAD7CE; display: flex; align-items: center; gap: 32px">
+<div style="font-family: 'Source Serif 4', serif; font-size: 20px; font-weight: 600">[Nom du produit]</div>
+<nav style="display: flex; gap: 24px; font-size: 14px">
+<a href="Main.dc.html" style="color: #5B6068; text-decoration: none; padding: 19px 0">Journal</a>
+<a href="Conseiller.dc.html" style="color: #5B6068; text-decoration: none; padding: 19px 0">Poste conseiller</a>
+<a href="Regles.dc.html" style="color: #5B6068; text-decoration: none; padding: 19px 0">Règles</a>
+<a href="AvantApres.dc.html" style="color: #5B6068; text-decoration: none; padding: 19px 0">Avant / après</a>
+<a href="Superviseur.dc.html" style="color: #17191C; font-weight: 600; text-decoration: none; border-bottom: 2px solid #1D4F7A; padding: 19px 0 17px">Validation</a>
+<a href="Redaction.dc.html" style="color: #5B6068; text-decoration: none; padding: 19px 0">Rédaction</a>
+</nav>
+<div style="margin-left: auto; font-size: 13px; color: #5B6068">Connecté : <b style="color: #17191C">V. Valideur (fictif)</b> · analyste-risques · annuaire-local-demo</div>
+</header>
+
+<div style="flex-grow: 1; display: flex; min-height: 0">
+
+<aside style="width: 400px; box-sizing: border-box; border-right: 1px solid #DAD7CE; background: #FBFAF7; padding: 20px 16px; display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5B6068; padding: 0 4px 6px">En attente · 3</div>
+<button type="button" style="all: unset; cursor: pointer; background: #FFFFFF; border: 1px solid #1D4F7A; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<span style="display: flex; justify-content: space-between"><b>Attribution 400 000 €</b><span style="font-size: 12px; color: #5B6068">il y a 2 min</span></span>
+<span style="font-size: 13px; color: #5B6068">DOS-FICTIF-002 · D-101, D-106</span>
+<span style="font-size: 12px; color: #1D4F7A; font-weight: 600">Rôle requis : analyste-risques · 0 / 1</span>
+</button>
+<button type="button" style="all: unset; cursor: pointer; background: #FFFFFF; border: 1px solid #DAD7CE; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<span style="display: flex; justify-content: space-between"><b>Proposition de sanction</b><span style="font-size: 12px; color: #5B6068">il y a 9 min</span></span>
+<span style="font-size: 13px; color: #5B6068">SAL-FICTIF-002 · D-140 (salarié protégé)</span>
+<span style="font-size: 12px; color: #5B6068">Rôle requis : responsable-rh · 0 / 1</span>
+</button>
+<button type="button" style="all: unset; cursor: pointer; background: #FFFFFF; border: 1px solid #DAD7CE; border-radius: 8px; padding: 14px; display: flex; flex-direction: column; gap: 6px">
+<span style="display: flex; justify-content: space-between"><b>Engagement 2 400 000 €</b><span style="font-size: 12px; color: #5B6068">il y a 14 min</span></span>
+<span style="font-size: 13px; color: #5B6068">jeu direction-demo · D-130 (top management)</span>
+<span style="font-size: 12px; color: #5B6068">Rôle requis : directeur-risques · quatre yeux · 1 / 2</span>
+</button>
+</aside>
+
+<main style="flex-grow: 1; box-sizing: border-box; padding: 28px 32px; display: flex; flex-direction: column; gap: 18px; min-width: 0">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h1 style="margin: 0; font-family: 'Source Serif 4', serif; font-size: 26px; font-weight: 600">Attribution de 400 000 € — DOS-FICTIF-002</h1>
+<div style="color: #5B6068">Demandée par C. Conseiller (fictif) · session S-7f3a · sous-agent déclaré « credit » · 04/10/2026 10:42:51</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px">
+<section style="background: #FFFFFF; border: 1px solid #DAD7CE; border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5B6068">Requête exacte qui sera transmise</div>
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; line-height: 1.7; background: #F6F5F1; border-radius: 6px; padding: 12px 14px; white-space: pre-line">banque-synthetique / attribuer_pret
+dossier_id : DOS-FICTIF-002
+siren : 382891752
+montant : 400000</div>
+<div style="font-size: 13px; display: flex; justify-content: space-between"><span style="color: #5B6068">Empreinte transmise</span><span style="font-family: 'IBM Plex Mono', monospace">a3f9…c21e</span></div>
+<div style="font-size: 12px; color: #5B6068">Votre signature vaut pour cette empreinte seulement. Toute modification de la requête exige une nouvelle validation.</div>
+</section>
+<section style="background: #FFFFFF; border: 1px solid #DAD7CE; border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5B6068">Pourquoi cette validation</div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b>D-106 v2 · Base interne des taux</b><span style="font-size: 13px; color: #5B6068">C. mon. fin., art. L313-5-1 · la session a consulté la base interne 2026-Q3</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b>D-101 v1 · Taux officiel consulté</b><span style="font-size: 13px; color: #5B6068">RGPD, art. 22 · décision de crédit à ne pas laisser à la seule machine</span></div>
+<div style="font-size: 13px; line-height: 1.5; border-top: 1px solid #ECEAE3; padding-top: 10px">Éléments consultés : seuil officiel 19,08 % (2026-Q4, source directe), base interne 19,00 % (2026-Q3), registre des gels sans correspondance.</div>
+</section>
+</div>
+
+<section style="background: #FFFFFF; border: 1px solid #DAD7CE; border-radius: 10px; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #5B6068">Contrôles faits par l'engine avant transmission</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; font-size: 13px">
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #1E6B3C">✓ Signature</b><span style="color: #5B6068">clé Ed25519 de l'annuaire</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #1E6B3C">✓ Rôle à la date</b><span style="color: #5B6068">analyste-risques le 04/10/2026</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #1E6B3C">✓ Quatre yeux</b><span style="color: #5B6068">valideur ≠ demandeur</span></div>
+<div style="display: flex; flex-direction: column; gap: 4px"><b style="color: #1E6B3C">✓ Un jeton par rôle</b><span style="color: #5B6068">1 rôle requis, 1 jeton</span></div>
+</div>
+</section>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<label for="commentaire" style="font-size: 13px; color: #5B6068">Commentaire consigné au journal (facultatif)</label>
+<textarea id="commentaire" rows="3" style="font: inherit; padding: 12px 14px; border: 1px solid #C9C5BA; border-radius: 6px; background: #FFFFFF; resize: none">Taux sous le seuil 2026-Q4. Base interne à mettre à jour.</textarea>
+</div>
+
+<div style="margin-top: auto; display: flex; gap: 12px; justify-content: flex-end; align-items: center">
+<span style="font-size: 12px; color: #5B6068; margin-right: auto">L'approbation est écrite au journal chaîné avant la transmission.</span>
+<button type="button" style="font: inherit; font-weight: 600; background: #FFFFFF; color: #A1261B; border: 1px solid #A1261B; border-radius: 6px; padding: 0 22px; min-height: 44px; cursor: pointer">Rejeter</button>
+<button type="button" style="font: inherit; font-weight: 600; background: #1D4F7A; color: #FFFFFF; border: 0; border-radius: 6px; padding: 0 22px; min-height: 44px; cursor: pointer">Signer et valider</button>
+</div>
+</main>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
