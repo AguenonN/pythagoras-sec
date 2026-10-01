@@ -91,3 +91,49 @@ class TestWeekend(Scenario, unittest.TestCase):
         for cle in ("declencheur", "condition", "effets", "fondements"):
             self.assertEqual(d[cle], ref[cle], cle)
         self.assertEqual(d["texte_fr"], scenarios_v2.lire("weekend")["texte"])
+
+
+class _Arret(Exception):
+    pass
+
+
+class _RejeuSansCorrection:
+    """Rejoue les tours enregistrés ; à la première demande de correction
+    (message « tool »), s'arrête en gardant les messages envoyés."""
+
+    def __init__(self):
+        self.rejeu = mistral.Client(mode="rejeu")
+        self.correction = None
+
+    def completer(self, messages, outils, **options):
+        if messages[-1]["role"] == "tool":
+            self.correction = messages
+            raise _Arret()
+        return self.rejeu.completer(messages, outils, **options)
+
+
+class TestTopManagement(unittest.TestCase):
+    """Le critère « impliquant une décision avec le top management » n'est
+    pas observable : Mistral refuse en expliquant et demande un critère. Le
+    juriste le donne (2 M€, directeur-risques, quatre yeux, notification au
+    juridique). La proposition réelle de Mistral ajoute alors une condition
+    que le juriste n'a pas écrite : le code la refuse et la renvoie. (La
+    correction de Mistral n'a pas pu être obtenue : génération interrompue
+    côté Mistral, voir le rapport.)"""
+
+    def test_refus_motive_puis_condition_inventee_refusee(self):
+        client = _RejeuSansCorrection()
+        with self.assertRaises(_Arret):
+            scenarios_v2.derouler(scenarios_v2.lire("top-management"), client)
+        r, tours = scenarios_v2.derouler(dict(scenarios_v2.lire("top-management"), reponses=[]),
+                                         mistral.Client(mode="rejeu"))
+        self.assertEqual(r["etat"], c2.NON_OBSERVABLE)
+        self.assertIsNone(r["jeu"])
+        self.assertIn("top management", r["non_observables"][0]["raison"])
+        self.assertEqual(r["questions"][0]["sujet"], "non_observable")
+        renvoi = client.correction[-1]["content"]
+        self.assertIn("Refusé par le vérificateur", renvoi)
+        self.assertIn("la source banque-synthetique n'est pas désignée par le juriste", renvoi)
+        propose = json.loads(client.correction[-2]["tool_calls"][0]["function"]["arguments"])
+        d, = propose["directives"]
+        self.assertEqual(d["effets"][0], {"effet": "attendre_validation", "par_role": "directeur-risques", "quatre_yeux": True})

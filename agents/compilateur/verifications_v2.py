@@ -87,6 +87,18 @@ def article_ecrit_apres(texte, source):
     return m.group(1) if m else None
 
 
+def _racine(mot):
+    return mot[:-1] if len(mot) > 3 and mot.endswith(("s", "x")) else mot
+
+
+def source_designee(serveur, source):
+    """Le juriste a-t-il désigné ce serveur ? Chaque mot de son nom figure
+    dans la source, au pluriel près (« registre des gels d'avoirs » désigne
+    gels-avoirs, « taux officiel » taux-officiel)."""
+    mots = {_racine(m) for m in _nom(source).split()}
+    return all(_racine(m) in mots for m in _nom(serveur).split())
+
+
 def transmis_ecrit(source):
     """Le juriste a-t-il dit qu'un appel parti suffit, quel qu'en soit le
     résultat ? Sinon « consulté » veut dire « données reçues », le plus fermé."""
@@ -165,6 +177,10 @@ def verifier_directive(p, d, vocab, source, prefixe):
             if "valeur" in f:
                 v.valeur(ou, f["valeur"])
         elif cle == "session.a_consulte":
+            sv = f.get("serveur") or (f.get("outil") or "").split("/")[0]
+            if sv and not source_designee(sv, source):
+                v.err("%s : la source %s n'est pas désignée par le juriste (ni son nom ni ses mots dans le texte "
+                      "ou les réponses) ; ne pas ajouter de condition", ou, sv)
             if f.get("critere") == "transmis" and not transmis_ecrit(source):
                 v.err("%s : critere transmis (un appel parti suffit, même sans réponse) n'est pas écrit par le juriste ; "
                       "« consulter » s'écrit donnees_recues", ou)

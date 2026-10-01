@@ -346,3 +346,20 @@ class TestQuestionsReposees(Base):
         r = self.compiler(CREDIT, ClientScripte({"choices": [{"finish_reason": "error", "message": {"content": ""}}]}))
         self.assertEqual(r["etat"], c2.ERREURS)
         self.assertIn("error", r["erreurs"][0])
+
+
+class TestSourceDesignee(Base):
+    def test_source_designee(self):
+        from compilateur.verifications_v2 import source_designee
+        self.assertTrue(source_designee("gels-avoirs", "le registre des gels d'avoirs"))
+        self.assertTrue(source_designee("taux-officiel", "à partir du taux officiel"))
+        self.assertTrue(source_designee("recherche-entreprises", "le serveur de recherche d'entreprises"))
+        self.assertFalse(source_designee("banque-synthetique", "toute attribution de prêt de plus de 2 M€"))
+
+    def test_condition_ajoutee_refusee(self):
+        p = d_seuil()
+        p["racine"] = "e"
+        p["noeuds"] += [{"id": "e", "type": "et", "enfants": ["a", "b"]},
+                        {"id": "b", "type": "a_consulte", "outil": "banque-synthetique/attribuer_pret", "critere": "donnees_recues"}]
+        r = self.compiler(CREDIT, ClientScripte(jeu(p), jeu(p)))
+        self.assertTrue(any("la source banque-synthetique n'est pas désignée" in e for e in r["erreurs"]), r["erreurs"])

@@ -14,7 +14,8 @@ et le gate ne sont pas modifiés.
 | 2 | `cd8917a` | `cmd/directive` : `verifier` et `relire` sur jeux v2, `--exiger-brouillon` conservé, tests |
 | 3 | `dafdb6e` | Schéma de function calling sans récursion : arbre à plat reconstruit par le code (`arbre.py`), énumérations tirées du vocabulaire (`vocabulaire.py`, `outils_v2.py`), `directive fuseaux` |
 | 4, 5 | `1a37a2b` | Un texte → un jeu v2 complet en brouillon ; refus motivés (`signaler_non_observable`) ; vérifications v2 ; questions fermées du code |
-| 6a | (ce commit) | Scénarios enregistrés crédit et week-end, rejoués ; durcissements trouvés en mode réel |
+| 6a | `d3fa1d2` | Scénarios enregistrés crédit et week-end, rejoués ; durcissements trouvés en mode réel |
+| 6b, 7 | (ce commit) | Top management (refus motivé rejoué ; proposition réelle refusée par le code) ; contrôle « source désignée » ; client Mistral : une génération en erreur n'est jamais mise en cache ; démo texte `--v2` |
 
 ### Étape 1 — relecture v2
 
@@ -102,6 +103,16 @@ et le gate ne sont pas modifiés.
   serait indéterminée, donc refusée, sur les autres).
 - Tests : `agents/tests/test_compilateur_v2.py` (client scripté).
 
+### Étape 7 — démo texte
+
+- `python -m compilateur.demo --v2 --jeu <id> --catalogue compilateur/exemples/catalogue-demo.json --auteur … --sortie jeu.json [--texte …] [--date-effet …] [--prefixe-id W] [--mode reel]` :
+  texte → refus motivés et questions de Mistral → questions fermées du code
+  (réponse hors options redemandée) → relecture v2 côte à côte → jeu en
+  brouillon écrit avec la consignation des réponses (`<sortie>.reponses.json`).
+  Sans `--v2`, le parcours v1 est inchangé (ses tests aussi).
+- Tests : `agents/tests/test_demo_v2.py` (parcours week-end rejoué de bout
+  en bout ; refus motivé affiché ; rien n'est écrit sur un refus).
+
 ### Étape 6 — scénarios enregistrés (crédit, week-end)
 
 - `agents/compilateur/scenarios_v2.py` déroule un scénario
@@ -132,12 +143,26 @@ et le gate ne sont pas modifiés.
   = `donnees_recues`, le plus fermé) ; racine sans nœuds ; réponses
   dédoublonnées et déclarées définitives ; question déjà répondue écartée ;
   `finish_reason: error` de Mistral signalé.
+- **Top management** : tour 1, Mistral **refuse en expliquant**
+  (`signaler_non_observable` : « impliquant une décision avec le top
+  management » n'est pas observable) et demande un critère. Le juriste répond
+  (attribution de prêt > 2 M€, `directeur-risques`, quatre yeux,
+  notification au juridique, Politique de crédit art. 7.1). Tour 2 :
+  Mistral propose la bonne cible, le bon seuil et les bons effets, **mais
+  ajoute une condition inventée** (« la session a reçu des données
+  d'attribuer_pret »). Le nouveau contrôle « source désignée » la refuse et
+  la renvoie. La correction, elle, n'a pas pu être obtenue : Mistral a rendu
+  `finish_reason: error` aux 3 tentatives sur cette requête précise. Une
+  variante de réponse (« sans autre condition ») a donné une proposition
+  hallucinée (trois directives, groupes et attestations non demandés), que
+  je n'ai pas gardée. Test : `TestTopManagement` (refus motivé rejoué ;
+  proposition réelle refusée par le code, message de refus vérifié).
 - Les enregistrements devenus inutiles après chaque changement de consigne
   (8 fichiers non versionnés) ont été déplacés hors du dépôt, pas commités.
 
 ## 2. Pas fait (encore)
 
-Étape 6 : top management, RH, demandeur (et un refus « ne pas discriminer ») ; étape 7 (démo).
+Étape 6 : RH, demandeur, refus « ne pas discriminer » ; top management jusqu'au jeu accepté (voir ci-dessus).
 
 ## 3. Décisions prises seul
 
@@ -170,14 +195,28 @@ et le gate ne sont pas modifiés.
 8. **Rythme et conduite en cas d'échec d'une notification : questions du
    code**, pas de Mistral : ce sont des paramètres obligatoires que le texte
    ne fixe presque jamais, et Mistral ne doit pas les choisir.
+10. **Démo v2 derrière `--v2`**, le défaut restant v1 : les tests v1
+    existants (`agents/tests/test_demo.py`) n'ont pas été modifiés. Je n'ai
+    modifié aucun fichier existant de `agents/tests` ni `agents/README.md`
+    (hors périmètre écrit du brief) ; j'y ai seulement ajouté des fichiers
+    de test.
+11. **Textes des scénarios écrits par moi** : le dépôt ne contient pas « la
+    politique de crédit complète » ni « la règle RH des groupes X et Y ». Je
+    les ai rédigés d'après `docs/orchestration/brief_v2.md` et les jeux de
+    référence `internal/directive/testdata/v2/` (fichiers
+    `agents/compilateur/exemples/scenarios-v2/*.json`).
 9. **Nombre écrit en chaîne** (`"500000"`) relu comme nombre, et flottant
    entier (`2000000.0`) comme entier : même valeur, autre écriture.
 
 ## 4. Blocages
 
-Aucun bloquant. Budget Mistral : **15 appels réels sur 30** après crédit et
-week-end (compteur `agents/.etat/compilateur-v2/budget.json`). Un appel a
-rendu `finish_reason: error` sans contenu (côté Mistral).
+- **Générations interrompues côté Mistral** (`finish_reason: error`, aucun
+  contenu) : 6 appels sur 23, dont 3 sur la même requête de correction
+  (top management) et 1 sur « ne pas discriminer ». Le client les mettait en
+  cache comme des réponses : corrigé (jamais enregistrées, nouvelle tentative
+  dans la limite de 3), test `test_mistral_fin_en_erreur.py`.
+- **Budget Mistral** : 23 appels réels sur 30 à ce point (compteur
+  `agents/.etat/compilateur-v2/budget.json`).
 
 ## 5. Questions pour Manu
 
