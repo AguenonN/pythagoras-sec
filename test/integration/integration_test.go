@@ -53,7 +53,7 @@ var (
 	empreinteImposteur            string
 	// Annuaire de démonstration, généré avec des clés neuves.
 	cheminAnnuaire, cheminAutorite, dirCles string
-	binaireJournal                         string
+	binaireJournal                          string
 	// Clé de test, sans valeur hors de ce fichier.
 	cleTest = []byte(strings.Repeat("integ-", 6))
 )
