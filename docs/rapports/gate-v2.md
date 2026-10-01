@@ -1,5 +1,7 @@
 # Rapport : session « gate-v2 », brancher le gate sur Decide v2
 
+*Rapport de la nuit, complété après les réponses de Manu (retours 2 et 5).*
+
 Branche `feat/gate-v2`, worktree `~/cybercar/mcp_rogue-gate-v2`, partie de
 `782ff37`. Rien n'est fusionné ni poussé.
 
@@ -32,19 +34,18 @@ défaut.
 | réponse du brief | 6495044 | Correctif signalé dans `internal/directive` : sous un quantificateur, `$racine/…` lit les arguments (feuilles `argument`, `sujet`, champ d'un quantificateur imbriqué) ; refusé hors quantificateur. Schéma §5.1 complété. |
 | revue | d49f39f, 9c82f6f | Jetons d'approbation à **usage unique** (sinon une validation autorisait deux fois le même prêt dans les 15 min) ; le rejeu signale un jeton accepté pour plusieurs appels. Contrat mis à jour. |
 | — | fd4e06f | gofmt d'un fichier de test. |
+| retour 5 | bfbfff9 | `mcp-gate -journaux-precedents <motif>` : au démarrage, relecture (chaîne vérifiée, même clé) des entrées `approbation` acceptées des journaux désignés ; un jeton déjà consommé est refusé, avec une entrée `approbation` refusée « jeton déjà utilisé ». Journal précédent rompu ou illisible : démarrage refusé, avec un message qui le nomme. Test de bout en bout : deux processus `mcp-gate` successifs, même jeton, le second refuse ; et refus de démarrer sur un journal rompu. |
+| retour 2 | f7eaf46 | `docs/contrat-engine.md` §8 : résolution des personnes concernées, et sa limite connue (pas d'entrée chaînée avant l'appel au résolveur). |
 
 ## 2. Pas fait, ou fait autrement que le brief
 
 - **`rejeu.RejouerEntree`** n'existe pas sous ce nom : la fonction est
   `rejeu.Rejouer` ; la reconstitution de l'appel est `rejeu.AppelDepuis`.
-- **Unicité des jetons après redémarrage** : le gate retient les jetons
-  acceptés en mémoire ; après un redémarrage du processus, un jeton encore
-  valide (15 min au plus) pourrait resservir. Le rejeu, lui, le détecte sur
-  tout le journal. Pour le fermer, il faudrait relire les approbations du
-  journal au démarrage (question 5).
-- **`scripts/lancer-demo.sh`** n'est pas modifié (hors liste du brief) : la
-  démo Mistral tourne toujours avec `credit-demo.json`, sans annuaire. Pour
-  essayer la v2 à la main, voir §6.
+- **`scripts/lancer-demo.sh`** n'est pas modifié : une autre session le
+  reprendra après la fusion. La démo Mistral tourne toujours avec
+  `credit-demo.json`, sans annuaire. Pour essayer la v2 à la main, voir §6.
+- **Entrée chaînée avant l'appel au résolveur RH** : pas faite (décision de
+  Manu), documentée comme limite connue (contrat §8).
 - **Compilateur et relecture (Python)** : ne connaissent ni les étiquettes
   du registre, ni les évènements, ni `$racine` (hors périmètre).
 - **Écran de synthèse** : les notifications `synthese` sont consignées
@@ -188,6 +189,13 @@ défaut.
     vérifiés à l'heure simulée ; un jeton signé maintenant par
     `mcp-approve` peut y paraître futur ou expiré. Les tests signent à
     l'heure simulée.
+35. **`-journaux-precedents` ne relit que les journaux désignés.** Un motif
+    trop large, qui attrape aussi le coffre ou l'écran de notifications,
+    empêche le démarrage : ces fichiers ne sont pas chaînés. C'est voulu
+    (fermé par défaut) ; le message nomme le fichier fautif. Un motif qui
+    ne désigne aucun fichier est admis (premier lancement).
+36. **Motif de refus « jeton déjà utilisé (jeton N) »**, pour un jeton
+    consommé dans ce processus comme dans un précédent.
 
 ## 4. Blocages
 
@@ -207,23 +215,23 @@ en 12d02e2 avant tout autre commit (décision 27).
 
 ## 5. Questions pour Manu
 
-1. **(important)** J'ai modifié `internal/session` a minima (crochet
-   `AOuverture`, décision 14) : la consignation dans `session_ouverte`
-   l'exige. À valider, ou à déplacer si vous préférez une entrée distincte.
-2. Les appels au résolveur des personnes concernées doivent-ils avoir
-   leur propre entrée chaînée avant de partir (décision 25) ?
-3. Valideur ≠ demandeur appliqué même sans `quatre_yeux` (décision 17) :
-   d'accord ?
-4. Faut-il un vrai outil `remettre_rapport` dans un serveur de démo
-   (banque-synthetique ?) pour que `rapport.json` serve à la démo, et pas
-   seulement aux tests (décision 31) ?
-5. Unicité des jetons d'approbation après redémarrage : relire le journal
-   au démarrage, ou accepter la fenêtre de 15 min (§2) ?
-6. Le chargeur admet désormais `ouverture_session`, `attestation_echouee`
-   et `purge` actifs, avec des feuilles et effets restreints (schéma §4,
-   évolution signalée) : la restriction vous convient-elle ?
-7. Faut-il brancher l'annuaire et un jeton de demandeur dans
-   `scripts/lancer-demo.sh` (hors de ma liste) ?
+Toutes les questions de la nuit ont reçu réponse :
+
+| Question | Réponse | Suite donnée |
+|---|---|---|
+| 1. Crochet `AOuverture` dans `internal/session` | accepté tel quel | — |
+| 2. Entrée chaînée avant l'appel au résolveur RH | pas maintenant | limite connue, contrat §8 (f7eaf46) |
+| 3. Valideur ≠ demandeur même sans `quatre_yeux` | oui, gardé | — |
+| 4. `remettre_rapport` dans un serveur de démo | fait dans `feat/correctifs` | rien ici ; la fusion vérifiera que `rapport.json` se charge |
+| 5. Unicité des jetons après redémarrage | à faire | `-journaux-precedents` (bfbfff9) |
+| 6. Restriction des évènements au chargement | acceptée | — |
+| 7. Annuaire dans `lancer-demo.sh` | autre session, après la fusion | rien ici |
+
+Nouvelle question, non urgente : `-journaux-precedents` suppose que tous
+les journaux relus ont la même clé HMAC que le journal courant. Un journal
+écrit avec une autre clé est vu comme rompu et empêche le démarrage. Si la
+démo change de clé d'une exécution à l'autre, il faudra soit garder la
+clé, soit fournir une clé par journal.
 
 ## 6. Vérifier en 5 minutes
 
@@ -234,7 +242,7 @@ go vet ./... && go test -race -count=1 ./...          # ~1 min
 (cd agents && python3 -m unittest discover -s tests -t .)
 
 # Les quatre scénarios de bout en bout, gate réel, en clair :
-go test -count=1 -v ./test/integration -run 'WeekEnd|TopManagement|RH_|Demandeur_Rapport' 2>&1 | grep -E '^(=== RUN|--- |ok|FAIL)'
+go test -count=1 -v ./test/integration -run 'WeekEnd|TopManagement|RH_|Demandeur_Rapport|JetonConsomme' 2>&1 | grep -E '^(=== RUN|--- |ok|FAIL)'
 
 # Ce que voit un humain : un journal produit, vérifié et rejoué.
 go test -count=1 -v ./cmd/journal -run TestVerifierEtRejouer
