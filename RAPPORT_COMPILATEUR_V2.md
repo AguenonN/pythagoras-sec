@@ -12,7 +12,7 @@ et le gate ne sont pas modifiés.
 |---|---|---|
 | 1 | `cd8cf89` | `internal/relecture` : relecture v2 déterministe (déclencheur, arbre, feuilles, effets, fuseau, indéterminé), fichiers attendus octet pour octet, trois fuseaux machine |
 | 2 | `cd8917a` | `cmd/directive` : `verifier` et `relire` sur jeux v2, `--exiger-brouillon` conservé, tests |
-| 3 | (ce commit) | Schéma de function calling sans récursion : arbre à plat reconstruit par le code (`arbre.py`), énumérations tirées du vocabulaire (`vocabulaire.py`, `outils_v2.py`), `directive fuseaux` |
+| 3 | `dafdb6e` | Schéma de function calling sans récursion : arbre à plat reconstruit par le code (`arbre.py`), énumérations tirées du vocabulaire (`vocabulaire.py`, `outils_v2.py`), `directive fuseaux` |
 
 ### Étape 1 — relecture v2
 
@@ -73,9 +73,36 @@ et le gate ne sont pas modifiés.
   aucune récursion, énumérations égales au vocabulaire et aux fuseaux Go, ce
   que Mistral ne fixe jamais) ; `cmd/directive` : `TestFuseaux`.
 
+### Étape 4 — un texte → un jeu complet (et mécanique de l'étape 5)
+
+- `agents/compilateur/compilateur_v2.py`, `compiler_jeu` : un appel
+  `proposer_jeu` porte **plusieurs directives** ; le code les numérote
+  (`D-001`, `D-002`…), les met toutes en `brouillon`, fixe `date_effet`,
+  et prend pour `texte_fr` l'extrait que Mistral a recopié **s'il figure mot
+  pour mot** dans le texte, sinon le texte entier. Le tout est réuni dans un
+  seul jeu, vérifié par `directive verifier --exiger-brouillon`, relu par
+  `directive relire`.
+- États : `questions`, `non_observable` (refus motivé : extrait, raison, et
+  une question pour un critère observable), `jeu`, `refuse`, `erreurs`.
+  Le refus motivé l'emporte sur une question, qui l'emporte sur une
+  proposition. Une seule correction renvoyée à Mistral, puis refus.
+- Questions **du code** (fermées, consignées, jamais envoyées à Mistral) :
+  `si_indetermine` (une question pour le jeu, qui liste les directives
+  concernées) ; pour chaque notification, `rythme` et `si_echec`. Le
+  chargeur contrôle d'abord le jeu avec des valeurs provisoires, qui ne sont
+  jamais rendues.
+- `agents/compilateur/verifications_v2.py` (rien d'inventé) : montants,
+  dates, heures, jours (« week-end » justifie samedi et dimanche), fuseau
+  (nom IANA ou ville écrite), étiquettes, rôles et groupes **sous leur forme
+  exacte** (« données client » ne justifie pas `donnees_client` : il faut le
+  choisir), quatre yeux, fondements, identités ; une condition sur un
+  argument doit porter sur un argument de **chaque** outil visé (sinon elle
+  serait indéterminée, donc refusée, sur les autres).
+- Tests : `agents/tests/test_compilateur_v2.py` (23, client scripté).
+
 ## 2. Pas fait (encore)
 
-Étapes 4 à 7.
+Étapes 6 (scénarios enregistrés) et 7 (démo).
 
 ## 3. Décisions prises seul
 
@@ -99,6 +126,17 @@ et le gate ne sont pas modifiés.
 5. **Seul l'évènement `appel_outil` est offert à Mistral** : les autres ne
    sont pas évalués par l'engine ; une règle qui en relèverait doit être
    signalée, pas compilée en une directive qui aurait l'air de compter.
+6. **`texte_fr` d'une directive issue d'un paragraphe** : l'extrait recopié
+   par Mistral s'il figure mot pour mot dans le texte, sinon le paragraphe
+   entier. Jamais une reformulation.
+7. **`si_indetermine` : une question pour tout le jeu** (et non une par
+   directive), pour ne pas noyer le juriste ; la réponse vaut pour chaque
+   directive concernée, et `ignorer` nomme le juriste dans chacune.
+8. **Rythme et conduite en cas d'échec d'une notification : questions du
+   code**, pas de Mistral : ce sont des paramètres obligatoires que le texte
+   ne fixe presque jamais, et Mistral ne doit pas les choisir.
+9. **Nombre écrit en chaîne** (`"500000"`) relu comme nombre, et flottant
+   entier (`2000000.0`) comme entier : même valeur, autre écriture.
 
 ## 4. Blocages
 
