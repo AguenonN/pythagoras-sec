@@ -1,6 +1,8 @@
 # Rapport — session « compilateur-v2 » : du texte du juriste au jeu v2
 
 Branche `feat/compilateur-v2`, worktree `~/cybercar/mcp_rogue-compilateur-v2`.
+Ce rapport, d'abord tenu à la racine (`RAPPORT_COMPILATEUR_V2.md`), est
+versé dans `docs/rapports/compilateur-v2.md`.
 Rien n'est poussé ni fusionné. `main` n'est pas touchée. `internal/directive`,
 le gate et les paquets protégés ne sont pas modifiés.
 
@@ -36,7 +38,8 @@ pour l'autre.
 | 6 | `d77df35` | Scénarios demandeur (complet) et RH (partiel) |
 | — | `f402647` | Rapport final |
 | 7 | `4823844` | Démo en v2 par défaut, `--v1` disponible (décision de Manu) |
-| 5 | (ce commit) | Question fermée du code : demandeur ou personne concernée (« utilisateur », « user », « la personne », « l'agent humain ») |
+| 5 | `7a17b46` | Question fermée du code : demandeur ou personne concernée (« utilisateur », « user », « la personne », « l'agent humain ») |
+| — | (ce commit) | Rapport déplacé : `RAPPORT_COMPILATEUR_V2.md` → `docs/rapports/compilateur-v2.md` (`git mv`) |
 
 ### Étape 1 — relecture v2 (`internal/relecture/relecture_v2.go`)
 
