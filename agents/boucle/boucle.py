@@ -146,21 +146,39 @@ def message_blocage(refus):
 
 
 class Boucle:
-    def __init__(self, serveur, modele, sous_agent, tours_max=TOURS_MAX):
+    """``consigne`` s'ajoute à la consigne commune (règles et clause de
+    l'enveloppe, jamais retirées) ; ``outils`` restreint les outils offerts
+    au modèle à ces noms exposés, qui doivent tous l'être ; ``outils_mcp``
+    évite de relister les outils d'une session déjà ouverte ;
+    ``arret_sur_refus`` termine la boucle au premier refus, sans rendre la
+    main au modèle."""
+
+    def __init__(self, serveur, modele, sous_agent, tours_max=TOURS_MAX, consigne=None, outils=None,
+                 outils_mcp=None, arret_sur_refus=False):
         if not sous_agent:
             raise ValueError("sous_agent obligatoire : il est porté par chaque appel")
         self.serveur = serveur
         self.modele = modele
         self.sous_agent = sous_agent
         self.tours_max = tours_max
-        self.definitions, self.signalements, self.exclus = schemas.convertir_tous(serveur.lister_outils())
+        self.consigne = CONSIGNE + ("\n\n" + consigne if consigne else "")
+        self.arret_sur_refus = arret_sur_refus
+        if outils_mcp is None:
+            outils_mcp = serveur.lister_outils()
+        if outils is not None:
+            exposes = {o.get("name") for o in outils_mcp}
+            absents = sorted(set(outils) - exposes)
+            if absents:
+                raise ValueError("outil(s) non exposé(s) par le serveur : %s" % ", ".join(absents))
+            outils_mcp = [o for o in outils_mcp if o.get("name") in set(outils)]
+        self.definitions, self.signalements, self.exclus = schemas.convertir_tous(outils_mcp)
         self.noms = {d["function"]["name"] for d in self.definitions}
 
     # -- points d'entrée ----------------------------------------------------
 
     def executer(self, demande):
         etat = {
-            "messages": [{"role": "system", "content": CONSIGNE}, {"role": "user", "content": demande}],
+            "messages": [{"role": "system", "content": self.consigne}, {"role": "user", "content": demande}],
             "tours": 0, "refus": None, "apres_refus": 0, "journal": [],
         }
         return self._continuer(etat)
@@ -175,6 +193,16 @@ class Boucle:
         issue = self._appeler(etat, a["outil"], a["arguments"], jeton)
         fin = self._apres_appel(etat, a["tool_call_id"], a["outil"], a["arguments"], issue, a["reste"])
         return fin if fin is not None else self._continuer(etat)
+
+    def relancer(self, termine, message):
+        """Après une fin ``termine`` dont la réponse ne convient pas (sortie
+        structurée invalide), rend la main au modèle avec ``message``."""
+        if termine.get("etat") != TERMINE or "_etat" not in termine:
+            raise ErreurBoucle("rien à relancer")
+        etat = copy.deepcopy(termine["_etat"])
+        etat["messages"].append({"role": "assistant", "content": termine["reponse"]})
+        etat["messages"].append({"role": "user", "content": message})
+        return self._continuer(etat)
 
     # -- boucle ---------------------------------------------------------------
 
@@ -242,8 +270,16 @@ class Boucle:
         except mcp.ErreurMCP as e:
             r = e
         issue = classer(r)
-        etat["journal"].append({"outil": nom, "arguments": arguments, "nature": issue["nature"],
-                                "avec_jeton": bool(jeton)})
+        trace = {"outil": nom, "arguments": arguments, "nature": issue["nature"], "avec_jeton": bool(jeton)}
+        if issue["nature"] in ("refus", "attente"):
+            trace["directive"] = issue["directive"]
+            trace["motif"] = issue["motif"]
+        if issue["nature"] == "attente":
+            trace["empreinte"] = issue["empreinte"]
+            sc = r.get("structuredContent") if isinstance(r, dict) else None
+            trace["attente"] = {k: sc.get(k) for k in ("directive", "version", "roles", "quatre_yeux", "motif_jeton")
+                                if isinstance(sc, dict) and k in sc}
+        etat["journal"].append(trace)
         return issue
 
     def _apres_appel(self, etat, tool_call_id, nom, arguments, issue, reste):
@@ -274,10 +310,10 @@ class Boucle:
         for autre, nom_autre in reste:
             etat["messages"].append({"role": "tool", "tool_call_id": autre, "name": nom_autre,
                                      "content": "Non exécuté : un seul appel d'outil par tour."})
-        if issue["nature"] == "refus" and etat["apres_refus"] >= TENTATIVES_APRES_REFUS:
+        if issue["nature"] == "refus" and (self.arret_sur_refus or etat["apres_refus"] >= TENTATIVES_APRES_REFUS):
             return self._fin(etat, BLOQUE, message_blocage(issue))
         return None
 
     def _fin(self, etat, nature, reponse):
         return {"etat": nature, "reponse": reponse, "journal": etat["journal"],
-                "refus": etat["refus"], "tours": etat["tours"]}
+                "refus": etat["refus"], "tours": etat["tours"], "_etat": etat}
