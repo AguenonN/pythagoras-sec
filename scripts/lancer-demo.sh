@@ -35,6 +35,13 @@
 # (gels-avoirs preparer) s'il est absent ; vérifie que le gate démarre avec
 # le registre, l'annuaire et demo/directives/demo.json.
 #
+# Délai du backend : 120 s (DEMO_DELAI_BACKEND). En MIXTE, gels-avoirs
+# télécharge le registre complet (12 Mo, environ 90 s le 01/10/2026) ; son
+# client HTTP abandonne à 30 s, trois fois (1 s puis 2 s d'attente entre
+# deux), avant de se replier sur le registre local daté : 95 s environ. Avec
+# le délai par défaut du gate (30 s), le gate coupait avant ce repli :
+# « source indisponible ».
+#
 # Le gate ne reçoit, par env -i, que la clé du journal, le jeton d'identité
 # du demandeur, DONNEES_MODE et les identifiants PISTE : jamais
 # MISTRAL_API_KEY (l'orchestrateur la retire aussi de l'environnement qu'il
@@ -105,7 +112,8 @@ gate() {
 		-journal "$session/journal.jsonl" -coffre "$session/coffre.jsonl"
 		-notifications "$session/notifications.jsonl"
 		-annuaire "$racine/demo/annuaire.json" -annuaire-autorite "$cles/autorite.pub"
-		-journaux-precedents "$sessions/*/journal.jsonl")
+		-journaux-precedents "$sessions/*/journal.jsonl"
+		-delai-backend "${DEMO_DELAI_BACKEND:-120s}")
 	if [[ -n "$depart" ]]; then
 		args+=(-horloge-depart "$depart")
 	fi
@@ -257,7 +265,7 @@ PY
 	[[ -n "$scenario" ]] && orch+=(--scenario "$scenario")
 	if [[ "$mode" == rejeu ]]; then
 		orch+=(--mcp-approve "$racine/bin/mcp-approve" --cles "$cles")
-		export DEMO_DONNEES_MODE=REJEU
+		export DEMO_DONNEES_MODE="${DEMO_DONNEES_MODE:-REJEU}"
 	fi
 	echo "lancer-demo: session $session" >&2
 	local code=0

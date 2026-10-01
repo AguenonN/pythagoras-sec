@@ -58,7 +58,7 @@ Demandeur : {demandeur}. Date de la demande : {date}."""
 
 FIN_SOUS_AGENT = """Date de la demande (date de la décision) : {date}.
 
-Quand ta tâche est terminée, réponds sans appel d'outil par un unique objet JSON conforme à ce schéma, sans aucun texte autour :
+Quand ta tâche est terminée, réponds sans appel d'outil par un unique objet JSON, sans aucun texte autour, qui donne les valeurs des champs décrits par ce schéma JSON (ne recopie pas le schéma : remplis-le) :
 {schema}"""
 
 
