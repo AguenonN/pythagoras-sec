@@ -1,0 +1,24 @@
+Jeu rh-v2, version 1, en vigueur à partir du 01/09/2026 à 00:00 UTC, auteur juriste@cabinet.fr.
+Empreinte : sha256:18eecd4390e6e3c6788fabc1b31973d165ec306a969ab955fdc5ce37c1f0fc2a.
+2 directives, évaluées dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
+Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.
+
+Directive R-001, version 1, active (appliquée), fondée sur l'art. L1121-1 Code du travail.
+Applicable aux appels à partir du 01/09/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Pour tous les appelants.
+Quand : tout appel d'outil du serveur rh-synthetique.
+Si au moins un élément de la liste en argument /salarie_ids vérifie (faux si la liste est vide) :
+  - la personne désignée par l'élément appartient au groupe « contentieux-en-cours »
+Alors :
+  - l'appel est refusé
+Si la règle ne peut pas être évaluée pour un appel (information absente, illisible ou inconnue du registre), l'appel est refusé.
+
+Directive R-002, version 1, active (appliquée), fondée sur l'art. L2411-1 Code du travail.
+Applicable aux appels à partir du 01/09/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Pour tous les appelants.
+Quand : tout appel d'outil du serveur rh-synthetique, pour un outil classé « action » au registre.
+Si au moins un élément de la liste en argument /salarie_ids vérifie (faux si la liste est vide) :
+  - la personne désignée par l'élément appartient au groupe « salaries-proteges »
+Alors :
+  - l'appel attend une validation humaine par le rôle « drh »
+Si la règle ne peut pas être évaluée pour un appel (information absente, illisible ou inconnue du registre), l'appel est refusé.

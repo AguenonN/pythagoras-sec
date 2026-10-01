@@ -1,0 +1,14 @@
+Jeu top-management-v2, version 1, en vigueur à partir du 01/09/2026 à 00:00 UTC, auteur juriste@cabinet.fr.
+Empreinte : sha256:d09b03bb723eae311531461ebd8c094efc86c3cdfe5145a6bd0f4b26c90a4688.
+1 directive, évaluée dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
+Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.
+
+Directive T-001, version 1, active (appliquée), fondée sur l'art. 7.1 Politique de crédit (fondement cité par les motifs), puis sur l'art. L511-55 Arrêté du 3 novembre 2014.
+Applicable aux appels à partir du 01/09/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Pour tous les appelants.
+Quand : tout appel à l'outil attribuer_pret sur le serveur banque-synthetique.
+Si l'argument /montant est strictement supérieur à 2000000
+Alors :
+  - l'appel attend une validation humaine par le rôle « directeur-risques », par deux personnes distinctes (quatre yeux)
+  - le rôle « juridique » est notifié en temps réel ; si la notification ne part pas, l'appel est refusé
+Si la règle ne peut pas être évaluée pour un appel (information absente, illisible ou inconnue du registre), l'appel est refusé ; les notifications et marques de la directive s'appliquent aussi.

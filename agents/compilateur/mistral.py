@@ -126,11 +126,23 @@ class Client:
             budget["dernier"] = self._dernier = time.time()
             self._noter(budget)
             try:
-                return self.transport(corps, cle)
+                reponse = self.transport(corps, cle)
+                if _fin_en_erreur(reponse):
+                    # Génération interrompue côté Mistral : ce n'est pas une
+                    # réponse, elle n'est ni rendue ni enregistrée.
+                    raise ErreurTransitoire("génération interrompue (finish_reason: error)")
+                return reponse
             except ErreurTransitoire as e:
                 derniere_erreur = e
                 self.dormir(2 ** (tentative + 1))
         raise ErreurMistral("échec après %d tentatives : %s" % (TENTATIVES, derniere_erreur))
+
+
+def _fin_en_erreur(reponse):
+    try:
+        return reponse["choices"][0].get("finish_reason") == "error"
+    except (KeyError, IndexError, TypeError, AttributeError):
+        return False
 
 
 class ErreurTransitoire(ErreurMistral):

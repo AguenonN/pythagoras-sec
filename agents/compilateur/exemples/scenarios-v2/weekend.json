@@ -1,0 +1,25 @@
+{
+ "texte": "Désormais aucune exécution de workflow agentique le week-end.",
+ "jeu": "weekend",
+ "prefixe_id": "W",
+ "auteur": "juriste@cabinet.fr",
+ "date_effet": "2026-10-05T00:00:00Z",
+ "reponses": [
+  {
+   "question": "Le juriste entend-il bloquer aussi la consultation des workflows le week-end, ou seulement leur exécution (actions) ?",
+   "reponse": "Seulement les actions : les outils classés action sont refusés le week-end, la consultation (lecture) reste permise."
+  },
+  {
+   "question": "Quel est le fondement juridique applicable pour cette règle ?",
+   "reponse": "Le Règlement intérieur, article 12."
+  },
+  {
+   "question": "Quel fuseau horaire appliquer pour le week-end ?",
+   "reponse": "Europe/Paris, l'heure de Paris."
+  },
+  {
+   "champ": "si_indetermine",
+   "reponse": "refuser"
+  }
+ ]
+}

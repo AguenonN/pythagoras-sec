@@ -1,9 +1,12 @@
 // Command directive vérifie et relit un jeu de directives lu sur l'entrée
 // standard. C'est le seul juge de ce que le compilateur propose : aucune
 // sortie de modèle n'est acceptée sans passer par le chargeur strict.
+// Un jeu peut porter des directives v1 et v2 (docs/schema-directive-v2.md) :
+// le chargeur et la relecture traitent les deux.
 //
 //	directive verifier [--exiger-brouillon] < jeu.json   {"ok":true,...} ou {"ok":false,"erreurs":[...]}
 //	directive relire   < jeu.json                       relecture en français, par gabarit
+//	directive fuseaux                                   fuseaux admis par le chargeur, en JSON
 //
 // --exiger-brouillon refuse aussi toute directive dont le statut n'est pas
 // brouillon : c'est ainsi que le compilateur s'assure de ne jamais produire
@@ -24,7 +27,7 @@ import (
 	"mcprogue/internal/relecture"
 )
 
-const usage = "usage : directive verifier [--exiger-brouillon] | relire < jeu.json"
+const usage = "usage : directive verifier [--exiger-brouillon] | relire < jeu.json | fuseaux"
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
@@ -43,6 +46,17 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case "verifier":
 		exigerBrouillon = fs.Bool("exiger-brouillon", false, "refuser toute directive qui n'est pas en brouillon")
 	case "relire":
+	case "fuseaux":
+		// La liste fermée du chargeur : le compilateur en tire l'énumération
+		// offerte au modèle, plutôt que d'en tenir une copie.
+		if len(args) != 1 {
+			fmt.Fprintln(stderr, usage)
+			return 2
+		}
+		enc := json.NewEncoder(stdout)
+		enc.SetEscapeHTML(false)
+		_ = enc.Encode(directive.Fuseaux())
+		return 0
 	default:
 		fmt.Fprintln(stderr, usage)
 		return 2

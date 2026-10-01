@@ -1,0 +1,46 @@
+Jeu complet-v2, version 1, en vigueur à partir du 01/09/2026 à 00:00 UTC, auteur juriste@cabinet.fr.
+Empreinte : sha256:e78233c92236c645f1b176b474964b4a62cafdfbfafd7c000c9c563843dcc12e.
+3 directives, évaluées dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
+Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.
+
+Directive X-001, version 1, active (appliquée), fondée sur l'art. 1 Exemple (source : https://example.org).
+Applicable aux appels à partir du 01/09/2026 à 00:00 UTC, sans date de fin ; à relire avant le 01/09/2027 à 00:00 UTC (passée cette date, la directive reste appliquée et une alerte est émise).
+Pour tous les appelants.
+Quand : tout appel d'outil du serveur banque-synthetique, si ce serveur porte l'étiquette « sensible » au registre, pour un outil classé « action » au registre.
+Si au moins une des conditions suivantes est vraie :
+  - toutes les conditions suivantes sont vraies :
+    - l'argument /montant est supérieur ou égal à 1.5e3
+    - l'argument /devise vaut l'une des valeurs « EUR », « USD »
+    - l'argument /code commence par « FR »
+    - l'argument /note est absent
+  - la session a déjà transmis un appel à destination de l'outil get_taux du serveur taux-officiel (quel qu'en soit le résultat)
+  - l'identité de l'appelant, prouvée par le transport, commence par spiffe://lab/agents/
+  - le sous-agent que l'agent déclare (déclaration non prouvée) est l'un de « analyste », « redacteur »
+  - le demandeur (la personne pour qui l'agent travaille, selon l'annuaire) est « alice@cabinet.fr »
+  - l'attestation du serveur cible au registre (identité, schémas épinglés) est vérifiée, et le mode d'attestation de ce serveur au registre est spiffe
+  - l'appel a lieu entre 20:00 (inclus) et 07:00 (exclu), à cheval sur minuit, et à une date égale ou postérieure au 24/12/2026, en heure locale du fuseau Europe/Paris
+  - le serveur cible porte l'étiquette « donnees_client » au registre
+  - une réponse reçue dans la session du serveur taux-officiel déclare une origine (source.origine) qui est « direct »
+  - une réponse reçue dans la session d'un serveur portant l'étiquette « officiel » au registre déclare une date de source (source.date) égale ou postérieure au 01/01/2026 à 00:00 UTC
+  - la personne désignée par l'argument /client_id appartient au groupe « vip »
+  - chaque élément de la liste en argument /lignes vérifie (vrai si la liste est vide) :
+    - au moins un élément de la liste /beneficiaires de l'élément courant vérifie (faux si la liste est vide) :
+      - la personne désignée par l'élément n'appartient pas au groupe « gel »
+Alors :
+  - l'appel attend une validation humaine par le rôle « directeur-risques », par deux personnes distinctes (quatre yeux)
+  - seuls les champs /montant, /devise sont transmis (un champ autorisé couvre aussi tout son contenu) ; tout autre champ est retiré avant transmission
+  - le rôle « juridique » est notifié dans une synthèse périodique ; si la notification ne part pas, l'appel suit son cours
+  - l'appel est marqué « revue-annuelle » au journal
+Si la règle ne peut pas être évaluée pour un appel (information absente, illisible ou inconnue du registre), la directive ne s'applique pas à cet appel (choix validé par juriste@cabinet.fr).
+
+Directive X-002, version 1, brouillon (non appliquée tant que le juriste ne l'a pas passée en observation ou active), fondée sur Exemple.
+Applicable aux appels à partir du 01/09/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Pour tous les appelants.
+Quand : à l'ouverture d'une session (évènement réservé, pas encore évalué par l'engine).
+Condition : aucune, la directive s'applique à chaque fois.
+Alors :
+  - le rôle « rssi » est notifié dans une synthèse périodique ; si la notification ne part pas, l'évènement suit son cours
+
+Directive X-003, version 1, active (appliquée), fondée sur Exemple.
+Applicable aux appels à partir du 01/09/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Verrou interdiction. Pour tous les appelants : tout appel à supprimer_tout, sur tout serveur, est refusé, sans condition.

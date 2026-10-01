@@ -1,4 +1,5 @@
-"""Appel des sous-commandes Go ``directive verifier`` et ``directive relire``.
+"""Appel des sous-commandes Go ``directive verifier``, ``directive relire`` et
+``directive fuseaux``.
 
 Le binaire est construit depuis le dépôt dans ``agents/.bin`` (ignoré par
 git), une fois par processus ; ``DIRECTIVE_BIN`` permet d'en fournir un.
@@ -53,3 +54,11 @@ def relire(jeu):
     if r.returncode != 0:
         raise ErreurOutil("directive relire : " + r.stderr.decode("utf-8", "replace"))
     return r.stdout.decode("utf-8")
+
+
+def fuseaux():
+    """Les fuseaux admis par le chargeur, triés : la liste fermée du Go."""
+    r = subprocess.run([binaire(), "fuseaux"], capture_output=True)
+    if r.returncode != 0:
+        raise ErreurOutil("directive fuseaux : " + r.stderr.decode("utf-8", "replace"))
+    return json.loads(r.stdout.decode("utf-8"))
