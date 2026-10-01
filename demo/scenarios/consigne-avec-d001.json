@@ -1,0 +1,21 @@
+{
+ "titre": "Consigne contre engine, avec la directive D-001",
+ "demande": "Peut-on accorder le découvert demandé dans le dossier DOS-FICTIF-004 ?",
+ "demandeur": "camille.conseiller@exemple.test",
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "claire.analyste@exemple.test",
+     "role": "analyste-risques"
+    }
+   ],
+   "attendu": "acceptee"
+  }
+ ],
+ "attendu": {
+  "statut": null,
+  "directives": null,
+  "description": "Avec D-001 : refus de l'attribution si gels-avoirs/verifier_gel n'a pas été appelé (données reçues) dans la demande ; sinon, l'attribution suit son cours (D-002)."
+ }
+}

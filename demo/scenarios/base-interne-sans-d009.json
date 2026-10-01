@@ -1,0 +1,21 @@
+{
+ "titre": "Base interne des taux, sans la directive D-009",
+ "demande": "Peut-on accorder le découvert demandé dans le dossier DOS-FICTIF-002 ? Pour le seuil de l'usure, appuie-toi sur la base interne des taux de la banque.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "claire.analyste@exemple.test",
+     "role": "analyste-risques"
+    }
+   ],
+   "attendu": "acceptee"
+  }
+ ],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Le seuil vient de la base interne (trimestre précédent) : sans D-009, rien ne retient l'attribution (sauf D-002 si le taux officiel a aussi été consulté)."
+ }
+}

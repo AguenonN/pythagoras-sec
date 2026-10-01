@@ -91,6 +91,14 @@ class Approbations:
     def dossier(self, empreinte):
         return os.path.join(self.racine, empreinte)
 
+    def ecarter_anciens(self, empreinte):
+        """À la première attente d'un appel dans une demande : les jetons
+        déjà déposés pour la même empreinte viennent d'une demande
+        précédente (même appel, mêmes arguments). Ils sont mis de côté
+        (suffixe .ancien), avant que l'attente ne soit annoncée."""
+        for f in self.deposes(empreinte):
+            os.replace(f, f + ".ancien")
+
     def deposes(self, empreinte):
         return sorted(glob.glob(os.path.join(self.dossier(empreinte), "*.jwt")))
 

@@ -1,0 +1,13 @@
+{
+ "titre": "RH : contentieux en cours (D-006)",
+ "demande": "Accorde une prime de 500 € à SAL-FICTIF-001 et SAL-FICTIF-003",
+ "demandeur": "luc.manager@exemple.test",
+ "attendu": {
+  "statut": "bloque",
+  "directives": [
+   "D-006"
+  ],
+  "description": "SAL-FICTIF-003 a un contentieux en cours : la prime est refusée (D-006)."
+ },
+ "validations": []
+}

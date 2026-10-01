@@ -111,6 +111,8 @@ class Orchestrateur:
         self.resultats = []  # (sous-agent, sortie validée)
         self.decisions = []  # relevé des appels, pour la réponse finale
         self.cites = []  # directives d'attente lues au journal du gate
+        self.par_empreinte = {}  # empreinte transmise → directives qui la retiennent
+        self.attentes_vues = set()
 
     # -- consignes ----------------------------------------------------------
 
@@ -231,6 +233,8 @@ class Orchestrateur:
             for k in ("directive", "motif", "empreinte"):
                 if j.get(k):
                     e[k] = j[k]
+            if (j.get("attente") or {}).get("motif_jeton"):
+                e["motif_jeton"] = j["attente"]["motif_jeton"]
             d["appels"].append(e)
             self.decisions.append(dict(e, sous_agent=d["sous_agent"]))
 
@@ -248,6 +252,8 @@ class Orchestrateur:
         for i in directives:
             if i not in self.cites:
                 self.cites.append(i)
+        if empreinte:
+            self.par_empreinte[empreinte] = directives
         attente = {"empreinte_transmise": empreinte, "roles": a.get("roles") or [],
                    "quatre_yeux": bool(a.get("quatre_yeux")), "directives": directives}
         if a.get("motif_jeton"):
@@ -262,6 +268,9 @@ class Orchestrateur:
             return dict(r, _fin_demande=self._terminer(
                 "erreur", "L'engine a mis l'appel en attente sans empreinte à valider : aucune action effectuée.",
                 directives=attente["directives"]))
+        if attente["empreinte_transmise"] not in self.attentes_vues:
+            self.attentes_vues.add(attente["empreinte_transmise"])
+            self.approbations.ecarter_anciens(attente["empreinte_transmise"])
         self.dossier.statut("en_attente", attente)
         fichiers = self.approbations.attendre(
             attente["empreinte_transmise"], len(attente["roles"]),
@@ -292,12 +301,16 @@ class Orchestrateur:
     def releve(self):
         lignes = []
         for e in self.decisions:
+            retenu = ", ".join(self.par_empreinte.get(e.get("empreinte")) or []) or e.get("directive", "")
             nature = {"ok": "transmis, données reçues", "refus": "refusé par %s" % e.get("directive", ""),
-                      "attente": "mis en attente de validation (%s)" % e.get("directive", ""),
+                      "attente": "mis en attente de validation (%s)" % retenu,
                       "indisponible": "source indisponible", "erreur": "erreur ou refus de l'outil"
                       }.get(e["nature"], e["nature"])
             if e.get("avec_jeton") and e["nature"] == "ok":
                 nature = "validé, puis transmis"
+            if e.get("avec_jeton") and e["nature"] == "attente":
+                nature = "validation refusée par l'engine (%s), toujours en attente (%s)" % (
+                    e.get("motif_jeton", "motif non précisé"), retenu)
             lignes.append("- %s · %s : %s" % (e["sous_agent"], e["outil"], nature))
         return lignes
 

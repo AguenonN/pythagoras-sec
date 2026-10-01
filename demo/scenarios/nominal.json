@@ -1,0 +1,23 @@
+{
+ "titre": "Nominal : contrôles, attribution en attente (D-002), validation par l'analyste, reprise",
+ "demande": "Peut-on accorder le découvert demandé dans le dossier DOS-FICTIF-002 ?",
+ "demandeur": "camille.conseiller@exemple.test",
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "claire.analyste@exemple.test",
+     "role": "analyste-risques"
+    }
+   ],
+   "attendu": "acceptee"
+  }
+ ],
+ "attendu": {
+  "statut": "termine",
+  "directives": [
+   "D-002"
+  ],
+  "description": "Contrôles (dossier, entreprise, gels, seuil de l'usure), attribution tentée, en attente (D-002), validée par l'analyste, reprise, attribution transmise."
+ }
+}

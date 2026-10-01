@@ -17,6 +17,7 @@
     {"identite": "julie.juridique@exemple.test", "nom": "Julie Juridique (fictive)", "groupes": ["juridique", "direction-juridique"],
      "roles": [{"role": "juridique", "depuis": "2026-01-01T00:00:00Z"}, {"role": "direction-juridique", "depuis": "2026-01-01T00:00:00Z"}]},
     {"identite": "camille.conseiller@exemple.test", "nom": "Camille Conseiller (fictif)", "groupes": ["conseillers-credit"]},
+    {"identite": "luc.manager@exemple.test", "nom": "Luc Manager (fictif)", "groupes": ["managers"]},
     {"identite": "portail@exemple.test", "nom": "Portail d'authentification (fictif)",
      "roles": [{"role": "emetteur-identite", "depuis": "2026-01-01T00:00:00Z"}]}
   ]

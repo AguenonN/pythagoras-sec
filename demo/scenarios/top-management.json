@@ -1,0 +1,41 @@
+{
+ "titre": "Top management : au-delà de 2 000 000 euros (D-005), quatre yeux, notification",
+ "demande": "Peut-on accorder le découvert demandé dans le dossier DOS-FICTIF-006 ?",
+ "demandeur": "diane.risques@exemple.test",
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "claire.analyste@exemple.test",
+     "role": "analyste-risques"
+    },
+    {
+     "identite": "diane.risques@exemple.test",
+     "role": "directeur-risques"
+    }
+   ],
+   "attendu": "refusee"
+  },
+  {
+   "valideurs": [
+    {
+     "identite": "claire.analyste@exemple.test",
+     "role": "analyste-risques"
+    },
+    {
+     "identite": "paul.risques@exemple.test",
+     "role": "directeur-risques"
+    }
+   ],
+   "attendu": "acceptee"
+  }
+ ],
+ "attendu": {
+  "statut": "termine",
+  "directives": [
+   "D-002",
+   "D-005"
+  ],
+  "description": "Attribution en attente d'un directeur des risques (D-005, quatre yeux) et de l'analyste (D-002) ; notification remise à la direction juridique ; la validation de la demandeuse, directrice des risques, est refusée ; reprise avec un second directeur, distinct."
+ }
+}

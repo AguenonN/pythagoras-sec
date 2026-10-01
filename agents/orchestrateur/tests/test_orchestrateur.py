@@ -112,7 +112,7 @@ class TestOrchestrateur(Banc):
         self.assertEqual(self.statuts, ["en_attente", "en_cours", "termine"])
         rep = self.reponse()
         self.assertTrue(rep["texte"].startswith("Le prêt est attribué."))
-        self.assertIn("credit · banque-synthetique__attribuer_pret : mis en attente de validation (D-002 v1)", rep["texte"])
+        self.assertIn("credit · banque-synthetique__attribuer_pret : mis en attente de validation (D-002)", rep["texte"])
         self.assertIn("credit · banque-synthetique__attribuer_pret : validé, puis transmis", rep["texte"])
         self.assertEqual(rep["directives_citees"], ["D-002"])
         a = self.appels()
@@ -231,6 +231,23 @@ class TestOrchestrateur(Banc):
         d = os.path.join(self.tmp, "approbations", EMPREINTE)
         self.assertEqual(sorted(os.listdir(d)), ["diane.jwt.refuse", "paul.jwt"])
         self.assertEqual(self.statuts, ["en_attente", "en_cours", "en_attente", "en_cours", "termine"])
+
+    def test_jetons_d_une_demande_precedente_ecartes(self):
+        d = os.path.join(self.tmp, "approbations", EMPREINTE)
+        os.makedirs(d)
+        with open(os.path.join(d, "ancien.jwt"), "w") as f:
+            f.write("jeton-ok")  # même appel, demande précédente
+        o = self.orch([
+            ("orchestrateur", deleguer("credit", "Attribue")),
+            ("credit", appel("banque-synthetique__attribuer_pret", {"dossier_id": "DOS-1"})),
+            ("credit", texte(json.dumps(CREDIT_OK))),
+            ("orchestrateur", texte("fini")),
+        ])
+        self.depots = [[("claire.jwt", "jeton-ok")]]
+        r = o.executer("demande")
+        self.assertEqual(r["statut"], "termine")
+        self.assertEqual(sorted(os.listdir(d)), ["ancien.jwt.ancien", "claire.jwt"])
+        self.assertEqual(self.statuts, ["en_attente", "en_cours", "termine"])
 
     def test_sous_agent_ajoute_par_un_fichier(self):
         d = os.path.join(self.tmp, "agents")
