@@ -50,6 +50,10 @@ const (
 	// AnnuaireCharge est écrite au démarrage quand une source d'identité
 	// est configurée : nom de la source, identifiant, version, empreinte.
 	AnnuaireCharge Type = "annuaire_charge"
+	// ApprobationT est écrite à la reprise d'un appel en attente qui porte
+	// des jetons d'approbation : acceptée (avant l'entrée transmission) ou
+	// refusée (l'appel reste en attente).
+	ApprobationT Type = "approbation"
 )
 
 // Statuts de résultat d'un appel. Les quatre premiers sont ceux d'une
@@ -142,6 +146,31 @@ type Approbation struct {
 	Mandant        string `json:"mandant,omitempty"`
 	Delegue        string `json:"delegue,omitempty"`
 	EmpreinteJeton string `json:"empreinte_jeton,omitempty"`
+
+	// Validation par rôle (jetons signés par des identités de
+	// l'annuaire) : statut, motif d'un refus, appel visé, valideurs avec
+	// le rôle et la date de chaque validation. Les jetons ne sont portés
+	// que par empreinte.
+	Statut             string     `json:"statut,omitempty"` // acceptee | refusee
+	Motif              string     `json:"motif,omitempty"`
+	EmpreinteTransmise string     `json:"empreinte_transmise,omitempty"`
+	Roles              []string   `json:"roles,omitempty"`
+	QuatreYeux         bool       `json:"quatre_yeux,omitempty"`
+	Valideurs          []Valideur `json:"valideurs,omitempty"`
+}
+
+// Statuts d'une approbation.
+const (
+	ApprobationAcceptee = "acceptee"
+	ApprobationRefusee  = "refusee"
+)
+
+// Valideur est une validation : qui, au titre de quel rôle, à quelle date.
+type Valideur struct {
+	Identite       string    `json:"identite"`
+	Role           string    `json:"role"`
+	Date           time.Time `json:"date"`
+	EmpreinteJeton string    `json:"empreinte_jeton"`
 }
 
 // Source dit d'où la donnée vient : en direct ou du cache de rejeu, avec

@@ -41,6 +41,7 @@ import (
 	"sort"
 	"time"
 
+	"mcprogue/internal/annuaire"
 	"mcprogue/internal/approval"
 	"mcprogue/internal/controle"
 	"mcprogue/internal/directive"
@@ -82,6 +83,12 @@ const (
 	// entrée transmission (même session, seq, serveur, outil, empreinte
 	// transmise, effet) ; un appel non transmis ne doit pas en avoir.
 	ControleTransmission = "transmission"
+	// ControleApprobation : un appel en attente transmis porte une
+	// approbation acceptée, chaînée avant sa transmission, qui couvre
+	// chaque rôle requis par un valideur distinct qui n'est pas le
+	// demandeur ; avec un annuaire, chaque valideur détenait son rôle à la
+	// date de validation.
+	ControleApprobation = "approbation"
 )
 
 // NonRejouable remplace l'effet dans les vues quand les arguments manquent.
@@ -125,6 +132,10 @@ type Options struct {
 	Jeu *directive.Jeu
 	// AuDate force la date de l'appel.
 	AuDate time.Time
+	// Annuaire, s'il est fourni, sert à revérifier que chaque valideur
+	// d'une approbation détenait son rôle à la date de validation. Il ne
+	// change pas le cadre (historique ou non).
+	Annuaire annuaire.Source
 }
 
 // Historique dit si le cadre est celui de l'entrée.
@@ -498,6 +509,93 @@ func controlerTransmission(entrees []journal.Entree, i int, tr map[cleAppel][]in
 	return "", true
 }
 
+// controlerApprobation confronte l'entrée appel de rang i à son
+// approbation. Seuls les appels en attente de validation sont concernés.
+// Une approbation d'un autre mécanisme (sans statut) n'est contrôlée que
+// par sa présence (statutCoherent).
+func controlerApprobation(entrees []journal.Entree, i int, tr map[cleAppel][]int, src annuaire.Source) (string, bool) {
+	en := entrees[i]
+	_, transmis := consultation(en)
+	if en.Decision == nil || directive.Effet(en.Decision.Effet) != directive.AttendreValidation {
+		if en.Approbation != nil {
+			return "approbation consignée pour un appel qui n'attendait pas de validation", false
+		}
+		return "", true
+	}
+	a := en.Approbation
+	if !transmis {
+		if a != nil {
+			return "approbation consignée pour un appel en attente non transmis", false
+		}
+		return "", true
+	}
+	if a == nil || a.Statut == "" {
+		return "", true // statutCoherent signale l'absence
+	}
+	if a.Statut != journal.ApprobationAcceptee {
+		return "appel transmis sous une approbation " + a.Statut, false
+	}
+	// L'entrée approbation chaînée, identique, avant la transmission.
+	rangs := tr[cleAppel{en.Session, en.Seq}]
+	trouvee := false
+	for j := 0; j < i; j++ {
+		e := entrees[j]
+		if e.Type == journal.ApprobationT && e.Session == en.Session && e.Seq == en.Seq && reflect.DeepEqual(e.Approbation, a) &&
+			(len(rangs) == 0 || j < rangs[0]) {
+			trouvee = true
+		}
+	}
+	if !trouvee {
+		return "aucune entrée approbation chaînée avant la transmission ne correspond à l'approbation de l'appel", false
+	}
+	if a.EmpreinteTransmise != en.Appel.EmpreinteTransmise {
+		return "l'approbation vise une autre empreinte transmise que l'appel", false
+	}
+	var roles []string
+	quatre := false
+	if v := en.Decision.Validation; v != nil {
+		roles, quatre = v.Roles, v.QuatreYeux
+	}
+	if !reflect.DeepEqual(a.Roles, roles) || a.QuatreYeux != quatre {
+		return "l'approbation ne porte pas les rôles ou les quatre yeux que la décision demande", false
+	}
+	if quatre && en.Demandeur == nil {
+		return "quatre yeux approuvés sans demandeur résolu", false
+	}
+	vus, parRole := map[string]bool{}, map[string]int{}
+	for _, v := range a.Valideurs {
+		if vus[v.Identite] {
+			return "le même valideur apparaît deux fois", false
+		}
+		vus[v.Identite] = true
+		parRole[v.Role]++
+		if en.Demandeur != nil && v.Identite == en.Demandeur.Identite {
+			return "le demandeur a validé son propre appel", false
+		}
+		if src != nil {
+			f, ok := src.Resoudre(v.Identite, v.Date)
+			if !ok || !f.DetientRole(v.Role) {
+				return fmt.Sprintf("%s ne détenait pas le rôle %s le %s selon l'annuaire", v.Identite, v.Role, v.Date.UTC().Format(time.RFC3339)), false
+			}
+		}
+	}
+	if len(roles) == 0 {
+		if len(a.Valideurs) != 1 {
+			return fmt.Sprintf("un valideur attendu, %d consignés", len(a.Valideurs)), false
+		}
+		return "", true
+	}
+	if len(a.Valideurs) != len(roles) {
+		return fmt.Sprintf("%d valideur(s) pour %d rôle(s) requis", len(a.Valideurs), len(roles)), false
+	}
+	for _, r := range roles {
+		if parRole[r] != 1 {
+			return "le rôle " + r + " n'est pas validé exactement une fois", false
+		}
+	}
+	return "", true
+}
+
 // TransmissionsSansAppel rend les entrées transmission qu'aucune entrée
 // appel du même (session, seq) ne suit : des appels partis dont le
 // résultat n'a pas été journalisé (panne du journal ou arrêt entre les
@@ -551,6 +649,9 @@ func RejouerJournal(entrees []journal.Entree, res Resolveur, jeux Jeux, opts Opt
 		}
 		if detail, ok := controlerTransmission(entrees, i, tr); !ok {
 			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleTransmission, Detail: detail})
+		}
+		if detail, ok := controlerApprobation(entrees, i, tr, opts.Annuaire); !ok {
+			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleApprobation, Detail: detail})
 		}
 		out = append(out, r)
 	}

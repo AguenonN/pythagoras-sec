@@ -149,21 +149,42 @@ sont `gate.Refus`, `gate.Attente` et `gate.Echec`.
 `registre`), ou le texte du refus (origine `engine`). Il ne cite jamais
 la valeur d'un argument.
 
-**Attente** : `attendre_validation`, l'appel n'est pas transmis. La
-reprise avec jeton n'existe pas encore.
+**Attente** : `attendre_validation`, l'appel n'est pas transmis.
 
 ```json
 {
   "statut": "en_attente",
   "empreinte_transmise": "…",
   "directive": "D-002",
-  "version": 1
+  "version": 1,
+  "roles": ["directeur-risques"],
+  "quatre_yeux": true,
+  "motif_jeton": "…"
 }
 ```
 
 `directive` et `version` désignent la première directive appliquée qui
 met en attente. `empreinte_transmise` est ce qu'un jeton d'approbation
-devra viser.
+doit viser. `roles` (absent : tout valideur de l'annuaire) et
+`quatre_yeux` viennent de la décision. `motif_jeton` n'est présent qu'à
+une reprise dont les jetons ont été refusés.
+
+**Reprise** : l'agent renvoie le même appel avec, dans
+`_meta.approvalToken`, un jeton par rôle requis (une chaîne, ou une liste
+de chaînes ; 8 au plus). Chaque jeton est signé par un valideur de
+l'annuaire (`mcp-approve valider`) et lié à `empreinte_transmise`.
+L'engine réévalue `Decide`, puis vérifie : signature, période (15 min au
+plus), appel visé, rôle détenu **à la date de validation** (`iat`), un
+jeton par rôle requis, valideurs distincts, aucun valideur égal au
+demandeur, et un demandeur résolu si `quatre_yeux`. Il écrit une entrée
+`approbation` (acceptée ou refusée, jetons sous empreinte seulement).
+Acceptée : entrée `transmission`, transmission, entrée `appel` avec
+l'approbation. Refusée : l'appel reste en attente, `motif_jeton` dit
+pourquoi. Au rejeu (contrôle `approbation`), un appel en attente transmis
+doit porter une approbation acceptée, identique à une entrée
+`approbation` chaînée avant sa transmission, et conforme à ces règles ;
+avec un annuaire (`rejeu.Options.Annuaire`), les rôles sont revérifiés à
+leur date.
 
 **Échec** : l'appel est parti, mais rien d'utilisable n'est revenu.
 

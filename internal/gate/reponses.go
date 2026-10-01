@@ -49,11 +49,19 @@ type Refus struct {
 // Attente est le structuredContent d'un appel mis en attente de
 // validation humaine. EmpreinteTransmise est ce qu'un jeton d'approbation
 // devra viser.
+//
+// Roles sont les rôles dont un valideur doit chacun signer un jeton (vide :
+// tout valideur de l'annuaire) ; QuatreYeux exige qu'aucun ne soit le
+// demandeur. MotifJeton dit pourquoi les jetons d'une reprise ont été
+// refusés : l'appel reste en attente.
 type Attente struct {
-	Statut             string `json:"statut"`
-	EmpreinteTransmise string `json:"empreinte_transmise"`
-	Directive          string `json:"directive"`
-	Version            int    `json:"version"`
+	Statut             string   `json:"statut"`
+	EmpreinteTransmise string   `json:"empreinte_transmise"`
+	Directive          string   `json:"directive"`
+	Version            int      `json:"version"`
+	Roles              []string `json:"roles,omitempty"`
+	QuatreYeux         bool     `json:"quatre_yeux,omitempty"`
+	MotifJeton         string   `json:"motif_jeton,omitempty"`
 }
 
 func resultatErreur(texte string, structure any) *mcp.CallToolResult {
@@ -93,12 +101,23 @@ func (g *Gate) refusRegistre(dec directive.Decision) *mcp.CallToolResult {
 		Fondement: directive.Fondement{Texte: "Registre des serveurs : attestation du serveur"}, Motif: dec.Motif})
 }
 
-// enAttente : la reprise avec jeton n'existe pas encore ; l'appel n'est
-// pas transmis, avec de quoi l'identifier quand elle existera.
-func enAttente(dec directive.Decision) *mcp.CallToolResult {
+// enAttente : l'appel n'est pas transmis. La réponse dit ce qu'un jeton
+// d'approbation doit viser (empreinte transmise) et quels rôles doivent
+// valider ; motifJeton, s'il n'est pas vide, dit pourquoi les jetons de
+// cette reprise ont été refusés.
+func enAttente(dec directive.Decision, motifJeton string) *mcp.CallToolResult {
 	a, _ := premiere(dec, directive.AttendreValidation)
-	return resultatErreur("Appel non transmis : "+dec.Motif+". La reprise après validation humaine n'est pas encore disponible.",
-		Attente{Statut: StatutEnAttente, EmpreinteTransmise: dec.EmpreinteTransmise, Directive: a.ID, Version: a.Version})
+	at := Attente{Statut: StatutEnAttente, EmpreinteTransmise: dec.EmpreinteTransmise, Directive: a.ID, Version: a.Version,
+		MotifJeton: motifJeton}
+	if v := dec.Validation; v != nil {
+		at.Roles, at.QuatreYeux = v.Roles, v.QuatreYeux
+	}
+	texte := "Appel non transmis : " + dec.Motif + ". Reprendre le même appel avec, dans _meta." + CleJetonApprobation +
+		", un jeton d'approbation par rôle requis, lié à l'empreinte transmise " + dec.EmpreinteTransmise + "."
+	if motifJeton != "" {
+		texte = "Jeton(s) d'approbation refusé(s) : " + motifJeton + ". " + texte
+	}
+	return resultatErreur(texte, at)
 }
 
 // Echec est le structuredContent d'un appel transmis dont rien

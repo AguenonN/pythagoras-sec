@@ -414,6 +414,7 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 	}
 
 	var rep *mcp.CallToolResult
+	transmettre := false
 	switch {
 	case parRegistre:
 		rep = g.refusRegistre(dec)
@@ -421,9 +422,42 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 		// 5.
 		rep = refusDirective(dec)
 	case dec.Effet == directive.AttendreValidation:
-		// 6.
-		rep = enAttente(dec)
+		// 6. Sans jeton, l'appel attend. Avec des jetons (reprise), ils
+		// sont vérifiés, l'entrée approbation est écrite, et l'appel ne
+		// part que si elle est acceptée.
+		jetons, lisibles := jetonsApprobation(meta)
+		if !lisibles {
+			g.alerte(serveur, outil, "_meta.approvalToken illisible (type, nombre ou longueur), ignoré")
+			rep = enAttente(dec, "jeton d'approbation illisible")
+			break
+		}
+		if len(jetons) == 0 {
+			rep = enAttente(dec, "")
+			break
+		}
+		appro := g.verifierValidation(dec, jetons, demandeur, ts)
+		if _, err := g.journal.Ecrire(journal.Entree{
+			TS: ts, Type: journal.ApprobationT, Session: entree.Session, Seq: entree.Seq, Appelant: entree.Appelant,
+			Serveur: serveur, OutilExpose: expose, Outil: outil, Approbation: appro, Demandeur: entree.Demandeur,
+		}); err != nil {
+			g.enPanne.Store(true)
+			g.log.Error("journal indisponible, l'engine refuse désormais tout appel", "erreur", err)
+			return refusEngine("Appel refusé : le journal de l'engine est indisponible ; rien n'est transmis sans preuve.")
+		}
+		if appro.Statut != journal.ApprobationAcceptee {
+			rep = enAttente(dec, appro.Motif)
+			break
+		}
+		entree.Approbation = appro
+		transmettre = true
 	default:
+		if _, ok := meta[CleJetonApprobation]; ok {
+			g.alerte(serveur, outil, "jeton d'approbation fourni pour un appel qui n'attend pas de validation : ignoré")
+		}
+		transmettre = true
+	}
+
+	if transmettre {
 		// 7. D'abord la trace chaînée de ce qui va partir : sans elle,
 		// rien ne part.
 		if _, err := g.journal.Ecrire(journal.Entree{
