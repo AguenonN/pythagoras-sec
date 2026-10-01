@@ -524,6 +524,20 @@ func controlerTransmission(entrees []journal.Entree, i int, tr map[cleAppel][]in
 	return "", true
 }
 
+// jetonsAcceptes compte, par empreinte de jeton, les approbations
+// acceptées qui le citent : un jeton ne vaut que pour un appel.
+func jetonsAcceptes(entrees []journal.Entree) map[string]int {
+	n := map[string]int{}
+	for _, en := range entrees {
+		if en.Type == journal.ApprobationT && en.Approbation != nil && en.Approbation.Statut == journal.ApprobationAcceptee {
+			for _, v := range en.Approbation.Valideurs {
+				n[v.EmpreinteJeton]++
+			}
+		}
+	}
+	return n
+}
+
 // controlerRemises confronte les remises de l'entrée appel de rang i aux
 // entrées notification chaînées avant elle pour le même appel, et aux
 // notifications que la décision journalisée demande.
@@ -669,6 +683,7 @@ func RejouerJournal(entrees []journal.Entree, res Resolveur, jeux Jeux, opts Opt
 	var out []Rejeu
 	purges := PurgesChainees(entrees)
 	tr := transmissions(entrees)
+	jetons := jetonsAcceptes(entrees)
 	for i, en := range entrees {
 		if en.Type != journal.AppelT {
 			continue
@@ -699,6 +714,13 @@ func RejouerJournal(entrees []journal.Entree, res Resolveur, jeux Jeux, opts Opt
 		}
 		if detail, ok := controlerApprobation(entrees, i, tr, opts.Annuaire); !ok {
 			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleApprobation, Detail: detail})
+		} else if en.Approbation != nil {
+			for _, v := range en.Approbation.Valideurs {
+				if jetons[v.EmpreinteJeton] > 1 {
+					r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleApprobation,
+						Detail: "jeton d'approbation de " + v.Identite + " accepté pour plusieurs appels"})
+				}
+			}
 		}
 		out = append(out, r)
 	}

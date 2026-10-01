@@ -120,6 +120,10 @@ type Gate struct {
 	// demandeurs tient le demandeur résolu à l'ouverture de chaque
 	// session, tel que consigné dans session_ouverte.
 	demandeurs sync.Map // id de session → *directive.Demandeur
+	// jetonsUtilises tient les empreintes des jetons d'approbation déjà
+	// acceptés par ce processus : un jeton ne sert qu'une fois.
+	jetonsMu       sync.Mutex
+	jetonsUtilises map[string]bool
 }
 
 // Demarrer journalise le jeu et le registre, connecte chaque backend et
@@ -160,7 +164,7 @@ func Demarrer(ctx context.Context, cfg Config) (*Gate, error) {
 	}
 	g := &Gate{
 		cfg: cfg, journal: cfg.Journal, coffre: cfg.Coffre, charges: map[versionJeu]string{},
-		horloge: cfg.Horloge, log: cfg.Logger, backends: map[string]backend.Backend{},
+		horloge: cfg.Horloge, log: cfg.Logger, backends: map[string]backend.Backend{}, jetonsUtilises: map[string]bool{},
 	}
 	jeu := cfg.Jeu
 	g.jeu.Store(&jeu)

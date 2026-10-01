@@ -130,6 +130,18 @@ func (g *Gate) verifierValidation(dec directive.Decision, jetons []string, deman
 			return refus("un jeton par rôle requis (%d), %d reçus", len(roles), len(jetons))
 		}
 	}
+	// Usage unique : un jeton déjà accepté ne vaut plus, même pour un
+	// appel identique (sinon une validation autoriserait deux prêts).
+	g.jetonsMu.Lock()
+	defer g.jetonsMu.Unlock()
+	for i, v := range a.Valideurs {
+		if g.jetonsUtilises[v.EmpreinteJeton] {
+			return refus("jeton %d déjà utilisé : une validation ne vaut que pour un appel", i+1)
+		}
+	}
+	for _, v := range a.Valideurs {
+		g.jetonsUtilises[v.EmpreinteJeton] = true
+	}
 	sort.Slice(a.Valideurs, func(i, j int) bool { return a.Valideurs[i].Role < a.Valideurs[j].Role })
 	var noms []string
 	for _, v := range a.Valideurs {

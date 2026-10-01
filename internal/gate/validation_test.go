@@ -252,3 +252,43 @@ func TestValidation_AlterationsDetectees(t *testing.T) {
 		t.Fatal("approbation retirée non détectée")
 	}
 }
+
+// Un jeton ne sert qu'une fois : rejoué pour le même appel identique, il
+// est refusé ; le rejeu signale un jeton accepté deux fois.
+func TestValidation_JetonUsageUnique(t *testing.T) {
+	v := monterValidation(t, claire)
+	_, a := v.pret(t, 3e6)
+	j := v.jeton(t, diane, "directeur-risques", a.EmpreinteTransmise)
+	if r, _ := v.pret(t, 3e6, j); r.IsError {
+		t.Fatalf("première reprise : %s", texte(r))
+	}
+	r, a2 := v.pret(t, 3e6, j)
+	if !r.IsError || !strings.Contains(a2.MotifJeton, "déjà utilisé") || len(v.banque.appels()) != 1 {
+		t.Fatalf("seconde reprise : %+v", a2)
+	}
+	v.rejouer(t)
+	// Journal falsifié : la seconde approbation présentée comme acceptée.
+	es := v.entrees(t)
+	var premiere *journal.Approbation
+	for i := range es {
+		if es[i].Type == journal.ApprobationT {
+			if premiere == nil {
+				premiere = es[i].Approbation
+			} else {
+				es[i].Approbation = premiere
+			}
+		}
+	}
+	rs, _ := rejeu.RejouerJournal(es, v.coffre, rejeu.Catalogue{v.jeu}, rejeu.Options{})
+	n := 0
+	for _, r := range rs {
+		for _, e := range r.Ecarts {
+			if strings.Contains(e.Detail, "plusieurs appels") {
+				n++
+			}
+		}
+	}
+	if n == 0 {
+		t.Fatal("réutilisation non détectée")
+	}
+}
