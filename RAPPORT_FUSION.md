@@ -115,6 +115,24 @@ Contrôle après chaque fusion : `go vet ./...`, `go test -race -count=1 ./...`
      par l'engine**) » : faux depuis gate-v2, qui les évalue.
 - Tests : vet vert, Go vert (race, intégration comprise), Python 192 OK.
 
+## Fusion 4 — `feat/ui`
+
+- Commit de fusion `b7b78a5` (fusion faite en `--no-commit`, commitée
+  après la suite verte).
+- **Conflit : `test/integration/integration_test.go`**, dans
+  `banc.verifier` et autour du chargeur de jeu. ui ajoute l'appel
+  `conserver(t, b, brut)` et la fonction `conserver`
+  (`MCP_CONSERVER_JOURNAUX`), et garde l'ancien `chargerJeu(t)` (jeu fixe).
+  Résolution : `conserver` gardé tel quel, appelé au même endroit ; le jeu
+  rejoué reste celui du banc (`chargerJeuChemin(t, b.jeu)`), sans quoi les
+  scénarios v2 et base périmée v2 se rejoueraient sur le mauvais jeu ;
+  `chargerJeu(t)` d'ui n'a plus d'appelant et disparaît.
+- `docs/demo/maquettes/` : arrivées par la fusion, **non modifiées**
+  (`git diff HEAD feat/ui -- docs/demo/maquettes` vide).
+- Fichiers dérivés : régénérés, catalogue inchangé.
+- Tests : vet vert, Go vert (race, intégration comprise, console
+  comprise), Python 192 OK.
+
 ## Décisions prises seul
 
 1. **`-gels servers/gels-avoirs/enregistrements`** (registre des gels
