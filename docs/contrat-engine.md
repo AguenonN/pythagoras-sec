@@ -177,7 +177,9 @@ l'annuaire (`mcp-approve valider`) et lié à `empreinte_transmise`.
 L'engine réévalue `Decide`, puis vérifie : signature, période (15 min au
 plus), appel visé, rôle détenu **à la date de validation** (`iat`), un
 jeton par rôle requis, valideurs distincts, aucun valideur égal au
-demandeur, et un demandeur résolu si `quatre_yeux`. Il écrit une entrée
+demandeur, un demandeur résolu si `quatre_yeux`, et qu'aucun jeton n'a
+déjà été accepté (usage unique, sinon une validation vaudrait pour deux
+appels identiques). Il écrit une entrée
 `approbation` (acceptée ou refusée, jetons sous empreinte seulement).
 Acceptée : entrée `transmission`, transmission, entrée `appel` avec
 l'approbation. Refusée : l'appel reste en attente, `motif_jeton` dit
@@ -185,7 +187,7 @@ pourquoi. Au rejeu (contrôle `approbation`), un appel en attente transmis
 doit porter une approbation acceptée, identique à une entrée
 `approbation` chaînée avant sa transmission, et conforme à ces règles ;
 avec un annuaire (`rejeu.Options.Annuaire`), les rôles sont revérifiés à
-leur date.
+leur date ; un jeton accepté pour plusieurs appels est une altération.
 
 **Échec** : l'appel est parti, mais rien d'utilisable n'est revenu.
 
