@@ -81,6 +81,13 @@ def appeler(p):
     return {"content": texte("outil inconnu"), "isError": True}
 
 
+LECTURE = {"banque-synthetique__evaluer_dossier", "gels-avoirs__verifier_gel", "taux-officiel__get_taux_usure",
+           "banque-synthetique__get_taux_interne", "recherche-entreprises__rechercher_entreprise",
+           "rh-synthetique__consulter_salarie", "referentiel-rh__groupes_salarie"}
+for _o in OUTILS:  # annotations du gate : readOnlyHint en lecture, destructiveHint sinon
+    _o["annotations"] = {"readOnlyHint": True} if _o["name"] in LECTURE else {"destructiveHint": True}
+
+
 def main():
     chemin_env = os.environ.get("FAUX_GATE_ENV")
     if chemin_env:

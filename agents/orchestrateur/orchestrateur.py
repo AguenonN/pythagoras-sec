@@ -50,7 +50,7 @@ Sous-agents disponibles :
 
 Règles :
 - Délègue une seule tâche à la fois, au sous-agent dont c'est le rôle, avec une tâche précise qui reprend les identifiants, montants et éléments utiles. Chaque sous-agent reçoit aussi automatiquement les résultats déjà obtenus par les autres.
-- Ne délègue que ce qui est nécessaire pour répondre à la demande ; ne délègue pas deux fois la même tâche.
+- Ne délègue que ce qui est nécessaire pour répondre à la demande ; ne délègue pas deux fois la même tâche. Une action confirmée par un sous-agent (attribution, remise, décision) est faite : ne la redemande jamais.
 - Un appel peut être refusé par une directive ou mis en attente d'une validation humaine : n'essaie jamais de le contourner.
 - Quand la demande est traitée, réponds au demandeur en français, en quelques phrases, sans appel d'outil, en t'en tenant strictement aux résultats obtenus. N'affirme jamais qu'une action a été effectuée si un sous-agent ne l'a pas confirmée.
 
@@ -113,6 +113,11 @@ class Orchestrateur:
         self.cites = []  # directives d'attente lues au journal du gate
         self.par_empreinte = {}  # empreinte transmise → directives qui la retiennent
         self.attentes_vues = set()
+        # Outils d'action (destructiveHint du gate) : un sous-agent qui en a
+        # transmis un n'est plus délégué dans la demande.
+        self.actions = {o["name"] for o in self.outils_mcp
+                        if not (o.get("annotations") or {}).get("readOnlyHint")}
+        self.actions_faites = {}
 
     # -- consignes ----------------------------------------------------------
 
@@ -180,6 +185,11 @@ class Orchestrateur:
             return "Sous-agent inconnu : %r. Sous-agents : %s." % (nom, ", ".join(sorted(self.agents))), None
         if not isinstance(tache, str) or not tache.strip():
             return "Tâche vide : précise la tâche du sous-agent.", None
+        faites = self.actions_faites.get(nom)
+        if faites:
+            return ("Refusé par l'orchestrateur : le sous-agent %s a déjà effectué une action dans cette demande "
+                    "(%s), confirmée par l'engine ; elle n'est pas refaite. Réponds au demandeur avec les résultats "
+                    "obtenus." % (nom, ", ".join(faites))), None
         if rang >= DELEGATIONS_MAX:
             return "Nombre maximal de délégations atteint : réponds au demandeur avec les résultats obtenus.", None
         agent = self.agents[nom]
@@ -237,6 +247,10 @@ class Orchestrateur:
                 e["motif_jeton"] = j["attente"]["motif_jeton"]
             d["appels"].append(e)
             self.decisions.append(dict(e, sous_agent=d["sous_agent"]))
+            if e["nature"] == "ok" and e["outil"] in self.actions:
+                faites = self.actions_faites.setdefault(d["sous_agent"], [])
+                if e["outil"] not in faites:
+                    faites.append(e["outil"])
 
     # -- attente ------------------------------------------------------------
 
@@ -288,10 +302,8 @@ class Orchestrateur:
         self.dossier.statut("en_cours")
         suite = b.reprendre(r, jetons if len(jetons) > 1 else jetons[0])
         accepte = not (suite["etat"] == bcl.EN_ATTENTE and suite.get("empreinte") == attente["empreinte_transmise"])
-        if not accepte:
-            # Reprise refusée par le gate (motif_jeton) : jetons mis de côté,
-            # nouvelle attente d'un dépôt complet.
-            self.approbations.mettre_de_cote(fichiers)
+        # Refusés : nouvelle attente d'un dépôt complet. Acceptés : consommés.
+        self.approbations.mettre_de_cote(fichiers, ".refuse" if not accepte else ".utilise")
         self.trace["validations"].append({"empreinte_transmise": attente["empreinte_transmise"],
                                           "valideurs": valideurs, "accepte": accepte})
         return suite

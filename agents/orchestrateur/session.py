@@ -129,7 +129,9 @@ class Approbations:
         return out
 
     @staticmethod
-    def mettre_de_cote(fichiers):
+    def mettre_de_cote(fichiers, suffixe=".refuse"):
+        """Jetons refusés (.refuse) ou acceptés (.utilise : une validation
+        ne vaut que pour un appel, le gate refuserait de la reprendre)."""
         for f in fichiers:
             if os.path.exists(f):
-                os.replace(f, f + ".refuse")
+                os.replace(f, f + suffixe)

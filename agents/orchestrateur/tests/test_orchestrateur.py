@@ -144,6 +144,8 @@ class TestOrchestrateur(Banc):
 
         def espion(m, agent, messages, outils, choix, options):
             self._messages.setdefault(agent, json.loads(json.dumps(messages)))
+            if agent == "orchestrateur":
+                self._messages_orch_fin = messages[-1].get("content") or ""
             self._outils = getattr(self, "_outils", {})
             self._outils.setdefault(agent, [o["function"]["name"] for o in outils])
             return vrai(m, agent, messages, outils, choix, options)
@@ -229,7 +231,7 @@ class TestOrchestrateur(Banc):
         self.assertEqual(r["statut"], "termine")
         self.assertEqual([v["accepte"] for v in r["trace"]["validations"]], [False, True])
         d = os.path.join(self.tmp, "approbations", EMPREINTE)
-        self.assertEqual(sorted(os.listdir(d)), ["diane.jwt.refuse", "paul.jwt"])
+        self.assertEqual(sorted(os.listdir(d)), ["diane.jwt.refuse", "paul.jwt.utilise"])
         self.assertEqual(self.statuts, ["en_attente", "en_cours", "en_attente", "en_cours", "termine"])
 
     def test_jetons_d_une_demande_precedente_ecartes(self):
@@ -246,8 +248,26 @@ class TestOrchestrateur(Banc):
         self.depots = [[("claire.jwt", "jeton-ok")]]
         r = o.executer("demande")
         self.assertEqual(r["statut"], "termine")
-        self.assertEqual(sorted(os.listdir(d)), ["ancien.jwt.ancien", "claire.jwt"])
+        self.assertEqual(sorted(os.listdir(d)), ["ancien.jwt.ancien", "claire.jwt.utilise"])
         self.assertEqual(self.statuts, ["en_attente", "en_cours", "termine"])
+
+    def test_action_faite_pas_redeleguee(self):
+        # Passage réel du 01/10 : l'orchestrateur avait redélégué l'attribution
+        # déjà confirmée ; le même appel retombait en attente.
+        o = self.orch([
+            ("orchestrateur", deleguer("credit", "Attribue")),
+            ("credit", appel("banque-synthetique__attribuer_pret", {"dossier_id": "DOS-1"})),
+            ("credit", texte(json.dumps(CREDIT_OK))),
+            ("orchestrateur", deleguer("credit", "Attribue en référence PRET-FICTIF-0001", "o2")),
+            ("orchestrateur", texte("Attribué.")),
+        ])
+        self.depots = [[("claire.jwt", "jeton-ok")]]
+        r = o.executer("demande")
+        self.assertEqual(r["statut"], "termine")
+        self.assertEqual(len(r["trace"]["delegations"]), 1)
+        self.assertEqual(len(self.appels()), 2)
+        dernier = self._messages_orch_fin
+        self.assertIn("Refusé par l'orchestrateur : le sous-agent credit a déjà effectué une action", dernier)
 
     def test_sous_agent_ajoute_par_un_fichier(self):
         d = os.path.join(self.tmp, "agents")
