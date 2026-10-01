@@ -467,3 +467,53 @@ func TestDemandeur_RapportSurDonneesClient(t *testing.T) {
 		})
 	}
 }
+
+// Deux processus mcp-gate successifs, comme dans la démo où chaque demande
+// lance le sien : le jeton consommé par le premier est refusé par le
+// second, qui relit le journal du premier.
+func TestJetonConsommeParUnProcessusPrecedent(t *testing.T) {
+	b1 := demarrerAvec(t, lancement{registre: cheminRegistre, jeu: jeuTopManagement, demandeur: claire, ecran: true})
+	sc := attente(t, b1.appeler(t, "banque-synthetique__attribuer_pret", grosPret))
+	jeton := jetonApprobation(t, diane, "directeur-risques", sc["empreinte_transmise"].(string))
+	if r := b1.appelerMeta(t, "banque-synthetique__attribuer_pret", grosPret, mcp.Meta{"approvalToken": jeton}); r.StructuredContent != nil {
+		t.Fatalf("premier processus : %v", r.StructuredContent)
+	}
+	b1.verifier(t)
+
+	b2 := demarrerAvec(t, lancement{registre: cheminRegistre, jeu: jeuTopManagement, demandeur: claire, ecran: true,
+		precedents: filepath.Join(filepath.Dir(b1.journal), "journal*.jsonl")})
+	sc = attente(t, b2.appelerMeta(t, "banque-synthetique__attribuer_pret", grosPret, mcp.Meta{"approvalToken": jeton}))
+	if m, _ := sc["motif_jeton"].(string); !strings.Contains(m, "déjà utilisé") {
+		t.Fatalf("second processus : %v", sc)
+	}
+	entrees, _ := b2.verifier(t)
+	if n := transmissions(entrees); len(n) != 0 {
+		t.Fatalf("transmissions %v", n)
+	}
+	refusee := false
+	for _, e := range entrees {
+		refusee = refusee || (e.Type == journal.ApprobationT && e.Approbation.Statut == journal.ApprobationRefusee &&
+			strings.Contains(e.Approbation.Motif, "jeton déjà utilisé"))
+	}
+	if !refusee {
+		t.Fatal("pas d'entrée approbation refusée « jeton déjà utilisé »")
+	}
+	b2.commandeJournal(t)
+
+	// Un journal précédent dont la chaîne est rompue empêche le démarrage.
+	dir := t.TempDir()
+	brut, err := os.ReadFile(b1.journal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	os.WriteFile(filepath.Join(dir, "rompu.jsonl"), bytes.Replace(brut, []byte(`"acceptee"`), []byte(`"refusee"`), 1), 0o600)
+	cmd := exec.Command(binaireGate, "-registre", cheminRegistre, "-directives", filepath.Join(racine, jeuTopManagement),
+		"-journal", filepath.Join(dir, "journal.jsonl"), "-coffre", filepath.Join(dir, "coffre.jsonl"),
+		"-journaux-precedents", filepath.Join(dir, "rompu.jsonl"))
+	cmd.Env = []string{"MCP_GATE_CLE_JOURNAL=" + hex.EncodeToString(cleTest), "DONNEES_MODE=REJEU"}
+	out, err := cmd.CombinedOutput()
+	if err == nil || !strings.Contains(string(out), "rompu.jsonl") || !strings.Contains(string(out), "chaîne rompue") ||
+		!strings.Contains(string(out), "démarrage refusé") {
+		t.Fatalf("démarrage sur journal rompu : %v\n%s", err, out)
+	}
+}

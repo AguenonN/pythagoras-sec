@@ -195,6 +195,8 @@ type lancement struct {
 	demandeur string
 	// ecran abonne un écran de notifications au journal.
 	ecran bool
+	// precedents est le motif des journaux de processus précédents.
+	precedents string
 }
 
 // demarrer lance cmd/mcp-gate comme un hôte MCP le lancerait, avec un
@@ -222,6 +224,9 @@ func demarrerAvec(t *testing.T, l lancement) *banc {
 	}
 	if l.demandeur != "" {
 		env = append(env, "MCP_GATE_JETON_DEMANDEUR="+jetonIdentite(t, l.demandeur, l.depart))
+	}
+	if l.precedents != "" {
+		args = append(args, "-journaux-precedents", l.precedents)
 	}
 	if l.ecran {
 		b.notifications = filepath.Join(dir, "notifications.jsonl")

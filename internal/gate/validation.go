@@ -136,7 +136,7 @@ func (g *Gate) verifierValidation(dec directive.Decision, jetons []string, deman
 	defer g.jetonsMu.Unlock()
 	for i, v := range a.Valideurs {
 		if g.jetonsUtilises[v.EmpreinteJeton] {
-			return refus("jeton %d déjà utilisé : une validation ne vaut que pour un appel", i+1)
+			return refus("jeton déjà utilisé (jeton %d) : une validation ne vaut que pour un appel", i+1)
 		}
 	}
 	for _, v := range a.Valideurs {

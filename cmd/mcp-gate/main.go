@@ -12,6 +12,11 @@
 // dans MCP_GATE_JETON_DEMANDEUR, vérifié au lancement, et le demandeur est
 // résolu à l'ouverture de la session.
 //
+// Avec -journaux-precedents <motif>, les journaux des processus précédents
+// (même clé) sont relus au démarrage : un jeton d'approbation qu'ils ont
+// accepté est refusé comme déjà utilisé. Une chaîne rompue empêche le
+// démarrage.
+//
 // La clé HMAC du journal est lue dans MCP_GATE_CLE_JOURNAL (hexadécimal,
 // 32 octets au moins), jamais dans un fichier ni sur la ligne de commande.
 // Sans clé, sans registre ou sans jeu valide, rien ne démarre.
@@ -76,6 +81,7 @@ func lancer() error {
 	maxConsultations := flag.Int("max-consultations", 0, "ferme la session après ce nombre de consultations (0 : sans borne)")
 	ageMax := flag.Duration("age-max", 0, "ferme la session passé cet âge (0 : sans borne)")
 	cheminNotifications := flag.String("notifications", "", "démonstration : écran des destinataires, abonné au journal ; chaque notification reçue y est ajoutée (JSONL). Sans écran, aucune notification n'est remise")
+	precedents := flag.String("journaux-precedents", "", "motif (glob) des journaux de processus précédents : les jetons d'approbation qu'ils ont acceptés sont refusés ; une chaîne rompue empêche le démarrage")
 	depart := flag.String("horloge-depart", "", "démonstration et tests : horloge simulée qui part de cet instant (RFC 3339) et avance au rythme réel ; signalée au journal")
 	cheminAnnuaire := flag.String("annuaire", "", "annuaire des habilitations signé (JSON) ; exige -annuaire-autorite")
 	cheminAutorite := flag.String("annuaire-autorite", "", "clé publique Ed25519 (base64) de l'autorité qui signe l'annuaire")
@@ -118,6 +124,14 @@ func lancer() error {
 	if err != nil {
 		return err
 	}
+	var consommes map[string]bool
+	if *precedents != "" {
+		var relus []string
+		if consommes, relus, err = gate.JetonsConsommes(*precedents, cle); err != nil {
+			return err
+		}
+		log.Info("journaux précédents relus", "fichiers", len(relus), "jetons consommés", len(consommes))
+	}
 	j, err := journal.Ouvrir(*cheminJournal, cle)
 	if err != nil {
 		return err
@@ -145,7 +159,7 @@ func lancer() error {
 		Session: session.Config{DelaiBackend: *delai, MaxConsultations: *maxConsultations, AgeMax: *ageMax},
 		Backend: backend.Options{Stderr: os.Stderr, Logger: log},
 		Logger:  log, Annuaire: src, JetonDemandeur: os.Getenv(VarJetonDemandeur), Horloge: horloge,
-		Resolveur: resolveur(reg),
+		Resolveur: resolveur(reg), JetonsConsommes: consommes,
 	})
 	if err != nil {
 		return err

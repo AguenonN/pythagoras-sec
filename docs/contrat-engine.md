@@ -179,7 +179,13 @@ plus), appel visé, rôle détenu **à la date de validation** (`iat`), un
 jeton par rôle requis, valideurs distincts, aucun valideur égal au
 demandeur, un demandeur résolu si `quatre_yeux`, et qu'aucun jeton n'a
 déjà été accepté (usage unique, sinon une validation vaudrait pour deux
-appels identiques). Il écrit une entrée
+appels identiques). Les jetons acceptés sont retenus par le processus, et
+ceux des processus précédents sont relus au démarrage dans leurs journaux
+(`mcp-gate -journaux-precedents <motif>`, même clé) : dans la démo, chaque
+demande lance son propre `mcp-gate`. Le motif ne doit désigner que des
+journaux chaînés ; un journal précédent dont la chaîne est rompue empêche
+le démarrage. Un jeton déjà consommé donne une entrée `approbation`
+refusée, motif « jeton déjà utilisé ». Il écrit une entrée
 `approbation` (acceptée ou refusée, jetons sous empreinte seulement).
 Acceptée : entrée `transmission`, transmission, entrée `appel` avec
 l'approbation. Refusée : l'appel reste en attente, `motif_jeton` dit

@@ -87,6 +87,10 @@ type Config struct {
 	// Resolveur rend les groupes des personnes concernées (outils dont le
 	// registre déclare personnes_concernees). Zéro : aucune n'est résolue.
 	Resolveur Resolveur
+	// JetonsConsommes sont les empreintes des jetons d'approbation déjà
+	// acceptés par des processus précédents (JetonsConsommes, lus dans
+	// leurs journaux) : ils sont refusés comme déjà utilisés.
+	JetonsConsommes map[string]bool
 }
 
 // Gate est l'agrégateur démarré.
@@ -165,6 +169,9 @@ func Demarrer(ctx context.Context, cfg Config) (*Gate, error) {
 	g := &Gate{
 		cfg: cfg, journal: cfg.Journal, coffre: cfg.Coffre, charges: map[versionJeu]string{},
 		horloge: cfg.Horloge, log: cfg.Logger, backends: map[string]backend.Backend{}, jetonsUtilises: map[string]bool{},
+	}
+	for emp := range cfg.JetonsConsommes {
+		g.jetonsUtilises[emp] = true
 	}
 	jeu := cfg.Jeu
 	g.jeu.Store(&jeu)

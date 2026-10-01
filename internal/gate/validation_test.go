@@ -1,8 +1,11 @@
 package gate
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -290,5 +293,56 @@ func TestValidation_JetonUsageUnique(t *testing.T) {
 	}
 	if n == 0 {
 		t.Fatal("réutilisation non détectée")
+	}
+}
+
+// Les jetons acceptés par un processus précédent, relus dans son journal,
+// sont refusés comme déjà utilisés ; une chaîne rompue est une erreur.
+func TestJetonsConsommes_JournauxPrecedents(t *testing.T) {
+	v := monterValidation(t, claire)
+	_, a := v.pret(t, 3e6)
+	j := v.jeton(t, diane, "directeur-risques", a.EmpreinteTransmise)
+	if r, _ := v.pret(t, 3e6, j); r.IsError {
+		t.Fatalf("%s", texte(r))
+	}
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "journal-1.jsonl"), v.journal.octets(), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	consommes, relus, err := JetonsConsommes(filepath.Join(dir, "journal-*.jsonl"), cle)
+	if err != nil || len(relus) != 1 || !consommes[annuaire.EmpreinteJeton(j)] || len(consommes) != 1 {
+		t.Fatalf("%v %v %v", consommes, relus, err)
+	}
+
+	// Un nouveau gate qui les connaît refuse le jeton, avec une entrée
+	// approbation refusée « jeton déjà utilisé ».
+	l, cles := v.ann, v.cles
+	b := monter(t, func(b *banc) {
+		b.docJeu = jeuValidation
+		jeton, _ := annuaire.SignerIdentite(cles.Identites[claire], claire, claire, b.horloge, time.Hour)
+		b.config = func(c *Config) { c.Annuaire, c.JetonDemandeur, c.JetonsConsommes = l, jeton, consommes }
+	})
+	v2 := &bancValidation{banc: b, cles: cles, ann: l, cs: b.agent(t)}
+	r, a2 := v2.pret(t, 3e6, j)
+	if !r.IsError || !strings.Contains(a2.MotifJeton, "déjà utilisé") || len(v2.banque.appels()) != 0 {
+		t.Fatalf("%+v %s", a2, texte(r))
+	}
+	ap := v2.approbations(t)
+	if len(ap) != 1 || ap[0].Approbation.Statut != journal.ApprobationRefusee || !strings.Contains(ap[0].Approbation.Motif, "déjà utilisé") {
+		t.Fatalf("approbations %+v", ap)
+	}
+
+	// Aucun fichier : pas d'erreur. Motif invalide, chaîne rompue : erreur.
+	if c, relus, err := JetonsConsommes(filepath.Join(dir, "absent-*.jsonl"), cle); err != nil || len(c) != 0 || len(relus) != 0 {
+		t.Fatalf("aucun fichier : %v %v %v", c, relus, err)
+	}
+	if _, _, err := JetonsConsommes("[", cle); err == nil {
+		t.Fatal("motif invalide accepté")
+	}
+	brut := bytes.Replace(v.journal.octets(), []byte(`"acceptee"`), []byte(`"refusee"`), 1)
+	os.WriteFile(filepath.Join(dir, "journal-2.jsonl"), brut, 0o600)
+	if _, _, err := JetonsConsommes(filepath.Join(dir, "journal-*.jsonl"), cle); err == nil ||
+		!strings.Contains(err.Error(), "journal-2.jsonl") || !strings.Contains(err.Error(), "chaîne rompue") || !strings.Contains(err.Error(), "démarrage refusé") {
+		t.Fatalf("chaîne rompue : %v", err)
 	}
 }
