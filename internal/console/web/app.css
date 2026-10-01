@@ -165,3 +165,5 @@ select.champ { background: #fff; padding: 8px 10px; min-height: 40px; width: aut
   .grille-appels, .grille-aa, .ligne-decision { grid-template-columns: 1fr; row-gap: 4px; }
   .entete-colonnes { display: none; }
 }
+
+.principal > .chaine { align-self: flex-start; }
