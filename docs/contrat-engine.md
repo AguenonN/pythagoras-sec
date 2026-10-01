@@ -251,6 +251,27 @@ notification, quel que soit l'effet final de la décision.
   chaînées avant l'appel, et couvrir exactement les notifications de la
   décision.
 
+## 8. Personnes concernées : résolution avant Decide
+
+Quand le registre déclare `personnes_concernees` pour un outil, l'engine
+lit le ou les identifiants à ce pointeur et demande leurs groupes au
+résolveur (`referentiel-rh/groupes_salarie`), seulement s'il est attesté,
+avec un délai propre (10 s par appel, 100 identifiants au plus). Il ne
+fournit à `Decide` que les sujets résolus ; un sujet introuvable ou non
+résolu est indéterminé. L'entrée `appel` consigne `sujets` (empreinte et
+groupes) et `sujets_non_resolus` (empreintes), jamais l'identifiant en
+clair. Ces appels ne sont pas des consultations : ils n'entrent ni dans
+l'état de session ni dans le chaînage `transmission`.
+
+**Limite connue** : aucune entrée chaînée ne précède l'appel au
+résolveur. Il part avant toute entrée de l'appel, et son résultat n'est
+consigné que dans l'entrée `appel`. Si le journal tombe entre les deux, une
+requête portant un identifiant de personne est partie vers le référentiel
+RH sans trace dans la chaîne, contrairement à ce que le §4 garantit pour
+les appels de l'agent. Le risque est borné (serveur interne, attesté, en
+lecture seule), mais il n'est pas couvert par le rejeu. Une entrée
+chaînée avant l'appel au résolveur est à ajouter plus tard.
+
 ## Rappels
 
 - L'appelant est fixé à la création de la session. Le passer tel que le
