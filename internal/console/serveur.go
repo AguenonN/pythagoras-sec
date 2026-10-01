@@ -12,6 +12,9 @@ import (
 // Serveur est le serveur HTTP de la console. Il ne sert que des lectures.
 type Serveur struct {
 	Depot *Depot
+	// Produit est le nom affiché dans l'en-tête (la maquette le laisse en
+	// emplacement) ; vide, « Console de gouvernance ».
+	Produit string
 }
 
 // Handler assemble les routes. Toutes les requêtes doivent viser 127.0.0.1 ou
@@ -24,7 +27,7 @@ func (s *Serveur) Handler() http.Handler {
 	mux.HandleFunc("GET /api/etat", s.etat)
 	mux.HandleFunc("GET /api/journal/{id}/session/{sid}/chaine", s.chaine)
 	mux.HandleFunc("GET /api/journal/{id}/session/{sid}/poste", s.poste)
-	mux.HandleFunc("GET /api/vitrine", s.vitrine)
+	mux.HandleFunc("GET /api/regles", s.regles)
 	mux.HandleFunc("GET /api/avant-apres", s.avantApres)
 	mux.HandleFunc("GET /api/file", s.file)
 	mux.HandleFunc("POST /api/redaction/relire", s.redaction)
@@ -74,6 +77,7 @@ type journalListe struct {
 	ID       string          `json:"id"`
 	Verif    Verification    `json:"verification"`
 	Entrees  int             `json:"entrees"`
+	Ecart    int             `json:"premier_ecart"`
 	Sessions []SessionResume `json:"sessions"`
 }
 
@@ -83,19 +87,25 @@ func (s *Serveur) etat(w http.ResponseWriter, r *http.Request) {
 		Jeux     []jeuListe     `json:"jeux"`
 		Refus    []string       `json:"jeux_refuses"`
 		Cle      bool           `json:"cle_presente"`
+		Regles   *Regles        `json:"regles,omitempty"`
+		Produit  string         `json:"produit,omitempty"`
 	}{Journaux: []journalListe{}, Jeux: []jeuListe{}, Cle: len(s.Depot.Cle) > 0}
 	for _, j := range s.Depot.Journaux() {
 		st, err := s.Depot.Lire(j)
 		if err != nil {
 			continue
 		}
-		out.Journaux = append(out.Journaux, journalListe{ID: j.ID, Verif: st.Verif, Entrees: len(st.Entrees), Sessions: Sessions(st)})
+		out.Journaux = append(out.Journaux, journalListe{ID: j.ID, Verif: st.Verif, Entrees: len(st.Entrees), Ecart: st.Verif.PremierEcart(), Sessions: Sessions(st)})
 	}
 	jeux, refus := s.Depot.ChargerJeux()
 	for i, j := range jeux {
 		out.Jeux = append(out.Jeux, jeuListe{Index: i, Libelle: j.Libelle(), Empreinte: j.Jeu.Meta.Empreinte, Source: j.Source, Directives: len(j.Jeu.Directives)})
 	}
+	out.Produit = s.Produit
 	out.Refus = append([]string{}, refus...)
+	if jc := EnVigueur(s.tousEtats(), jeux); jc != nil {
+		out.Regles = reglesDe(&jc.Jeu)
+	}
 	ecrire(w, out)
 }
 
@@ -156,29 +166,24 @@ func indexJeu(r *http.Request, cle string, n int) (int, bool) {
 	return i, err == nil && i >= 0 && i < n
 }
 
-func (s *Serveur) vitrine(w http.ResponseWriter, r *http.Request) {
+func (s *Serveur) regles(w http.ResponseWriter, r *http.Request) {
 	jeux, _ := s.Depot.ChargerJeux()
-	i, ok := indexJeu(r, "jeu", len(jeux))
-	if !ok {
-		erreur(w, http.StatusBadRequest, "jeu inconnu")
+	etats := s.tousEtats()
+	jc := EnVigueur(etats, jeux)
+	if jc == nil {
+		erreur(w, http.StatusNotFound, "aucune directive disponible")
 		return
 	}
-	ecrire(w, Vitrine(jeux[i], s.tousEtats(), jeux))
+	ecrire(w, ReglesEnVigueur(*jc, etats, jeux, r.URL.Query().Get("directive")))
 }
 
 func (s *Serveur) avantApres(w http.ResponseWriter, r *http.Request) {
 	jeux, _ := s.Depot.ChargerJeux()
-	a, ok1 := indexJeu(r, "avant", len(jeux))
-	b, ok2 := indexJeu(r, "apres", len(jeux))
-	if !ok1 || !ok2 {
-		erreur(w, http.StatusBadRequest, "jeu inconnu")
-		return
-	}
 	st, ok := s.ouvrir(w, r.URL.Query().Get("journal"))
 	if !ok {
 		return
 	}
-	v, err := AvantApres(st, jeux, jeux[a], jeux[b])
+	v, err := AvantApres(st, jeux, r.URL.Query().Get("session"), r.URL.Query().Get("directive"))
 	if err != nil {
 		erreur(w, http.StatusUnprocessableEntity, err.Error())
 		return

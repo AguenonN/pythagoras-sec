@@ -31,6 +31,11 @@ type Attente struct {
 	Empreinte  string              `json:"empreinte_transmise"`
 	Arguments  map[string]any      `json:"arguments,omitempty"`
 	Purgee     bool                `json:"purgee,omitempty"`
+
+	SousAgent     string             `json:"sous_agent,omitempty"`
+	Demandeur     *journal.Demandeur `json:"demandeur,omitempty"`
+	Applications  []AppVue           `json:"applications"`
+	Consultations []Lien             `json:"consultations"`
 }
 
 // File liste les appels en attente de validation : ceux dont la décision est
@@ -41,7 +46,21 @@ func File(nom string, st *Etat) []Attente {
 		if e.Type != journal.AppelT || e.Decision == nil || e.Decision.Effet != string(directive.AttendreValidation) || e.Approbation != nil {
 			continue
 		}
-		a := Attente{Journal: nom, Session: e.Session, Seq: e.Seq, TS: e.TS, Serveur: e.Serveur, Outil: e.Outil, Motif: e.Decision.Motif}
+		a := Attente{Journal: nom, Session: e.Session, Seq: e.Seq, TS: e.TS, Serveur: e.Serveur, Outil: e.Outil, Motif: e.Decision.Motif,
+			SousAgent: e.SousAgentDeclare, Demandeur: e.Demandeur, Applications: []AppVue{}, Consultations: []Lien{}}
+		for _, k := range e.EtatSession {
+			a.Consultations = append(a.Consultations, Lien{Seq: k.Seq, Serveur: k.Serveur, Outil: k.Outil, Resultat: k.Resultat})
+		}
+		for _, ap := range e.Decision.Applications {
+			if ap.Appliquee {
+				av := AppVue{ID: ap.ID, Version: ap.Version, Fondement: ap.Fondement, Effet: ap.Effet, Declench: ap.Declenchee,
+					Appliquee: ap.Appliquee, Resultat: ap.Resultat, Motif: ap.Motif}
+				if len(ap.Fondements) > 0 {
+					av.Fondement = ap.Fondements[0]
+				}
+				a.Applications = append(a.Applications, av)
+			}
+		}
 		for _, ap := range e.Decision.Applications {
 			if ap.Appliquee && ap.Effet == string(directive.AttendreValidation) {
 				a.Directive, a.Version, a.Fondement = ap.ID, ap.Version, ap.Fondement

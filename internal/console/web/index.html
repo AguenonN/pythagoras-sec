@@ -3,26 +3,19 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Console de supervision des agents</title>
+<title>Console de gouvernance</title>
+<link rel="stylesheet" href="fonts.css">
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<header>
-  <h1>Console de supervision des agents</h1>
-  <nav id="nav" aria-label="Écrans">
-    <a href="#journal" data-ecran="journal">Journal et chaîne</a>
-    <a href="#poste" data-ecran="poste">Poste conseiller</a>
-    <a href="#regles" data-ecran="regles">Règles</a>
-    <a href="#avant-apres" data-ecran="avant-apres">Avant / après</a>
-    <a href="#file" data-ecran="file">File du superviseur</a>
-    <a href="#redaction" data-ecran="redaction">Rédaction</a>
-  </nav>
-</header>
-<div id="chaine-banniere" role="status"></div>
-<main id="contenu">
-  <p class="discret">Chargement…</p>
-</main>
-<footer>Lecture seule. Les données affichées sont lues dans les fichiers du journal ; rien n'est chargé depuis le réseau.</footer>
+<div id="coque"></div>
 <script src="app.js"></script>
+<script src="ecran-journal.js"></script>
+<script src="ecran-poste.js"></script>
+<script src="ecran-regles.js"></script>
+<script src="ecran-avant-apres.js"></script>
+<script src="ecran-validation.js"></script>
+<script src="ecran-redaction.js"></script>
+<script src="demarrage.js"></script>
 </body>
 </html>

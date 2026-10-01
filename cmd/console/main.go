@@ -37,6 +37,7 @@ func lancer() error {
 	addr := flag.String("addr", "127.0.0.1:8088", "adresse d'écoute (boucle locale seulement)")
 	donnees := flag.String("donnees", "demo/execution", "répertoire des journaux (un sous-répertoire par journal) ou fichier de journal")
 	jeux := flag.String("jeux", "demo/directives", "répertoires ou fichiers de jeux de directives, séparés par des virgules")
+	produit := flag.String("produit", "Console de gouvernance", "nom du produit affiché dans l'en-tête")
 	flag.Parse()
 
 	host, _, err := net.SplitHostPort(*addr)
@@ -62,7 +63,7 @@ func lancer() error {
 	}
 	srv := &http.Server{
 		Addr:              *addr,
-		Handler:           (&console.Serveur{Depot: dep}).Handler(),
+		Handler:           (&console.Serveur{Depot: dep, Produit: *produit}).Handler(),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      60 * time.Second,

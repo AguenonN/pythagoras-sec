@@ -199,37 +199,55 @@ func TestPosteEtCout(t *testing.T) {
 	if c.Appels != 4 || c.Validations != 1 || c.Refuses != 1 || c.Caviardes != 1 || c.NonRejoues != 0 || c.EvaluationMoyenne <= 0 {
 		t.Fatalf("coût : %+v", c)
 	}
-	if !strings.Contains(p.Reponse, "caviarde") && !strings.Contains(p.Reponse, "retrait") {
-		t.Fatalf("réponse finale : %s", p.Reponse)
+	if p.Reponse.Badge != BadgeCaviarde || !strings.Contains(p.Reponse.Titre, "rechercher_entreprise") || c.ChampsRetires != 1 {
+		t.Fatalf("réponse finale : %+v, champs %d", p.Reponse, c.ChampsRetires)
 	}
 }
 
-func TestVitrine(t *testing.T) {
+func TestRegles(t *testing.T) {
 	dep, jeu := banc(t)
 	jeux, _ := dep.ChargerJeux()
-	v := Vitrine(jeu, []*Etat{lire(t, dep)}, jeux)
-	if len(v.Directives) != 4 {
-		t.Fatalf("directives : %d", len(v.Directives))
+	etats := []*Etat{lire(t, dep)}
+	jc := EnVigueur(etats, jeux)
+	if jc == nil || jc.Jeu.Meta.Version != jeu.Jeu.Meta.Version {
+		t.Fatalf("règles en vigueur : %+v", jc)
 	}
-	for _, d := range v.Directives[:2] {
-		if d.Decision == nil || !d.Decision.Identique || !d.Decision.Declenchee || d.Relecture == "" {
-			t.Fatalf("%s : %+v", d.ID, d.Decision)
+	v := ReglesEnVigueur(*jc, etats, jeux, "D-001")
+	if len(v.Directives) != 4 || v.Choix == nil || v.Choix.ID != "D-001" {
+		t.Fatalf("liste : %+v", v)
+	}
+	if strings.Contains(v.Choix.Relecture, "Verrou") || v.Choix.Relecture == "" {
+		t.Fatalf("relecture : %q", v.Choix.Relecture)
+	}
+	if len(v.Choix.Decisions) == 0 {
+		t.Fatal("D-001 doit avoir une décision rejouée")
+	}
+	var d DecisionRejouee
+	for _, x := range v.Choix.Decisions {
+		if x.Seq == 2 {
+			d = x
 		}
 	}
-	if d := v.Directives[0].Decision; d.Journalise != "attendre_validation" || d.Seq != 2 {
+	if !d.Identique || !d.Declenchee || d.Journalise != "attendre_validation" || d.Seq != 2 || !v.Choix.Verifies {
 		t.Fatalf("D-001 : %+v", d)
+	}
+	if t4 := Titre(jc.Jeu.Directives[0].TexteFR); t4 == "" || len([]rune(t4)) > 61 {
+		t.Fatalf("titre : %q", t4)
 	}
 }
 
 func TestAvantApres(t *testing.T) {
 	dep, _ := banc(t)
 	jeux, _ := dep.ChargerJeux()
-	v, err := AvantApres(lire(t, dep), jeux, jeux[0], jeux[1])
+	v, err := AvantApres(lire(t, dep), jeux, "S1", "D-001#2")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v.Changes != 1 {
-		t.Fatalf("changements : %d (%+v)", v.Changes, v.Transitions)
+	if v.Choix == nil || v.Choix.Avant != "Avec D-001, version 1" || v.Choix.Apres != "Avec D-001, version 2" {
+		t.Fatalf("choix : %+v (options %+v)", v.Choix, v.Options)
+	}
+	if v.Changes != 1 || v.Sessions != 1 || v.NonRejouables != 0 {
+		t.Fatalf("changements : %+v", v)
 	}
 	var l LigneAA
 	for _, x := range v.Lignes {
@@ -239,6 +257,13 @@ func TestAvantApres(t *testing.T) {
 	}
 	if l.Seq != 2 || l.Avant != "attendre_validation" || l.Apres != "refuser" || l.MotifApres == "" {
 		t.Fatalf("ligne : %+v", l)
+	}
+	if !strings.Contains(v.Explication, "appel n° 2") {
+		t.Fatalf("explication : %s", v.Explication)
+	}
+	// Une directive absente des règles en vigueur : « sans » / « avec ».
+	if _, err := AvantApres(lire(t, dep), jeux, "S1", ""); err != nil {
+		t.Fatal(err)
 	}
 }
 
@@ -296,13 +321,10 @@ func TestHTTP(t *testing.T) {
 	if r, _ := get("/api/journal/..%2Fx/session/S1/chaine", ""); r.StatusCode != http.StatusNotFound {
 		t.Fatalf("identifiant hors liste : %d", r.StatusCode)
 	}
-	for _, c := range []string{"/api/vitrine?jeu=0", "/api/avant-apres?journal=demo&avant=0&apres=1", "/api/file", "/api/journal/demo/session/S1/poste"} {
+	for _, c := range []string{"/api/regles", "/api/regles?directive=D-002", "/api/avant-apres?journal=demo&session=S1", "/api/file", "/api/journal/demo/session/S1/poste"} {
 		if r, b := get(c, ""); r.StatusCode != 200 {
 			t.Fatalf("%s : %d %s", c, r.StatusCode, b)
 		}
-	}
-	if r, _ := get("/api/vitrine?jeu=99", ""); r.StatusCode != http.StatusBadRequest {
-		t.Fatalf("jeu inconnu : %d", r.StatusCode)
 	}
 }
 
@@ -324,5 +346,35 @@ func TestAucuneRessourceExterne(t *testing.T) {
 	})
 	if err != nil || n < 3 {
 		t.Fatalf("fichiers embarqués : %d, %v", n, err)
+	}
+}
+
+// Le vocabulaire de l'écran : ni « jeu », ni « v1 » / « v2 ». Les lignes de
+// commentaire sont ignorées ; le code lui-même n'emploie pas ces mots dans
+// ses textes. La CSP interdit l'attribut style : le code doit passer par le
+// CSSOM, et jamais par innerHTML.
+func TestVocabulaireEtCSP(t *testing.T) {
+	mot := regexp.MustCompile(`(?i)\bjeux?\b|\bv[12]\b`)
+	err := fs.WalkDir(webFS, "web", func(p string, d fs.DirEntry, err error) error {
+		if err != nil || d.IsDir() || !(strings.HasSuffix(p, ".js") || strings.HasSuffix(p, ".html")) {
+			return err
+		}
+		b, _ := webFS.ReadFile(p)
+		for i, l := range strings.Split(string(b), "\n") {
+			l = strings.TrimSpace(l)
+			if strings.HasPrefix(l, "//") || strings.HasPrefix(l, "/*") || strings.HasPrefix(l, "*") {
+				continue
+			}
+			if m := mot.FindString(l); m != "" {
+				t.Errorf("%s:%d emploie %q : %s", p, i+1, m, l)
+			}
+			if strings.Contains(l, "innerHTML") || strings.Contains(l, "setAttribute('style'") {
+				t.Errorf("%s:%d : innerHTML ou attribut style interdits (CSP) : %s", p, i+1, l)
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
 	}
 }

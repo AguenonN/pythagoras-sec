@@ -3,6 +3,7 @@ package console
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"time"
 
 	"mcprogue/internal/directive"
@@ -54,7 +55,14 @@ type AppVue struct {
 
 // Etape est un appel de la session, de bout en bout.
 type Etape struct {
-	Index       int                  `json:"index"` // position de l'entrée dans le journal
+	Index       int                  `json:"index"`  // position de l'entrée dans le journal
+	Numero      int                  `json:"numero"` // numéro de l'entrée (Index + 1)
+	Prev        string               `json:"prev,omitempty"`
+	Acces       string               `json:"acces,omitempty"`
+	Empreinte   string               `json:"empreinte_transmise,omitempty"`
+	Evaluees    int                  `json:"evaluees"`
+	Appliquees  int                  `json:"appliquees"`
+	Indeterm    int                  `json:"indeterminees"`
 	Seq         int                  `json:"seq"`
 	TS          time.Time            `json:"ts"`
 	SousAgent   string               `json:"sous_agent,omitempty"`
@@ -102,14 +110,47 @@ type VueChaine struct {
 	Ouverte    time.Time          `json:"ouverte"`
 	Fermee     bool               `json:"fermee"`
 	Fermeture  string             `json:"fermeture,omitempty"`
-	Jeu        *journal.RefJeu    `json:"jeu,omitempty"`
-	JeuConnu   bool               `json:"jeu_connu"`
+	Jeu        *journal.RefJeu    `json:"-"`
+	JeuConnu   bool               `json:"-"`
+	Regles     *Regles            `json:"regles,omitempty"` // règles en vigueur ; absent si non disponibles
 	SousAgents []string           `json:"sous_agents"`
 	Serveurs   []ServeurVue       `json:"serveurs"`
 	Etapes     []Etape            `json:"etapes"`
 	Verif      Verification       `json:"verification"`
 	Ecart      int                `json:"premier_ecart"`
 	Signature  string             `json:"signature"` // change quand le journal change
+}
+
+// Regles décrit les règles en vigueur pour l'écran : depuis quand, et par qui.
+type Regles struct {
+	Depuis time.Time `json:"depuis"`
+	Auteur string    `json:"auteur"`
+}
+
+func reglesDe(j *directive.Jeu) *Regles {
+	if j == nil {
+		return nil
+	}
+	return &Regles{Depuis: j.Meta.DateEffet, Auteur: j.Meta.Auteur}
+}
+
+// Titre est l'intitulé court d'une directive : son texte, coupé à la
+// première phrase ou au mot qui précède 60 caractères. Le schéma n'a pas de
+// titre ; le texte du juriste n'est jamais réécrit, seulement abrégé ici.
+func Titre(texte string) string {
+	t := strings.TrimSpace(texte)
+	if i := strings.IndexAny(t, ".;:"); i > 0 {
+		t = t[:i]
+	}
+	r := []rune(t)
+	if len(r) > 60 {
+		r = r[:60]
+		if i := strings.LastIndex(string(r), " "); i > 20 {
+			return string(r)[:i] + "…"
+		}
+		return string(r) + "…"
+	}
+	return string(r)
 }
 
 // Sessions liste les sessions ouvertes d'un journal.
@@ -336,14 +377,16 @@ func Chaine(st *Etat, jeux []JeuCharge, session string) (*VueChaine, bool) {
 			}
 			if v.Jeu == nil && e.Jeu != nil {
 				v.Jeu = e.Jeu
-				_, v.JeuConnu = trouverJeu(jeux, e.Jeu)
+				j, ok := trouverJeu(jeux, e.Jeu)
+				v.JeuConnu = ok
+				v.Regles = reglesDe(j)
 			}
 			if v.Demandeur == nil && e.Demandeur != nil {
 				v.Demandeur = e.Demandeur
 			}
 			jeu, _ := trouverJeu(jeux, e.Jeu)
 			b := badge(e)
-			et := Etape{Index: i, Seq: e.Seq, TS: e.TS, SousAgent: e.SousAgentDeclare, Serveur: e.Serveur, Outil: e.Outil,
+			et := Etape{Index: i, Numero: i + 1, Prev: e.Prev, Acces: e.Acces, Seq: e.Seq, TS: e.TS, SousAgent: e.SousAgentDeclare, Serveur: e.Serveur, Outil: e.Outil,
 				Attestation: e.Attestation, Effet: e.Decision.Effet, Origine: e.Decision.Origine, Motif: e.Decision.Motif,
 				Badge: b, Libelle: libelleBadge[b], Transmis: transmis[e.Seq], Alertes: e.Decision.Alertes,
 				Validation: e.Decision.Validation, Apps: []AppVue{},
@@ -353,8 +396,16 @@ func Chaine(st *Etat, jeux []JeuCharge, session string) (*VueChaine, bool) {
 			}
 			if e.Appel != nil {
 				et.Champs = e.Appel.ChampsRetires
+				et.Empreinte = e.Appel.EmpreinteTransmise
 			}
 			for _, a := range e.Decision.Applications {
+				et.Evaluees++
+				if a.Appliquee {
+					et.Appliquees++
+				}
+				if a.Indetermine {
+					et.Indeterm++
+				}
 				av := AppVue{ID: a.ID, Version: a.Version, Fondement: a.Fondement, Effet: a.Effet, Declench: a.Declenchee,
 					Appliquee: a.Appliquee, Resultat: a.Resultat, Motif: a.Motif}
 				if len(a.Fondements) > 0 {
@@ -400,6 +451,7 @@ type Cout struct {
 	Refuses           int     `json:"refuses"`
 	Caviardes         int     `json:"caviardes"`
 	Validations       int     `json:"validations"`
+	ChampsRetires     int     `json:"champs_retires"`
 	NonRejoues        int     `json:"non_rejoues"`
 	EvaluationMoyenne float64 `json:"evaluation_moyenne_ms"` // temps de Decide, mesuré au rejeu
 	EvaluationMax     float64 `json:"evaluation_max_ms"`
@@ -409,8 +461,8 @@ type Cout struct {
 // VuePoste est l'écran 2.
 type VuePoste struct {
 	*VueChaine
-	Reponse string `json:"reponse"`
-	Cout    Cout   `json:"cout"`
+	Reponse Reponse `json:"reponse"`
+	Cout    Cout    `json:"cout"`
 }
 
 // Poste construit l'écran 2. Le temps ajouté par la règle n'est pas
@@ -435,6 +487,7 @@ func Poste(st *Etat, jeux []JeuCharge, session string) (*VuePoste, bool) {
 			p.Cout.Validations++
 		}
 		p.Cout.ServeursMs += e.DureeMs
+		p.Cout.ChampsRetires += len(e.Champs)
 	}
 	cat := rejeu.Catalogue{}
 	for _, j := range jeux {
@@ -466,25 +519,36 @@ func Poste(st *Etat, jeux []JeuCharge, session string) (*VuePoste, bool) {
 	return p, true
 }
 
-// reponseFinale dit ce que l'agent a reçu au dernier appel. Le journal ne
-// garde que l'empreinte de la réponse d'un serveur : le texte rendu à
-// l'agent n'est reconstituable que pour un refus ou une attente, dont le
-// contrat (docs/contrat-engine.md §6) fixe le motif.
-func reponseFinale(c *VueChaine) string {
+// Reponse est la réponse au conseiller. Le texte écrit par l'agent n'est pas
+// au journal (seule l'empreinte de la réponse d'un serveur l'est) : la
+// console donne ce que l'engine a décidé, jamais un texte inventé.
+type Reponse struct {
+	Badge       string   `json:"badge"`
+	Titre       string   `json:"titre"`
+	Paragraphes []string `json:"paragraphes"`
+}
+
+// reponseFinale résume ce que l'agent a reçu au dernier appel de la session.
+func reponseFinale(c *VueChaine) Reponse {
 	if len(c.Etapes) == 0 {
-		return "Aucun appel dans cette session."
+		return Reponse{Badge: BadgeIndispo, Titre: "Aucun appel dans cette session.", Paragraphes: []string{}}
 	}
 	e := c.Etapes[len(c.Etapes)-1]
-	nom := e.Serveur + " / " + e.Outil
+	r := Reponse{Badge: e.Badge, Paragraphes: []string{}}
 	switch e.Badge {
-	case BadgeRefuse, BadgeNonAttesta:
-		return fmt.Sprintf("Dernier appel (%s) : refusé. L'agent a reçu le motif : %s", nom, e.Motif)
+	case BadgeRefuse:
+		r.Titre = fmt.Sprintf("Demande refusée : l'appel %s n'a pas été transmis.", e.Outil)
+	case BadgeNonAttesta:
+		r.Titre = fmt.Sprintf("Source non attestée : l'appel %s a été refusé.", e.Outil)
 	case BadgeAttente:
-		return fmt.Sprintf("Dernier appel (%s) : retenu, en attente de validation humaine. L'agent n'a reçu aucune donnée. %s", nom, e.Motif)
+		r.Titre = fmt.Sprintf("Décision suspendue : une validation humaine est requise avant la transmission de l'appel %s.", e.Outil)
 	case BadgeIndispo:
-		return fmt.Sprintf("Dernier appel (%s) : la source n'a pas répondu. L'agent a reçu une erreur, sans donnée.", nom)
+		r.Titre = fmt.Sprintf("Source indisponible : aucune donnée n'a été obtenue pour l'appel %s.", e.Outil)
 	case BadgeCaviarde:
-		return fmt.Sprintf("Dernier appel (%s) : transmis après retrait de %d champ(s) ; la réponse du serveur a été remise à l'agent.", nom, len(e.Champs))
+		r.Titre = fmt.Sprintf("Appel %s transmis après retrait de %d champ(s).", e.Outil, len(e.Champs))
+	default:
+		r.Titre = fmt.Sprintf("Appel %s autorisé : la réponse du serveur a été remise à l'agent.", e.Outil)
 	}
-	return fmt.Sprintf("Dernier appel (%s) : autorisé ; la réponse du serveur a été remise à l'agent (seule son empreinte est conservée au journal).", nom)
+	r.Paragraphes = append(r.Paragraphes, "Motif de l'engine : "+e.Motif)
+	return r
 }
