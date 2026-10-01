@@ -76,7 +76,7 @@ func decider(jeu Jeu, etat EtatSession, appel Appel, ev Evenement) Decision {
 
 		// Condition, puis et(cible, condition) : si_indetermine ne tranche
 		// que ce résultat-là.
-		ctx := contexte{etat: &etat, appel: &appel}
+		ctx := contexte{etat: &etat, appel: &appel, racine: args}
 		res, texte := Vrai, ""
 		if d.Arbre != nil {
 			res, texte = ctx.noeud(d.Arbre, args)

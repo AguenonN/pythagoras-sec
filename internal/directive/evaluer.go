@@ -17,6 +17,23 @@ import (
 type contexte struct {
 	etat  *EtatSession
 	appel *Appel
+	// racine sont les arguments évalués (après les caviardages des
+	// directives précédentes) : ce que $racine/… désigne sous un
+	// quantificateur.
+	racine any
+}
+
+// PrefixeRacine, devant un pointeur, le fait lire depuis les arguments et
+// non depuis l'élément courant d'un quantificateur.
+const PrefixeRacine = "$racine"
+
+// lire résout un pointeur de feuille ou de quantificateur : depuis la
+// racine des arguments s'il commence par $racine/, depuis courant sinon.
+func (c *contexte) lire(courant any, ptr string) (any, bool) {
+	if strings.HasPrefix(ptr, PrefixeRacine+"/") {
+		return pointerDans(c.racine, strings.TrimPrefix(ptr, PrefixeRacine))
+	}
+	return pointerDans(courant, ptr)
 }
 
 // noeud évalue nd sur courant : les arguments à la racine, l'élément courant
@@ -37,7 +54,8 @@ func (c *contexte) noeud(nd *Noeud, courant any) (Trivalent, string) {
 	case nd.Tous != nil:
 		return c.quantifier(nd.Tous, courant, false)
 	case nd.Argument != nil:
-		return feuilleArgument(*nd.Argument, courant)
+		v, trouve := c.lire(courant, nd.Argument.Champ)
+		return feuilleArgument(*nd.Argument, v, trouve)
 	case nd.AConsulte != nil:
 		return c.aConsulte(nd.AConsulte)
 	case nd.Appelant != nil:
@@ -100,7 +118,7 @@ func (c *contexte) quantifier(q *Quantificateur, courant any, existe bool) (Triv
 	if existe {
 		nom = "existe"
 	}
-	v, trouve := pointerDans(courant, q.Champ)
+	v, trouve := c.lire(courant, q.Champ)
 	tab, ok := v.([]any)
 	switch {
 	case !trouve || !ok:
@@ -140,9 +158,8 @@ func (c *contexte) quantifier(q *Quantificateur, courant any, existe bool) (Triv
 
 // feuilleArgument : le texte est celui de la v1 pour qu'un seuil v1 garde
 // son motif à l'identique.
-func feuilleArgument(cd Condition, courant any) (Trivalent, string) {
+func feuilleArgument(cd Condition, v any, trouve bool) (Trivalent, string) {
 	base := cd.Champ + " " + string(cd.Op) + " " + valeurTexte(cd.Valeur)
-	v, trouve := pointerDans(courant, cd.Champ)
 	switch r := evaluerOp(cd.Op, cd.Valeur, v, trouve); r {
 	case Vrai:
 		return r, base
@@ -503,7 +520,7 @@ func (c *contexte) sujet(f *FeuilleSujet, courant any) (Trivalent, string) {
 	if f.Champ != nil {
 		ptr = *f.Champ
 	}
-	v, trouve := pointerDans(courant, ptr)
+	v, trouve := c.lire(courant, ptr)
 	if !trouve {
 		return suffixe(Indetermine, base, "identifiant du sujet absent")
 	}

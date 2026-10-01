@@ -137,6 +137,15 @@ Quantificateurs :
 - Dans la sous-condition, les pointeurs des feuilles `argument` et `sujet`
   sont **relatifs à l'élément courant**, et le pointeur vide `""` désigne
   l'élément lui-même. Hors quantificateur, un pointeur commence par `/`.
+- *Correctif signalé (session gate-v2)* : sous un quantificateur, un
+  pointeur qui commence par `$racine/` (feuilles `argument` et `sujet`,
+  `champ` d'un quantificateur imbriqué) se lit **depuis les arguments**
+  (après les caviardages des directives précédentes), et non depuis
+  l'élément courant. Exemple : `{"existe": {"champ": "/lignes",
+  "condition": {"et": [{"argument": {"champ": "/montant", "op": ">",
+  "valeur": 100}}, {"argument": {"champ": "$racine/categorie", "op": "==",
+  "valeur": "sensible"}}]}}}`. Hors quantificateur, `$racine` est refusé
+  (écrire le pointeur seul).
 
 ### 5.2 Bornes
 

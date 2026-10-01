@@ -381,10 +381,18 @@ func validerListe(v *validation, p string, l []string) {
 }
 
 // validerPointeurV2 : hors quantificateur un pointeur commence par "/" ; sous
-// un quantificateur, "" désigne l'élément courant.
+// un quantificateur, "" désigne l'élément courant et $racine/… les
+// arguments (correctif signalé, session gate-v2).
 func validerPointeurV2(v *validation, p, ptr string, dansQuantif bool) {
 	if ptr == "" && dansQuantif {
 		return
+	}
+	if strings.HasPrefix(ptr, PrefixeRacine) {
+		if !dansQuantif {
+			v.f("%s: %s n'a de sens que sous un quantificateur (hors quantificateur, écrire le pointeur seul)", p, PrefixeRacine)
+			return
+		}
+		ptr = strings.TrimPrefix(ptr, PrefixeRacine)
 	}
 	if err := validerPointeur(ptr); err != nil {
 		v.f("%s: %v", p, err)
