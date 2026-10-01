@@ -1,4 +1,53 @@
-# RAPPORT_UI — session « ui »
+# Rapport UI — console de gouvernance
+
+Branche `feat/ui`. Console locale `cmd/console` + `internal/console` : un binaire, tout embarqué (HTML, CSS, JS, polices), écoute sur la boucle locale uniquement, **lecture seule**, aucune ressource externe (contrôlé par un test et par les captures : aucune requête hors de la console).
+
+## Reprise : alignement sur les maquettes (`docs/demo/maquettes/`, validées par Manu)
+
+Commits : `maquettes` · `c5f0b8a` socle + écran 1 · `e299fcb` écran 2 · `82547b9` écran 3 · `d01319d` écran 4 · `644503e` écran 5 · `7402bb8` écran 6 · puis captures et ce rapport.
+
+- **Système visuel** repris tel quel de `LISEZMOI.md` : fond, surfaces, traits, accent, six badges (autorisé, caviardé, en attente, refusé, indisponible, source non attestée), chaîne rompue en `#FBE4E1` / `#A1261B`.
+- **Polices embarquées, sans CDN** : paquets npm `@fontsource/source-serif-4`, `@fontsource/ibm-plex-sans`, `@fontsource/ibm-plex-mono` (version 5.3.0, registre npm), woff2 latin + latin-ext copiés dans `internal/console/web/fonts/`, licence **SIL OFL 1.1** jointe (`OFL-*.txt`), `fonts.css` généré avec les `unicode-range` des paquets.
+- **Vocabulaire** : plus aucun « jeu » ni « v1 / v2 » à l'écran (test `TestVocabulaireEtCSP`). La version d'une directive s'écrit « D-001, version 2 » (la maquette écrit « D-106 v2 » ; j'ai suivi la consigne écrite). Les motifs journalisés par l'engine sont nettoyés à l'affichage (version en toutes lettres, nom du verrou omis, empreintes raccourcies).
+- **Données** : toujours celles des journaux réels. Ce qui n'existe pas dans le journal (demande, demandeur, rôle et groupe, rôle requis, accès, notifications, approbations, texte rédigé par l'agent, questions du compilateur, analyse de l'Analyste) s'affiche « non disponible », jamais une valeur inventée.
+- **Captures** : Playwright installé dans le venv de `agents/` (`agents/.venv`, ignoré par Git, aucune installation globale), Chromium headless téléchargé par Playwright dans `~/.cache/ms-playwright`. Captures de chaque écran sur les journaux de `test/integration` (`MCP_CONSERVER_JOURNAUX`), à côté de la maquette correspondante, dans `docs/rapports/console-captures/` : `N-ecran.png` (console) et `maquette-N-ecran.png`, plus `1-journal-chaine-rompue.png` (copie falsifiée). Script : `capturer.py` du même dossier.
+
+### Écrans : écarts restants avec la maquette
+
+| Écran | Écarts restants |
+|---|---|
+| 1 · Journal | Nom du produit : `[Nom du produit]` remplacé par un nom configurable (`-produit`, défaut « Console de gouvernance »). Demande, demandeur (nom, rôle, groupe), rôle requis : « non disponible ». Le sous-titre des sessions est le nom du journal (la demande n'y est pas). Colonne « Appel » : l'outil seul, pas les arguments (« · DOS-FICTIF-002 », « 400 000 € ») : ils ne s'affichent qu'à l'écran Validation. Intitulé de directive = début abrégé de son texte (le schéma n'a pas de titre). Fond bleu clair : seule la ligne « en attente » sélectionnée. |
+| 2 · Poste conseiller | Champ « Demande » et bouton « Lancer les agents » présents mais désactivés. Étapes : nom de l'outil (et serveur) au lieu des libellés métier (« Registre des gels (DG Trésor) ») et des valeurs lues (« 19,08 % ») : le journal n'a que l'empreinte des réponses. Réponse au conseiller : décision de l'engine, pas le texte de l'agent (non conservé). « Temps ajouté par l'engine » : estimé en rejouant la décision, pas mesuré à l'appel. Sélecteur de session ajouté dans la carte « Demande ». |
+| 3 · Règles | Liste = directives des règles en vigueur citées par les journaux (D-001 à D-004 dans la branche ; D-001 à D-010 après fusion de `demo.json`). « Dernière modification » devient « en vigueur depuis ». Intitulés abrégés. « Questions du compilateur » et « Accès » : non disponibles. Relecture : la phrase de règle du gabarit, sans le nom technique du verrou. |
+| 4 · Avant / après | Le choix porte sur les directives que d'autres règles changent ou ajoutent (la maquette n'en a qu'une). « Pourquoi c'est un risque » : non disponible (Analyste non relié). « Autorisé et transmis » non repris (les deux colonnes sont des rejeux). Le bouton « proposition de l'Analyste » mène à l'écran Rédaction. Sélecteur de session ajouté. |
+| 5 · Validation | Rôle requis, quatre contrôles de l'engine (signature, rôle à la date, quatre yeux, un jeton par rôle) : « non disponible ». Boutons « Rejeter » et « Signer et valider » et commentaire **désactivés** (actions non branchées). Compteur d'approbations « 0 / 1 » absent. Titre de directive absent des cartes « Pourquoi ». |
+| 6 · Rédaction | Compilateur non relié : « Compiler » relit un texte de directive au format JSON (chargeur strict + relecture), un texte libre reçoit « non disponible ». Questions du compilateur, essai sur le journal d'hier, nombre de propositions de l'Analyste : « non disponible ». « Mettre en observation » et « Activer » désactivés (« Activer (signé J. Juriste) » devient « Activer », signataire inconnu). |
+
+Non fait, comme demandé : retirer les jeux intégrés (la variante plus stricte de `credit-demo` y reste pour l'écran avant / après), brancher le compilateur, l'annuaire ou les actions.
+
+## Décisions prises seul (cette reprise)
+- **CSP et JavaScript** : la CSP `default-src 'self'` bloque l'attribut `style` ; le code passe par le CSSOM (`element.style.cssText`) et jamais par `innerHTML` (test).
+- **Alerte de chaîne** : en plus de la pastille de chaque session (maquette), une bande rouge n'apparaît **que** si un journal est rompu ou non vérifiable, sur tous les écrans, pour que l'écart ne passe jamais inaperçu.
+- **Règles en vigueur** (écrans 1, 2, 3) : celles que les journaux citent en dernier ; à défaut, les premières du catalogue.
+- **Avant / après** : « avant » = règles citées par la session ; « après » = ces règles où la directive choisie remplace sa version précédente ou s'ajoute ; sinon colonnes « Sans la directive » / « Avec D-0nn ».
+- **Titre d'une directive** : première phrase de son texte, abrégée à ~60 caractères ; le texte du juriste n'est jamais réécrit.
+- **Heures** : toujours en Europe/Paris, UTC en police à chasse fixe sur l'écran 3.
+- **Playwright** : le navigateur est téléchargé par Playwright lui-même (hors registre de paquets) ; c'est inhérent à l'installation demandée.
+
+## Vérification en 5 minutes
+```bash
+go vet ./... && go test -race ./...
+MCP_CONSERVER_JOURNAUX=/tmp/journaux-demo go test -count=1 ./test/integration/
+export MCP_GATE_CLE_JOURNAL=$(printf 'integ-integ-integ-integ-integ-integ-' | xxd -p | tr -d '\n')
+go run ./cmd/console -donnees /tmp/journaux-demo -jeux demo/directives      # http://127.0.0.1:8088/
+# captures (venv de agents/, console lancée) :
+agents/.venv/bin/python docs/rapports/console-captures/capturer.py http://127.0.0.1:8088 /tmp/cap --maquettes docs/demo/maquettes
+```
+
+---
+
+# Rapport de la première session (historique)
+
 
 Branche `feat/ui`. Console locale `cmd/console` + `internal/console` : un binaire, tout embarqué (HTML, CSS, JS), écoute uniquement sur la boucle locale, **lecture seule**, aucune ressource externe (test automatisé `TestAucuneRessourceExterne`, en-tête CSP `default-src 'self'`).
 
