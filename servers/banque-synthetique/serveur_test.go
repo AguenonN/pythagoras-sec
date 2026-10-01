@@ -246,3 +246,39 @@ func TestDossierEntiteInscriteAuRegistre(t *testing.T) {
 		}
 	}
 }
+
+// DOS-FICTIF-006 : la demande du scénario « top management ». Entreprise
+// réelle déjà utilisée par un autre dossier (pas une nouvelle), demande
+// inventée au-delà de 2 000 000 euros (D-005), à un taux sous le seuil de
+// l'usure du 4e trimestre 2026 (19,08 % pour les découverts aux sociétés
+// non financières, Banque de France).
+func TestDossierTopManagement(t *testing.T) {
+	ds, err := ChargerDossiers()
+	if err != nil {
+		t.Fatal(err)
+	}
+	d, ok := ds["DOS-FICTIF-006"]
+	if !ok {
+		t.Fatal("DOS-FICTIF-006 absent")
+	}
+	if !d.DemandeFictive || d.Piege != nil || d.ConstatRegistreGels != nil || d.MontantDemande != 2400000 ||
+		d.CategorieTaux != "decouvert-societes-non-financieres" || d.TauxProposePourcent >= 19.08 {
+		t.Fatalf("dossier: %+v", d)
+	}
+	deja := false
+	for id, x := range ds {
+		if id != d.DossierID && x.Siren == d.Siren && x.Demandeur == d.Demandeur {
+			deja = true
+		}
+	}
+	if !deja {
+		t.Fatalf("%s (%s) n'est l'entreprise d'aucun autre dossier", d.Demandeur, d.Siren)
+	}
+
+	cs := session(t)
+	var out SortieAttribution
+	res := essai.Appeler(t, cs, "attribuer_pret", map[string]any{"dossier_id": "DOS-FICTIF-006", "siren": "405750753", "montant": 2400000}, &out)
+	if res.IsError || out.Statut != StatutAttribue || out.Montant != 2400000 {
+		t.Fatalf("%+v", out)
+	}
+}
