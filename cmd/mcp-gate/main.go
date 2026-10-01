@@ -7,6 +7,11 @@
 //	mcp-gate -registre registre.json -directives jeu.json \
 //	         -journal journal.jsonl -coffre coffre.jsonl
 //
+// Avec -annuaire et -annuaire-autorite, l'annuaire des habilitations est
+// chargé (signature vérifiée) ; le jeton d'identité du demandeur est lu
+// dans MCP_GATE_JETON_DEMANDEUR, vérifié au lancement, et le demandeur est
+// résolu à l'ouverture de la session.
+//
 // La clé HMAC du journal est lue dans MCP_GATE_CLE_JOURNAL (hexadécimal,
 // 32 octets au moins), jamais dans un fichier ni sur la ligne de commande.
 // Sans clé, sans registre ou sans jeu valide, rien ne démarre.
@@ -48,6 +53,11 @@ import (
 
 // VarCle est la variable d'environnement qui porte la clé du journal.
 const VarCle = "MCP_GATE_CLE_JOURNAL"
+
+// VarJetonDemandeur porte le jeton d'identité du demandeur, signé par une
+// identité de l'annuaire (mcp-approve identite). Lu dans l'environnement,
+// jamais sur la ligne de commande, où ps le montrerait.
+const VarJetonDemandeur = "MCP_GATE_JETON_DEMANDEUR"
 
 func main() {
 	if err := lancer(); err != nil {
@@ -120,7 +130,7 @@ func lancer() error {
 		Registre: reg, Jeu: *jeu, Journal: j, Coffre: coffre, Appelant: gate.AppelantStdio,
 		Session: session.Config{DelaiBackend: *delai, MaxConsultations: *maxConsultations, AgeMax: *ageMax},
 		Backend: backend.Options{Stderr: os.Stderr, Logger: log},
-		Logger:  log, Annuaire: src,
+		Logger:  log, Annuaire: src, JetonDemandeur: os.Getenv(VarJetonDemandeur),
 	})
 	if err != nil {
 		return err

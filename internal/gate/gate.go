@@ -76,6 +76,10 @@ type Config struct {
 	// Annuaire est la source d'identité (demandeur, valideurs). Nulle :
 	// aucun demandeur n'est résolu et aucune validation n'est possible.
 	Annuaire annuaire.Source
+	// JetonDemandeur est le jeton d'identité du demandeur remis au
+	// lancement, signé par une identité de l'annuaire. Vide : pas de
+	// demandeur, et les directives qui le lisent sont indéterminées.
+	JetonDemandeur string
 }
 
 // Gate est l'agrégateur démarré.
@@ -106,6 +110,9 @@ type Gate struct {
 	// serveur (voir completer).
 	complements sync.Map // id de session → *complementsSession
 	idsSession  sync.Map // *mcp.ServerSession → id de session, pour oublier les compléments
+	// demandeurs tient le demandeur résolu à l'ouverture de chaque
+	// session, tel que consigné dans session_ouverte.
+	demandeurs sync.Map // id de session → *directive.Demandeur
 }
 
 // Demarrer journalise le jeu et le registre, connecte chaque backend et
@@ -134,6 +141,16 @@ func Demarrer(ctx context.Context, cfg Config) (*Gate, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.New(slog.DiscardHandler)
 	}
+	if cfg.JetonDemandeur != "" {
+		if cfg.Annuaire == nil {
+			return nil, errors.New("gate: jeton du demandeur sans annuaire pour le vérifier")
+		}
+		// Vérifié dès le lancement : un jeton refusé est une erreur de
+		// l'opérateur, pas une session sans demandeur.
+		if _, err := annuaire.VerifierIdentite(cfg.Annuaire, cfg.JetonDemandeur, cfg.Horloge().UTC()); err != nil {
+			return nil, fmt.Errorf("gate: jeton du demandeur refusé : %w", err)
+		}
+	}
 	g := &Gate{
 		cfg: cfg, journal: cfg.Journal, coffre: cfg.Coffre, charges: map[versionJeu]string{},
 		horloge: cfg.Horloge, log: cfg.Logger, backends: map[string]backend.Backend{},
@@ -144,6 +161,12 @@ func Demarrer(ctx context.Context, cfg Config) (*Gate, error) {
 	// Contrat §3 : le journal est attaché au coffre dès l'ouverture.
 	g.coffre.Journaliser(g.journal)
 	sc := cfg.Session
+	if sc.Horloge == nil {
+		// Une seule horloge : l'ouverture de session (qui date la
+		// résolution du demandeur) et les appels.
+		sc.Horloge = cfg.Horloge
+	}
+	sc.AOuverture = g.ouvrir
 	fermeture := sc.AFermeture
 	sc.AFermeture = func(ss *mcp.ServerSession, motif string) {
 		if fermeture != nil {
@@ -363,9 +386,11 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 	version, acces, etiquettes := reg.Version(), directive.Acces(o.Acces), srv.EtiquettesOutil(outil)
 	etat := g.completer(tour.Etat())
 	att := b.Attestation()
+	demandeur := g.demandeur(tour.SessionID())
 	dec := directive.Decide(jeu, etat, directive.Appel{
 		Serveur: serveur, Outil: outil, Arguments: args, Attestation: att, Horodatage: ts,
 		Acces: acces, EtiquettesCible: etiquettes, VersionRegistre: version, SousAgentDeclare: sousAgent,
+		Demandeur: demandeur,
 	})
 	// Contrôle du registre, toujours actif, même sans directive
 	// source_attestee pour ce serveur : refus d'origine registre.
@@ -385,6 +410,7 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 		Decision:        decJ,
 		Resultat:        &journal.Resultat{Statut: journal.StatutNonTransmis},
 		VersionRegistre: version, Acces: string(acces), EtiquettesCible: nonVide(etiquettes),
+		Demandeur: journal.DepuisDemandeur(demandeur),
 	}
 
 	var rep *mcp.CallToolResult
@@ -445,9 +471,48 @@ func (g *Gate) suivre(ss *mcp.ServerSession) {
 			ss.Wait()
 			if id, ok := g.idsSession.LoadAndDelete(ss); ok {
 				g.complements.Delete(id)
+				g.demandeurs.Delete(id)
 			}
 		}()
 	}
+}
+
+// ouvrir complète l'entrée session_ouverte : source d'identité, référence
+// de l'annuaire, et demandeur prouvé par le jeton remis au lancement, avec
+// ses groupes résolus à la date d'ouverture. Un jeton qui ne se vérifie
+// plus (expiré depuis le lancement) laisse la session sans demandeur ; le
+// message le dit, sans citer le jeton.
+func (g *Gate) ouvrir(en *journal.Entree) string {
+	a := g.cfg.Annuaire
+	if a == nil {
+		return ""
+	}
+	ref := a.Reference()
+	en.SourceIdentite = a.Nom()
+	en.Annuaire = &journal.RefAnnuaire{ID: ref.ID, Version: ref.Version, Empreinte: ref.Empreinte}
+	if g.cfg.JetonDemandeur == "" {
+		en.Message = "aucun jeton de demandeur : demandeur non résolu"
+		return ""
+	}
+	id, err := annuaire.VerifierIdentite(a, g.cfg.JetonDemandeur, en.TS)
+	if err != nil {
+		en.Message = "jeton du demandeur refusé (" + err.Error() + ") : demandeur non résolu"
+		return ""
+	}
+	fiche, _ := a.Resoudre(id.Demandeur, en.TS)
+	d := &directive.Demandeur{Identite: fiche.Identite, Groupes: fiche.Groupes}
+	en.Demandeur = journal.DepuisDemandeur(d)
+	en.Message = "demandeur " + id.Demandeur + " (jeton signé par " + id.Emetteur + ")"
+	g.demandeurs.Store(en.Session, d)
+	return ""
+}
+
+// demandeur rend le demandeur résolu à l'ouverture de la session, ou nil.
+func (g *Gate) demandeur(session string) *directive.Demandeur {
+	if v, ok := g.demandeurs.Load(session); ok {
+		return v.(*directive.Demandeur)
+	}
+	return nil
 }
 
 // complement est ce que l'engine consigne d'une consultation en plus de ce

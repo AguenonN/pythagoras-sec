@@ -80,6 +80,12 @@ type Config struct {
 	// AFermeture est appelée après une fermeture forcée, hors de tout
 	// verrou ; l'engine y ferme la connexion (ss.Close).
 	AFermeture func(*mcp.ServerSession, string)
+	// AOuverture, si posée, complète l'entrée session_ouverte avant son
+	// écriture (demandeur, source d'identité) : TS, Session et Appelant y
+	// sont déjà. Elle rend un motif non vide pour refuser l'ouverture : la
+	// session est alors ouverte puis fermée par le premier tour, avec ce
+	// motif, et aucun appel n'y passe.
+	AOuverture func(en *journal.Entree) (refus string)
 }
 
 // DelaiBackendDefaut s'applique quand Config.DelaiBackend est nul.
@@ -196,9 +202,12 @@ func (g *Gestionnaire) obtenir(ss *mcp.ServerSession, appelant string) (*Session
 			ss: ss, tour: make(chan struct{}, 1),
 		}
 		// Sous g.mu : aucune entrée de la session ne peut précéder celle-ci.
-		if _, err := g.journal.Ecrire(journal.Entree{
-			TS: s.Ouverte, Type: journal.SessionOuverte, Session: s.ID, Appelant: s.Appelant,
-		}); err != nil {
+		en := journal.Entree{TS: s.Ouverte, Type: journal.SessionOuverte, Session: s.ID, Appelant: s.Appelant}
+		if g.cfg.AOuverture != nil {
+			s.close = g.cfg.AOuverture(&en)
+			en.TS, en.Type, en.Session, en.Appelant = s.Ouverte, journal.SessionOuverte, s.ID, s.Appelant
+		}
+		if _, err := g.journal.Ecrire(en); err != nil {
 			return nil, err
 		}
 		g.sessions[ss] = s

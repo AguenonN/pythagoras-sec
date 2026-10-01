@@ -438,6 +438,18 @@ func ReconstituerEtat(entrees []journal.Entree, session string, avantSeq int) (d
 	return etat, nil
 }
 
+// DemandeurSession rend le demandeur consigné à l'ouverture de la session
+// (entrée session_ouverte), nil s'il n'a pas été résolu. C'est le seul que
+// les appels de la session peuvent porter.
+func DemandeurSession(entrees []journal.Entree, session string) *journal.Demandeur {
+	for _, en := range entrees {
+		if en.Type == journal.SessionOuverte && en.Session == session {
+			return en.Demandeur
+		}
+	}
+	return nil
+}
+
 // cleAppel identifie un appel dans le journal.
 type cleAppel struct {
 	session string
@@ -533,6 +545,9 @@ func RejouerJournal(entrees []journal.Entree, res Resolveur, jeux Jeux, opts Opt
 		} else if etat.Appelant != en.Appelant {
 			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleEtat,
 				Detail: fmt.Sprintf("l'appel est attribué à %q, la session a été ouverte par %q", en.Appelant, etat.Appelant)})
+		} else if d := DemandeurSession(entrees, en.Session); !reflect.DeepEqual(d, en.Demandeur) {
+			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleEtat,
+				Detail: "le demandeur de l'appel n'est pas celui résolu à l'ouverture de la session"})
 		}
 		if detail, ok := controlerTransmission(entrees, i, tr); !ok {
 			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleTransmission, Detail: detail})
