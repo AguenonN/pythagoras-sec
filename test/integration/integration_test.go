@@ -32,6 +32,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -61,8 +62,24 @@ var (
 const cheminDirectives = "test/integration/testdata/credit-demo.json"
 
 func TestMain(m *testing.M) {
-	os.Exit(preparer(m))
+	code := preparer(m)
+	// Test de déterminisme 5 : chaque journal régénéré par ces scénarios a
+	// été vérifié (chaîne HMAC) et rejoué sans écart, par verifier ou, à
+	// défaut, au nettoyage du test (rejouerAuNettoyage).
+	if n := bancs.Load(); code == 0 {
+		if r := journauxRejoues.Load(); r != n || n == 0 {
+			fmt.Fprintf(os.Stderr, "rejeu : %d journaux régénérés, %d vérifiés et rejoués\n", n, r)
+			code = 1
+		} else {
+			fmt.Printf("rejeu : %d journaux régénérés, tous vérifiés et rejoués sans écart\n", n)
+		}
+	}
+	os.Exit(code)
 }
+
+// bancs compte les gates lancés (un journal régénéré chacun) ;
+// journauxRejoues, ceux dont le journal s'est vérifié et rejoué sans écart.
+var bancs, journauxRejoues atomic.Int64
 
 // preparer construit les neuf serveurs et le gate dans un répertoire
 // temporaire, écrit le manifeste qui les décrit et génère les deux
@@ -179,6 +196,7 @@ type banc struct {
 	stderr          *tampon
 	journal, coffre string
 	ferme           bool
+	rejoue          bool   // le journal s'est vérifié et rejoué sans écart
 	jeu             string // chemin du jeu, relatif à la racine
 	notifications   string // écran des notifications, s'il y en a un
 }
@@ -216,8 +234,17 @@ func demarrerAvec(t *testing.T, l lancement) *banc {
 		l.jeu = cheminDirectives
 	}
 	b := &banc{stderr: &tampon{}, journal: filepath.Join(dir, "journal.jsonl"), coffre: filepath.Join(dir, "coffre.jsonl"), jeu: l.jeu}
+	bancs.Add(1)
+	// Enregistré après TempDir : s'exécute avant que le dossier ne soit
+	// effacé.
+	t.Cleanup(func() { b.rejouerAuNettoyage(t) })
 	args := []string{"-registre", l.registre, "-directives", filepath.Join(racine, l.jeu), "-journal", b.journal, "-coffre", b.coffre}
 	env := []string{"MCP_GATE_CLE_JOURNAL=" + hex.EncodeToString(cleTest), "DONNEES_MODE=REJEU"}
+	// Le fuseau de la machine passe au gate : TZ=Asia/Tokyo go test doit
+	// rendre les mêmes décisions que TZ=UTC (le schéma ne lit jamais TZ).
+	if tz, ok := os.LookupEnv("TZ"); ok {
+		env = append(env, "TZ="+tz)
+	}
 	if l.depart != "" {
 		args = append(args, "-horloge-depart", l.depart)
 	}
@@ -360,7 +387,49 @@ func (b *banc) verifier(t *testing.T) (entrees, appels []journal.Entree) {
 			t.Fatalf("rejeu seq %d : duree_us modifiée fait diverger le rejeu (%s → %s, écarts %+v)", r.Seq, rs[i].Effet(), r.Effet(), r.Ecarts)
 		}
 	}
+	if !b.rejoue {
+		b.rejoue = true
+		journauxRejoues.Add(1)
+	}
 	return entrees, appels
+}
+
+// rejouerAuNettoyage vérifie et rejoue le journal d'un banc que le test
+// n'a pas passé à verifier (un démarrage sans appel, par exemple) : aucun
+// journal régénéré n'échappe au rejeu. Un test déjà en échec n'est pas
+// contrôlé une seconde fois.
+func (b *banc) rejouerAuNettoyage(t *testing.T) {
+	if b.rejoue || t.Failed() {
+		return
+	}
+	b.fermer(t)
+	brut, err := os.ReadFile(b.journal)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := journal.Verifier(bytes.NewReader(brut), cleTest); err != nil {
+		t.Fatalf("chaîne du journal : %v", err)
+	}
+	entrees, err := journal.Lire(bytes.NewReader(brut))
+	if err != nil {
+		t.Fatal(err)
+	}
+	coffre, err := journal.OuvrirCoffre(b.coffre)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer coffre.Fermer()
+	rs, err := rejeu.RejouerJournal(entrees, coffre, rejeu.Catalogue{chargerJeuChemin(t, b.jeu)}, rejeu.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range rs {
+		if !r.Rejouable || len(r.Ecarts) != 0 {
+			t.Fatalf("rejeu seq %d : rejouable %v, écarts %+v", r.Seq, r.Rejouable, r.Ecarts)
+		}
+	}
+	b.rejoue = true
+	journauxRejoues.Add(1)
 }
 
 // conserver copie le journal et le coffre du scénario dans
