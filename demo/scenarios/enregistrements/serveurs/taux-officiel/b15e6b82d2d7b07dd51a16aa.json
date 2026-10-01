@@ -2,7 +2,7 @@
   "cle": "b15e6b82d2d7b07dd51a16aaeabea706208609bced8a7c2cb74b2dad6e50d481",
   "methode": "GET",
   "url": "https://webstat.banque-france.fr/export/csv/fr/catalog/mir1/MIR1.Q.FR.R.A2Z.A.U.A.2313FR.EUR.N",
-  "date": "2026-09-29T22:05:11Z",
+  "date": "2026-10-01T19:54:04Z",
   "statut": 200,
   "type_contenu": "text/csv",
   "sha256": "3efa7ee4034d94276b3a6f858f3f9e4e4e7a0ddd5240009aac91a1d18b4b1436",
