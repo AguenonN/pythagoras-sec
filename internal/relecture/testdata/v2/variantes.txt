@@ -1,5 +1,5 @@
 Jeu variantes-v2, version 2, en vigueur à partir du 04/10/2026 à 08:00 UTC, auteur juriste@cabinet.fr.
-Empreinte : sha256:678060ea41fc089250cb597a2cf903bf8a4c6694f6fc17163a48941ab6ebe21d.
+Empreinte : sha256:ee1a90774370aca9147f332c62a09e292d4f5fa23b47df439ae0e24d8779629f.
 6 directives, évaluées dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
 Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.
 
@@ -58,7 +58,7 @@ Pour tous les appelants.
 Quand : à l'échec d'une attestation du serveur taux-officiel (évènement réservé, pas encore évalué par l'engine).
 Condition : aucune, la directive s'applique à chaque fois.
 Alors :
-  - le rôle « rssi » est notifié en temps réel ; si la notification ne part pas, l'évènement est refusé
+  - le rôle « rssi » est notifié en temps réel ; si la notification ne part pas, l'évènement suit son cours
 
 Directive W-004, version 1, brouillon (non appliquée tant que le juriste ne l'a pas passée en observation ou active), fondée sur Politique interne.
 Applicable aux appels à partir du 04/10/2026 à 08:00 UTC, sans date de fin ; sans échéance de relecture.

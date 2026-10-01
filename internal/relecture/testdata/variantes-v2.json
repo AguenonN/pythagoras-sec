@@ -54,7 +54,7 @@
       "texte_fr": "Évènements réservés.",
       "fondements": [{"texte": "Politique interne"}],
       "declencheur": {"evenement": "attestation_echouee", "cible": {"serveur": "taux-officiel"}},
-      "effets": [{"effet": "notifier", "destinataire_role": "rssi", "rythme": "temps_reel", "si_echec": "refuser"}]
+      "effets": [{"effet": "notifier", "destinataire_role": "rssi", "rythme": "temps_reel", "si_echec": "continuer"}]
     },
     {
       "id": "W-004", "version": 1, "statut": "brouillon", "date_effet": "2026-10-04T08:00:00Z",
