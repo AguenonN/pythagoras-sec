@@ -10,14 +10,22 @@ import os
 import unittest
 
 from compilateur import compilateur_v2 as c2
-from compilateur import directive_go, mistral, scenarios_v2
+from compilateur import directive_go, mistral, scenarios_v2, vocabulaire
+
+from .aides import CATALOGUE_V2_ENREGISTRE
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 ATTENDUS = os.path.join(ICI, "attendus", "v2")
 
 
+def derouler_gele(scenario, client):
+    """Déroule sur le catalogue gelé des enregistrements (voir aides)."""
+    vocab = vocabulaire.Vocabulaire.lire(CATALOGUE_V2_ENREGISTRE, scenarios_v2.COMPLEMENT)
+    return scenarios_v2.derouler(scenario, client, vocab)
+
+
 def derouler(nom):
-    return scenarios_v2.derouler(scenarios_v2.lire(nom), mistral.Client(mode="rejeu"))
+    return derouler_gele(scenarios_v2.lire(nom), mistral.Client(mode="rejeu"))
 
 
 class Scenario:
@@ -124,8 +132,8 @@ class TestTopManagement(unittest.TestCase):
     def test_refus_motive_puis_condition_inventee_refusee(self):
         client = _RejeuSansCorrection()
         with self.assertRaises(_Arret):
-            scenarios_v2.derouler(scenarios_v2.lire("top-management"), client)
-        r, tours = scenarios_v2.derouler(dict(scenarios_v2.lire("top-management"), reponses=[]),
+            derouler_gele(scenarios_v2.lire("top-management"), client)
+        r, tours = derouler_gele(dict(scenarios_v2.lire("top-management"), reponses=[]),
                                          mistral.Client(mode="rejeu"))
         self.assertEqual(r["etat"], c2.NON_OBSERVABLE)
         self.assertIsNone(r["jeu"])
@@ -160,7 +168,7 @@ class TestDemandeur(Scenario, unittest.TestCase):
         sc = scenarios_v2.lire("demandeur")
         sc["reponses"] = [dict(r, reponse="personne_concernee") if r.get("champ") == "designation_personne" else r
                           for r in sc["reponses"]]
-        r, _ = scenarios_v2.derouler(sc, mistral.Client(mode="rejeu"))
+        r, _ = derouler_gele(sc, mistral.Client(mode="rejeu"))
         self.assertEqual(r["etat"], c2.REFUSE)
         self.assertIn("feuille demandeur", r["erreurs"][0])
 
@@ -185,7 +193,7 @@ class TestRH(unittest.TestCase):
     correction n'a pas été obtenue : budget de 30 appels atteint."""
 
     def test_questions_puis_proposition_refusee_par_le_code(self):
-        r, tours = scenarios_v2.derouler(dict(scenarios_v2.lire("rh"), reponses=[]), mistral.Client(mode="rejeu"))
+        r, tours = derouler_gele(dict(scenarios_v2.lire("rh"), reponses=[]), mistral.Client(mode="rejeu"))
         self.assertEqual(r["etat"], c2.QUESTIONS)
         self.assertEqual([q["sujet"] for q in r["questions"]], ["groupe", "groupe"])
         self.assertIn("groupe X", r["questions"][0]["question"])
@@ -193,7 +201,7 @@ class TestRH(unittest.TestCase):
 
         client = _RejeuSansCorrection()
         with self.assertRaises(_Arret):
-            scenarios_v2.derouler(scenarios_v2.lire("rh"), client)
+            derouler_gele(scenarios_v2.lire("rh"), client)
         renvoi = client.correction[-1]["content"]
         self.assertIn("acces action ne restreint rien", renvoi)
         self.assertIn("le juriste cite l'article L1121-1 de Code du travail", renvoi)

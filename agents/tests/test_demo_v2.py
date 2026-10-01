@@ -9,15 +9,15 @@ from unittest import mock
 
 from compilateur import demo, scenarios_v2
 
-from .aides import CATALOGUE_DEMO, ClientScripte, appel, reponse
+from .aides import CATALOGUE_DEMO, CATALOGUE_V2_ENREGISTRE, ClientScripte, appel, reponse
 
 
-def lancer(saisies, *args, schema=("--v2",)):
+def lancer(saisies, *args, schema=("--v2",), catalogue=CATALOGUE_DEMO):
     saisies = list(saisies)
     ecrit = []
     with tempfile.TemporaryDirectory() as tmp:
         sortie = os.path.join(tmp, "jeu.json")
-        rc = demo.principal(list(schema) + ["--jeu", "weekend", "--catalogue", CATALOGUE_DEMO,
+        rc = demo.principal(list(schema) + ["--jeu", "weekend", "--catalogue", catalogue,
                              "--auteur", "juriste@cabinet.fr", "--sortie", sortie] + list(args),
                             lire=lambda _: saisies.pop(0), ecrire=ecrit.append)
         jeu = consigne = None
@@ -52,7 +52,7 @@ class TestDemoV2(unittest.TestCase):
                    rep["Quel est le fondement juridique applicable pour cette règle ?"],
                    rep["Quel fuseau horaire appliquer pour le week-end ?"],
                    "peut-être", "refuser"]
-        rc, ecrit, jeu, consigne, reste = lancer(saisies, "--prefixe-id", "W")
+        rc, ecrit, jeu, consigne, reste = lancer(saisies, "--prefixe-id", "W", catalogue=CATALOGUE_V2_ENREGISTRE)
         self.assertEqual(rc, 0, ecrit)
         self.assertEqual(reste, [])
         self.assertIn("besoin de précisions", ecrit)

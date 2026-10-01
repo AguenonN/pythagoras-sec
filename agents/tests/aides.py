@@ -18,6 +18,13 @@ CATALOGUE_DEMO = os.path.join(EXEMPLES, "catalogue-demo.json")
 # Le modifier invaliderait ces enregistrements.
 CATALOGUE_ENREGISTRE = os.path.join(ICI, "donnees", "catalogue-enregistrements.json")
 
+# Catalogue généré tel qu'il était quand les scénarios v2 du compilateur
+# (test_scenarios_v2, parcours week-end de test_demo_v2) ont été enregistrés
+# auprès de Mistral, gelé pour la même raison : le catalogue généré a changé
+# depuis (accès read, remettre_rapport), et chaque requête enregistrée
+# l'embarque. Copie de feat/compilateur-v2:agents/compilateur/exemples/catalogue-demo.json.
+CATALOGUE_V2_ENREGISTRE = os.path.join(ICI, "donnees", "catalogue-v2-enregistrements.json")
+
 
 def catalogue_exemple():
     return catalogue.Catalogue.lire(CATALOGUE_ENREGISTRE)
