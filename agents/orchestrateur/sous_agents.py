@@ -144,3 +144,11 @@ def outils_du_catalogue(chemin):
     with open(chemin, encoding="utf-8") as f:
         c = json.load(f)
     return {"%s__%s" % (s["nom"], o["nom"]) for s in c["serveurs"] for o in s["outils"]}
+
+
+def outils_du_registre(chemin):
+    """Les noms exposés par le gate devant ce registre (demo/registre.json,
+    régénéré par scripts/lancer-demo.sh) : serveur__outil."""
+    with open(chemin, encoding="utf-8") as f:
+        r = json.load(f)
+    return {"%s__%s" % (s["nom"], o["nom"]) for s in r["serveurs"] for o in s.get("outils") or []}

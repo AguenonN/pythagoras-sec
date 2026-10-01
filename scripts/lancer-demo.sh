@@ -168,10 +168,14 @@ preparer() {
 			cat "$essai/$reg.log" >&2
 			die "le gate ne démarre pas (registre $reg)"
 		fi
-		local attestes attendus=8
-		[[ "$reg" == attaque ]] && attendus=7
+		# Tous les serveurs du registre sont attestés, sauf taux-officiel
+		# détourné dans le registre d'attaque.
+		local attestes attendus total
+		total="$(python3 -c 'import json,sys; print(len(json.load(open(sys.argv[1]))["serveurs"]))' "$(registre_de "$reg")")"
+		attendus="$total"
+		[[ "$reg" == attaque ]] && attendus=$((total - 1))
 		attestes="$(grep -c 'attesté=true' "$essai/$reg.log" || true)"
-		echo "lancer-demo: gate prêt (registre $reg, jeu demo), $attestes serveur(s) attesté(s) sur 8" >&2
+		echo "lancer-demo: gate prêt (registre $reg, jeu demo), $attestes serveur(s) attesté(s) sur $total" >&2
 		[[ "$attestes" == "$attendus" ]] || { grep 'msg=backend' "$essai/$reg.log" >&2 || true; exit 1; }
 	done
 	(cd agents && python3 -m orchestrateur sous-agents >/dev/null) || die "sous-agents invalides"

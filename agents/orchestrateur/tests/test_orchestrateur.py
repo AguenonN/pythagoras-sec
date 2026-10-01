@@ -322,6 +322,13 @@ class TestSousAgents(unittest.TestCase):
                         "a.json : schema_sortie.required : « y » absent de properties"):
             self.assertIn(attendu, m)
 
+    def test_outils_du_registre(self):
+        chemin = os.path.join(self.tmp, "registre.json")
+        with open(chemin, "w") as f:
+            json.dump({"registre": {}, "serveurs": [{"nom": "s", "outils": [{"nom": "o"}, {"nom": "p"}]},
+                                                    {"nom": "t", "outils": []}]}, f)
+        self.assertEqual(sous_agents.outils_du_registre(chemin), {"s__o", "s__p"})
+
     def test_role_par_defaut_premiere_phrase(self):
         self.ecrire("a", {"nom": "a", "consigne": "Tu lis. Puis tu écris.", "outils": ["s__o"],
                           "schema_sortie": {"type": "object"}})

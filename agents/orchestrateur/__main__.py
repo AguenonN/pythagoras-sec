@@ -3,7 +3,7 @@
     python -m orchestrateur executer --demande "…" --demandeur ID --session DIR \\
         --approbations DIR --date AAAA-MM-JJ [--mode reel|rejeu] [--enregistrement F] \\
         [--scenario NOM] [--meta JSON] [--mcp-approve BIN --cles DIR] -- <commande du gate>
-    python -m orchestrateur sous-agents [--catalogue F] [--dossier D]
+    python -m orchestrateur sous-agents [--registre F | --catalogue F] [--dossier D]
     python -m orchestrateur comparer <journal1.jsonl> <journal2.jsonl>
 
 executer : lance le gate (commande après --, en stdio, sans MISTRAL_API_KEY
@@ -35,6 +35,7 @@ from . import journal_gate, modele, orchestrateur, session, sous_agents
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 CATALOGUE = os.path.join(os.path.dirname(ICI), "compilateur", "exemples", "catalogue-demo.json")
+REGISTRE = os.path.join(os.path.dirname(os.path.dirname(ICI)), "demo", "registre.json")
 SECRETS_HORS_GATE = ("MISTRAL_API_KEY",)
 
 
@@ -143,7 +144,8 @@ def principal(argv=None, sortie=sys.stdout):
     e.add_argument("--dossier-sous-agents", default=sous_agents.DOSSIER)
     e.add_argument("gate", nargs="+", help="commande du gate (stdio)")
     s = sous.add_parser("sous-agents")
-    s.add_argument("--catalogue", default=CATALOGUE)
+    s.add_argument("--registre", help="registre du gate (défaut : demo/registre.json s'il existe)")
+    s.add_argument("--catalogue", help="catalogue du compilateur (défaut sans registre : catalogue-demo.json)")
     s.add_argument("--dossier", default=sous_agents.DOSSIER)
     c = sous.add_parser("comparer")
     c.add_argument("journaux", nargs=2)
@@ -154,7 +156,13 @@ def principal(argv=None, sortie=sys.stdout):
         return executer(a, sortie)
     if a.commande == "sous-agents":
         try:
-            agents = sous_agents.charger(sous_agents.outils_du_catalogue(a.catalogue), a.dossier)
+            if a.catalogue:
+                outils = sous_agents.outils_du_catalogue(a.catalogue)
+            elif a.registre or os.path.exists(REGISTRE):
+                outils = sous_agents.outils_du_registre(a.registre or REGISTRE)
+            else:
+                outils = sous_agents.outils_du_catalogue(CATALOGUE)
+            agents = sous_agents.charger(outils, a.dossier)
         except sous_agents.SousAgentInvalide as err:
             sortie.write(str(err) + "\n")
             return 1
