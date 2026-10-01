@@ -168,9 +168,41 @@ def _peut_etre_indeterminee(d):
     return "condition" in d or bool(cible.get("etiquette") or cible.get("acces"))
 
 
-def questions_du_code(jeu):
+# Les mots du juriste qui ne disent pas de quelle personne il s'agit : celle
+# qui lance les agents (feuille demandeur) ou celle que vise l'action (sujet).
+_PERSONNE_AMBIGUE = re.compile(r"\b(utilisat(?:eur|rice)s?|users?|la personne|l['’]agent humain)\b", re.IGNORECASE)
+CHAMP_PERSONNE = "designation_personne"
+OPTIONS_PERSONNE = ["demandeur", "personne_concernee"]
+
+
+def _feuilles(jeu, cles):
+    """Les clés de feuilles du jeu parmi ``cles``, dans l'ordre des directives."""
+    vues = []
+    for d in jeu["directives"]:
+        arbre.parcourir(d.get("condition"), lambda cle, _f, _q: vues.append((d["id"], cle)) if cle in cles else None)
+    return vues
+
+
+def mot_personne_ambigu(texte):
+    """Le mot ambigu tel que le juriste l'a écrit, ou None."""
+    m = _PERSONNE_AMBIGUE.search(sans_accents(texte or "").replace("’", "'"))
+    if not m:
+        return None
+    return (texte or "")[m.start():m.end()]
+
+
+def questions_du_code(jeu, texte=""):
     """Les questions fermées que le code pose au juriste, dans un ordre fixe."""
     out = []
+    mot = mot_personne_ambigu(texte)
+    if mot and _feuilles(jeu, ("demandeur", "sujet")):
+        out.append({
+            "question": ("Votre texte écrit « %s ». Désigne-t-il la personne qui lance les agents (demandeur) ou la "
+                         "personne concernée par l'action ? Répondez « demandeur » ou « personne_concernee »." % mot),
+            "champ": CHAMP_PERSONNE,
+            "options": list(OPTIONS_PERSONNE),
+            "origine": ORIGINE_CODE,
+        })
     ids = [d["id"] for d in jeu["directives"] if _peut_etre_indeterminee(d)]
     if ids:
         out.append({
@@ -214,11 +246,11 @@ def reponse_du_code(reponses, champ, options):
     return None
 
 
-def appliquer_reponses(jeu, reponses, auteur):
+def appliquer_reponses(jeu, reponses, auteur, texte=""):
     """Rend (jeu complété, questions restantes, consignation)."""
     restantes, consignation = [], []
     choix = {}
-    for q in questions_du_code(jeu):
+    for q in questions_du_code(jeu, texte):
         r = reponse_du_code(reponses, q["champ"], q["options"])
         if r is None:
             restantes.append(q)
@@ -367,11 +399,33 @@ def compiler_jeu(texte, jeu_id, vocab, client, auteur, date_effet, reponses=(), 
     return resultat
 
 
+def contradictions_personne(jeu, reponses, texte):
+    """Les feuilles qui contredisent la réponse du juriste à la question
+    demandeur / personne concernée ; vide si la question n'a pas lieu."""
+    if not mot_personne_ambigu(texte):
+        return []
+    r = reponse_du_code(reponses, CHAMP_PERSONNE, OPTIONS_PERSONNE)
+    if r is None:
+        return []
+    autre, sens = ("sujet", "la personne concernée par l'action") if r[0] == "demandeur" else \
+        ("demandeur", "la personne qui lance les agents")
+    choisi = "le demandeur" if r[0] == "demandeur" else "la personne concernée par l'action"
+    return ["directive %s : la condition porte sur %s (feuille %s), alors que le juriste a répondu que « %s » "
+            "désigne %s ; jeu refusé, à reformuler" % (did, sens, cle, mot_personne_ambigu(texte), choisi)
+            for did, cle in _feuilles(jeu, (autre,))]
+
+
 def _conclure(resultat, jeu, reponses, auteur):
-    complet, restantes, consignation = appliquer_reponses(jeu, reponses, auteur)
+    complet, restantes, consignation = appliquer_reponses(jeu, reponses, auteur, resultat["texte"])
     resultat["consignation"] = consignation
     if restantes:
         resultat.update(etat=QUESTIONS, questions=restantes, jeu=None)
+        return resultat
+    # Une réponse qui contredit la feuille proposée refuse le jeu, sans
+    # rappel à Mistral : c'est au juriste de reformuler.
+    contradictions = contradictions_personne(complet, reponses, resultat["texte"])
+    if contradictions:
+        resultat.update(etat=REFUSE, erreurs=contradictions, jeu_refuse=complet, jeu=None)
         return resultat
     ok, err_go, _ = directive_go.verifier(complet)
     if not ok:

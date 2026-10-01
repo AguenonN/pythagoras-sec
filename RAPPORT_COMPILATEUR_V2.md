@@ -17,7 +17,7 @@ générations interrompues côté Mistral pour l'un, budget de 30 appels épuis�
 pour l'autre.
 
 - `go vet ./...` et `go test -race ./...` sont verts à chaque commit, ainsi que
-  les **184 tests Python** (113 avant la session).
+  les **192 tests Python** (113 avant la session).
 - **Mistral : 30 appels réels sur 30.** Les tests rejouent les réponses
   enregistrées et ne font jamais d'appel réel.
 - Aucun secret, binaire, `.env` ni donnée réelle de personne physique n'est
@@ -36,6 +36,7 @@ pour l'autre.
 | 6 | `d77df35` | Scénarios demandeur (complet) et RH (partiel) |
 | — | `f402647` | Rapport final |
 | 7 | `4823844` | Démo en v2 par défaut, `--v1` disponible (décision de Manu) |
+| 5 | (ce commit) | Question fermée du code : demandeur ou personne concernée (« utilisateur », « user », « la personne », « l'agent humain ») |
 
 ### Étape 1 — relecture v2 (`internal/relecture/relecture_v2.go`)
 
@@ -116,6 +117,14 @@ pour l'autre.
   `erreurs`. Mistral a droit à une seule correction.
 - **Questions du code.** Elles sont fermées, consignées, et jamais envoyées
   à Mistral :
+  - **demandeur ou personne concernée** : si le texte du juriste contient
+    « utilisateur », « user », « la personne » ou « l'agent humain », et que
+    la proposition porte une feuille `demandeur` ou `sujet`, le code demande :
+    « Désigne-t-il la personne qui lance les agents (demandeur) ou la personne
+    concernée par l'action ? ». Les options sont `demandeur` et
+    `personne_concernee`, et la réponse est consignée. Si elle contredit une
+    feuille proposée, le jeu est refusé avec un motif qui nomme la directive,
+    la feuille et le mot du juriste, sans rappel à Mistral ;
   - `si_indetermine`, une seule question pour le jeu ;
   - pour chaque notification, son `rythme` et son `si_echec`.
 - **`verifications_v2.py` vérifie que rien n'est inventé** :
@@ -145,7 +154,7 @@ dans `agents/tests/attendus/v2/`.
 |---|---|---|
 | Crédit (un texte → 4 directives) | seuil, taux officiel, recherche d'entreprises ; `si_indetermine` | **Jeu accepté.** Contenu : `non(a_consulte gels-avoirs/verifier_gel)` → refus ; `/montant > 500000` → refus ; `a_consulte taux-officiel` → attente ; caviardage `/siren` vers `recherche-entreprises` ; articles recopiés |
 | Week-end | consultation ou production ; puis, après refus du code, **fondement** et **fuseau** ; `si_indetermine` | **Jeu accepté**, identique à `internal/directive/testdata/v2/weekend.json` (déclencheur, condition, effets, fondements) |
-| Demandeur (groupe X) | groupe ; puis, après refus du code, **étiquette de « rapport »**, **étiquette de « données client »** et fondement ; `si_indetermine` | **Jeu accepté** : cible `production_rapport`, `et(demandeur prestataires-externes, a_consulte étiquette donnees_client)` → refus |
+| Demandeur (groupe X) | groupe ; puis, après refus du code, **étiquette de « rapport »**, **étiquette de « données client »** et fondement ; question du code **demandeur ou personne concernée** (« utilisateur ») ; `si_indetermine` | **Jeu accepté** : cible `production_rapport`, `et(demandeur prestataires-externes, a_consulte étiquette donnees_client)` → refus |
 | Top management | **refus motivé** (« impliquant le top management » n'est pas observable) et demande d'un critère | **Partiel.** Mistral propose la bonne cible, `> 2 M€`, `directeur-risques`, quatre yeux et notification, mais **ajoute une condition inventée**. Le code la refuse. La correction a échoué : Mistral a rendu `finish_reason: error` aux 3 tentatives |
 | RH (groupes X et Y) | groupe X, groupe Y | **Partiel.** La proposition est juste sur le fond (une directive par outil : `existe /salarie_ids`, `sujet /salarie_id`). Le code la refuse pour un `acces` superflu et un article omis. La correction aurait demandé un 31ᵉ appel |
 
@@ -185,8 +194,9 @@ du code (une réponse hors options est redemandée) → relecture v2 côte à c�
   management en réel et par un test scripté. Le scénario
   `exemples/scenarios-v2/discrimination.json` est prêt, sans enregistrement.
 - **Question « l'utilisateur : demandeur ou personne concernée ? »** :
-  Mistral ne l'a pas posée pour le demandeur. « pour lui » l'a peut-être
-  levée. La consigne la demande. Aucun contrôle de code ne peut l'imposer.
+  Mistral ne l'a pas posée dans le scénario demandeur. C'est désormais une
+  **question fermée du code**, posée sans appel Mistral, et le scénario
+  enregistré la pose.
 - **Seuil non chiffré** : il n'y a pas de scénario v2 réel. Le contrôle des
   montants le refuse (test scripté), et un enregistrement v1 existe.
 
@@ -264,7 +274,7 @@ Plus aucune question ouverte.
 ```sh
 cd ~/cybercar/mcp_rogue-compilateur-v2
 go vet ./... && go test -race -count=1 ./internal/relecture ./cmd/directive
-(cd agents && python3 -m unittest discover -s tests -t .)          # 184 tests, rejeu, aucun appel
+(cd agents && python3 -m unittest discover -s tests -t .)          # 192 tests, rejeu, aucun appel
 go run ./cmd/directive relire < internal/directive/testdata/v2/rh.json
 cd agents && python3 -m compilateur.scenarios_v2 credit             # déroulé rejoué + jeu + relecture
 python3 -m compilateur.scenarios_v2 weekend

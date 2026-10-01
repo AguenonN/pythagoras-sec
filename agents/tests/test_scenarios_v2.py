@@ -147,7 +147,22 @@ class TestDemandeur(Scenario, unittest.TestCase):
     attendues : les étiquettes de « rapport » et de « données client », le
     fondement."""
     nom = "demandeur"
-    sujets = [["groupe"], ["etiquette", "etiquette", "fondement"], ["si_indetermine"]]
+    sujets = [["groupe"], ["etiquette", "etiquette", "fondement"], ["designation_personne", "si_indetermine"]]
+
+    def test_question_du_code_demandeur_ou_personne_concernee(self):
+        q = self.tours[2]["questions"][0]
+        self.assertEqual((q["champ"], q["origine"]), ("designation_personne", "compilateur"))
+        self.assertIn("« utilisateur »", q["question"])
+        self.assertEqual([(c["champ"], c["reponse"]) for c in self.r["consignation"]],
+                         [("designation_personne", "demandeur"), ("si_indetermine", "refuser")])
+
+    def test_reponse_contraire_refusee(self):
+        sc = scenarios_v2.lire("demandeur")
+        sc["reponses"] = [dict(r, reponse="personne_concernee") if r.get("champ") == "designation_personne" else r
+                          for r in sc["reponses"]]
+        r, _ = scenarios_v2.derouler(sc, mistral.Client(mode="rejeu"))
+        self.assertEqual(r["etat"], c2.REFUSE)
+        self.assertIn("feuille demandeur", r["erreurs"][0])
 
     def test_demandeur_et_etiquettes(self):
         d, = self.directives()

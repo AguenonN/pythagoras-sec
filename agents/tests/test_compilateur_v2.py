@@ -208,6 +208,7 @@ class TestVerifications(Base):
             {"question": "Quel groupe ?", "reponse": "prestataires-externes"},
             {"question": "Rapport ?", "reponse": "production_rapport"},
             {"question": "Données client ?", "reponse": "donnees_client"},
+            {"question": "q", "reponse": "demandeur", "champ": "designation_personne", "origine": "compilateur"},
             {"question": "q", "reponse": "refuser", "champ": "si_indetermine", "origine": "compilateur"}])
         self.assertEqual(r["etat"], c2.JEU, r["erreurs"])
 
@@ -363,3 +364,74 @@ class TestSourceDesignee(Base):
                         {"id": "b", "type": "a_consulte", "outil": "banque-synthetique/attribuer_pret", "critere": "donnees_recues"}]
         r = self.compiler(CREDIT, ClientScripte(jeu(p), jeu(p)))
         self.assertTrue(any("la source banque-synthetique n'est pas désignée" in e for e in r["erreurs"]), r["erreurs"])
+
+
+class TestDesignationPersonne(Base):
+    """« utilisateur », « user », « la personne », « l'agent humain » : le code
+    demande s'il s'agit du demandeur ou de la personne concernée, quand la
+    proposition porte une feuille demandeur ou sujet."""
+
+    TEXTE = "Si l'utilisateur est membre du groupe prestataires-externes, tout appel à attribuer_pret est bloqué (RGPD, art. 32)."
+    SI = {"question": "q", "reponse": "refuser", "champ": "si_indetermine", "origine": "compilateur"}
+
+    def propo(self, feuille):
+        noeud = ({"id": "a", "type": "demandeur", "groupe": "prestataires-externes"} if feuille == "demandeur" else
+                 {"id": "a", "type": "sujet", "groupe": "prestataires-externes", "champ": "/siren"})
+        return jeu({"extrait": "x", "fondements": [{"texte": "RGPD", "article": "32"}], "declencheur": dict(PRET),
+                    "racine": "a", "noeuds": [noeud], "effets": [{"effet": "refuser"}]})
+
+    def designation(self, valeur):
+        return {"question": "q", "reponse": valeur, "champ": "designation_personne", "origine": "compilateur"}
+
+    def test_question_posee_par_le_code(self):
+        cl = ClientScripte(self.propo("demandeur"))
+        r = self.compiler(self.TEXTE, cl)
+        self.assertEqual(r["etat"], c2.QUESTIONS)
+        q = r["questions"][0]
+        self.assertEqual((q["champ"], q["options"], q["origine"]),
+                         ("designation_personne", ["demandeur", "personne_concernee"], "compilateur"))
+        self.assertIn("« utilisateur »", q["question"])
+        self.assertIn("la personne qui lance les agents (demandeur) ou la personne concernée par l'action", q["question"])
+        self.assertEqual(len(cl.recus), 1, "aucun appel Mistral de plus")
+
+    def test_reponse_conforme_consignee(self):
+        cl = ClientScripte(self.propo("demandeur"))
+        r = self.compiler(self.TEXTE, cl, [self.designation("demandeur"), self.SI])
+        self.assertEqual(r["etat"], c2.JEU, r["erreurs"])
+        self.assertEqual([c["champ"] for c in r["consignation"]], ["designation_personne", "si_indetermine"])
+        self.assertNotIn("designation_personne", json.dumps(cl.recus, ensure_ascii=False))
+        r = self.compiler(self.TEXTE, ClientScripte(self.propo("sujet")), [self.designation("Personne concernée"), self.SI])
+        self.assertEqual(r["etat"], c2.JEU, r["erreurs"])
+
+    def test_reponse_contraire_refuse_sans_rappel(self):
+        for feuille, valeur, motif in (("demandeur", "personne_concernee", "la personne qui lance les agents (feuille demandeur)"),
+                                       ("sujet", "demandeur", "la personne concernée par l'action (feuille sujet)")):
+            cl = ClientScripte(self.propo(feuille))
+            r = self.compiler(self.TEXTE, cl, [self.designation(valeur), self.SI])
+            self.assertEqual(r["etat"], c2.REFUSE)
+            self.assertIsNone(r["jeu"])
+            self.assertEqual(len(cl.recus), 1, "pas de rappel à Mistral")
+            self.assertEqual(len(r["erreurs"]), 1)
+            self.assertIn("directive D-001 : la condition porte sur " + motif, r["erreurs"][0])
+            self.assertIn("« utilisateur »", r["erreurs"][0])
+            self.assertEqual(r["consignation"][0]["champ"], "designation_personne")
+
+    def test_reponse_hors_options_redemandee(self):
+        r = self.compiler(self.TEXTE, ClientScripte(self.propo("demandeur")), [self.designation("les deux"), self.SI])
+        self.assertEqual(r["etat"], c2.QUESTIONS)
+        self.assertEqual([q["champ"] for q in r["questions"]], ["designation_personne"])
+
+    def test_pas_de_question_sans_mot_ambigu_ou_sans_feuille(self):
+        texte = self.TEXTE.replace("l'utilisateur", "le demandeur")
+        r = self.compiler(texte, ClientScripte(self.propo("demandeur")))
+        self.assertEqual([q["champ"] for q in r["questions"]], ["si_indetermine"])
+        texte = ("L'utilisateur ne compte pas ici. Au-delà de 500 000 euros, l'attribution d'un prêt est bloquée "
+                 "(Politique de crédit, art. 3.2).")
+        r = self.compiler(texte, ClientScripte(jeu(d_seuil())))
+        self.assertEqual([q["champ"] for q in r["questions"]], ["si_indetermine"])
+
+    def test_mots_reconnus(self):
+        for t, mot in (("Le user ne peut pas", "user"), ("la personne visée", "la personne"),
+                       ("l’agent humain décide", "l’agent humain"), ("Les utilisatrices", "utilisatrices")):
+            self.assertEqual(c2.mot_personne_ambigu(t), mot)
+        self.assertIsNone(c2.mot_personne_ambigu("Aucun appel le week-end."))

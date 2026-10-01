@@ -22,6 +22,10 @@
    "reponse": "RGPD, article 32."
   },
   {
+   "champ": "designation_personne",
+   "reponse": "demandeur"
+  },
+  {
    "champ": "si_indetermine",
    "reponse": "refuser"
   }
