@@ -137,3 +137,52 @@ class TestTopManagement(unittest.TestCase):
         propose = json.loads(client.correction[-2]["tool_calls"][0]["function"]["arguments"])
         d, = propose["directives"]
         self.assertEqual(d["effets"][0], {"effet": "attendre_validation", "par_role": "directeur-risques", "quatre_yeux": True})
+
+
+class TestDemandeur(Scenario, unittest.TestCase):
+    """« Si l'utilisateur est membre du groupe X, toute rédaction de rapport
+    basée sur des données client est bloquée pour lui. » Mistral demande le
+    groupe ; sa proposition suivante (étiquettes et fondement non écrits par
+    le juriste) est refusée par le code, et la correction pose les questions
+    attendues : les étiquettes de « rapport » et de « données client », le
+    fondement."""
+    nom = "demandeur"
+    sujets = [["groupe"], ["etiquette", "etiquette", "fondement"], ["si_indetermine"]]
+
+    def test_demandeur_et_etiquettes(self):
+        d, = self.directives()
+        self.assertEqual(d["declencheur"], {"evenement": "appel_outil",
+                                            "cible": {"serveur": "*", "outil": "*", "etiquette": "production_rapport"}})
+        self.assertEqual(d["condition"], {"et": [
+            {"demandeur": {"groupe": "prestataires-externes"}},
+            {"session.a_consulte": {"etiquette": "donnees_client", "critere": "donnees_recues"}}]})
+        self.assertEqual(d["effets"], [{"effet": "refuser"}])
+        self.assertEqual(d["fondements"], [{"texte": "RGPD", "article": "32"}])
+
+
+class TestRH(unittest.TestCase):
+    """Règle RH des groupes X et Y. Mistral demande à quoi correspondent X et
+    Y ; le juriste répond (contentieux-en-cours, salaries-proteges, et les
+    deux outils d'action). La proposition réelle est juste sur le fond (une
+    directive par outil : existe sur /salarie_ids, sujet sur /salarie_id),
+    mais le code la refuse pour deux défauts : un accès « action » qui ne
+    restreint rien sur un outil nommé, et un article de fondement omis. La
+    correction n'a pas été obtenue : budget de 30 appels atteint."""
+
+    def test_questions_puis_proposition_refusee_par_le_code(self):
+        r, tours = scenarios_v2.derouler(dict(scenarios_v2.lire("rh"), reponses=[]), mistral.Client(mode="rejeu"))
+        self.assertEqual(r["etat"], c2.QUESTIONS)
+        self.assertEqual([q["sujet"] for q in r["questions"]], ["groupe", "groupe"])
+        self.assertIn("groupe X", r["questions"][0]["question"])
+        self.assertIn("groupe Y", r["questions"][1]["question"])
+
+        client = _RejeuSansCorrection()
+        with self.assertRaises(_Arret):
+            scenarios_v2.derouler(scenarios_v2.lire("rh"), client)
+        renvoi = client.correction[-1]["content"]
+        self.assertIn("acces action ne restreint rien", renvoi)
+        self.assertIn("le juriste cite l'article L1121-1 de Code du travail", renvoi)
+        propose = json.loads(client.correction[-2]["tool_calls"][0]["function"]["arguments"])["directives"]
+        self.assertEqual([(d["declencheur"]["outil"], d["noeuds"][0]["type"]) for d in propose],
+                         [("decider_prime", "existe"), ("proposer_sanction", "sujet"),
+                          ("decider_prime", "existe"), ("proposer_sanction", "sujet")])

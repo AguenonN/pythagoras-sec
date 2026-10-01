@@ -4,5 +4,26 @@
  "prefixe_id": "U",
  "auteur": "juriste@cabinet.fr",
  "date_effet": "2026-10-05T00:00:00Z",
- "reponses": []
+ "reponses": [
+  {
+   "question": "Le groupe X correspond-il à l'un des groupes connus dans le catalogue (prestataires-externes, stagiaires, comite-direction, salaries-proteges, contentieux-en-cours) ? Si non, précisez le nom exact du groupe.",
+   "reponse": "Le groupe X est prestataires-externes."
+  },
+  {
+   "question": "À quelle étiquette rattacher l'outil ou le serveur qui rédige ou produit un rapport, une note ou un document ?",
+   "reponse": "production_rapport"
+  },
+  {
+   "question": "À quelle étiquette rattacher les données client (dossiers, fiches, comptes) ?",
+   "reponse": "donnees_client"
+  },
+  {
+   "question": "Quel est le fondement juridique applicable à cette règle ?",
+   "reponse": "RGPD, article 32."
+  },
+  {
+   "champ": "si_indetermine",
+   "reponse": "refuser"
+  }
+ ]
 }

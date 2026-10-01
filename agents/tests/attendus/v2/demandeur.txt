@@ -1,0 +1,15 @@
+Jeu demandeur, version 1, en vigueur à partir du 05/10/2026 à 00:00 UTC, auteur juriste@cabinet.fr.
+Empreinte : sha256:b66ec11ca0d2a763c5ae1bd3477f718fef2640d41d5137722bc76d18951ea4b2.
+1 directive, évaluée dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
+Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.
+
+Directive U-001, version 1, brouillon (non appliquée tant que le juriste ne l'a pas passée en observation ou active), fondée sur l'art. 32 RGPD.
+Applicable aux appels à partir du 05/10/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Pour tous les appelants.
+Quand : tout appel d'outil, vers un serveur portant l'étiquette « production_rapport » au registre.
+Si toutes les conditions suivantes sont vraies :
+  - le demandeur (la personne pour qui l'agent travaille, selon l'annuaire) est membre du groupe « prestataires-externes »
+  - la session a reçu des données d'un serveur portant l'étiquette « donnees_client » au registre
+Alors :
+  - l'appel est refusé
+Si la règle ne peut pas être évaluée pour un appel (information absente, illisible ou inconnue du registre), l'appel est refusé.
