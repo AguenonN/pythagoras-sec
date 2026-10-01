@@ -25,7 +25,7 @@ class TestDemo(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             sortie = os.path.join(tmp, "jeu.json")
-            rc = demo.principal(["--jeu", "credit-pme", "--catalogue", CATALOGUE_ENREGISTRE,
+            rc = demo.principal(["--v1", "--jeu", "credit-pme", "--catalogue", CATALOGUE_ENREGISTRE,
                                  "--auteur", "juriste@cabinet.fr", "--sortie", sortie] + list(args),
                                 lire=lire, ecrire=ecrit.append)
             jeu = None
@@ -53,7 +53,7 @@ class TestDemo(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             sortie = os.path.join(tmp, "jeu.json")
             ecrit = []
-            rc = demo.principal(["--jeu", "credit-pme", "--catalogue", CATALOGUE_ENREGISTRE,
+            rc = demo.principal(["--v1", "--jeu", "credit-pme", "--catalogue", CATALOGUE_ENREGISTRE,
                                  "--auteur", "juriste@cabinet.fr", "--sortie", sortie, "--texte", seuil,
                                  "--date-effet", "2026-10-04"], lire=lambda _: saisies.pop(0), ecrire=ecrit.append)
             self.assertEqual(rc, 0, "".join(ecrit))

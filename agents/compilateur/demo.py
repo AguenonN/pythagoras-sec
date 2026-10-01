@@ -6,10 +6,11 @@ saisies → relecture côte à côte → fichier de jeu en brouillon.
         --catalogue compilateur/exemples/catalogue-demo.json \\
         --auteur juriste@cabinet.fr --date-effet 2026-10-04 --sortie brouillon.json
 
-``--v2`` compile le texte en un jeu v2 (plusieurs directives possibles,
-arbre de condition, liste d'effets) : refus motivés et questions de
-Mistral, questions fermées du code, relecture v2, jeu en brouillon. Le
+Par défaut, le texte est compilé en un jeu v2 (plusieurs directives
+possibles, arbre de condition, liste d'effets) : refus motivés et questions
+de Mistral, questions fermées du code, relecture v2, jeu en brouillon. Le
 vocabulaire (étiquettes, rôles, groupes) est lu dans ``--vocabulaire``.
+``--v1`` garde l'ancien parcours : une directive v1 à verrou unique.
 
 ``derouler`` est ce que l'interface juriste appellera : elle ne dépend que
 de deux fonctions, lire et écrire.
@@ -130,9 +131,14 @@ def principal(argv=None, lire=input, ecrire=sys.stdout.write):
     ap.add_argument("--texte", help="texte de la directive ; demandé si absent")
     ap.add_argument("--sortie", required=True, help="fichier du jeu en brouillon")
     ap.add_argument("--mode", choices=["rejeu", "reel"], default="rejeu")
-    ap.add_argument("--v2", action="store_true", help="compiler en un jeu v2 (plusieurs directives, arbre, effets)")
-    ap.add_argument("--vocabulaire", default=VOCABULAIRE, help="étiquettes, rôles et groupes (avec --v2)")
-    ap.add_argument("--prefixe-id", default="D", help="préfixe des identifiants de directive (avec --v2) : D-001, D-002…")
+    schema = ap.add_mutually_exclusive_group()
+    schema.add_argument("--v2", dest="v1", action="store_false",
+                        help="compiler en un jeu v2 : plusieurs directives, arbre, effets (défaut)")
+    schema.add_argument("--v1", dest="v1", action="store_true",
+                        help="compiler une directive v1 à verrou unique (ancien parcours)")
+    ap.set_defaults(v1=False)  # explicite : sinon argparse prendrait le défaut de --v2 (store_false)
+    ap.add_argument("--vocabulaire", default=VOCABULAIRE, help="étiquettes, rôles et groupes (v2)")
+    ap.add_argument("--prefixe-id", default="D", help="préfixe des identifiants de directive (v2) : D-001, D-002…")
     a = ap.parse_args(argv)
 
     texte = a.texte
@@ -146,7 +152,7 @@ def principal(argv=None, lire=input, ecrire=sys.stdout.write):
         except ValueError:
             ecrire("Date illisible.\n")
 
-    if a.v2:
+    if not a.v1:
         r = derouler_v2(lire, ecrire, texte, a.jeu, vocabulaire.Vocabulaire.lire(a.catalogue, a.vocabulaire),
                         mistral.Client(mode=a.mode), a.auteur, date, prefixe_id=a.prefixe_id)
         if r["etat"] != compilateur_v2.JEU:

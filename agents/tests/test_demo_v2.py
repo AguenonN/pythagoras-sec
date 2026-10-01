@@ -12,12 +12,12 @@ from compilateur import demo, scenarios_v2
 from .aides import CATALOGUE_DEMO, ClientScripte, appel, reponse
 
 
-def lancer(saisies, *args):
+def lancer(saisies, *args, schema=("--v2",)):
     saisies = list(saisies)
     ecrit = []
     with tempfile.TemporaryDirectory() as tmp:
         sortie = os.path.join(tmp, "jeu.json")
-        rc = demo.principal(["--v2", "--jeu", "weekend", "--catalogue", CATALOGUE_DEMO,
+        rc = demo.principal(list(schema) + ["--jeu", "weekend", "--catalogue", CATALOGUE_DEMO,
                              "--auteur", "juriste@cabinet.fr", "--sortie", sortie] + list(args),
                             lire=lambda _: saisies.pop(0), ecrire=ecrit.append)
         jeu = consigne = None
@@ -30,6 +30,20 @@ def lancer(saisies, *args):
 
 
 class TestDemoV2(unittest.TestCase):
+    def test_v2_par_defaut(self):
+        # Sans option, la démo compile en v2 : c'est proposer_jeu qui est offert.
+        s = reponse(appel("signaler_non_observable", {"extrait": "x", "raison": "Pas observable.", "question": "Critère ?"}))
+        cl = ClientScripte(*[s] * 5)
+        with mock.patch("compilateur.demo.mistral.Client", return_value=cl):
+            rc, ecrit, _, _, _ = lancer(["non"] * 5, "--texte", "x", "--date-effet", "2026-10-05", schema=())
+        self.assertEqual(rc, 1)
+        self.assertIn("refuse de traduire un critère non observable", ecrit)
+        self.assertIn("proposer_jeu", [o["function"]["name"] for o in cl.recus[0][1]])
+
+    def test_v1_et_v2_exclusifs(self):
+        with self.assertRaises(SystemExit):
+            lancer([], "--texte", "x", "--date-effet", "2026-10-05", schema=("--v1", "--v2"))
+
     def test_parcours_week_end(self):
         sc = scenarios_v2.lire("weekend")
         rep = {r.get("question") or r["champ"]: r["reponse"] for r in sc["reponses"]}
