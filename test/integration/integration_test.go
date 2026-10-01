@@ -340,6 +340,26 @@ func (b *banc) verifier(t *testing.T) (entrees, appels []journal.Entree) {
 	if o := rejeu.TransmissionsSansAppel(entrees); len(o) != 0 {
 		t.Fatalf("%d transmission(s) sans appel", len(o))
 	}
+	// decision.duree_us est une mesure : une autre valeur, sur l'appel comme
+	// sur la transmission, ne fait jamais diverger le rejeu.
+	autres, err := journal.Lire(bytes.NewReader(brut))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for k := range autres {
+		if autres[k].Decision != nil {
+			autres[k].Decision.DureeUs = 1<<40 + int64(k)
+		}
+	}
+	rs2, err := rejeu.RejouerJournal(autres, coffre, rejeu.Catalogue{jeu}, rejeu.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i, r := range rs2 {
+		if len(r.Ecarts) != 0 || r.Effet() != rs[i].Effet() {
+			t.Fatalf("rejeu seq %d : duree_us modifiée fait diverger le rejeu (%s → %s, écarts %+v)", r.Seq, rs[i].Effet(), r.Effet(), r.Ecarts)
+		}
+	}
 	return entrees, appels
 }
 
