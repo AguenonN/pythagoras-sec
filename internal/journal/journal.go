@@ -47,6 +47,16 @@ const (
 	// appel qui la suive est un appel parti dont le résultat n'a pas été
 	// journalisé.
 	TransmissionT Type = "transmission"
+	// AnnuaireCharge est écrite au démarrage quand une source d'identité
+	// est configurée : nom de la source, identifiant, version, empreinte.
+	AnnuaireCharge Type = "annuaire_charge"
+	// ApprobationT est écrite à la reprise d'un appel en attente qui porte
+	// des jetons d'approbation : acceptée (avant l'entrée transmission) ou
+	// refusée (l'appel reste en attente).
+	ApprobationT Type = "approbation"
+	// NotificationT est écrite pour chaque notification qu'une décision
+	// demande : destinataire, rythme, statut de remise.
+	NotificationT Type = "notification"
 )
 
 // Statuts de résultat d'un appel. Les quatre premiers sont ceux d'une
@@ -130,6 +140,12 @@ type Decision struct {
 	Notifications []Notification `json:"notifications,omitempty"`
 	Marques       []Marque       `json:"marques,omitempty"`
 	Validation    *Validation    `json:"validation,omitempty"`
+
+	// DureeUs est la durée de l'évaluation, en microsecondes arrondies au
+	// supérieur, de l'entrée de l'appel dans le pipeline de l'engine
+	// jusqu'à la décision rendue. C'est une mesure, pas une décision : le
+	// rejeu ne la compare jamais.
+	DureeUs int64 `json:"duree_us,omitempty"`
 }
 
 type Approbation struct {
@@ -139,6 +155,31 @@ type Approbation struct {
 	Mandant        string `json:"mandant,omitempty"`
 	Delegue        string `json:"delegue,omitempty"`
 	EmpreinteJeton string `json:"empreinte_jeton,omitempty"`
+
+	// Validation par rôle (jetons signés par des identités de
+	// l'annuaire) : statut, motif d'un refus, appel visé, valideurs avec
+	// le rôle et la date de chaque validation. Les jetons ne sont portés
+	// que par empreinte.
+	Statut             string     `json:"statut,omitempty"` // acceptee | refusee
+	Motif              string     `json:"motif,omitempty"`
+	EmpreinteTransmise string     `json:"empreinte_transmise,omitempty"`
+	Roles              []string   `json:"roles,omitempty"`
+	QuatreYeux         bool       `json:"quatre_yeux,omitempty"`
+	Valideurs          []Valideur `json:"valideurs,omitempty"`
+}
+
+// Statuts d'une approbation.
+const (
+	ApprobationAcceptee = "acceptee"
+	ApprobationRefusee  = "refusee"
+)
+
+// Valideur est une validation : qui, au titre de quel rôle, à quelle date.
+type Valideur struct {
+	Identite       string    `json:"identite"`
+	Role           string    `json:"role"`
+	Date           time.Time `json:"date"`
+	EmpreinteJeton string    `json:"empreinte_jeton"`
 }
 
 // Source dit d'où la donnée vient : en direct ou du cache de rejeu, avec
@@ -202,6 +243,25 @@ type Entree struct {
 	EtiquettesCible []string   `json:"etiquettes_cible,omitempty"`
 	Demandeur       *Demandeur `json:"demandeur,omitempty"`
 	Sujets          []Sujet    `json:"sujets,omitempty"`
+	// SujetsNonResolus : empreintes des personnes concernées que le
+	// résolveur n'a pas résolues (introuvables, résolveur non attesté ou
+	// sans réponse) ; Decide ne les a pas reçues.
+	SujetsNonResolus []string `json:"sujets_non_resolus,omitempty"`
+
+	// Source d'identité (annuaire_charge, session_ouverte) : nom de la
+	// source et référence de l'annuaire contre lequel le demandeur et les
+	// valideurs sont vérifiés.
+	SourceIdentite string       `json:"source_identite,omitempty"`
+	Annuaire       *RefAnnuaire `json:"annuaire,omitempty"`
+
+	// Notification : une notification demandée par une directive, et ce
+	// qu'il en est advenu.
+	Notification *Remise `json:"notification,omitempty"`
+	// Remises, sur une entrée appel : le sort de chaque notification que
+	// la décision a demandée, tel que les entrées notification chaînées
+	// avant l'appel le consignent. Le rejeu en recalcule le refus
+	// (ControleNotifications).
+	Remises []Remise `json:"remises,omitempty"`
 
 	Message         string `json:"message,omitempty"`
 	NbConsultations int    `json:"nb_consultations,omitempty"`
@@ -228,13 +288,25 @@ func DepuisDecision(d directive.Decision) *Decision {
 			ID: a.ID, Version: a.Version, Verrou: string(a.Verrou), Fondement: a.Fondement,
 			Statut: string(a.Statut), Effet: string(a.Effet), Declenchee: a.Declenchee, Appliquee: a.Appliquee,
 			Indetermine: a.Indetermine, RevisionEchue: a.RevisionEchue, ChampsRetires: a.ChampsRetires, Motif: a.Motif,
+			Resultat: a.Resultat.String(), Fondements: a.Fondements,
 		})
+	}
+	for _, n := range d.Notifications {
+		out.Notifications = append(out.Notifications, Notification{Directive: n.Directive, Version: n.Version,
+			DestinataireRole: n.DestinataireRole, Rythme: string(n.Rythme), SiEchec: string(n.SiEchec)})
+	}
+	for _, m := range d.Marques {
+		out.Marques = append(out.Marques, Marque{Etiquette: m.Etiquette, Directive: m.Directive, Version: m.Version})
+	}
+	if v := d.Validation; v != nil {
+		out.Validation = &Validation{Roles: v.Roles, QuatreYeux: v.QuatreYeux}
 	}
 	return out
 }
 
 // VersDirective rend ce qu'une comparaison a besoin de relire : effet,
-// motif, applications, alertes. Les arguments ne sont pas dans le journal.
+// motif, applications, alertes, notifications, marques, validation. Les
+// arguments ne sont pas dans le journal.
 func (d *Decision) VersDirective() directive.Decision {
 	out := directive.Decision{Effet: directive.Effet(d.Effet), Motif: d.Motif, Alertes: d.Alertes}
 	for _, a := range d.Applications {
@@ -243,9 +315,32 @@ func (d *Decision) VersDirective() directive.Decision {
 			Statut: directive.Statut(a.Statut), Effet: directive.Effet(a.Effet), Declenchee: a.Declenchee,
 			Appliquee: a.Appliquee, Indetermine: a.Indetermine, RevisionEchue: a.RevisionEchue,
 			ChampsRetires: a.ChampsRetires, Motif: a.Motif,
+			Resultat: trivalent(a.Resultat), Fondements: a.Fondements,
 		})
 	}
+	for _, n := range d.Notifications {
+		out.Notifications = append(out.Notifications, directive.Notification{Directive: n.Directive, Version: n.Version,
+			DestinataireRole: n.DestinataireRole, Rythme: directive.Rythme(n.Rythme), SiEchec: directive.SiEchec(n.SiEchec)})
+	}
+	for _, m := range d.Marques {
+		out.Marques = append(out.Marques, directive.Marque{Etiquette: m.Etiquette, Directive: m.Directive, Version: m.Version})
+	}
+	if v := d.Validation; v != nil {
+		out.Validation = &directive.Validation{Roles: v.Roles, QuatreYeux: v.QuatreYeux}
+	}
 	return out
+}
+
+// trivalent relit le résultat d'une application. Un journal v1 n'en
+// porte pas : faux, comme une directive qui ne s'est pas déclenchée.
+func trivalent(s string) directive.Trivalent {
+	switch s {
+	case "vrai":
+		return directive.Vrai
+	case "indetermine":
+		return directive.Indetermine
+	}
+	return directive.Faux
 }
 
 func DepuisAttestation(a directive.Attestation) *Attestation {
@@ -263,7 +358,8 @@ func DepuisConsultations(cs []directive.Consultation) []Consultation {
 	out := make([]Consultation, 0, len(cs))
 	for _, c := range cs {
 		out = append(out, Consultation{Seq: c.Seq, Serveur: c.Serveur, Outil: c.Outil, TS: c.Horodatage,
-			Resultat: string(c.Resultat), Empreinte: c.Empreinte, EmpreinteReponse: c.EmpreinteReponse})
+			Resultat: string(c.Resultat), Empreinte: c.Empreinte, EmpreinteReponse: c.EmpreinteReponse,
+			Etiquettes: nonVide(c.Etiquettes), VersionRegistre: c.VersionRegistre, Source: DepuisSourceReponse(c.Source)})
 	}
 	return out
 }
@@ -272,9 +368,75 @@ func VersConsultations(cs []Consultation) []directive.Consultation {
 	out := make([]directive.Consultation, 0, len(cs))
 	for _, c := range cs {
 		out = append(out, directive.Consultation{Seq: c.Seq, Serveur: c.Serveur, Outil: c.Outil, Horodatage: c.TS,
-			Resultat: directive.Resultat(c.Resultat), Empreinte: c.Empreinte, EmpreinteReponse: c.EmpreinteReponse})
+			Resultat: directive.Resultat(c.Resultat), Empreinte: c.Empreinte, EmpreinteReponse: c.EmpreinteReponse,
+			Etiquettes: nonVide(c.Etiquettes), VersionRegistre: c.VersionRegistre, Source: c.Source.VersDirective()})
 	}
 	return out
+}
+
+// OrigineNonDeclaree est l'origine que l'engine consigne quand le serveur
+// n'en déclare pas de reconnaissable.
+const OrigineNonDeclaree = "non_declaree"
+
+// VersDirective rend la source telle que Decide la lit (feuille
+// metadonnee_reponse) : nil quand le serveur n'a rien déclaré, pour que la
+// feuille soit indéterminée plutôt que de comparer un marqueur de l'engine.
+func (s *Source) VersDirective() *directive.SourceReponse {
+	if s == nil || s.Origine == "" || s.Origine == OrigineNonDeclaree {
+		return nil
+	}
+	return &directive.SourceReponse{Origine: s.Origine, Date: s.Date}
+}
+
+// DepuisSourceReponse est l'inverse de VersDirective, pour l'instantané de
+// session.
+func DepuisSourceReponse(s *directive.SourceReponse) *Source {
+	if s == nil {
+		return nil
+	}
+	return &Source{Origine: s.Origine, Date: s.Date}
+}
+
+// DepuisDemandeur et VersDemandeur convertissent le demandeur résolu.
+func DepuisDemandeur(d *directive.Demandeur) *Demandeur {
+	if d == nil {
+		return nil
+	}
+	return &Demandeur{Identite: d.Identite, Groupes: nonVide(d.Groupes)}
+}
+
+func (d *Demandeur) VersDirective() *directive.Demandeur {
+	if d == nil {
+		return nil
+	}
+	return &directive.Demandeur{Identite: d.Identite, Groupes: nonVide(d.Groupes)}
+}
+
+// DepuisSujets et VersSujets convertissent les personnes concernées, par
+// empreinte.
+func DepuisSujets(ss []directive.Sujet) []Sujet {
+	var out []Sujet
+	for _, s := range ss {
+		out = append(out, Sujet{Empreinte: s.Empreinte, Groupes: nonVide(s.Groupes)})
+	}
+	return out
+}
+
+func VersSujets(ss []Sujet) []directive.Sujet {
+	var out []directive.Sujet
+	for _, s := range ss {
+		out = append(out, directive.Sujet{Empreinte: s.Empreinte, Groupes: nonVide(s.Groupes)})
+	}
+	return out
+}
+
+// nonVide normalise une liste vide en nil : le journal l'omet, et ce qui
+// en est relu doit être égal à ce qui y a été écrit.
+func nonVide(l []string) []string {
+	if len(l) == 0 {
+		return nil
+	}
+	return l
 }
 
 func DepuisJeu(j directive.Jeu) *RefJeu {
@@ -344,6 +506,69 @@ func (e *Ecrivain) Ecrire(en Entree) (Entree, error) {
 		en = ecrite
 	}
 	e.publier(en)
+	return en, nil
+}
+
+// CanalAbonnes est le canal de notification de démonstration : les
+// abonnés du journal (écrans temps réel).
+const CanalAbonnes = "abonnes-journal"
+
+// EcrireRemise écrit une entrée notification en la remettant aux abonnés
+// du journal, et y consigne le statut de remise. Le compte est exact : les
+// abonnés qui ont de la place sont comptés, l'entrée est écrite et leur
+// est publiée sans que rien ne puisse s'intercaler ; un abonné saturé ne
+// compte pas. Au moins un abonné atteint : remise ; aucun : échec. Une
+// notification au rythme synthese est planifiée (Remis 0) sauf si son
+// échec doit refuser l'appel : elle est alors remise tout de suite.
+func (e *Ecrivain) EcrireRemise(en Entree) (Entree, error) {
+	if e == nil {
+		return en, nil
+	}
+	if en.Notification == nil {
+		return en, fmt.Errorf("journal: entrée notification sans notification")
+	}
+	if en.TS.IsZero() {
+		en.TS = e.horloge().UTC()
+	}
+	en.Type, en.Prev, en.MAC = NotificationT, "", ""
+	n := *en.Notification
+	n.Canal = CanalAbonnes
+	e.mu.Lock()
+	defer e.mu.Unlock()
+	var cibles []chan Entree
+	if n.Rythme == string(directive.Synthese) && n.SiEchec != string(directive.EchecRefuser) {
+		n.Statut, n.Remis = RemisePlanifiee, 0
+	} else {
+		for _, ch := range e.abonnes {
+			if len(ch) < cap(ch) {
+				cibles = append(cibles, ch)
+			}
+		}
+		n.Statut, n.Remis = RemiseEchec, len(cibles)
+		if len(cibles) > 0 {
+			n.Statut = RemiseFaite
+		}
+	}
+	en.Notification = &n
+	ligne, err := e.chaine.Ajouter(en)
+	if err != nil {
+		return en, fmt.Errorf("journal: %w", err)
+	}
+	if ligne != nil {
+		var ecrite Entree
+		if err := json.Unmarshal(ligne, &ecrite); err != nil {
+			return en, fmt.Errorf("journal: relire l'entrée écrite: %w", err)
+		}
+		en = ecrite
+	}
+	// Publiée à tous ; seuls les abonnés comptés avaient la place garantie.
+	for _, ch := range e.abonnes {
+		select {
+		case ch <- en:
+		default:
+			e.perdues.Add(1)
+		}
+	}
 	return en, nil
 }
 
@@ -454,6 +679,8 @@ type Coffre struct {
 	purgees map[string]time.Time
 	horloge func() time.Time
 	journal *Ecrivain
+	// avantPurge complète l'entrée purge (voir AvantPurge).
+	avantPurge func(*Entree)
 }
 
 // OuvrirCoffre ouvre ou crée le coffre et charge son index.

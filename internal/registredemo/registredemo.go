@@ -16,7 +16,9 @@
 //     y compris sans annotation (fermé par défaut) ;
 //   - environnement transmis par nom : DONNEES_MODE pour tous,
 //     PISTE_CLIENT_ID et PISTE_CLIENT_SECRET en plus pour legifrance ;
-//   - chemins absolus : binaire, enregistrements, instantané.
+//   - chemins absolus : binaire, enregistrements, instantané ;
+//   - étiquettes : celles de demo/etiquettes.json (versionné), posées sur
+//     les serveurs et les outils ; elles entrent dans l'empreinte.
 //
 // Le registre d'attaque est le même document, à une différence près : la
 // commande de taux-officiel lance le binaire de taux-imposteur, et
@@ -72,7 +74,8 @@ var AvecEnregistrements = map[string]bool{
 }
 
 // Meta du registre de démonstration.
-var Meta = registre.MetaRegistre{ID: "demo", Version: 1, Auteur: "ops@cabinet.fr"}
+// Version 2 : les étiquettes de demo/etiquettes.json entrent au registre.
+var Meta = registre.MetaRegistre{ID: "demo", Version: 2, Auteur: "ops@cabinet.fr"}
 
 // Manifeste est bin/manifeste.json.
 type Manifeste struct {
@@ -107,6 +110,9 @@ type Options struct {
 	// une copie de travail, pour que la démo ne réécrive jamais les
 	// enregistrements versionnés que les tests rejouent.
 	Enregistrements string
+	// Etiquettes est le fichier des étiquettes, relatif à la racine ou
+	// absolu. Vide : FichierEtiquettes, le fichier versionné.
+	Etiquettes string
 }
 
 // DossierGelsLocal est le registre des gels complet, préparé par
@@ -195,6 +201,17 @@ func Generer(m *Manifeste, o Options) (demo, attaque *registre.Registre, err err
 			Attestation: registre.Attestation{Mode: registre.ModeBinaire, Attendu: "sha256:" + e.SHA256},
 			Outils:      outils,
 		})
+	}
+	chemin := o.Etiquettes
+	if chemin == "" {
+		chemin = FichierEtiquettes
+	}
+	etiquettes, err := LireEtiquettes(abs(o.Racine, chemin))
+	if err != nil {
+		return nil, nil, err
+	}
+	if err := etiquettes.Appliquer(demo); err != nil {
+		return nil, nil, err
 	}
 	if err := registre.Valider(demo); err != nil {
 		return nil, nil, err

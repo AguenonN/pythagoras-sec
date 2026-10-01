@@ -80,13 +80,25 @@ inconnues.
 | `evenement` | `cible` | Évalué par |
 |---|---|---|
 | `appel_outil` | obligatoire, au moins une clé | `Decide`, à chaque `tools/call` |
-| `ouverture_session` | interdite | réservé : pas encore évalué |
-| `attestation_echouee` | facultative, `serveur` seul | réservé : pas encore évalué |
-| `purge` | interdite | réservé : pas encore évalué |
+| `ouverture_session` | interdite | `DecideEvenement`, à l'ouverture de chaque session |
+| `attestation_echouee` | facultative, `serveur` seul | `DecideEvenement`, à chaque attestation en échec (connexion ou changement) |
+| `purge` | interdite | `DecideEvenement`, à chaque purge du coffre |
 
-Tant qu'un évènement réservé n'a pas d'évaluateur, le chargeur n'accepte une
-directive qui le porte qu'au statut `brouillon` : une directive `active` ou
-`observation` qui ne serait jamais évaluée aurait l'air de compter.
+*Évolution signalée (session gate-v2)* : tant que ces évènements n'avaient
+pas d'évaluateur, le chargeur ne les admettait qu'au statut `brouillon`.
+Ils en ont un désormais (`internal/directive/evenement.go`), et le
+chargeur les admet à tout statut, restreints à ce que l'évènement
+renseigne :
+
+| `evenement` | Feuilles admises (sous `et`, `ou`, `non` ; aucun quantificateur) | Effets admis |
+|---|---|---|
+| `ouverture_session` | `appelant`, `demandeur`, `temps` | `refuser` (la session n'est pas ouverte), `notifier`, `marquer` |
+| `attestation_echouee` | `attestation`, `temps` | `notifier` (`si_echec: continuer`), `marquer` |
+| `purge` | `temps` | `notifier` (`si_echec: continuer`), `marquer` |
+
+La décision est consignée dans l'entrée qui journalise l'évènement
+(`session_ouverte`, `attestation`, `purge`) avec le jeu cité et les
+remises ; `rejeu.RejouerEvenements` la rejoue.
 
 Clés de `cible` (toutes facultatives, combinées en **et**) :
 
@@ -125,6 +137,15 @@ Quantificateurs :
 - Dans la sous-condition, les pointeurs des feuilles `argument` et `sujet`
   sont **relatifs à l'élément courant**, et le pointeur vide `""` désigne
   l'élément lui-même. Hors quantificateur, un pointeur commence par `/`.
+- *Correctif signalé (session gate-v2)* : sous un quantificateur, un
+  pointeur qui commence par `$racine/` (feuilles `argument` et `sujet`,
+  `champ` d'un quantificateur imbriqué) se lit **depuis les arguments**
+  (après les caviardages des directives précédentes), et non depuis
+  l'élément courant. Exemple : `{"existe": {"champ": "/lignes",
+  "condition": {"et": [{"argument": {"champ": "/montant", "op": ">",
+  "valeur": 100}}, {"argument": {"champ": "$racine/categorie", "op": "==",
+  "valeur": "sensible"}}]}}}`. Hors quantificateur, `$racine` est refusé
+  (écrire le pointeur seul).
 
 ### 5.2 Bornes
 

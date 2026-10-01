@@ -41,6 +41,7 @@ import (
 	"sort"
 	"time"
 
+	"mcprogue/internal/annuaire"
 	"mcprogue/internal/approval"
 	"mcprogue/internal/controle"
 	"mcprogue/internal/directive"
@@ -82,6 +83,16 @@ const (
 	// entrée transmission (même session, seq, serveur, outil, empreinte
 	// transmise, effet) ; un appel non transmis ne doit pas en avoir.
 	ControleTransmission = "transmission"
+	// ControleApprobation : un appel en attente transmis porte une
+	// approbation acceptée, chaînée avant sa transmission, qui couvre
+	// chaque rôle requis par un valideur distinct qui n'est pas le
+	// demandeur ; avec un annuaire, chaque valideur détenait son rôle à la
+	// date de validation.
+	ControleApprobation = "approbation"
+	// ControleNotification : les remises que l'entrée appel porte sont
+	// celles des entrées notification chaînées avant elle pour le même
+	// appel, et couvrent exactement les notifications de la décision.
+	ControleNotification = "notification"
 )
 
 // NonRejouable remplace l'effet dans les vues quand les arguments manquent.
@@ -125,6 +136,10 @@ type Options struct {
 	Jeu *directive.Jeu
 	// AuDate force la date de l'appel.
 	AuDate time.Time
+	// Annuaire, s'il est fourni, sert à revérifier que chaque valideur
+	// d'une approbation détenait son rôle à la date de validation. Il ne
+	// change pas le cadre (historique ou non).
+	Annuaire annuaire.Source
 }
 
 // Historique dit si le cadre est celui de l'entrée.
@@ -255,24 +270,32 @@ func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, purges Purges, opts Op
 	r.Rejouable, r.Nature = true, opts.nature()
 
 	etat := directive.EtatSession{ID: en.Session, Appelant: en.Appelant, Consultations: journal.VersConsultations(en.EtatSession)}
-	appel := directive.Appel{
-		Serveur: en.Serveur, Outil: en.Outil, Arguments: args,
-		Attestation: en.Attestation.VersDirective(), Horodatage: en.TS,
-	}
+	appel := AppelDepuis(en, args)
 
 	// Contrôle 2 : sous le jeu d'origine, à la date historique, la décision
 	// retrouve empreinte_transmise et l'effet journalisé.
 	// Le contrôle du registre s'applique après Decide, comme dans l'engine,
 	// sur l'attestation que l'entrée porte.
 	dec, parRegistre := controle.Registre(directive.Decide(origine, etat, appel), en.Serveur, appel.Attestation)
+	// Puis la règle si_echec: refuser, sur les remises que l'entrée porte
+	// (le contrôle notification de RejouerJournal les confronte aux
+	// entrées notification chaînées).
+	parNotification := false
+	if !parRegistre {
+		dec, parNotification = journal.ControleNotifications(dec, en.Remises)
+	}
 	r.Origine = &dec
 	switch origineJ := en.Decision.Origine; {
-	case origineJ != "" && origineJ != controle.OrigineRegistre:
+	case origineJ != "" && origineJ != controle.OrigineRegistre && origineJ != journal.OrigineNotification:
 		ecart(CauseAlteration, ControleDecision, "origine de décision %q inconnue", origineJ)
 	case parRegistre && origineJ != controle.OrigineRegistre:
 		ecart(CauseAlteration, ControleDecision, "le serveur n'est pas attesté : le refus est d'origine registre, le journal ne le dit pas")
 	case !parRegistre && origineJ == controle.OrigineRegistre:
 		ecart(CauseAlteration, ControleDecision, "le journal attribue la décision au registre, le rejeu à une directive")
+	case parNotification && origineJ != journal.OrigineNotification:
+		ecart(CauseAlteration, ControleDecision, "une notification si_echec refuser n'a pas été remise : le refus est d'origine notification, le journal ne le dit pas")
+	case !parNotification && origineJ == journal.OrigineNotification:
+		ecart(CauseAlteration, ControleDecision, "le journal attribue la décision à une notification non remise, le rejeu non")
 	}
 	if dec.EmpreinteTransmise != en.Appel.EmpreinteTransmise {
 		ecart(CauseAlteration, ControleTransmis, "la décision rejouée transmet %s, le journal cite %s",
@@ -281,6 +304,9 @@ func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, purges Purges, opts Op
 	if dec.Effet != r.Journalise {
 		ecart(CauseAlteration, ControleDecision, "la décision rejouée est %s, le journal affirme %s",
 			dec.Effet, r.Journalise)
+	}
+	if detail, ok := sortiesV2(en.Decision, dec); !ok {
+		ecart(CauseAlteration, ControleDecision, "%s", detail)
 	}
 
 	if opts.Historique() {
@@ -302,6 +328,56 @@ func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, purges Purges, opts Op
 			jeu.Meta.ID, jeu.Meta.Version, appel.Horodatage.UTC().Format(time.RFC3339), autre.Effet, r.Journalise)
 	}
 	return r, nil
+}
+
+// AppelDepuis reconstitue l'appel que Decide a reçu, à partir de l'entrée
+// appel et des arguments d'origine : tous les champs, v2 compris (registre,
+// demandeur, personnes concernées, sous-agent déclaré).
+func AppelDepuis(en journal.Entree, args map[string]any) directive.Appel {
+	return directive.Appel{
+		Serveur: en.Serveur, Outil: en.Outil, Arguments: args,
+		Attestation: en.Attestation.VersDirective(), Horodatage: en.TS,
+		Acces: directive.Acces(en.Acces), EtiquettesCible: en.EtiquettesCible, VersionRegistre: en.VersionRegistre,
+		Demandeur: en.Demandeur.VersDirective(), Sujets: journal.VersSujets(en.Sujets),
+		SousAgentDeclare: en.SousAgentDeclare,
+	}
+}
+
+// sortiesV2 confronte le détail de la décision à ce que le journal
+// affirme : motif, applications (résultat à trois valeurs compris),
+// alertes, et ce que la décision demande en plus de son effet
+// (notifications, marques, validation). Un rôle de validation retiré, une
+// notification effacée ou une condition indéterminée présentée comme
+// vraie est une altération, même si l'effet est le même. Un journal
+// antérieur à la v2 ne porte pas de résultat d'application : il n'est
+// alors pas comparé.
+func sortiesV2(j *journal.Decision, dec directive.Decision) (string, bool) {
+	r := journal.DepuisDecision(dec)
+	if len(j.Applications) == len(r.Applications) {
+		for i := range j.Applications {
+			if j.Applications[i].Resultat == "" {
+				r.Applications[i].Resultat = ""
+			}
+		}
+	}
+	switch {
+	case j.Motif != r.Motif:
+		return "le motif rejoué diffère du motif journalisé", false
+	case !reflect.DeepEqual(j.Applications, r.Applications):
+		return fmt.Sprintf("les applications rejouées (%d) diffèrent de celles du journal (%d)",
+			len(r.Applications), len(j.Applications)), false
+	case !reflect.DeepEqual(j.Alertes, r.Alertes):
+		return "les alertes rejouées diffèrent de celles du journal", false
+	case !reflect.DeepEqual(j.Notifications, r.Notifications):
+		return fmt.Sprintf("la décision rejouée demande %d notification(s), le journal en consigne %d autrement",
+			len(r.Notifications), len(j.Notifications)), false
+	case !reflect.DeepEqual(j.Marques, r.Marques):
+		return fmt.Sprintf("la décision rejouée pose %d marque(s), le journal en consigne %d autrement",
+			len(r.Marques), len(j.Marques)), false
+	case !reflect.DeepEqual(j.Validation, r.Validation):
+		return "la validation demandée (rôles, quatre yeux) diffère entre le rejeu et le journal", false
+	}
+	return "", true
 }
 
 // statutCoherent confronte le statut du résultat à l'effet journalisé.
@@ -344,9 +420,14 @@ func consultation(en journal.Entree) (journal.Consultation, bool) {
 	default:
 		return journal.Consultation{}, false
 	}
+	// Les compléments v2 sont ceux de l'entrée qui a produit la
+	// consultation : étiquettes et version du registre au moment de
+	// l'appel, source déclarée telle que Decide la lit.
 	return journal.Consultation{
 		Seq: en.Seq, Serveur: en.Serveur, Outil: en.Outil, TS: en.TS, Resultat: en.Resultat.Statut,
 		Empreinte: en.Appel.EmpreinteTransmise, EmpreinteReponse: en.Resultat.EmpreinteReponse,
+		Etiquettes: en.EtiquettesCible, VersionRegistre: en.VersionRegistre,
+		Source: journal.DepuisSourceReponse(en.Resultat.Source.VersDirective()),
 	}, true
 }
 
@@ -381,6 +462,18 @@ func ReconstituerEtat(entrees []journal.Entree, session string, avantSeq int) (d
 	sort.SliceStable(cs, func(i, j int) bool { return cs[i].Seq < cs[j].Seq })
 	etat.Consultations = journal.VersConsultations(cs)
 	return etat, nil
+}
+
+// DemandeurSession rend le demandeur consigné à l'ouverture de la session
+// (entrée session_ouverte), nil s'il n'a pas été résolu. C'est le seul que
+// les appels de la session peuvent porter.
+func DemandeurSession(entrees []journal.Entree, session string) *journal.Demandeur {
+	for _, en := range entrees {
+		if en.Type == journal.SessionOuverte && en.Session == session {
+			return en.Demandeur
+		}
+	}
+	return nil
 }
 
 // cleAppel identifie un appel dans le journal.
@@ -431,6 +524,136 @@ func controlerTransmission(entrees []journal.Entree, i int, tr map[cleAppel][]in
 	return "", true
 }
 
+// jetonsAcceptes compte, par empreinte de jeton, les approbations
+// acceptées qui le citent : un jeton ne vaut que pour un appel.
+func jetonsAcceptes(entrees []journal.Entree) map[string]int {
+	n := map[string]int{}
+	for _, en := range entrees {
+		if en.Type == journal.ApprobationT && en.Approbation != nil && en.Approbation.Statut == journal.ApprobationAcceptee {
+			for _, v := range en.Approbation.Valideurs {
+				n[v.EmpreinteJeton]++
+			}
+		}
+	}
+	return n
+}
+
+// controlerRemises confronte les remises de l'entrée appel de rang i aux
+// entrées notification chaînées avant elle pour le même appel, et aux
+// notifications que la décision journalisée demande.
+func controlerRemises(entrees []journal.Entree, i int) (string, bool) {
+	en := entrees[i]
+	var chainees []journal.Remise
+	for j := 0; j < i; j++ {
+		e := entrees[j]
+		if e.Type == journal.NotificationT && e.Session == en.Session && e.Seq == en.Seq && e.Notification != nil {
+			chainees = append(chainees, *e.Notification)
+		}
+	}
+	if !reflect.DeepEqual(chainees, en.Remises) && (len(chainees) > 0 || len(en.Remises) > 0) {
+		return fmt.Sprintf("l'appel porte %d remise(s), le journal en chaîne %d autrement", len(en.Remises), len(chainees)), false
+	}
+	var demandees []journal.Notification
+	if en.Decision != nil {
+		demandees = en.Decision.Notifications
+	}
+	var remises []journal.Notification
+	for _, r := range en.Remises {
+		remises = append(remises, r.Notification)
+	}
+	if !reflect.DeepEqual(remises, demandees) {
+		return "les notifications remises ne sont pas celles que la décision demande", false
+	}
+	return "", true
+}
+
+// controlerApprobation confronte l'entrée appel de rang i à son
+// approbation. Seuls les appels en attente de validation sont concernés.
+// Une approbation d'un autre mécanisme (sans statut) n'est contrôlée que
+// par sa présence (statutCoherent).
+func controlerApprobation(entrees []journal.Entree, i int, tr map[cleAppel][]int, src annuaire.Source) (string, bool) {
+	en := entrees[i]
+	_, transmis := consultation(en)
+	if en.Decision == nil || directive.Effet(en.Decision.Effet) != directive.AttendreValidation {
+		if en.Approbation != nil {
+			return "approbation consignée pour un appel qui n'attendait pas de validation", false
+		}
+		return "", true
+	}
+	a := en.Approbation
+	if !transmis {
+		if a != nil {
+			return "approbation consignée pour un appel en attente non transmis", false
+		}
+		return "", true
+	}
+	if a == nil || a.Statut == "" {
+		return "", true // statutCoherent signale l'absence
+	}
+	if a.Statut != journal.ApprobationAcceptee {
+		return "appel transmis sous une approbation " + a.Statut, false
+	}
+	// L'entrée approbation chaînée, identique, avant la transmission.
+	rangs := tr[cleAppel{en.Session, en.Seq}]
+	trouvee := false
+	for j := 0; j < i; j++ {
+		e := entrees[j]
+		if e.Type == journal.ApprobationT && e.Session == en.Session && e.Seq == en.Seq && reflect.DeepEqual(e.Approbation, a) &&
+			(len(rangs) == 0 || j < rangs[0]) {
+			trouvee = true
+		}
+	}
+	if !trouvee {
+		return "aucune entrée approbation chaînée avant la transmission ne correspond à l'approbation de l'appel", false
+	}
+	if a.EmpreinteTransmise != en.Appel.EmpreinteTransmise {
+		return "l'approbation vise une autre empreinte transmise que l'appel", false
+	}
+	var roles []string
+	quatre := false
+	if v := en.Decision.Validation; v != nil {
+		roles, quatre = v.Roles, v.QuatreYeux
+	}
+	if !reflect.DeepEqual(a.Roles, roles) || a.QuatreYeux != quatre {
+		return "l'approbation ne porte pas les rôles ou les quatre yeux que la décision demande", false
+	}
+	if quatre && en.Demandeur == nil {
+		return "quatre yeux approuvés sans demandeur résolu", false
+	}
+	vus, parRole := map[string]bool{}, map[string]int{}
+	for _, v := range a.Valideurs {
+		if vus[v.Identite] {
+			return "le même valideur apparaît deux fois", false
+		}
+		vus[v.Identite] = true
+		parRole[v.Role]++
+		if en.Demandeur != nil && v.Identite == en.Demandeur.Identite {
+			return "le demandeur a validé son propre appel", false
+		}
+		if src != nil {
+			f, ok := src.Resoudre(v.Identite, v.Date)
+			if !ok || !f.DetientRole(v.Role) {
+				return fmt.Sprintf("%s ne détenait pas le rôle %s le %s selon l'annuaire", v.Identite, v.Role, v.Date.UTC().Format(time.RFC3339)), false
+			}
+		}
+	}
+	if len(roles) == 0 {
+		if len(a.Valideurs) != 1 {
+			return fmt.Sprintf("un valideur attendu, %d consignés", len(a.Valideurs)), false
+		}
+		return "", true
+	}
+	if len(a.Valideurs) != len(roles) {
+		return fmt.Sprintf("%d valideur(s) pour %d rôle(s) requis", len(a.Valideurs), len(roles)), false
+	}
+	for _, r := range roles {
+		if parRole[r] != 1 {
+			return "le rôle " + r + " n'est pas validé exactement une fois", false
+		}
+	}
+	return "", true
+}
+
 // TransmissionsSansAppel rend les entrées transmission qu'aucune entrée
 // appel du même (session, seq) ne suit : des appels partis dont le
 // résultat n'a pas été journalisé (panne du journal ou arrêt entre les
@@ -460,6 +683,7 @@ func RejouerJournal(entrees []journal.Entree, res Resolveur, jeux Jeux, opts Opt
 	var out []Rejeu
 	purges := PurgesChainees(entrees)
 	tr := transmissions(entrees)
+	jetons := jetonsAcceptes(entrees)
 	for i, en := range entrees {
 		if en.Type != journal.AppelT {
 			continue
@@ -478,9 +702,25 @@ func RejouerJournal(entrees []journal.Entree, res Resolveur, jeux Jeux, opts Opt
 		} else if etat.Appelant != en.Appelant {
 			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleEtat,
 				Detail: fmt.Sprintf("l'appel est attribué à %q, la session a été ouverte par %q", en.Appelant, etat.Appelant)})
+		} else if d := DemandeurSession(entrees, en.Session); !reflect.DeepEqual(d, en.Demandeur) {
+			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleEtat,
+				Detail: "le demandeur de l'appel n'est pas celui résolu à l'ouverture de la session"})
 		}
 		if detail, ok := controlerTransmission(entrees, i, tr); !ok {
 			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleTransmission, Detail: detail})
+		}
+		if detail, ok := controlerRemises(entrees, i); !ok {
+			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleNotification, Detail: detail})
+		}
+		if detail, ok := controlerApprobation(entrees, i, tr, opts.Annuaire); !ok {
+			r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleApprobation, Detail: detail})
+		} else if en.Approbation != nil {
+			for _, v := range en.Approbation.Valideurs {
+				if jetons[v.EmpreinteJeton] > 1 {
+					r.Ecarts = append(r.Ecarts, Ecart{Cause: CauseAlteration, Nature: r.Nature, Controle: ControleApprobation,
+						Detail: "jeton d'approbation de " + v.Identite + " accepté pour plusieurs appels"})
+				}
+			}
 		}
 		out = append(out, r)
 	}

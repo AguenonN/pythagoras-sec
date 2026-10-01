@@ -143,27 +143,57 @@ sont `gate.Refus`, `gate.Attente` et `gate.Echec`.
 |---|---|---|---|
 | `directive` | identifiant de la première directive appliquée qui refuse, dans l'ordre du jeu | version de cette directive | son fondement |
 | `registre` (serveur non attesté, §5) | identifiant du registre | version du registre | `{"texte": "Registre des serveurs : attestation du serveur"}` |
+| `notification` (une directive demande une notification `si_echec: refuser`, non remise) | identifiant de cette directive | sa version | son fondement |
 | `engine` (journal ou coffre indisponible, session fermée ou appelant changé, outil inconnu, arguments qui ne sont pas un objet JSON) | `""` | `0` | `{"texte": "Contrat de l'engine"}` |
 
 `motif` est celui de la décision journalisée (origines `directive` et
 `registre`), ou le texte du refus (origine `engine`). Il ne cite jamais
 la valeur d'un argument.
 
-**Attente** : `attendre_validation`, l'appel n'est pas transmis. La
-reprise avec jeton n'existe pas encore.
+**Attente** : `attendre_validation`, l'appel n'est pas transmis.
 
 ```json
 {
   "statut": "en_attente",
   "empreinte_transmise": "…",
   "directive": "D-002",
-  "version": 1
+  "version": 1,
+  "roles": ["directeur-risques"],
+  "quatre_yeux": true,
+  "motif_jeton": "…"
 }
 ```
 
 `directive` et `version` désignent la première directive appliquée qui
 met en attente. `empreinte_transmise` est ce qu'un jeton d'approbation
-devra viser.
+doit viser. `roles` (absent : tout valideur de l'annuaire) et
+`quatre_yeux` viennent de la décision. `motif_jeton` n'est présent qu'à
+une reprise dont les jetons ont été refusés.
+
+**Reprise** : l'agent renvoie le même appel avec, dans
+`_meta.approvalToken`, un jeton par rôle requis (une chaîne, ou une liste
+de chaînes ; 8 au plus). Chaque jeton est signé par un valideur de
+l'annuaire (`mcp-approve valider`) et lié à `empreinte_transmise`.
+L'engine réévalue `Decide`, puis vérifie : signature, période (15 min au
+plus), appel visé, rôle détenu **à la date de validation** (`iat`), un
+jeton par rôle requis, valideurs distincts, aucun valideur égal au
+demandeur, un demandeur résolu si `quatre_yeux`, et qu'aucun jeton n'a
+déjà été accepté (usage unique, sinon une validation vaudrait pour deux
+appels identiques). Les jetons acceptés sont retenus par le processus, et
+ceux des processus précédents sont relus au démarrage dans leurs journaux
+(`mcp-gate -journaux-precedents <motif>`, même clé) : dans la démo, chaque
+demande lance son propre `mcp-gate`. Le motif ne doit désigner que des
+journaux chaînés ; un journal précédent dont la chaîne est rompue empêche
+le démarrage. Un jeton déjà consommé donne une entrée `approbation`
+refusée, motif « jeton déjà utilisé ». Il écrit une entrée
+`approbation` (acceptée ou refusée, jetons sous empreinte seulement).
+Acceptée : entrée `transmission`, transmission, entrée `appel` avec
+l'approbation. Refusée : l'appel reste en attente, `motif_jeton` dit
+pourquoi. Au rejeu (contrôle `approbation`), un appel en attente transmis
+doit porter une approbation acceptée, identique à une entrée
+`approbation` chaînée avant sa transmission, et conforme à ces règles ;
+avec un annuaire (`rejeu.Options.Annuaire`), les rôles sont revérifiés à
+leur date ; un jeton accepté pour plusieurs appels est une altération.
 
 **Échec** : l'appel est parti, mais rien d'utilisable n'est revenu.
 
@@ -198,6 +228,49 @@ Le motif est écrit par l'engine et ne cite jamais le texte du serveur.
 Une réponse normale de l'outil a `isError: false`. Elle est scellée et
 n'a jamais de `structuredContent` en clair : le `structuredContent` du
 serveur est rendu scellé, sous forme de texte.
+
+## 7. Les notifications sont remises avant la transmission
+
+Une directive appliquée qui porte l'effet `notifier` demande une
+notification, quel que soit l'effet final de la décision.
+
+- Après `Decide` et le contrôle du registre, et avant toute transmission,
+  l'engine écrit une entrée `notification` par notification de la
+  décision (dans l'ordre de la décision), avec son statut de remise :
+  `remise` (au moins un destinataire atteint), `echec`, ou `planifiee`
+  (rythme `synthese` sans conséquence en cas d'échec).
+- Canal de démonstration : les abonnés du journal
+  (`journal.Ecrivain.EcrireRemise`, compte exact des abonnés atteints).
+  `mcp-gate -notifications <fichier>` y abonne un écran.
+- Une notification `si_echec: refuser` non remise refuse l'appel
+  (`journal.ControleNotifications`, la fonction même qu'appelle le
+  rejeu) : `decision.origine = notification`, réponse `refuse` d'origine
+  `notification`.
+- L'entrée `appel` porte les `remises`. Au rejeu (contrôle
+  `notification`), elles doivent être celles des entrées `notification`
+  chaînées avant l'appel, et couvrir exactement les notifications de la
+  décision.
+
+## 8. Personnes concernées : résolution avant Decide
+
+Quand le registre déclare `personnes_concernees` pour un outil, l'engine
+lit le ou les identifiants à ce pointeur et demande leurs groupes au
+résolveur (`referentiel-rh/groupes_salarie`), seulement s'il est attesté,
+avec un délai propre (10 s par appel, 100 identifiants au plus). Il ne
+fournit à `Decide` que les sujets résolus ; un sujet introuvable ou non
+résolu est indéterminé. L'entrée `appel` consigne `sujets` (empreinte et
+groupes) et `sujets_non_resolus` (empreintes), jamais l'identifiant en
+clair. Ces appels ne sont pas des consultations : ils n'entrent ni dans
+l'état de session ni dans le chaînage `transmission`.
+
+**Limite connue** : aucune entrée chaînée ne précède l'appel au
+résolveur. Il part avant toute entrée de l'appel, et son résultat n'est
+consigné que dans l'entrée `appel`. Si le journal tombe entre les deux, une
+requête portant un identifiant de personne est partie vers le référentiel
+RH sans trace dans la chaîne, contrairement à ce que le §4 garantit pour
+les appels de l'agent. Le risque est borné (serveur interne, attesté, en
+lecture seule), mais il n'est pas couvert par le rejeu. Une entrée
+chaînée avant l'appel au résolveur est à ajouter plus tard.
 
 ## Rappels
 

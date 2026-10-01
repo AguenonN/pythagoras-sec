@@ -10,6 +10,9 @@
 // and which delegate performs it, so the trail answers "who had it done" and
 // not only "who approved".
 //
+// Subcommands annuaire-demo, identite and valider work with the directory of
+// authorisations (internal/annuaire): see annuaire.go.
+//
 // It prints the action digest and a JWT valid for -ttl (default and maximum
 // policy: 15m), bound to exactly that tool+arguments. The agent then passes
 // the token in the tools/call params under _meta.approvalToken.
@@ -29,6 +32,14 @@ import (
 )
 
 func main() {
+	if len(os.Args) > 1 {
+		if f, ok := sousCommandes[os.Args[1]]; ok {
+			if err := f(os.Args[2:], os.Stdout); err != nil {
+				log.Fatalf("mcp-approve %s: %v", os.Args[1], err)
+			}
+			return
+		}
+	}
 	keyFile := flag.String("key-file", "", "signing key: an HMAC secret, or a PEM PKCS#8 private key")
 	by := flag.String("by", "", "who approves (goes into sub and the audit trail)")
 	ticket := flag.String("ticket", "", "change/incident reference (optional)")

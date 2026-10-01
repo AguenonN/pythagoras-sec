@@ -100,6 +100,15 @@ type Outil struct {
 	Acces       Acces          `json:"acces"`
 	Description string         `json:"description"`
 	InputSchema map[string]any `json:"input_schema"`
+	// Etiquettes classent l'outil pour les directives v2 (cible.etiquette,
+	// etiquette_cible, session.a_consulte) ; elles s'ajoutent à celles du
+	// serveur. Absentes, l'empreinte d'un registre v1 est inchangée.
+	Etiquettes []string `json:"etiquettes,omitempty"`
+	// PersonnesConcernees est le pointeur JSON (RFC 6901) de l'argument qui
+	// désigne la ou les personnes concernées par l'appel : un identifiant
+	// (chaîne ou entier) ou une liste d'identifiants. L'engine résout leurs
+	// groupes avant Decide (feuille sujet).
+	PersonnesConcernees string `json:"personnes_concernees,omitempty"`
 }
 
 // Empreinte est le pin de l'outil, calculé comme toolpin.Hash sur les trois
@@ -115,7 +124,9 @@ type Serveur struct {
 	Commande    *Commande   `json:"commande,omitempty"`
 	URL         string      `json:"url,omitempty"`
 	Attestation Attestation `json:"attestation"`
-	Outils      []Outil     `json:"outils"`
+	// Etiquettes valent pour tous les outils du serveur.
+	Etiquettes []string `json:"etiquettes,omitempty"`
+	Outils     []Outil  `json:"outils"`
 }
 
 // Outil rend l'entrée épinglée d'un outil.
@@ -126,6 +137,46 @@ func (s Serveur) Outil(nom string) (Outil, bool) {
 		}
 	}
 	return Outil{}, false
+}
+
+// EtiquettesOutil rend les étiquettes d'un outil du serveur : celles du
+// serveur et celles de l'outil, triées, sans doublon. Un outil inconnu du
+// serveur n'a que celles du serveur.
+func (s Serveur) EtiquettesOutil(outil string) []string {
+	var l []string
+	l = append(l, s.Etiquettes...)
+	if o, ok := s.Outil(outil); ok {
+		l = append(l, o.Etiquettes...)
+	}
+	return trier(l)
+}
+
+// Etiquettes rend toutes les étiquettes que le registre déclare, sur ses
+// serveurs et ses outils, triées.
+func (r *Registre) Etiquettes() []string {
+	var l []string
+	for _, s := range r.Serveurs {
+		l = append(l, s.Etiquettes...)
+		for _, o := range s.Outils {
+			l = append(l, o.Etiquettes...)
+		}
+	}
+	return trier(l)
+}
+
+func trier(l []string) []string {
+	if len(l) == 0 {
+		return []string{}
+	}
+	s := append([]string(nil), l...)
+	sort.Strings(s)
+	out := s[:1]
+	for _, x := range s[1:] {
+		if x != out[len(out)-1] {
+			out = append(out, x)
+		}
+	}
+	return out
 }
 
 // Registre est le document chargé.
@@ -142,6 +193,18 @@ func (r *Registre) Serveur(nom string) (Serveur, bool) {
 		}
 	}
 	return Serveur{}, false
+}
+
+// Version est la version du registre que l'engine passe à Decide et
+// consigne au journal : identifiant, version et empreinte du contenu. Vide
+// tant que le registre n'est pas validé (empreinte absente) : les accès et
+// les étiquettes sont alors inconnus pour Decide, qui tranche par
+// si_indetermine.
+func (r *Registre) Version() string {
+	if r == nil || r.Meta.Empreinte == "" {
+		return ""
+	}
+	return fmt.Sprintf("%s v%d %s", r.Meta.ID, r.Meta.Version, r.Meta.Empreinte)
 }
 
 // Entrees rend la vue que directive.ControlesEnVigueur affiche au juriste.
@@ -181,6 +244,8 @@ func Charger(donnees []byte) (*Registre, error) {
 
 var (
 	empreinteHex = regexp.MustCompile(`^sha256:[0-9a-f]{64}$`)
+	// etiquetteValide : minuscules, chiffres, tiret et souligné, 64 au plus.
+	etiquetteValide = regexp.MustCompile(`^[a-z][a-z0-9_-]{0,63}$`)
 	// nomVariable : un nom de variable d'environnement, sans valeur.
 	nomVariable = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_]*$`)
 )
@@ -312,6 +377,7 @@ func validerServeur(v *validation, p string, s *Serveur) {
 		v.f("%s: server_name n'a de sens qu'avec tls-pin", p)
 	}
 
+	validerEtiquettes(v, p, s.Etiquettes)
 	if len(s.Outils) == 0 {
 		v.f("%s: aucun outil épinglé", p)
 	}
@@ -336,11 +402,29 @@ func validerServeur(v *validation, p string, s *Serveur) {
 		if strings.TrimSpace(o.Description) == "" {
 			v.f("%s: description manquante", q)
 		}
+		validerEtiquettes(v, q, o.Etiquettes)
+		if p := o.PersonnesConcernees; p != "" && (!strings.HasPrefix(p, "/") || len(p) > 256) {
+			v.f("%s: personnes_concernees %q doit être un pointeur JSON commençant par /", q, p)
+		}
 		if o.InputSchema == nil {
 			v.f("%s: input_schema manquant", q)
 		} else if o.InputSchema["type"] != "object" {
 			v.f("%s: input_schema doit être de type object", q)
 		}
+	}
+}
+
+// validerEtiquettes : chaque étiquette est un nom court, sans doublon.
+func validerEtiquettes(v *validation, p string, l []string) {
+	vues := map[string]bool{}
+	for _, e := range l {
+		switch {
+		case !etiquetteValide.MatchString(e):
+			v.f("%s: étiquette %q invalide (minuscules, chiffres, - et _, 64 au plus)", p, e)
+		case vues[e]:
+			v.f("%s: étiquette %s en double", p, e)
+		}
+		vues[e] = true
 	}
 }
 

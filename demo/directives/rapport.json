@@ -1,0 +1,19 @@
+{
+  "jeu": {"id": "rapport-demo", "version": 1, "date_effet": "2026-09-01T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+  "directives": [
+    {
+      "id": "U-001", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Si l'utilisateur est membre du groupe prestataires-externes, pas de rapport fondé sur des données client ; le DPO est prévenu. (Démonstration : fondement à valider par le juriste. Exige un outil étiqueté production_rapport au registre.)",
+      "fondements": [{"texte": "RGPD — à valider par le juriste", "article": "32"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"etiquette": "production_rapport"}},
+      "condition": {"et": [
+        {"demandeur": {"groupe": "prestataires-externes"}},
+        {"session.a_consulte": {"etiquette": "donnees_client", "critere": "donnees_recues"}}
+      ]},
+      "effets": [
+        {"effet": "refuser"},
+        {"effet": "notifier", "destinataire_role": "dpo", "rythme": "temps_reel", "si_echec": "continuer"}
+      ]
+    }
+  ]
+}

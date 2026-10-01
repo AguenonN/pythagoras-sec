@@ -7,6 +7,16 @@
 //	mcp-gate -registre registre.json -directives jeu.json \
 //	         -journal journal.jsonl -coffre coffre.jsonl
 //
+// Avec -annuaire et -annuaire-autorite, l'annuaire des habilitations est
+// chargé (signature vérifiée) ; le jeton d'identité du demandeur est lu
+// dans MCP_GATE_JETON_DEMANDEUR, vérifié au lancement, et le demandeur est
+// résolu à l'ouverture de la session.
+//
+// Avec -journaux-precedents <motif>, les journaux des processus précédents
+// (même clé) sont relus au démarrage : un jeton d'approbation qu'ils ont
+// accepté est refusé comme déjà utilisé. Une chaîne rompue empêche le
+// démarrage.
+//
 // La clé HMAC du journal est lue dans MCP_GATE_CLE_JOURNAL (hexadécimal,
 // 32 octets au moins), jamais dans un fichier ni sur la ligne de commande.
 // Sans clé, sans registre ou sans jeu valide, rien ne démarre.
@@ -26,6 +36,7 @@ package main
 import (
 	"context"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -37,6 +48,7 @@ import (
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"mcprogue/internal/annuaire"
 	"mcprogue/internal/backend"
 	"mcprogue/internal/directive"
 	"mcprogue/internal/gate"
@@ -47,6 +59,11 @@ import (
 
 // VarCle est la variable d'environnement qui porte la clé du journal.
 const VarCle = "MCP_GATE_CLE_JOURNAL"
+
+// VarJetonDemandeur porte le jeton d'identité du demandeur, signé par une
+// identité de l'annuaire (mcp-approve identite). Lu dans l'environnement,
+// jamais sur la ligne de commande, où ps le montrerait.
+const VarJetonDemandeur = "MCP_GATE_JETON_DEMANDEUR"
 
 func main() {
 	if err := lancer(); err != nil {
@@ -63,6 +80,11 @@ func lancer() error {
 	delai := flag.Duration("delai-backend", session.DelaiBackendDefaut, "durée maximale d'un appel à un serveur")
 	maxConsultations := flag.Int("max-consultations", 0, "ferme la session après ce nombre de consultations (0 : sans borne)")
 	ageMax := flag.Duration("age-max", 0, "ferme la session passé cet âge (0 : sans borne)")
+	cheminNotifications := flag.String("notifications", "", "démonstration : écran des destinataires, abonné au journal ; chaque notification reçue y est ajoutée (JSONL). Sans écran, aucune notification n'est remise")
+	precedents := flag.String("journaux-precedents", "", "motif (glob) des journaux de processus précédents : les jetons d'approbation qu'ils ont acceptés sont refusés ; une chaîne rompue empêche le démarrage")
+	depart := flag.String("horloge-depart", "", "démonstration et tests : horloge simulée qui part de cet instant (RFC 3339) et avance au rythme réel ; signalée au journal")
+	cheminAnnuaire := flag.String("annuaire", "", "annuaire des habilitations signé (JSON) ; exige -annuaire-autorite")
+	cheminAutorite := flag.String("annuaire-autorite", "", "clé publique Ed25519 (base64) de l'autorité qui signe l'annuaire")
 	flag.Parse()
 	if *cheminRegistre == "" || *cheminJeu == "" || *cheminJournal == "" || *cheminCoffre == "" {
 		flag.Usage()
@@ -94,6 +116,22 @@ func lancer() error {
 	if err != nil {
 		return err
 	}
+	src, err := chargerAnnuaire(*cheminAnnuaire, *cheminAutorite)
+	if err != nil {
+		return err
+	}
+	horloge, err := horlogeSimulee(*depart, time.Now)
+	if err != nil {
+		return err
+	}
+	var consommes map[string]bool
+	if *precedents != "" {
+		var relus []string
+		if consommes, relus, err = gate.JetonsConsommes(*precedents, cle); err != nil {
+			return err
+		}
+		log.Info("journaux précédents relus", "fichiers", len(relus), "jetons consommés", len(consommes))
+	}
 	j, err := journal.Ouvrir(*cheminJournal, cle)
 	if err != nil {
 		return err
@@ -104,6 +142,13 @@ func lancer() error {
 		return err
 	}
 	defer coffre.Fermer()
+	if *cheminNotifications != "" {
+		arret, err := ecranNotifications(j, *cheminNotifications)
+		if err != nil {
+			return err
+		}
+		defer arret()
+	}
 
 	ctx, arreter := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer arreter()
@@ -113,10 +158,14 @@ func lancer() error {
 		Registre: reg, Jeu: *jeu, Journal: j, Coffre: coffre, Appelant: gate.AppelantStdio,
 		Session: session.Config{DelaiBackend: *delai, MaxConsultations: *maxConsultations, AgeMax: *ageMax},
 		Backend: backend.Options{Stderr: os.Stderr, Logger: log},
-		Logger:  log,
+		Logger:  log, Annuaire: src, JetonDemandeur: os.Getenv(VarJetonDemandeur), Horloge: horloge,
+		Resolveur: resolveur(reg), JetonsConsommes: consommes,
 	})
 	if err != nil {
 		return err
+	}
+	if horloge != nil {
+		g.Alerter("horloge simulée : départ " + *depart + " ; les horodatages de ce journal ne sont pas ceux de l'horloge réelle")
 	}
 	defer g.Fermer()
 	go rechargerSurSignal(ctx, hup, g, *cheminJeu, log)
@@ -145,6 +194,83 @@ func rechargerSurSignal(ctx context.Context, hup <-chan os.Signal, g *gate.Gate,
 			}
 		}
 	}
+}
+
+// ecranNotifications abonne un écran de démonstration au journal : chaque
+// entrée notification reçue est ajoutée au fichier. C'est le canal de
+// démonstration : une notification n'est remise que s'il y a un abonné.
+func ecranNotifications(j *journal.Ecrivain, chemin string) (func(), error) {
+	f, err := os.OpenFile(chemin, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0o600)
+	if err != nil {
+		return nil, err
+	}
+	ch, desabonner := j.Abonner(256)
+	fini := make(chan struct{})
+	go func() {
+		defer close(fini)
+		enc := json.NewEncoder(f)
+		for en := range ch {
+			if en.Type == journal.NotificationT {
+				enc.Encode(en)
+			}
+		}
+	}()
+	return func() {
+		desabonner()
+		<-fini
+		f.Close()
+	}, nil
+}
+
+// resolveur rend le résolveur des personnes concernées : l'outil
+// groupes_salarie de referentiel-rh, si le registre le déclare.
+func resolveur(reg *registre.Registre) gate.Resolveur {
+	r := gate.ResolveurReferentielRH
+	if s, ok := reg.Serveur(r.Serveur); ok {
+		if _, ok := s.Outil(r.Outil); ok {
+			return r
+		}
+	}
+	return gate.Resolveur{}
+}
+
+// horlogeSimulee rend une horloge qui part de depart et avance au rythme
+// de maintenant ; nil si depart est vide (horloge réelle).
+func horlogeSimulee(depart string, maintenant func() time.Time) (func() time.Time, error) {
+	if depart == "" {
+		return nil, nil
+	}
+	d, err := time.Parse(time.RFC3339Nano, depart)
+	if err != nil {
+		return nil, fmt.Errorf("-horloge-depart : %w", err)
+	}
+	t0 := maintenant()
+	return func() time.Time { return d.Add(maintenant().Sub(t0)) }, nil
+}
+
+// chargerAnnuaire charge l'annuaire et vérifie sa signature avec la clé
+// de l'autorité, fournie à part. Sans annuaire, la source est nulle : pas
+// de demandeur, pas de validation.
+func chargerAnnuaire(chemin, autorite string) (annuaire.Source, error) {
+	if chemin == "" && autorite == "" {
+		return nil, nil
+	}
+	if chemin == "" || autorite == "" {
+		return nil, errors.New("-annuaire et -annuaire-autorite vont ensemble")
+	}
+	cle, err := annuaire.LireClePublique(autorite)
+	if err != nil {
+		return nil, err
+	}
+	b, err := os.ReadFile(chemin)
+	if err != nil {
+		return nil, err
+	}
+	l, err := annuaire.Charger(b, cle)
+	if err != nil {
+		return nil, err
+	}
+	return l, nil
 }
 
 func lireCle() ([]byte, error) {

@@ -12,7 +12,7 @@ const cheminDirectivesV2 = "demo/directives/credit-demo-v2.json"
 // interne (T3 périmé), puis attribution du prêt, avec le jeu donné.
 func basePerimee(t *testing.T, directives string) (attribution map[string]any, erreur bool, appels []journal.Entree) {
 	t.Helper()
-	b := demarrerAvec(t, cheminRegistre, directives)
+	b := demarrerAvec(t, lancement{registre: cheminRegistre, jeu: directives})
 	r := b.appeler(t, "banque-synthetique__get_taux_interne", map[string]any{"categorie": "decouvert-societes-non-financieres"})
 	if r.IsError {
 		t.Fatalf("get_taux_interne : %s", texte(r))

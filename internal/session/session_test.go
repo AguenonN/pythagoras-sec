@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -470,5 +471,40 @@ func TestSession_AucunePanique(t *testing.T) {
 	g := Nouveau(Config{NouvelID: func() (string, error) { return "", errors.New("aléa") }}, nil)
 	if _, err := g.Entrer(ctx, new(mcp.ServerSession), alice); !errors.Is(err, ErrIdentifiant) {
 		t.Fatal(err)
+	}
+}
+
+// AOuverture complète session_ouverte ; un refus ferme la session au
+// premier tour, avec son motif, sans qu'aucun appel n'y passe.
+func TestAOuverture(t *testing.T) {
+	var buf bytes.Buffer
+	j := journal.Nouveau(chaine.Nouvelle(&buf, []byte(strings.Repeat("k", 32))))
+	refus := ""
+	g := Nouveau(Config{AOuverture: func(en *journal.Entree) string {
+		en.Demandeur = &journal.Demandeur{Identite: "claire@exemple.test"}
+		en.Type, en.Session = journal.AlerteT, "falsifiée" // ignorés
+		return refus
+	}}, j)
+	ss := new(mcp.ServerSession)
+	tour, err := g.Entrer(context.Background(), ss, "local-process")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tour.Terminer()
+	es, _ := journal.Lire(bytes.NewReader(buf.Bytes()))
+	if len(es) != 1 || es[0].Type != journal.SessionOuverte || es[0].Demandeur == nil || es[0].Session == "falsifiée" {
+		t.Fatalf("entrées %+v", es)
+	}
+
+	refus = "ouverture refusée par directive"
+	ss2 := new(mcp.ServerSession)
+	tour, err = g.Entrer(context.Background(), ss2, "local-process")
+	tour.Terminer()
+	if !errors.Is(err, ErrFermee) {
+		t.Fatalf("erreur %v", err)
+	}
+	es, _ = journal.Lire(bytes.NewReader(buf.Bytes()))
+	if n := len(es); n != 3 || es[2].Type != journal.SessionFermee || es[2].Message != refus || es[2].DernierSeq != 0 {
+		t.Fatalf("entrées %+v", es[1:])
 	}
 }

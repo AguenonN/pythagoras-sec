@@ -41,6 +41,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/jsonrpc"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
+	"mcprogue/internal/annuaire"
 	"mcprogue/internal/approval"
 	"mcprogue/internal/backend"
 	"mcprogue/internal/controle"
@@ -51,6 +52,10 @@ import (
 	"mcprogue/internal/registre"
 	"mcprogue/internal/session"
 )
+
+// DelaiGraceFermeture sépare la fermeture forcée d'une session de celle
+// de sa connexion : le temps que la réponse de l'appel en cours parte.
+const DelaiGraceFermeture = time.Second
 
 // AppelantStdio est l'appelant d'une session servie en stdio : le processus
 // parent, seul à tenir les tubes.
@@ -72,6 +77,20 @@ type Config struct {
 	// Backend est passé à chaque connexion (Stderr, Logger, délai).
 	Backend backend.Options
 	Logger  *slog.Logger
+	// Annuaire est la source d'identité (demandeur, valideurs). Nulle :
+	// aucun demandeur n'est résolu et aucune validation n'est possible.
+	Annuaire annuaire.Source
+	// JetonDemandeur est le jeton d'identité du demandeur remis au
+	// lancement, signé par une identité de l'annuaire. Vide : pas de
+	// demandeur, et les directives qui le lisent sont indéterminées.
+	JetonDemandeur string
+	// Resolveur rend les groupes des personnes concernées (outils dont le
+	// registre déclare personnes_concernees). Zéro : aucune n'est résolue.
+	Resolveur Resolveur
+	// JetonsConsommes sont les empreintes des jetons d'approbation déjà
+	// acceptés par des processus précédents (JetonsConsommes, lus dans
+	// leurs journaux) : ils sont refusés comme déjà utilisés.
+	JetonsConsommes map[string]bool
 }
 
 // Gate est l'agrégateur démarré.
@@ -96,6 +115,19 @@ type Gate struct {
 	// enPanne est posé quand le journal refuse une écriture : sans preuve,
 	// l'engine refuse tout appel.
 	enPanne atomic.Bool
+	// complements tient, par session, ce que l'engine sait d'une
+	// consultation en plus de ce que la session garde : étiquettes et
+	// version du registre au moment de l'appel, source déclarée par le
+	// serveur (voir completer).
+	complements sync.Map // id de session → *complementsSession
+	idsSession  sync.Map // *mcp.ServerSession → id de session, pour oublier les compléments
+	// demandeurs tient le demandeur résolu à l'ouverture de chaque
+	// session, tel que consigné dans session_ouverte.
+	demandeurs sync.Map // id de session → *directive.Demandeur
+	// jetonsUtilises tient les empreintes des jetons d'approbation déjà
+	// acceptés par ce processus : un jeton ne sert qu'une fois.
+	jetonsMu       sync.Mutex
+	jetonsUtilises map[string]bool
 }
 
 // Demarrer journalise le jeu et le registre, connecte chaque backend et
@@ -124,22 +156,48 @@ func Demarrer(ctx context.Context, cfg Config) (*Gate, error) {
 	if cfg.Logger == nil {
 		cfg.Logger = slog.New(slog.DiscardHandler)
 	}
+	if cfg.JetonDemandeur != "" {
+		if cfg.Annuaire == nil {
+			return nil, errors.New("gate: jeton du demandeur sans annuaire pour le vérifier")
+		}
+		// Vérifié dès le lancement : un jeton refusé est une erreur de
+		// l'opérateur, pas une session sans demandeur.
+		if _, err := annuaire.VerifierIdentite(cfg.Annuaire, cfg.JetonDemandeur, cfg.Horloge().UTC()); err != nil {
+			return nil, fmt.Errorf("gate: jeton du demandeur refusé : %w", err)
+		}
+	}
 	g := &Gate{
 		cfg: cfg, journal: cfg.Journal, coffre: cfg.Coffre, charges: map[versionJeu]string{},
-		horloge: cfg.Horloge, log: cfg.Logger, backends: map[string]backend.Backend{},
+		horloge: cfg.Horloge, log: cfg.Logger, backends: map[string]backend.Backend{}, jetonsUtilises: map[string]bool{},
+	}
+	for emp := range cfg.JetonsConsommes {
+		g.jetonsUtilises[emp] = true
 	}
 	jeu := cfg.Jeu
 	g.jeu.Store(&jeu)
 	g.charges[versionJeu{jeu.Meta.ID, jeu.Meta.Version}] = jeu.Meta.Empreinte
 	// Contrat §3 : le journal est attaché au coffre dès l'ouverture.
 	g.coffre.Journaliser(g.journal)
+	g.coffre.AvantPurge(g.avantPurge)
 	sc := cfg.Session
+	if sc.Horloge == nil {
+		// Une seule horloge : l'ouverture de session (qui date la
+		// résolution du demandeur) et les appels.
+		sc.Horloge = cfg.Horloge
+	}
+	sc.AOuverture = g.ouvrir
 	fermeture := sc.AFermeture
 	sc.AFermeture = func(ss *mcp.ServerSession, motif string) {
 		if fermeture != nil {
 			fermeture(ss, motif)
 		}
-		ss.Close()
+		// Ni dans le gestionnaire de l'appel (ServerSession.Close attend
+		// la fin de tous les gestionnaires, celui-ci compris :
+		// interblocage), ni tout de suite après (le SDK retire l'appel des
+		// requêtes en cours juste avant d'écrire sa réponse : la fermeture
+		// la couperait). La session est déjà fermée pour l'engine, qui
+		// refuse tout appel ; la connexion suit après un délai de grâce.
+		time.AfterFunc(DelaiGraceFermeture, func() { ss.Close() })
 	}
 	g.sessions = session.Nouveau(sc, g.journal)
 
@@ -186,6 +244,14 @@ func (g *Gate) journaliserDemarrage() error {
 			r.Meta.Auteur, strings.Join(r.Noms(), ", "))}); err != nil {
 		return fmt.Errorf("gate: journal: %w", err)
 	}
+	if a := g.cfg.Annuaire; a != nil {
+		ref := a.Reference()
+		if _, err := g.journal.Ecrire(journal.Entree{Type: journal.AnnuaireCharge, SourceIdentite: a.Nom(),
+			Annuaire: &journal.RefAnnuaire{ID: ref.ID, Version: ref.Version, Empreinte: ref.Empreinte},
+			Message:  fmt.Sprintf("annuaire %s v%d %s (source %s)", ref.ID, ref.Version, ref.Empreinte, a.Nom())}); err != nil {
+			return fmt.Errorf("gate: journal: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -207,13 +273,28 @@ func (g *Gate) journaliserJeu(base journal.Entree, jeu directive.Jeu, contexte s
 }
 
 func (g *Gate) journaliserAttestation(nom string, a directive.Attestation, message string) error {
-	if _, err := g.journal.Ecrire(journal.Entree{Type: journal.AttestationT, Serveur: nom,
-		Attestation: journal.DepuisAttestation(a), Message: message}); err != nil {
+	en := journal.Entree{TS: g.horloge().UTC(), Type: journal.AttestationT, Serveur: nom,
+		Attestation: journal.DepuisAttestation(a), Message: message}
+	if !a.Valide() {
+		// Directives de l'évènement attestation_echouee.
+		if _, err := g.evenement(&en, directive.EntreeEvenement{Evenement: directive.EvAttestationEchouee,
+			Horodatage: en.TS, Serveur: nom, Attestation: a}); err != nil {
+			return fmt.Errorf("gate: journal: %w", err)
+		}
+	}
+	if _, err := g.journal.Ecrire(en); err != nil {
 		g.enPanne.Store(true)
 		g.log.Error("journal indisponible", "erreur", err)
 		return fmt.Errorf("gate: journal: %w", err)
 	}
 	return nil
+}
+
+// avantPurge consigne dans l'entrée purge la décision des directives de
+// l'évènement purge. Une purge n'est jamais refusée par une directive :
+// elle est notifiée et marquée.
+func (g *Gate) avantPurge(en *journal.Entree) {
+	g.evenement(en, directive.EntreeEvenement{Evenement: directive.EvPurge, Horodatage: en.TS})
 }
 
 // construireServeur expose chaque outil épinglé sous serveur__outil. Deux
@@ -289,6 +370,10 @@ func (g *Gate) gestionnaire(expose string) mcp.ToolHandler {
 // meta est le _meta de l'appel : seul sous_agent en est lu, pour le
 // journal ; rien n'en est transmis au serveur.
 func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string, brut json.RawMessage, meta mcp.Meta) *mcp.CallToolResult {
+	// Mesure de l'évaluation : horloge monotone du processus, jamais
+	// l'horloge de l'engine (qui peut être simulée) ; ne sert qu'au
+	// journal, jamais à Decide.
+	entreePipeline := time.Now()
 	if g.enPanne.Load() {
 		return refusEngine("Appel refusé : le journal de l'engine est indisponible ; aucun appel n'est transmis sans preuve.")
 	}
@@ -322,6 +407,9 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 		}
 		return refusEngine("Appel refusé : " + motifSession(err))
 	}
+	if ss != nil {
+		g.idsSession.LoadOrStore(ss, tour.SessionID())
+	}
 
 	// 3. Une seule lecture d'horloge ; dépôt au coffre avant l'entrée appel.
 	ts := g.horloge().UTC()
@@ -332,43 +420,114 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 		return refusEngine("Appel refusé : le coffre de l'engine est indisponible ; aucun appel n'est transmis sans preuve.")
 	}
 
-	// 4. Décider, sous le jeu actif à cet instant, lu une seule fois.
+	// 4. Décider, sous le jeu actif à cet instant, lu une seule fois. Tout
+	// ce que Decide v2 lit du registre vient de l'entrée épinglée du
+	// serveur : accès, étiquettes, version.
 	jeu := *g.jeu.Load()
-	etat := tour.Etat()
+	reg := g.cfg.Registre
+	srv, _ := reg.Serveur(serveur)
+	o, _ := srv.Outil(outil)
+	version, acces, etiquettes := reg.Version(), directive.Acces(o.Acces), srv.EtiquettesOutil(outil)
+	etat := g.completer(tour.Etat())
 	att := b.Attestation()
+	demandeur := g.demandeur(tour.SessionID())
+	sujets, nonResolus := g.resoudreSujets(ctx, o, args)
 	dec := directive.Decide(jeu, etat, directive.Appel{
 		Serveur: serveur, Outil: outil, Arguments: args, Attestation: att, Horodatage: ts,
+		Acces: acces, EtiquettesCible: etiquettes, VersionRegistre: version, SousAgentDeclare: sousAgent,
+		Demandeur: demandeur, Sujets: sujets,
 	})
 	// Contrôle du registre, toujours actif, même sans directive
 	// source_attestee pour ce serveur : refus d'origine registre.
 	dec, parRegistre := controle.Registre(dec, serveur, att)
-	decJ := journal.DepuisDecision(dec)
-	if parRegistre {
-		decJ.Origine = controle.OrigineRegistre
+	// Notifications des directives appliquées : remises avant toute
+	// transmission, chacune journalisée avec son statut de remise. Une
+	// notification si_echec: refuser non remise refuse l'appel.
+	remises, err := g.notifier(dec, journal.Entree{TS: ts, Session: tour.SessionID(), Seq: tour.Seq(), Appelant: etat.Appelant,
+		Serveur: serveur, OutilExpose: expose, Outil: outil}, directive.EvAppelOutil)
+	if err != nil {
+		g.enPanne.Store(true)
+		g.log.Error("journal indisponible, l'engine refuse désormais tout appel", "erreur", err)
+		return refusEngine("Appel refusé : le journal de l'engine est indisponible ; rien n'est transmis sans preuve.")
 	}
+	parNotification := false
+	if !parRegistre {
+		dec, parNotification = journal.ControleNotifications(dec, remises)
+	}
+	decJ := journal.DepuisDecision(dec)
+	switch {
+	case parRegistre:
+		decJ.Origine = controle.OrigineRegistre
+	case parNotification:
+		decJ.Origine = journal.OrigineNotification
+	}
+	// La décision est rendue : contrôles du registre et des notifications
+	// compris. La durée inclut l'attente du verrou de session, le dépôt au
+	// coffre, la résolution des personnes concernées et la remise des
+	// notifications ; pas la transmission.
+	decJ.DureeUs = (time.Since(entreePipeline).Nanoseconds() + 999) / 1000
 	entree := journal.Entree{
 		TS: ts, Type: journal.AppelT, Session: tour.SessionID(), Seq: tour.Seq(), Appelant: etat.Appelant,
 		SousAgentDeclare: sousAgent,
 		Jeu:              journal.DepuisJeu(jeu), Serveur: serveur, OutilExpose: expose, Outil: outil,
 		Appel: &journal.Appel{EmpreinteOrigine: dec.EmpreinteOrigine, EmpreinteTransmise: dec.EmpreinteTransmise,
 			ChampsRetires: dec.ChampsRetires},
-		Attestation: journal.DepuisAttestation(att),
-		EtatSession: journal.DepuisConsultations(etat.Consultations),
-		Decision:    decJ,
-		Resultat:    &journal.Resultat{Statut: journal.StatutNonTransmis},
+		Attestation:     journal.DepuisAttestation(att),
+		EtatSession:     journal.DepuisConsultations(etat.Consultations),
+		Decision:        decJ,
+		Resultat:        &journal.Resultat{Statut: journal.StatutNonTransmis},
+		VersionRegistre: version, Acces: string(acces), EtiquettesCible: nonVide(etiquettes),
+		Demandeur: journal.DepuisDemandeur(demandeur), Remises: remises,
+		Sujets: journal.DepuisSujets(sujets), SujetsNonResolus: nonResolus,
 	}
 
 	var rep *mcp.CallToolResult
+	transmettre := false
 	switch {
 	case parRegistre:
 		rep = g.refusRegistre(dec)
+	case parNotification:
+		rep = refusNotification(dec, remises)
 	case dec.Effet == directive.Refuser:
 		// 5.
 		rep = refusDirective(dec)
 	case dec.Effet == directive.AttendreValidation:
-		// 6.
-		rep = enAttente(dec)
+		// 6. Sans jeton, l'appel attend. Avec des jetons (reprise), ils
+		// sont vérifiés, l'entrée approbation est écrite, et l'appel ne
+		// part que si elle est acceptée.
+		jetons, lisibles := jetonsApprobation(meta)
+		if !lisibles {
+			g.alerte(serveur, outil, "_meta.approvalToken illisible (type, nombre ou longueur), ignoré")
+			rep = enAttente(dec, "jeton d'approbation illisible")
+			break
+		}
+		if len(jetons) == 0 {
+			rep = enAttente(dec, "")
+			break
+		}
+		appro := g.verifierValidation(dec, jetons, demandeur, ts)
+		if _, err := g.journal.Ecrire(journal.Entree{
+			TS: ts, Type: journal.ApprobationT, Session: entree.Session, Seq: entree.Seq, Appelant: entree.Appelant,
+			Serveur: serveur, OutilExpose: expose, Outil: outil, Approbation: appro, Demandeur: entree.Demandeur,
+		}); err != nil {
+			g.enPanne.Store(true)
+			g.log.Error("journal indisponible, l'engine refuse désormais tout appel", "erreur", err)
+			return refusEngine("Appel refusé : le journal de l'engine est indisponible ; rien n'est transmis sans preuve.")
+		}
+		if appro.Statut != journal.ApprobationAcceptee {
+			rep = enAttente(dec, appro.Motif)
+			break
+		}
+		entree.Approbation = appro
+		transmettre = true
 	default:
+		if _, ok := meta[CleJetonApprobation]; ok {
+			g.alerte(serveur, outil, "jeton d'approbation fourni pour un appel qui n'attend pas de validation : ignoré")
+		}
+		transmettre = true
+	}
+
+	if transmettre {
 		// 7. D'abord la trace chaînée de ce qui va partir : sans elle,
 		// rien ne part.
 		if _, err := g.journal.Ecrire(journal.Entree{
@@ -387,6 +546,7 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 		})
 		entree.Resultat = &journal.Resultat{Statut: string(c.Resultat), EmpreinteReponse: c.EmpreinteReponse,
 			DureeMs: time.Since(debut).Milliseconds(), Source: sourceDeclaree(retour.Reponse)}
+		g.retenir(entree)
 		if retour.Err != nil {
 			g.log.Warn("appel au backend", "serveur", serveur, "outil", outil, "resultat", c.Resultat, "erreur", retour.Err)
 		}
@@ -411,8 +571,176 @@ func (g *Gate) suivre(ss *mcp.ServerSession) {
 	}
 	if _, deja := g.suivies.LoadOrStore(ss, struct{}{}); !deja {
 		g.sessions.Suivre(ss)
+		go func() {
+			ss.Wait()
+			if id, ok := g.idsSession.LoadAndDelete(ss); ok {
+				g.complements.Delete(id)
+				g.demandeurs.Delete(id)
+			}
+		}()
 	}
 }
+
+// ouvrir complète l'entrée session_ouverte : source d'identité, référence
+// de l'annuaire, et demandeur prouvé par le jeton remis au lancement, avec
+// ses groupes résolus à la date d'ouverture. Un jeton qui ne se vérifie
+// plus (expiré depuis le lancement) laisse la session sans demandeur ; le
+// message le dit, sans citer le jeton.
+func (g *Gate) ouvrir(en *journal.Entree) string {
+	var d *directive.Demandeur
+	if a := g.cfg.Annuaire; a != nil {
+		ref := a.Reference()
+		en.SourceIdentite = a.Nom()
+		en.Annuaire = &journal.RefAnnuaire{ID: ref.ID, Version: ref.Version, Empreinte: ref.Empreinte}
+		if g.cfg.JetonDemandeur == "" {
+			en.Message = "aucun jeton de demandeur : demandeur non résolu"
+		} else if id, err := annuaire.VerifierIdentite(a, g.cfg.JetonDemandeur, en.TS); err != nil {
+			en.Message = "jeton du demandeur refusé (" + err.Error() + ") : demandeur non résolu"
+		} else {
+			fiche, _ := a.Resoudre(id.Demandeur, en.TS)
+			d = &directive.Demandeur{Identite: fiche.Identite, Groupes: fiche.Groupes}
+			en.Demandeur = journal.DepuisDemandeur(d)
+			en.Message = "demandeur " + id.Demandeur + " (jeton signé par " + id.Emetteur + ")"
+			g.demandeurs.Store(en.Session, d)
+		}
+	}
+	// Directives de l'évènement ouverture_session.
+	dec, err := g.evenement(en, directive.EntreeEvenement{Evenement: directive.EvOuvertureSession, Horodatage: en.TS,
+		Appelant: en.Appelant, Demandeur: d})
+	if err != nil {
+		return "ouverture refusée : journal indisponible"
+	}
+	if dec.Effet == directive.Refuser {
+		return "ouverture refusée : " + dec.Motif
+	}
+	return ""
+}
+
+// evenement évalue un évènement (autre qu'appel_outil) sous le jeu actif,
+// remet ses notifications et consigne la décision dans en, l'entrée qui
+// journalise l'évènement (session_ouverte, attestation, purge) : jeu,
+// décision, remises. Rien n'est consigné si aucune directive du jeu ne
+// porte sur l'évènement. Une notification si_echec: refuser non remise
+// refuse l'ouverture.
+func (g *Gate) evenement(en *journal.Entree, e directive.EntreeEvenement) (directive.Decision, error) {
+	jeu := *g.jeu.Load()
+	if !porteSur(jeu, e.Evenement) {
+		return directive.Decision{Effet: directive.Autoriser}, nil
+	}
+	dec := directive.DecideEvenement(jeu, e)
+	remises, err := g.notifier(dec, journal.Entree{TS: e.Horodatage, Session: en.Session, Appelant: en.Appelant, Serveur: en.Serveur}, e.Evenement)
+	if err != nil {
+		g.enPanne.Store(true)
+		g.log.Error("journal indisponible, l'engine refuse désormais tout appel", "erreur", err)
+		return dec, err
+	}
+	dec, parNotification := journal.ControleNotifications(dec, remises)
+	en.Jeu, en.Decision, en.Remises = journal.DepuisJeu(jeu), journal.DepuisDecision(dec), remises
+	if parNotification {
+		en.Decision.Origine = journal.OrigineNotification
+	}
+	return dec, nil
+}
+
+// porteSur dit si une directive du jeu, quel que soit son statut, porte
+// sur l'évènement.
+func porteSur(jeu directive.Jeu, ev directive.Evenement) bool {
+	for _, d := range jeu.Directives {
+		if d.EstV2() && d.Declencheur.Evenement == ev {
+			return true
+		}
+	}
+	return false
+}
+
+// demandeur rend le demandeur résolu à l'ouverture de la session, ou nil.
+func (g *Gate) demandeur(session string) *directive.Demandeur {
+	if v, ok := g.demandeurs.Load(session); ok {
+		return v.(*directive.Demandeur)
+	}
+	return nil
+}
+
+// complement est ce que l'engine consigne d'une consultation en plus de ce
+// que la session garde. Il est pris dans l'entrée appel qui l'a produite,
+// avec les mêmes valeurs que celles que le rejeu relit dans cette entrée
+// (rejeu.ReconstituerEtat) : étiquettes et version du registre au moment
+// de l'appel, source déclarée.
+type complement struct {
+	etiquettes []string
+	version    string
+	source     *directive.SourceReponse
+}
+
+// complementsSession est tenu verrou de session : un seul tour à la fois
+// y lit ou y écrit.
+type complementsSession struct {
+	mu     sync.Mutex
+	parSeq map[int]complement
+}
+
+// retenir garde le complément d'une consultation, à partir de l'entrée
+// appel qui la journalise.
+func (g *Gate) retenir(en journal.Entree) {
+	v, _ := g.complements.LoadOrStore(en.Session, &complementsSession{parSeq: map[int]complement{}})
+	cs := v.(*complementsSession)
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+	cs.parSeq[en.Seq] = complement{etiquettes: nonVide(en.EtiquettesCible), version: en.VersionRegistre,
+		source: en.Resultat.Source.VersDirective()}
+}
+
+// completer ajoute aux consultations de l'état ce que l'engine en a
+// retenu. Une consultation sans complément garde des étiquettes inconnues
+// (version vide) : Decide la traite comme indéterminée.
+func (g *Gate) completer(etat directive.EtatSession) directive.EtatSession {
+	v, ok := g.complements.Load(etat.ID)
+	if !ok {
+		return etat
+	}
+	cs := v.(*complementsSession)
+	cs.mu.Lock()
+	defer cs.mu.Unlock()
+	for i := range etat.Consultations {
+		if c, ok := cs.parSeq[etat.Consultations[i].Seq]; ok {
+			etat.Consultations[i].Etiquettes, etat.Consultations[i].VersionRegistre, etat.Consultations[i].Source =
+				c.etiquettes, c.version, c.source
+		}
+	}
+	return etat
+}
+
+func nonVide(l []string) []string {
+	if len(l) == 0 {
+		return nil
+	}
+	return l
+}
+
+// notifier remet chaque notification que la décision demande, dans
+// l'ordre canonique de la décision, par le canal des abonnés du journal.
+// base porte la session, le seq et la cible.
+func (g *Gate) notifier(dec directive.Decision, base journal.Entree, ev directive.Evenement) ([]journal.Remise, error) {
+	var out []journal.Remise
+	evenement := ""
+	if ev != directive.EvAppelOutil {
+		evenement = string(ev)
+	}
+	for _, n := range journal.DepuisDecision(dec).Notifications {
+		en := base
+		en.Notification = &journal.Remise{Notification: n, Evenement: evenement}
+		ecrite, err := g.journal.EcrireRemise(en)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, *ecrite.Notification)
+	}
+	return out, nil
+}
+
+// Alerter écrit une entrée alerte au journal (par exemple, pour signaler
+// une horloge simulée).
+func (g *Gate) Alerter(message string) { g.alerte("", "", message) }
 
 func (g *Gate) alerte(serveur, outil, message string) {
 	if _, err := g.journal.Ecrire(journal.Entree{Type: journal.AlerteT, Serveur: serveur, Outil: outil, Message: message}); err != nil {
@@ -459,8 +787,8 @@ const LongueurMaxSousAgent = 128
 // sousAgentDeclare lit _meta.sous_agent. Absent : "" et lisible. Une
 // valeur qui n'est pas une chaîne UTF-8 de 1 à 128 octets sans caractère
 // de contrôle n'est pas journalisée. La valeur n'est qu'une déclaration de
-// l'agent : elle ne passe ni à Decide, ni à l'état de session, ni au
-// serveur.
+// l'agent : elle passe à Decide (feuille sous_agent_declare, qui ne sert
+// qu'à resserrer) et au journal, jamais à l'état de session ni au serveur.
 func sousAgentDeclare(meta mcp.Meta) (string, bool) {
 	v, ok := meta[CleSousAgent]
 	if !ok || v == nil {
@@ -516,7 +844,7 @@ const (
 	OrigineDirect      = "direct" // obtenue de l'API officielle pendant ce processus
 	OrigineRejeu       = "rejeu"  // lue dans un enregistrement daté
 	OrigineAucune      = "aucune" // aucune donnée servie
-	OrigineNonDeclaree = "non_declaree"
+	OrigineNonDeclaree = journal.OrigineNonDeclaree
 )
 
 // sourceDeclaree reprend la provenance que le serveur déclare dans
