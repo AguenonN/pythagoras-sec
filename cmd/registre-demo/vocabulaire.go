@@ -56,9 +56,35 @@ type groupesRH struct {
 
 // GenererVocabulaire lit les trois sources sous racine.
 func GenererVocabulaire(racine string) (*Vocabulaire, error) {
+	return generer(racine, false)
+}
+
+// GenererVocabulaireEtendu est GenererVocabulaire avec les étiquettes des
+// serveurs ajoutés par l'équipe (registredemo.FichierSupplementaires).
+func GenererVocabulaireEtendu(racine string) (*Vocabulaire, error) {
+	return generer(racine, true)
+}
+
+func generer(racine string, etendu bool) (*Vocabulaire, error) {
 	et, err := registredemo.LireEtiquettes(filepath.Join(racine, registredemo.FichierEtiquettes))
 	if err != nil {
 		return nil, err
+	}
+	if etendu {
+		supp, err := registredemo.LireSupplementaires(racine)
+		if err != nil {
+			return nil, err
+		}
+		if e := supp.Etiquettes; e != nil {
+			fusion := *et
+			fusion.Serveurs, fusion.Outils = map[string][]string{}, map[string][]string{}
+			for _, m := range []struct{ de, vers map[string][]string }{{et.Serveurs, fusion.Serveurs}, {e.Serveurs, fusion.Serveurs}, {et.Outils, fusion.Outils}, {e.Outils, fusion.Outils}} {
+				for k, v := range m.de {
+					m.vers[k] = append(m.vers[k], v...)
+				}
+			}
+			et = &fusion
+		}
 	}
 	an, err := annuaire.LireSourceDemo(filepath.Join(racine, fichierAnnuaire))
 	if err != nil {

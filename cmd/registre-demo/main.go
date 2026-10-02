@@ -49,6 +49,7 @@ func lancer() error {
 	sortie := flag.String("sortie", "demo", "répertoire des registres, relatif à la racine")
 	gels := flag.String("gels", registredemo.DossierGelsLocal, "enregistrements de gels-avoirs, relatif à la racine")
 	enr := flag.String("enregistrements", "", "répertoire des copies de travail des enregistrements (<dir>/<serveur>), relatif à la racine ; vide : les enregistrements versionnés")
+	etendu := flag.Bool("etendu", false, "avec -vocabulaire : y ajoute les étiquettes de "+registredemo.FichierSupplementaires)
 	catalogue := flag.String("catalogue", "", "écrit aussi le catalogue du compilateur à ce chemin, relatif à la racine")
 	vocabulaire := flag.String("vocabulaire", "", "écrit seulement le vocabulaire du compilateur à ce chemin, relatif à la racine")
 	flag.Parse()
@@ -61,11 +62,17 @@ func lancer() error {
 	}
 	if *vocabulaire != "" {
 		v, err := GenererVocabulaire(r)
+		if err == nil && *etendu {
+			v, err = GenererVocabulaireEtendu(r)
+		}
 		if err != nil {
 			return err
 		}
 		b, err := EncoderVocabulaire(v)
 		if err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(r, *vocabulaire)), 0o755); err != nil {
 			return err
 		}
 		if err := ecrire(filepath.Join(r, *vocabulaire), b); err != nil {
@@ -75,11 +82,15 @@ func lancer() error {
 			*vocabulaire, len(v.Etiquettes), len(v.Roles), len(v.Groupes))
 		return nil
 	}
+	supp, err := registredemo.LireSupplementaires(r)
+	if err != nil {
+		return err
+	}
 	m, err := registredemo.LireManifeste(filepath.Join(r, *manifeste))
 	if err != nil {
 		return err
 	}
-	demo, attaque, err := registredemo.Generer(m, registredemo.Options{Racine: r, Gels: *gels, Enregistrements: *enr})
+	demo, attaque, err := registredemo.Generer(m, registredemo.Options{Racine: r, Gels: *gels, Enregistrements: *enr, Supplementaires: supp})
 	if err != nil {
 		return err
 	}
@@ -102,6 +113,9 @@ func lancer() error {
 	}
 	if *catalogue != "" {
 		if b, err = registredemo.EncoderCatalogue(registredemo.CatalogueDepuis(demo)); err != nil {
+			return err
+		}
+		if err := os.MkdirAll(filepath.Dir(filepath.Join(r, *catalogue)), 0o755); err != nil {
 			return err
 		}
 		if err := ecrire(filepath.Join(r, *catalogue), b); err != nil {

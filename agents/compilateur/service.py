@@ -63,8 +63,10 @@ from .catalogue import CatalogueInvalide
 ICI = os.path.dirname(os.path.abspath(__file__))
 RACINE = directive_go.RACINE
 DOSSIER = os.path.join("demo", "execution", "compilation")
-CATALOGUE = os.path.join(ICI, "exemples", "catalogue-demo.json")
-VOCABULAIRE = os.path.join(ICI, "exemples", "vocabulaire-demo.json")
+# COMPILATEUR_CATALOGUE et COMPILATEUR_VOCABULAIRE : le catalogue et le vocabulaire étendus
+# des serveurs ajoutés par scripts/nouveau-serveur.sh (docs/demo/etendre.md).
+CATALOGUE = os.environ.get("COMPILATEUR_CATALOGUE") or os.path.join(ICI, "exemples", "catalogue-demo.json")
+VOCABULAIRE = os.environ.get("COMPILATEUR_VOCABULAIRE") or os.path.join(ICI, "exemples", "vocabulaire-demo.json")
 
 ETATS = (c2.QUESTIONS, c2.NON_OBSERVABLE, c2.JEU, c2.REFUSE, c2.ERREURS)
 CHAMPS_REQUETE = ("conversation", "texte", "fondement", "auteur", "reponses", "jeu_existant", "date_effet")

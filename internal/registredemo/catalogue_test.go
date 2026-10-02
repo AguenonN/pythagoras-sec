@@ -62,6 +62,15 @@ func TestCatalogueVersionne(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	// Les serveurs ajoutés par scripts/nouveau-serveur.sh ont leur propre
+	// catalogue (demo/execution/extension) : seuls ceux de la démo comptent.
+	var base []registre.Serveur
+	for _, s := range demo.Serveurs {
+		if contient(Serveurs, s.Nom) {
+			base = append(base, s)
+		}
+	}
+	demo.Serveurs = base
 	if duRegistre, _ := EncoderCatalogue(CatalogueDepuis(demo)); !bytes.Equal(versionne, duRegistre) {
 		t.Fatalf("%s diverge de demo/registre.json", cheminCatalogue)
 	}
