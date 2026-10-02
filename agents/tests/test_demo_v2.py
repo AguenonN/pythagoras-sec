@@ -9,7 +9,7 @@ from unittest import mock
 
 from compilateur import demo, scenarios_v2
 
-from .aides import CATALOGUE_DEMO, CATALOGUE_V2_ENREGISTRE, ClientScripte, appel, reponse
+from .aides import CATALOGUE_DEMO, CATALOGUE_V2_ENREGISTRE, VOCABULAIRE_V2_ENREGISTRE, ClientScripte, appel, reponse
 
 
 def lancer(saisies, *args, schema=("--v2",), catalogue=CATALOGUE_DEMO):
@@ -52,7 +52,8 @@ class TestDemoV2(unittest.TestCase):
                    rep["Quel est le fondement juridique applicable pour cette règle ?"],
                    rep["Quel fuseau horaire appliquer pour le week-end ?"],
                    "peut-être", "refuser"]
-        rc, ecrit, jeu, consigne, reste = lancer(saisies, "--prefixe-id", "W", catalogue=CATALOGUE_V2_ENREGISTRE)
+        rc, ecrit, jeu, consigne, reste = lancer(saisies, "--prefixe-id", "W", "--vocabulaire", VOCABULAIRE_V2_ENREGISTRE,
+                                                 catalogue=CATALOGUE_V2_ENREGISTRE)
         self.assertEqual(rc, 0, ecrit)
         self.assertEqual(reste, [])
         self.assertIn("besoin de précisions", ecrit)

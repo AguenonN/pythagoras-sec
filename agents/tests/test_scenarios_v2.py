@@ -12,15 +12,15 @@ import unittest
 from compilateur import compilateur_v2 as c2
 from compilateur import directive_go, mistral, scenarios_v2, vocabulaire
 
-from .aides import CATALOGUE_V2_ENREGISTRE
+from .aides import CATALOGUE_V2_ENREGISTRE, VOCABULAIRE_V2_ENREGISTRE
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 ATTENDUS = os.path.join(ICI, "attendus", "v2")
 
 
 def derouler_gele(scenario, client):
-    """Déroule sur le catalogue gelé des enregistrements (voir aides)."""
-    vocab = vocabulaire.Vocabulaire.lire(CATALOGUE_V2_ENREGISTRE, scenarios_v2.COMPLEMENT)
+    """Déroule sur le catalogue et le vocabulaire gelés des enregistrements (voir aides)."""
+    vocab = vocabulaire.Vocabulaire.lire(CATALOGUE_V2_ENREGISTRE, VOCABULAIRE_V2_ENREGISTRE)
     return scenarios_v2.derouler(scenario, client, vocab)
 
 

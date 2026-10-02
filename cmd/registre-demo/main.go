@@ -15,6 +15,15 @@
 // internal/registredemo vérifie qu'il ne diverge pas du registre.
 //
 //	go run ./cmd/registre-demo -catalogue agents/compilateur/exemples/catalogue-demo.json
+//
+// Avec -vocabulaire, écrit seulement le vocabulaire du compilateur
+// (étiquettes de demo/etiquettes.json, rôles et groupes de
+// demo/annuaire-source.json, groupes des personnes concernées du
+// référentiel RH) : il ne dépend que de fichiers versionnés, aucun
+// binaire n'est lu. Il est versionné, et un test vérifie qu'il ne diverge
+// pas de ses sources.
+//
+//	go run ./cmd/registre-demo -vocabulaire agents/compilateur/exemples/vocabulaire-demo.json
 package main
 
 import (
@@ -41,6 +50,7 @@ func lancer() error {
 	gels := flag.String("gels", registredemo.DossierGelsLocal, "enregistrements de gels-avoirs, relatif à la racine")
 	enr := flag.String("enregistrements", "", "répertoire des copies de travail des enregistrements (<dir>/<serveur>), relatif à la racine ; vide : les enregistrements versionnés")
 	catalogue := flag.String("catalogue", "", "écrit aussi le catalogue du compilateur à ce chemin, relatif à la racine")
+	vocabulaire := flag.String("vocabulaire", "", "écrit seulement le vocabulaire du compilateur à ce chemin, relatif à la racine")
 	flag.Parse()
 	if flag.NArg() > 0 {
 		return errors.New("arguments inattendus")
@@ -48,6 +58,22 @@ func lancer() error {
 	r, err := filepath.Abs(*racine)
 	if err != nil {
 		return err
+	}
+	if *vocabulaire != "" {
+		v, err := GenererVocabulaire(r)
+		if err != nil {
+			return err
+		}
+		b, err := EncoderVocabulaire(v)
+		if err != nil {
+			return err
+		}
+		if err := ecrire(filepath.Join(r, *vocabulaire), b); err != nil {
+			return err
+		}
+		fmt.Fprintf(os.Stderr, "registre-demo: %s (%d étiquettes, %d rôles, %d groupes)\n",
+			*vocabulaire, len(v.Etiquettes), len(v.Roles), len(v.Groupes))
+		return nil
 	}
 	m, err := registredemo.LireManifeste(filepath.Join(r, *manifeste))
 	if err != nil {

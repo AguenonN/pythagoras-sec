@@ -25,6 +25,13 @@ CATALOGUE_ENREGISTRE = os.path.join(ICI, "donnees", "catalogue-enregistrements.j
 # l'embarque. Copie de feat/compilateur-v2:agents/compilateur/exemples/catalogue-demo.json.
 CATALOGUE_V2_ENREGISTRE = os.path.join(ICI, "donnees", "catalogue-v2-enregistrements.json")
 
+# Vocabulaire (étiquettes, rôles, groupes) écrit à la main, tel qu'il était
+# quand ces mêmes scénarios ont été enregistrés ; gelé pour la même raison :
+# exemples/vocabulaire-demo.json est désormais généré depuis le registre et
+# l'annuaire (go run ./cmd/registre-demo -vocabulaire ...), et chaque requête
+# enregistrée embarque le vocabulaire.
+VOCABULAIRE_V2_ENREGISTRE = os.path.join(ICI, "donnees", "vocabulaire-v2-enregistrements.json")
+
 
 def catalogue_exemple():
     return catalogue.Catalogue.lire(CATALOGUE_ENREGISTRE)
