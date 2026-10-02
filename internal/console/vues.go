@@ -1,14 +1,12 @@
 package console
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 	"time"
 
 	"mcprogue/internal/directive"
 	"mcprogue/internal/journal"
-	"mcprogue/internal/rejeu"
 )
 
 // Badges de la frise, dans la langue de l'écran.
@@ -46,6 +44,7 @@ type AppVue struct {
 	Version   int                 `json:"version"`
 	Fondement directive.Fondement `json:"fondement"`
 	Texte     string              `json:"texte,omitempty"` // texte du juriste, si le jeu est connu
+	Titre     string              `json:"titre,omitempty"`
 	Effet     string              `json:"effet"`
 	Declench  bool                `json:"declenchee"`
 	Appliquee bool                `json:"appliquee"`
@@ -84,6 +83,40 @@ type Etape struct {
 	Validation  *journal.Validation  `json:"validation,omitempty"`
 	Alertes     []string             `json:"alertes,omitempty"`
 	Suspect     bool                 `json:"suspect,omitempty"` // après le premier écart de chaîne
+
+	// Ce que la décision porte au journal et que l'écran montre.
+	OrigineLibelle string          `json:"origine_libelle,omitempty"`
+	Etiquettes     []string        `json:"etiquettes,omitempty"`
+	Notifications  []NotifVue      `json:"notifications,omitempty"`
+	Approbations   []ApprobVue     `json:"approbations,omitempty"`
+	DureeUs        int64           `json:"duree_us"`                // 0 : non mesurée (ancien journal)
+	ValidePar      []Valideur      `json:"valide_par,omitempty"`    // approbation acceptée, appel transmis
+	ValideAu       int             `json:"valide_au_seq,omitempty"` // appel en attente : n° de l'appel repris
+	Sujets         []journal.Sujet `json:"sujets,omitempty"`
+	NonResolus     int             `json:"sujets_non_resolus,omitempty"`
+}
+
+// NotifVue est une notification demandée par une décision, avec le sort
+// que le journal consigne pour sa remise.
+type NotifVue struct {
+	Directive string `json:"directive"`
+	Version   int    `json:"version"`
+	Role      string `json:"destinataire_role"`
+	Rythme    string `json:"rythme"`
+	SiEchec   string `json:"si_echec"`
+	Statut    string `json:"statut,omitempty"` // remise | echec | planifiee ; vide : non consignée
+	Canal     string `json:"canal,omitempty"`
+	Remis     int    `json:"remis,omitempty"`
+}
+
+// ApprobVue est une entrée approbation du journal : acceptée ou refusée.
+type ApprobVue struct {
+	TS         time.Time          `json:"ts"`
+	Statut     string             `json:"statut"`
+	Motif      string             `json:"motif,omitempty"`
+	Roles      []string           `json:"roles,omitempty"`
+	QuatreYeux bool               `json:"quatre_yeux,omitempty"`
+	Valideurs  []journal.Valideur `json:"valideurs,omitempty"`
 }
 
 // ServeurVue est un serveur rencontré, avec son attestation.
@@ -103,22 +136,31 @@ type SessionResume struct {
 
 // VueChaine est l'écran 1 : la chaîne d'une session.
 type VueChaine struct {
-	Journal    string             `json:"journal"`
-	Session    string             `json:"session"`
-	Appelant   string             `json:"appelant"`
-	Demandeur  *journal.Demandeur `json:"demandeur,omitempty"`
-	Ouverte    time.Time          `json:"ouverte"`
-	Fermee     bool               `json:"fermee"`
-	Fermeture  string             `json:"fermeture,omitempty"`
-	Jeu        *journal.RefJeu    `json:"-"`
-	JeuConnu   bool               `json:"-"`
-	Regles     *Regles            `json:"regles,omitempty"` // règles en vigueur ; absent si non disponibles
-	SousAgents []string           `json:"sous_agents"`
-	Serveurs   []ServeurVue       `json:"serveurs"`
-	Etapes     []Etape            `json:"etapes"`
-	Verif      Verification       `json:"verification"`
-	Ecart      int                `json:"premier_ecart"`
-	Signature  string             `json:"signature"` // change quand le journal change
+	Journal   string             `json:"journal"`
+	Session   string             `json:"session"`
+	Appelant  string             `json:"appelant"`
+	Demandeur *journal.Demandeur `json:"demandeur,omitempty"`
+	// DemandeurFiche : nom, groupes et rôles d'après l'annuaire signé ;
+	// SourceIdentite : d'où l'identité a été prouvée (journal).
+	DemandeurFiche *FicheDemandeur      `json:"demandeur_fiche,omitempty"`
+	SourceIdentite string               `json:"source_identite,omitempty"`
+	AnnuaireRef    *journal.RefAnnuaire `json:"annuaire,omitempty"`
+	Message        string               `json:"message,omitempty"`
+	Demande        string               `json:"demande,omitempty"` // etat.json
+	StatutSession  string               `json:"statut_session,omitempty"`
+	Notifications  []NotifVue           `json:"notifications,omitempty"` // toutes celles de la session
+	Ouverte        time.Time            `json:"ouverte"`
+	Fermee         bool                 `json:"fermee"`
+	Fermeture      string               `json:"fermeture,omitempty"`
+	Jeu            *journal.RefJeu      `json:"-"`
+	JeuConnu       bool                 `json:"-"`
+	Regles         *Regles              `json:"regles,omitempty"` // règles en vigueur ; absent si non disponibles
+	SousAgents     []string             `json:"sous_agents"`
+	Serveurs       []ServeurVue         `json:"serveurs"`
+	Etapes         []Etape              `json:"etapes"`
+	Verif          Verification         `json:"verification"`
+	Ecart          int                  `json:"premier_ecart"`
+	Signature      string               `json:"signature"` // change quand le journal change
 }
 
 // Regles décrit les règles en vigueur pour l'écran : depuis quand, et par qui.
@@ -332,223 +374,4 @@ func liens(e journal.Entree, jeu *directive.Jeu) []Lien {
 	}
 	sort.SliceStable(out, func(i, j int) bool { return out[i].Seq < out[j].Seq })
 	return out
-}
-
-// Chaine construit l'écran 1 pour une session.
-func Chaine(st *Etat, jeux []JeuCharge, session string) (*VueChaine, bool) {
-	v := &VueChaine{Journal: st.Journal.ID, Session: session, Verif: st.Verif, Ecart: st.Verif.PremierEcart(),
-		SousAgents: []string{}, Serveurs: []ServeurVue{}, Etapes: []Etape{}}
-	trouvee := false
-	transmis := map[int]bool{}
-	attestations := map[string]*journal.Attestation{}
-	ordre := []string{}
-	note := func(s string, a *journal.Attestation) {
-		if _, ok := attestations[s]; !ok {
-			ordre = append(ordre, s)
-		}
-		if a != nil || attestations[s] == nil {
-			attestations[s] = a
-		}
-	}
-	for _, e := range st.Entrees {
-		if e.Type == journal.AttestationT && e.Serveur != "" {
-			note(e.Serveur, e.Attestation)
-		}
-		if e.Session == session && e.Type == journal.TransmissionT {
-			transmis[e.Seq] = true
-		}
-	}
-	vusSA := map[string]bool{}
-	for i, e := range st.Entrees {
-		if e.Session != session {
-			continue
-		}
-		switch e.Type {
-		case journal.SessionOuverte:
-			trouvee = true
-			v.Appelant, v.Ouverte = e.Appelant, e.TS
-			v.Demandeur = e.Demandeur
-		case journal.SessionFermee:
-			v.Fermee, v.Fermeture = true, e.Message
-		case journal.AppelT:
-			trouvee = true
-			if e.Decision == nil {
-				continue
-			}
-			if v.Jeu == nil && e.Jeu != nil {
-				v.Jeu = e.Jeu
-				j, ok := trouverJeu(jeux, e.Jeu)
-				v.JeuConnu = ok
-				v.Regles = reglesDe(j)
-			}
-			if v.Demandeur == nil && e.Demandeur != nil {
-				v.Demandeur = e.Demandeur
-			}
-			jeu, _ := trouverJeu(jeux, e.Jeu)
-			b := badge(e)
-			et := Etape{Index: i, Numero: i + 1, Prev: e.Prev, Acces: e.Acces, Seq: e.Seq, TS: e.TS, SousAgent: e.SousAgentDeclare, Serveur: e.Serveur, Outil: e.Outil,
-				Attestation: e.Attestation, Effet: e.Decision.Effet, Origine: e.Decision.Origine, Motif: e.Decision.Motif,
-				Badge: b, Libelle: libelleBadge[b], Transmis: transmis[e.Seq], Alertes: e.Decision.Alertes,
-				Validation: e.Decision.Validation, Apps: []AppVue{},
-				Suspect: v.Ecart >= 0 && i >= v.Ecart}
-			if e.Resultat != nil {
-				et.Statut, et.Source, et.DureeMs = e.Resultat.Statut, e.Resultat.Source, e.Resultat.DureeMs
-			}
-			if e.Appel != nil {
-				et.Champs = e.Appel.ChampsRetires
-				et.Empreinte = e.Appel.EmpreinteTransmise
-			}
-			for _, a := range e.Decision.Applications {
-				et.Evaluees++
-				if a.Appliquee {
-					et.Appliquees++
-				}
-				if a.Indetermine {
-					et.Indeterm++
-				}
-				av := AppVue{ID: a.ID, Version: a.Version, Fondement: a.Fondement, Effet: a.Effet, Declench: a.Declenchee,
-					Appliquee: a.Appliquee, Resultat: a.Resultat, Motif: a.Motif}
-				if len(a.Fondements) > 0 {
-					av.Fondement = a.Fondements[0]
-				}
-				if d := directiveDu(jeu, a.ID, a.Version); d != nil {
-					av.Texte = d.TexteFR
-				}
-				et.Apps = append(et.Apps, av)
-			}
-			et.Liens = liens(e, jeu)
-			v.Etapes = append(v.Etapes, et)
-			if e.SousAgentDeclare != "" && !vusSA[e.SousAgentDeclare] {
-				vusSA[e.SousAgentDeclare] = true
-				v.SousAgents = append(v.SousAgents, e.SousAgentDeclare)
-			}
-			if e.Attestation != nil {
-				note(e.Serveur, e.Attestation)
-			} else {
-				note(e.Serveur, nil)
-			}
-		}
-	}
-	if !trouvee {
-		return nil, false
-	}
-	for _, s := range ordre {
-		v.Serveurs = append(v.Serveurs, ServeurVue{Nom: s, Attestation: attestations[s]})
-	}
-	if n := len(st.Entrees); n > 0 {
-		v.Signature = fmt.Sprintf("%d:%s", n, st.Entrees[n-1].MAC)
-	}
-	return v, true
-}
-
-// ---------------------------------------------------------------------------
-// Écran 2 : poste conseiller
-// ---------------------------------------------------------------------------
-
-// Cout est le coût de la règle pour une session.
-type Cout struct {
-	Appels            int     `json:"appels"`
-	Refuses           int     `json:"refuses"`
-	Caviardes         int     `json:"caviardes"`
-	Validations       int     `json:"validations"`
-	ChampsRetires     int     `json:"champs_retires"`
-	NonRejoues        int     `json:"non_rejoues"`
-	EvaluationMoyenne float64 `json:"evaluation_moyenne_ms"` // temps de Decide, mesuré au rejeu
-	EvaluationMax     float64 `json:"evaluation_max_ms"`
-	ServeursMs        int64   `json:"serveurs_ms"` // durée des consultations, hors règle
-}
-
-// VuePoste est l'écran 2.
-type VuePoste struct {
-	*VueChaine
-	Reponse Reponse `json:"reponse"`
-	Cout    Cout    `json:"cout"`
-}
-
-// Poste construit l'écran 2. Le temps ajouté par la règle n'est pas
-// journalisé : il est mesuré en rejouant chaque décision (Decide est pure),
-// ce qui en donne l'ordre de grandeur, pas la mesure de l'appel d'origine.
-func Poste(st *Etat, jeux []JeuCharge, session string) (*VuePoste, bool) {
-	c, ok := Chaine(st, jeux, session)
-	if !ok {
-		return nil, false
-	}
-	p := &VuePoste{VueChaine: c}
-	var somme, max time.Duration
-	var n int
-	for _, e := range c.Etapes {
-		p.Cout.Appels++
-		switch e.Badge {
-		case BadgeRefuse, BadgeNonAttesta:
-			p.Cout.Refuses++
-		case BadgeCaviarde:
-			p.Cout.Caviardes++
-		case BadgeAttente:
-			p.Cout.Validations++
-		}
-		p.Cout.ServeursMs += e.DureeMs
-		p.Cout.ChampsRetires += len(e.Champs)
-	}
-	cat := rejeu.Catalogue{}
-	for _, j := range jeux {
-		cat = append(cat, j.Jeu)
-	}
-	purges := rejeu.PurgesChainees(st.Entrees)
-	for _, en := range st.Entrees {
-		if en.Type != journal.AppelT || en.Session != session || en.Jeu == nil {
-			continue
-		}
-		t0 := time.Now()
-		r, err := rejeu.Rejouer(en, st.Coffre, cat, purges, rejeu.Options{})
-		d := time.Since(t0)
-		if err != nil || !r.Rejouable {
-			p.Cout.NonRejoues++
-			continue
-		}
-		somme += d
-		if d > max {
-			max = d
-		}
-		n++
-	}
-	if n > 0 {
-		p.Cout.EvaluationMoyenne = float64(somme) / float64(n) / float64(time.Millisecond)
-		p.Cout.EvaluationMax = float64(max) / float64(time.Millisecond)
-	}
-	p.Reponse = reponseFinale(c)
-	return p, true
-}
-
-// Reponse est la réponse au conseiller. Le texte écrit par l'agent n'est pas
-// au journal (seule l'empreinte de la réponse d'un serveur l'est) : la
-// console donne ce que l'engine a décidé, jamais un texte inventé.
-type Reponse struct {
-	Badge       string   `json:"badge"`
-	Titre       string   `json:"titre"`
-	Paragraphes []string `json:"paragraphes"`
-}
-
-// reponseFinale résume ce que l'agent a reçu au dernier appel de la session.
-func reponseFinale(c *VueChaine) Reponse {
-	if len(c.Etapes) == 0 {
-		return Reponse{Badge: BadgeIndispo, Titre: "Aucun appel dans cette session.", Paragraphes: []string{}}
-	}
-	e := c.Etapes[len(c.Etapes)-1]
-	r := Reponse{Badge: e.Badge, Paragraphes: []string{}}
-	switch e.Badge {
-	case BadgeRefuse:
-		r.Titre = fmt.Sprintf("Demande refusée : l'appel %s n'a pas été transmis.", e.Outil)
-	case BadgeNonAttesta:
-		r.Titre = fmt.Sprintf("Source non attestée : l'appel %s a été refusé.", e.Outil)
-	case BadgeAttente:
-		r.Titre = fmt.Sprintf("Décision suspendue : une validation humaine est requise avant la transmission de l'appel %s.", e.Outil)
-	case BadgeIndispo:
-		r.Titre = fmt.Sprintf("Source indisponible : aucune donnée n'a été obtenue pour l'appel %s.", e.Outil)
-	case BadgeCaviarde:
-		r.Titre = fmt.Sprintf("Appel %s transmis après retrait de %d champ(s).", e.Outil, len(e.Champs))
-	default:
-		r.Titre = fmt.Sprintf("Appel %s autorisé : la réponse du serveur a été remise à l'agent.", e.Outil)
-	}
-	r.Paragraphes = append(r.Paragraphes, "Motif de l'engine : "+e.Motif)
-	return r
 }

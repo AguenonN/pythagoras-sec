@@ -3,7 +3,6 @@ package console
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 	"sort"
 	"strings"
 	"time"
@@ -44,35 +43,8 @@ func rejouerTout(st *Etat, jeux []JeuCharge, opts rejeu.Options) []rejoue {
 	return out
 }
 
-// ---------------------------------------------------------------------------
-// Règles en vigueur
-// ---------------------------------------------------------------------------
-
-// EnVigueur rend les règles que les journaux citent en dernier ; à défaut
-// (aucun journal, jeu inconnu), la première du catalogue.
-func EnVigueur(etats []*Etat, jeux []JeuCharge) *JeuCharge {
-	var dernier *journal.RefJeu
-	var ts time.Time
-	for _, st := range etats {
-		for _, e := range st.Entrees {
-			if e.Type == journal.AppelT && e.Jeu != nil && !e.TS.Before(ts) {
-				dernier, ts = e.Jeu, e.TS
-			}
-		}
-	}
-	if dernier != nil {
-		for i := range jeux {
-			m := jeux[i].Jeu.Meta
-			if m.ID == dernier.ID && m.Version == dernier.Version && m.Empreinte == dernier.Empreinte {
-				return &jeux[i]
-			}
-		}
-	}
-	if len(jeux) > 0 {
-		return &jeux[0]
-	}
-	return nil
-}
+// EnVigueur rend les règles en vigueur : demo/directives/demo.json.
+func EnVigueur(jeux []JeuCharge) *JeuCharge { return Courant(jeux) }
 
 // ---------------------------------------------------------------------------
 // Écran 3 : vitrine des règles
@@ -109,17 +81,27 @@ type DirDetail struct {
 	Texte      string                `json:"texte"`
 	DateEffet  time.Time             `json:"date_effet"`
 	Fondements []directive.Fondement `json:"fondements"`
-	Relecture  string                `json:"relecture"`
-	Fuseaux    bool                  `json:"fuseaux"` // la directive évalue l'heure
-	Decisions  []DecisionRejouee     `json:"decisions"`
-	Journaux   []string              `json:"journaux"`
-	Verifies   bool                  `json:"verifies"` // chaînes de ces journaux vérifiées
+	// Relecture est la relecture complète de internal/relecture
+	// (Quand / Si / Alors, règle de l'indéterminé), la même que
+	// « cmd/directive relire ».
+	Relecture string `json:"relecture"`
+	Fuseaux   bool   `json:"fuseaux"` // la directive évalue l'heure
+	// Auteur et date d'activation : première version des règles où la
+	// directive est en observation ou active.
+	Auteur       string            `json:"auteur,omitempty"`
+	ActiveDepuis *time.Time        `json:"active_depuis,omitempty"`
+	Origine      string            `json:"origine"`
+	Decisions    []DecisionRejouee `json:"decisions"`
+	NbDecisions  int               `json:"nb_decisions"`
+	Journaux     []string          `json:"journaux"`
+	Verifies     bool              `json:"verifies"` // chaînes de ces journaux vérifiées
 }
 
 // VueRegles est l'écran 3.
 type VueRegles struct {
 	Depuis     time.Time  `json:"depuis"`
 	Auteur     string     `json:"auteur"`
+	Version    int        `json:"version"`
 	Directives []DirListe `json:"directives"`
 	Choix      *DirDetail `json:"choix,omitempty"`
 }
@@ -129,18 +111,6 @@ func fondementsDe(d directive.Directive) []directive.Fondement {
 		return d.Fondements
 	}
 	return []directive.Fondement{d.Fondement}
-}
-
-var reVerrou = regexp.MustCompile(`^Verrou \S*\. ?`)
-
-// regleEnFrancais rend la phrase de règle de la relecture (sa troisième
-// ligne), sans le nom technique du verrou.
-func regleEnFrancais(d directive.Directive) string {
-	lignes := strings.Split(strings.TrimSpace(relecture.Directive(d)), "\n")
-	if len(lignes) < 3 {
-		return strings.Join(lignes, " ")
-	}
-	return strings.TrimSpace(reVerrou.ReplaceAllString(lignes[2], ""))
 }
 
 func evalueHeure(d directive.Directive) bool {
@@ -155,35 +125,42 @@ func evalueHeure(d directive.Directive) bool {
 	return ok
 }
 
-// ReglesEnVigueur construit l'écran 3 : la liste des directives des règles en vigueur
-// et, pour la directive choisie, sa relecture et ses décisions réelles
-// rejouées. choix vide : la première.
-func ReglesEnVigueur(jc JeuCharge, etats []*Etat, tous []JeuCharge, choix string) *VueRegles {
-	v := &VueRegles{Depuis: jc.Jeu.Meta.DateEffet, Auteur: jc.Jeu.Meta.Auteur, Directives: []DirListe{}}
+// ReglesEnVigueur construit l'écran 3 : la liste des directives des règles
+// en vigueur et, pour la directive choisie, sa relecture complète et les
+// décisions réelles qu'elle a produites dans les journaux. choix vide : la
+// première.
+func (d *Depot) ReglesEnVigueur(jc JeuCharge, etats []*Etat, tous []JeuCharge, choix string) *VueRegles {
+	v := &VueRegles{Depuis: jc.Jeu.Meta.DateEffet, Auteur: jc.Jeu.Meta.Auteur, Version: jc.Jeu.Meta.Version, Directives: []DirListe{}}
 	var sel *directive.Directive
 	for i := range jc.Jeu.Directives {
-		d := &jc.Jeu.Directives[i]
-		v.Directives = append(v.Directives, DirListe{ID: d.ID, Version: d.Version, Statut: string(d.Statut), Titre: Titre(d.TexteFR)})
-		if sel == nil && (choix == "" || choix == d.ID) {
-			sel = d
+		dd := &jc.Jeu.Directives[i]
+		v.Directives = append(v.Directives, DirListe{ID: dd.ID, Version: dd.Version, Statut: string(dd.Statut), Titre: Titre(dd.TexteFR)})
+		if sel == nil && (choix == "" || choix == dd.ID) {
+			sel = dd
 		}
 	}
 	if sel == nil {
 		return v
 	}
+	act := Activations(tous)[sel.ID]
 	det := &DirDetail{DirListe: DirListe{ID: sel.ID, Version: sel.Version, Statut: string(sel.Statut), Titre: Titre(sel.TexteFR)},
-		Texte: sel.TexteFR, DateEffet: sel.DateEffet, Fondements: fondementsDe(*sel), Relecture: regleEnFrancais(*sel),
-		Fuseaux: evalueHeure(*sel), Decisions: []DecisionRejouee{}, Journaux: []string{}, Verifies: true}
+		Texte: sel.TexteFR, DateEffet: sel.DateEffet, Fondements: fondementsDe(*sel), Relecture: strings.TrimSpace(relecture.Directive(*sel)),
+		Fuseaux: evalueHeure(*sel), Decisions: []DecisionRejouee{}, Journaux: []string{}, Verifies: true,
+		Origine: d.LibelleOrigine(sel.ID, act.Auteur, d.LireOrigines())}
+	if act.Auteur != "" {
+		det.Auteur = act.Auteur
+		t := act.Date
+		det.ActiveDepuis = &t
+	}
 	for _, st := range etats {
 		utilise := false
 		for _, r := range rejouerTout(st, tous, rejeu.Options{}) {
 			en := r.Entree
-			if r.Err != nil || !r.Rejeu.Rejouable || r.Rejeu.Rejouee == nil ||
-				en.Jeu.ID != jc.Jeu.Meta.ID || en.Jeu.Version != jc.Jeu.Meta.Version {
+			if r.Err != nil || !r.Rejeu.Rejouable || r.Rejeu.Rejouee == nil {
 				continue
 			}
 			for _, a := range r.Rejeu.Rejouee.Applications {
-				if a.ID != sel.ID || a.Version != sel.Version {
+				if a.ID != sel.ID {
 					continue
 				}
 				utilise = true
@@ -200,17 +177,18 @@ func ReglesEnVigueur(jc JeuCharge, etats []*Etat, tous []JeuCharge, choix string
 		}
 	}
 	sort.SliceStable(det.Decisions, func(i, j int) bool { return det.Decisions[i].TS.Before(det.Decisions[j].TS) })
-	if len(det.Decisions) > 12 {
+	det.NbDecisions = len(det.Decisions)
+	if len(det.Decisions) > 40 {
 		// Garde d'abord les décisions où la directive s'est déclenchée.
 		var gardees []DecisionRejouee
-		for _, d := range det.Decisions {
-			if d.Declenchee && len(gardees) < 12 {
-				gardees = append(gardees, d)
+		for _, x := range det.Decisions {
+			if x.Declenchee && len(gardees) < 40 {
+				gardees = append(gardees, x)
 			}
 		}
-		for _, d := range det.Decisions {
-			if !d.Declenchee && len(gardees) < 12 {
-				gardees = append(gardees, d)
+		for _, x := range det.Decisions {
+			if !x.Declenchee && len(gardees) < 40 {
+				gardees = append(gardees, x)
 			}
 		}
 		sort.SliceStable(gardees, func(i, j int) bool { return gardees[i].TS.Before(gardees[j].TS) })
@@ -221,193 +199,246 @@ func ReglesEnVigueur(jc JeuCharge, etats []*Etat, tous []JeuCharge, choix string
 }
 
 // ---------------------------------------------------------------------------
-// Écran 4 : avant / après
+// Écran 4 : avant / après une directive
 // ---------------------------------------------------------------------------
 
-// OptionAA est une directive comparable : celle qu'un autre ensemble de
-// règles apporte (nouvelle, ou autre version) par rapport aux règles en
-// vigueur au moment de la session.
-type OptionAA struct {
-	ID      string `json:"id"`
-	Version int    `json:"version"`
-	Titre   string `json:"titre"`
-	Avant   string `json:"avant"` // intitulé de la colonne « avant »
-	Apres   string `json:"apres"`
-}
-
-func memeDirective(a, b directive.Directive) bool {
-	x, _ := json.Marshal(a)
-	y, _ := json.Marshal(b)
-	return string(x) == string(y)
-}
-
-// OptionsAvantApres liste les directives que les autres règles disponibles
-// changent ou ajoutent par rapport à base.
-func OptionsAvantApres(base JeuCharge, tous []JeuCharge) []OptionAA {
-	var out []OptionAA
-	vus := map[string]bool{}
-	for _, j := range tous {
-		if j.Jeu.Meta.ID == base.Jeu.Meta.ID && j.Jeu.Meta.Version == base.Jeu.Meta.Version && j.Jeu.Meta.Empreinte == base.Jeu.Meta.Empreinte {
-			continue
-		}
-		for _, d := range j.Jeu.Directives {
-			cle := fmt.Sprintf("%s#%d", d.ID, d.Version)
-			if o, ok := optionPour(base, d); ok && !vus[cle] {
-				vus[cle] = true
-				out = append(out, o)
-			}
-		}
-	}
-	sort.SliceStable(out, func(i, j int) bool {
-		if out[i].ID != out[j].ID {
-			return out[i].ID < out[j].ID
-		}
-		return out[i].Version < out[j].Version
-	})
-	return out
-}
-
-// optionPour dit si d change quelque chose par rapport à base, et comment
-// intituler les deux colonnes.
-func optionPour(base JeuCharge, d directive.Directive) (OptionAA, bool) {
-	o := OptionAA{ID: d.ID, Version: d.Version, Titre: Titre(d.TexteFR), Avant: "Sans la directive", Apres: "Avec " + d.ID}
-	for _, b := range base.Jeu.Directives {
-		if b.ID != d.ID {
-			continue
-		}
-		if memeDirective(b, d) {
-			return o, false
-		}
-		o.Avant = fmt.Sprintf("Avec %s, version %d", b.ID, b.Version)
-		o.Apres = fmt.Sprintf("Avec %s, version %d", d.ID, d.Version)
-	}
-	return o, true
-}
-
-// avecDirective rend base où la directive d remplace celle de même
-// identifiant, ou s'ajoute à la fin.
-func avecDirective(base directive.Jeu, d directive.Directive) directive.Jeu {
-	out := base
-	out.Directives = append([]directive.Directive(nil), base.Directives...)
-	for i := range out.Directives {
-		if out.Directives[i].ID == d.ID {
-			out.Directives[i] = d
-			return out
-		}
-	}
-	out.Directives = append(out.Directives, d)
-	return out
+// CoteAA est ce que les règles décident pour un appel, d'un côté de la
+// comparaison.
+type CoteAA struct {
+	Effet         string   `json:"effet"`
+	Motif         string   `json:"motif,omitempty"`
+	Directives    []string `json:"directives"` // appliquées
+	Roles         []string `json:"roles"`      // rôles requis (attente)
+	QuatreYeux    bool     `json:"quatre_yeux,omitempty"`
+	Notifications []string `json:"notifications"` // « rôle · rythme »
+	ChampsRetires []string `json:"champs_retires"`
 }
 
 // LigneAA est un appel dans la vue avant / après.
 type LigneAA struct {
-	Session    string        `json:"session"`
-	Seq        int           `json:"seq"`
-	Serveur    string        `json:"serveur"`
-	Outil      string        `json:"outil"`
-	Avant      string        `json:"avant"`
-	Apres      string        `json:"apres"`
-	Change     bool          `json:"change"`
-	MotifAvant string        `json:"motif_avant,omitempty"`
-	MotifApres string        `json:"motif_apres,omitempty"`
-	Ecarts     []rejeu.Ecart `json:"ecarts,omitempty"`
+	Journal string    `json:"journal"`
+	Session string    `json:"session"`
+	Seq     int       `json:"seq"`
+	Serveur string    `json:"serveur"`
+	Outil   string    `json:"outil"`
+	TS      time.Time `json:"ts"`
+	Avant   CoteAA    `json:"avant"`
+	Apres   CoteAA    `json:"apres"`
+	Change  bool      `json:"change"`
+	// Differences : ce qui diffère entre les deux côtés (effet, directives,
+	// roles, notifications, champs), pour surligner.
+	Differences []string `json:"differences"`
+	// Qualification d'un appel qui change : exposition (la directive est
+	// postérieure à l'appel) ou violation (elle était en vigueur à la date
+	// de l'appel).
+	Qualification string        `json:"qualification,omitempty"`
+	Ecarts        []rejeu.Ecart `json:"ecarts,omitempty"`
+}
+
+// SessionAA est une session que l'on peut rejouer.
+type SessionAA struct {
+	Journal string    `json:"journal"`
+	Session string    `json:"session"`
+	Ouverte time.Time `json:"ouverte"`
+	Demande string    `json:"demande,omitempty"`
+	Choisie bool      `json:"choisie"`
+}
+
+// CompteursAA sont les compteurs réels de la comparaison.
+type CompteursAA struct {
+	Sessions      int `json:"sessions"`
+	Appels        int `json:"appels"`
+	Changes       int `json:"changes"`
+	Exposition    int `json:"exposition"`
+	Violation     int `json:"violation"`
+	NonRejouables int `json:"non_rejouables"`
 }
 
 // VueAvantApres est l'écran 4.
 type VueAvantApres struct {
-	Journal       string       `json:"journal"`
-	Session       string       `json:"session"`
-	Ouverte       time.Time    `json:"ouverte"`
-	Options       []OptionAA   `json:"options"`
-	Choix         *OptionAA    `json:"choix,omitempty"`
-	Lignes        []LigneAA    `json:"lignes"`
-	Changes       int          `json:"changes"`
-	Sessions      int          `json:"sessions"`
-	NonRejouables int          `json:"non_rejouables"`
-	Explication   string       `json:"explication"`
-	Verif         Verification `json:"verification"`
+	Directives   []DirListe  `json:"directives"`
+	Choix        *DirListe   `json:"choix,omitempty"`
+	LibelleAvant string      `json:"libelle_avant,omitempty"`
+	LibelleApres string      `json:"libelle_apres,omitempty"`
+	Sessions     []SessionAA `json:"sessions"`
+	Lignes       []LigneAA   `json:"lignes"`
+	Compteurs    CompteursAA `json:"compteurs"`
+	Explication  string      `json:"explication"`
+	Verifiees    bool        `json:"verifiees"` // chaînes des journaux rejoués vérifiées
 }
 
-// AvantApres rejoue la session sous les règles citées par le journal, avec
-// et sans la directive choisie (ou dans sa version précédente), à la date
-// de chaque appel. choix vide : la première option.
-func AvantApres(st *Etat, tous []JeuCharge, session, choix string) (*VueAvantApres, error) {
-	v := &VueAvantApres{Journal: st.Journal.ID, Session: session, Options: []OptionAA{}, Lignes: []LigneAA{}, Verif: st.Verif}
-	var ref *journal.RefJeu
-	for _, e := range st.Entrees {
-		switch {
-		case e.Type == journal.SessionOuverte && e.Session == session:
-			v.Ouverte = e.TS
-		case e.Type == journal.AppelT && e.Session == session && ref == nil && e.Jeu != nil:
-			ref = e.Jeu
+// sansDirective rend les règles privées de la directive.
+func sansDirective(base directive.Jeu, id string) directive.Jeu {
+	out := base
+	out.Directives = nil
+	for _, dd := range base.Directives {
+		if dd.ID != id {
+			out.Directives = append(out.Directives, dd)
 		}
 	}
-	base, ok := trouverJeu(tous, ref)
-	if !ok {
-		return v, nil
+	return out
+}
+
+func coteDe(dec *directive.Decision) CoteAA {
+	c := CoteAA{Directives: []string{}, Roles: []string{}, Notifications: []string{}, ChampsRetires: []string{}}
+	if dec == nil {
+		c.Effet = rejeu.NonRejouable
+		return c
 	}
-	baseCharge := JeuCharge{Jeu: *base}
-	v.Options = OptionsAvantApres(baseCharge, tous)
-	for i := range v.Options {
-		if choix == "" && v.Choix == nil || choix == fmt.Sprintf("%s#%d", v.Options[i].ID, v.Options[i].Version) {
-			v.Choix = &v.Options[i]
+	c.Effet, c.Motif = string(dec.Effet), dec.Motif
+	for _, a := range dec.Applications {
+		if a.Appliquee {
+			c.Directives = append(c.Directives, a.ID)
 		}
 	}
-	if v.Choix == nil {
-		return v, nil
+	if dec.Validation != nil {
+		c.Roles, c.QuatreYeux = append(c.Roles, dec.Validation.Roles...), dec.Validation.QuatreYeux
 	}
-	var dir *directive.Directive
-	for _, j := range tous {
-		for i := range j.Jeu.Directives {
-			if d := &j.Jeu.Directives[i]; d.ID == v.Choix.ID && d.Version == v.Choix.Version {
-				dir = d
-			}
-		}
+	for _, n := range dec.Notifications {
+		c.Notifications = append(c.Notifications, n.DestinataireRole+" · "+rythmeFR(string(n.Rythme)))
 	}
-	if dir == nil {
-		return v, nil
+	c.ChampsRetires = append(c.ChampsRetires, dec.ChampsRetires...)
+	sort.Strings(c.ChampsRetires)
+	return c
+}
+
+func rythmeFR(r string) string {
+	if r == "synthese" {
+		return "en synthèse"
 	}
-	cat := catalogue(tous)
-	hybride := avecDirective(*base, *dir)
-	// Sans la directive : si elle n'existe pas dans les règles en vigueur, on
-	// la retire ; sinon c'est sa version en vigueur.
-	avant := *base
-	if v.Choix.Avant == "Sans la directive" {
-		avant = directive.Jeu{Meta: base.Meta}
-		for _, d := range base.Directives {
-			if d.ID != dir.ID {
-				avant.Directives = append(avant.Directives, d)
-			}
-		}
+	return "en temps réel"
+}
+
+func memes(a, b []string) bool { return strings.Join(a, "\x00") == strings.Join(b, "\x00") }
+
+func differences(a, b CoteAA) []string {
+	var out []string
+	if a.Effet != b.Effet {
+		out = append(out, "effet")
 	}
-	optsAvant, optsApres := rejeu.Options{Jeu: &avant}, rejeu.Options{Jeu: &hybride}
-	ra, _ := rejeu.RejouerJournal(st.Entrees, st.Coffre, cat, optsAvant)
-	rb, _ := rejeu.RejouerJournal(st.Entrees, st.Coffre, cat, optsApres)
+	if !memes(a.Directives, b.Directives) {
+		out = append(out, "directives")
+	}
+	if !memes(a.Roles, b.Roles) || a.QuatreYeux != b.QuatreYeux {
+		out = append(out, "roles")
+	}
+	if !memes(a.Notifications, b.Notifications) {
+		out = append(out, "notifications")
+	}
+	if !memes(a.ChampsRetires, b.ChampsRetires) {
+		out = append(out, "champs")
+	}
+	return out
+}
+
+// Comparaison rejoue des sessions sous deux ensembles de règles qui ne
+// diffèrent que par la directive dir, chaque appel à sa date d'origine, ou
+// à la date d'effet de la directive quand elle est postérieure à l'appel
+// (une directive n'est pas rétroactive : sans cela elle ne s'appliquerait
+// à aucun appel passé et rien ne se comparerait).
+type Comparaison struct {
+	Avec, Sans directive.Jeu
+	Dir        directive.Directive
+	Tous       []JeuCharge
+}
+
+// Rejouer produit les lignes et les compteurs pour les journaux donnés ;
+// choisies, s'il est non vide, restreint aux sessions « journal|session ».
+func (c Comparaison) Rejouer(etats []*Etat, choisies map[string]bool) ([]LigneAA, CompteursAA, bool) {
+	cat := catalogue(c.Tous)
+	var lignes []LigneAA
+	var cpt CompteursAA
 	sess := map[string]bool{}
-	for i := range ra {
-		if i >= len(rb) || ra[i].Session != session {
+	verifiees := true
+	for _, st := range etats {
+		purges := rejeu.PurgesChainees(st.Entrees)
+		utilise := false
+		for _, en := range st.Entrees {
+			if en.Type != journal.AppelT || en.Jeu == nil || en.Decision == nil || en.Appel == nil {
+				continue
+			}
+			if len(choisies) > 0 && !choisies[st.Journal.ID+"|"+en.Session] {
+				continue
+			}
+			var opts [2]rejeu.Options
+			for i, jeu := range []directive.Jeu{c.Sans, c.Avec} {
+				jeu := jeu
+				opts[i] = rejeu.Options{Jeu: &jeu}
+				if c.Dir.DateEffet.After(en.TS) {
+					opts[i].AuDate = c.Dir.DateEffet
+				}
+			}
+			ra, ea := rejeu.Rejouer(en, st.Coffre, cat, purges, opts[0])
+			rb, eb := rejeu.Rejouer(en, st.Coffre, cat, purges, opts[1])
+			cpt.Appels++
+			utilise = true
+			sess[st.Journal.ID+"|"+en.Session] = true
+			l := LigneAA{Journal: st.Journal.ID, Session: en.Session, Seq: en.Seq, Serveur: en.Serveur, Outil: en.Outil, TS: en.TS,
+				Differences: []string{}}
+			if ea == nil && eb == nil && ra.Rejouable && rb.Rejouable {
+				l.Avant, l.Apres = coteDe(ra.Rejouee), coteDe(rb.Rejouee)
+				l.Ecarts = fusionnerEcarts(ra.Ecarts, rb.Ecarts)
+			} else {
+				l.Avant, l.Apres = coteDe(nil), coteDe(nil)
+				cpt.NonRejouables++
+			}
+			l.Differences = differences(l.Avant, l.Apres)
+			l.Change = len(l.Differences) > 0 && l.Avant.Effet != rejeu.NonRejouable
+			if l.Change {
+				cpt.Changes++
+				if c.Dir.DateEffet.After(en.TS) {
+					l.Qualification = "exposition"
+					cpt.Exposition++
+				} else {
+					l.Qualification = "violation"
+					cpt.Violation++
+				}
+			}
+			lignes = append(lignes, l)
+		}
+		if utilise {
+			verifiees = verifiees && st.Verif.OK
+		}
+	}
+	cpt.Sessions = len(sess)
+	sort.SliceStable(lignes, func(i, j int) bool { return lignes[i].TS.Before(lignes[j].TS) })
+	return lignes, cpt, verifiees
+}
+
+// fusionnerEcarts joint les écarts des deux rejeux sans répétition ; seuls
+// ceux qui ne sont pas l'effet de la comparaison elle-même sont gardés (un
+// effet « de règle » est ce que l'écran montre déjà).
+func fusionnerEcarts(a, b []rejeu.Ecart) []rejeu.Ecart {
+	var out []rejeu.Ecart
+	vus := map[string]bool{}
+	for _, e := range append(append([]rejeu.Ecart(nil), a...), b...) {
+		if e.Cause == rejeu.CauseEffetDeRegle {
 			continue
 		}
-		sess[ra[i].Session] = true
-		l := LigneAA{Session: session, Seq: ra[i].Seq, Serveur: ra[i].Serveur, Outil: ra[i].Outil, Avant: ra[i].Effet(), Apres: rb[i].Effet()}
-		if ra[i].Rejouee != nil {
-			l.MotifAvant = ra[i].Rejouee.Motif
+		k := string(e.Cause) + "|" + e.Controle + "|" + e.Detail
+		if !vus[k] {
+			vus[k] = true
+			out = append(out, e)
 		}
-		if rb[i].Rejouee != nil {
-			l.MotifApres = rb[i].Rejouee.Motif
-		}
-		l.Change = l.Avant != l.Apres
-		if l.Change {
-			v.Changes++
-		}
-		if l.Avant == rejeu.NonRejouable || l.Apres == rejeu.NonRejouable {
-			v.NonRejouables++
-		}
-		v.Lignes = append(v.Lignes, l)
 	}
-	v.Sessions = len(sess)
-	v.Explication = expliquer(v)
-	return v, nil
+	return out
+}
+
+// Explication décrit, sans interpréter, ce qui change entre les deux colonnes.
+func explication(lignes []LigneAA, id string) string {
+	var parts []string
+	for _, l := range lignes {
+		if l.Change {
+			parts = append(parts, fmt.Sprintf("l'appel n° %d (%s) serait %s au lieu de %s", l.Seq, l.Outil, libelleEffet(l.Apres.Effet), libelleEffet(l.Avant.Effet)))
+		}
+	}
+	if len(parts) == 0 {
+		return "Aucun appel rejoué ne change avec la directive " + id + "."
+	}
+	if len(parts) > 6 {
+		return fmt.Sprintf("Avec la directive %s, %d appels changent, dont : %s.", id, len(parts), strings.Join(parts[:6], " ; "))
+	}
+	return "Avec la directive " + id + ", " + strings.Join(parts, " ; ") + "."
 }
 
 func libelleEffet(e string) string {
@@ -424,16 +455,51 @@ func libelleEffet(e string) string {
 	return "non rejouable"
 }
 
-// expliquer décrit, sans interpréter, ce qui change entre les deux colonnes.
-func expliquer(v *VueAvantApres) string {
-	if v.Changes == 0 {
-		return "Aucun appel de cette session ne change d'effet avec cette directive."
+// AvantApres rejoue les sessions choisies (toutes si choisies est vide)
+// avec les règles telles qu'elles sont et avec ces mêmes règles privées de
+// la directive choisie (la première si choix est vide). Aucun autre
+// ensemble de règles n'entre dans la comparaison.
+func (d *Depot) AvantApres(etats []*Etat, tous []JeuCharge, choix string, choisies map[string]bool) *VueAvantApres {
+	v := &VueAvantApres{Directives: []DirListe{}, Sessions: []SessionAA{}, Lignes: []LigneAA{}, Verifiees: true}
+	base := Courant(tous)
+	if base == nil {
+		return v
 	}
-	var parts []string
-	for _, l := range v.Lignes {
-		if l.Change {
-			parts = append(parts, fmt.Sprintf("l'appel n° %d (%s) serait %s au lieu de %s", l.Seq, l.Outil, libelleEffet(l.Apres), libelleEffet(l.Avant)))
+	var dir *directive.Directive
+	for i := range base.Jeu.Directives {
+		dd := &base.Jeu.Directives[i]
+		v.Directives = append(v.Directives, DirListe{ID: dd.ID, Version: dd.Version, Statut: string(dd.Statut), Titre: Titre(dd.TexteFR)})
+		if dir == nil && (choix == "" || choix == dd.ID) {
+			dir = dd
 		}
 	}
-	return "Avec cette directive, " + strings.Join(parts, " ; ") + "."
+	for _, st := range etats {
+		for _, s := range Sessions(st) {
+			v.Sessions = append(v.Sessions, SessionAA{Journal: st.Journal.ID, Session: s.ID, Ouverte: s.Ouverte,
+				Demande: demandeDe(st), Choisie: len(choisies) == 0 || choisies[st.Journal.ID+"|"+s.ID]})
+		}
+	}
+	sort.SliceStable(v.Sessions, func(i, j int) bool { return v.Sessions[i].Ouverte.After(v.Sessions[j].Ouverte) })
+	if dir == nil {
+		return v
+	}
+	v.Choix = &DirListe{ID: dir.ID, Version: dir.Version, Statut: string(dir.Statut), Titre: Titre(dir.TexteFR)}
+	v.LibelleAvant, v.LibelleApres = "Sans la directive "+dir.ID, "Avec la directive "+dir.ID
+	cmp := Comparaison{Avec: base.Jeu, Sans: sansDirective(base.Jeu, dir.ID), Dir: *dir, Tous: tous}
+	v.Lignes, v.Compteurs, v.Verifiees = cmp.Rejouer(etats, choisies)
+	v.Explication = explication(v.Lignes, dir.ID)
+	return v
+}
+
+func demandeDe(st *Etat) string {
+	if st.Dossier != nil {
+		return st.Dossier.Demande
+	}
+	return ""
+}
+
+func memeDirective(a, b directive.Directive) bool {
+	x, _ := json.Marshal(a)
+	y, _ := json.Marshal(b)
+	return string(x) == string(y)
 }
