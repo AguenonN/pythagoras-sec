@@ -26,6 +26,16 @@ CATALOGUE_V2_ENREGISTRE = os.path.join(ICI, "donnees", "catalogue-v2-enregistrem
 # enregistrée embarque le vocabulaire.
 VOCABULAIRE_V2_ENREGISTRE = os.path.join(ICI, "donnees", "vocabulaire-v2-enregistrements.json")
 
+# Catalogue et vocabulaire générés tels qu'ils étaient quand les textes de la
+# scène (week-end, base interne : test_service_scene) et les scénarios
+# « medium » de l'étape 7 (test_scenarios_v2) ont été enregistrés auprès de
+# Mistral ; gelés pour la même raison quand la session « secteurs » a ajouté
+# les outils banque et RH au catalogue (commit précédant ces copies :
+# 5b83cd5). Un passage réel avec le catalogue courant fait de nouveaux
+# enregistrements.
+CATALOGUE_SCENE = os.path.join(ICI, "donnees", "catalogue-scene-enregistrements.json")
+VOCABULAIRE_SCENE = os.path.join(ICI, "donnees", "vocabulaire-scene-enregistrements.json")
+
 
 def catalogue_demo():
     return catalogue.Catalogue.lire(CATALOGUE_DEMO)

@@ -91,6 +91,48 @@
           ]
         },
         {
+          "nom": "cloturer_compte",
+          "acces": "action",
+          "description": "Clôture un compte de la banque synthétique (action fictive, irréversible dans la démonstration).",
+          "arguments": [
+            "/compte_id",
+            "/motif"
+          ]
+        },
+        {
+          "nom": "declarer_soupcon",
+          "acces": "action",
+          "description": "Transmet une déclaration de soupçon sur un client à la cellule de renseignement financier (action fictive : rien n'est transmis).",
+          "arguments": [
+            "/client_id",
+            "/motif",
+            "/operations"
+          ]
+        },
+        {
+          "nom": "effectuer_virement",
+          "acces": "action",
+          "description": "Exécute un virement depuis un compte de la banque synthétique vers un bénéficiaire (action fictive : aucun fonds ne circule).",
+          "arguments": [
+            "/beneficiaire",
+            "/compte_debit",
+            "/iban_beneficiaire",
+            "/montant",
+            "/motif",
+            "/pays_beneficiaire"
+          ]
+        },
+        {
+          "nom": "envoyer_courrier_client",
+          "acces": "action",
+          "description": "Envoie un courrier ou un message à un client de la banque synthétique (action fictive : rien n'est envoyé).",
+          "arguments": [
+            "/client_id",
+            "/contenu",
+            "/objet"
+          ]
+        },
+        {
           "nom": "evaluer_dossier",
           "acces": "read",
           "description": "Lit un dossier de demande de crédit de la banque synthétique (données fictives) : demandeur, SIREN, objet, montant, durée, taux proposé, pièces et note de l'analyste.",
@@ -99,11 +141,59 @@
           ]
         },
         {
+          "nom": "exporter_donnees_client",
+          "acces": "action",
+          "description": "Exporte la fiche d'un client de la banque synthétique (identité, adresse, comptes) vers un destinataire ; IBAN, revenus et opérations seulement si demandés (action fictive : rien n'est envoyé).",
+          "arguments": [
+            "/client_id",
+            "/destinataire",
+            "/destination",
+            "/inclure_iban",
+            "/inclure_operations",
+            "/inclure_revenus"
+          ]
+        },
+        {
           "nom": "get_taux_interne",
           "acces": "read",
           "description": "Seuil de l'usure pour une catégorie de crédit, selon la base interne de la banque synthétique (données fictives).",
           "arguments": [
             "/categorie"
+          ]
+        },
+        {
+          "nom": "historique_operations",
+          "acces": "read",
+          "description": "Historique des opérations d'un client de la banque synthétique (données fictives) : date, compte, libellé, montant, contrepartie, pays.",
+          "arguments": [
+            "/client_id",
+            "/compte_id"
+          ]
+        },
+        {
+          "nom": "lister_comptes_client",
+          "acces": "read",
+          "description": "Liste les comptes d'un client de la banque synthétique (données fictives) : type, IBAN, solde, découvert autorisé.",
+          "arguments": [
+            "/client_id"
+          ]
+        },
+        {
+          "nom": "modifier_plafond_decouvert",
+          "acces": "action",
+          "description": "Modifie le découvert autorisé d'un compte de la banque synthétique (action fictive).",
+          "arguments": [
+            "/compte_id",
+            "/nouveau_plafond"
+          ]
+        },
+        {
+          "nom": "refuser_credit",
+          "acces": "action",
+          "description": "Notifie au demandeur le refus de sa demande de crédit, avec son motif (action fictive : rien n'est envoyé).",
+          "arguments": [
+            "/dossier_id",
+            "/motif"
           ]
         },
         {
@@ -122,10 +212,41 @@
       "nom": "rh-synthetique",
       "outils": [
         {
+          "nom": "attribuer_prime",
+          "acces": "action",
+          "description": "Attribue une prime à un salarié de l'entreprise synthétique (action fictive : aucune prime réelle n'est versée).",
+          "arguments": [
+            "/montant",
+            "/motif",
+            "/salarie_id"
+          ]
+        },
+        {
+          "nom": "consulter_fiche",
+          "acces": "read",
+          "description": "Fiche complète d'un salarié de l'entreprise synthétique (données fictives) ; les rubriques santé, appartenance syndicale et rémunération seulement si demandées.",
+          "arguments": [
+            "/inclure_remuneration",
+            "/inclure_sante",
+            "/inclure_syndical",
+            "/salarie_id"
+          ]
+        },
+        {
           "nom": "consulter_salarie",
           "acces": "read",
           "description": "Lit la fiche d'un salarié de l'entreprise synthétique (données fictives) : poste, service, ancienneté, contrat, évaluation, remarques.",
           "arguments": [
+            "/salarie_id"
+          ]
+        },
+        {
+          "nom": "convoquer_entretien_prealable",
+          "acces": "action",
+          "description": "Convoque un salarié de l'entreprise synthétique à un entretien préalable à une sanction ou à un licenciement (action fictive : rien n'est envoyé).",
+          "arguments": [
+            "/date_entretien",
+            "/motif",
             "/salarie_id"
           ]
         },
@@ -139,12 +260,79 @@
           ]
         },
         {
+          "nom": "envoyer_message_salarie",
+          "acces": "action",
+          "description": "Envoie un message à un salarié de l'entreprise synthétique (action fictive : rien n'est envoyé).",
+          "arguments": [
+            "/contenu",
+            "/objet",
+            "/salarie_id"
+          ]
+        },
+        {
+          "nom": "exporter_paie",
+          "acces": "action",
+          "description": "Exporte les bulletins de paie d'un mois (tous les salariés, salaires compris) vers un destinataire (action fictive : rien n'est envoyé).",
+          "arguments": [
+            "/destinataire",
+            "/pays",
+            "/periode"
+          ]
+        },
+        {
+          "nom": "licencier",
+          "acces": "action",
+          "description": "Notifie le licenciement d'un salarié de l'entreprise synthétique (action fictive : aucun licenciement réel).",
+          "arguments": [
+            "/motif",
+            "/salarie_id"
+          ]
+        },
+        {
+          "nom": "lister_salaries",
+          "acces": "read",
+          "description": "Liste les salariés de l'entreprise synthétique (données fictives) : identifiant, libellé, poste, service, contrat ; le salaire seulement si demandé.",
+          "arguments": [
+            "/inclure_salaires",
+            "/service"
+          ]
+        },
+        {
           "nom": "proposer_sanction",
           "acces": "action",
           "description": "Propose une sanction disciplinaire pour un salarié de l'entreprise synthétique (action, données fictives : aucune sanction réelle ; la proposition n'est pas une décision).",
           "arguments": [
             "/motif",
             "/salarie_id"
+          ]
+        },
+        {
+          "nom": "rechercher_salaries",
+          "acces": "read",
+          "description": "Recherche les salariés de l'entreprise synthétique (données fictives) sur des critères libres combinés : service, poste, contrat, ancienneté, évaluation, âge, arrêt maladie, grossesse, nationalité, adhésion syndicale.",
+          "arguments": [
+            "/criteres",
+            "/criteres/age_max",
+            "/criteres/age_min",
+            "/criteres/anciennete_min_ans",
+            "/criteres/contrat",
+            "/criteres/en_arret_maladie",
+            "/criteres/enceinte",
+            "/criteres/evaluation",
+            "/criteres/nationalite",
+            "/criteres/poste",
+            "/criteres/service",
+            "/criteres/syndique"
+          ]
+        },
+        {
+          "nom": "sanctionner",
+          "acces": "action",
+          "description": "Notifie une sanction disciplinaire à un salarié de l'entreprise synthétique (action fictive : aucune sanction réelle).",
+          "arguments": [
+            "/motif",
+            "/salarie_id",
+            "/sanction"
           ]
         }
       ]

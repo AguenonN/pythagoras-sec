@@ -12,7 +12,7 @@ import unittest
 from compilateur import compilateur_v2 as c2
 from compilateur import directive_go, mistral, scenarios_v2, vocabulaire
 
-from .aides import CATALOGUE_V2_ENREGISTRE, VOCABULAIRE_V2_ENREGISTRE
+from .aides import CATALOGUE_SCENE, CATALOGUE_V2_ENREGISTRE, VOCABULAIRE_SCENE, VOCABULAIRE_V2_ENREGISTRE
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 ATTENDUS = os.path.join(ICI, "attendus", "v2")
@@ -213,10 +213,11 @@ class TestRH(unittest.TestCase):
 
 
 def derouler_medium(nom):
-    """Déroule sur le catalogue et le vocabulaire courants, avec le modèle
-    retenu (mistral-medium-latest) : les enregistrements de l'étape 7."""
+    """Déroule sur le catalogue et le vocabulaire de l'enregistrement (gelés
+    avant l'ajout des outils des secteurs), avec le modèle retenu
+    (mistral-medium-latest) : les enregistrements de l'étape 7."""
     return scenarios_v2.derouler(scenarios_v2.lire(nom), mistral.Client(mode="rejeu", modele=mistral.MODELE_COMPILATEUR),
-                                 scenarios_v2.vocab_demo())
+                                 vocabulaire.Vocabulaire.lire(CATALOGUE_SCENE, VOCABULAIRE_SCENE))
 
 
 class ScenarioMedium(Scenario):

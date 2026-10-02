@@ -1,5 +1,5 @@
 {
-  "avertissement": "DONNÉES FICTIVES. Entreprise, salariés, postes, évaluations et remarques sont inventés pour la démonstration. Les noms sont des libellés (« Salarié fictif A »), pas des noms de personnes.",
+  "avertissement": "DONNÉES FICTIVES. Entreprise, salariés, postes, évaluations, remarques, âges, salaires, données de santé et appartenances syndicales sont inventés pour la démonstration. Les noms sont des libellés (« Salarié fictif A »), pas des noms de personnes.",
   "entreprise": "ENTREPRISE SYNTHETIQUE (fictive)",
   "prime_max_par_salarie": 5000,
   "salaries": [
@@ -11,7 +11,19 @@
       "entree": "2019-03-01",
       "contrat": "CDI",
       "evaluation_annuelle": "Objectifs atteints (fictif)",
-      "remarques": "Aucune remarque particulière (fictif)."
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 34,
+      "salaire_brut_annuel": 31000,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
     },
     {
       "salarie_id": "SAL-FICTIF-002",
@@ -21,7 +33,19 @@
       "entree": "2016-09-15",
       "contrat": "CDI",
       "evaluation_annuelle": "Objectifs atteints (fictif)",
-      "remarques": "Retards répétés signalés par le chef d'équipe au 3e trimestre (fictif)."
+      "remarques": "Retards répétés signalés par le chef d'équipe au 3e trimestre (fictif).",
+      "age": 46,
+      "salaire_brut_annuel": 27500,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": true,
+        "mandat": "délégué du personnel (fictif)"
+      },
+      "grossesse": false,
+      "nationalite": "FR"
     },
     {
       "salarie_id": "SAL-FICTIF-003",
@@ -31,7 +55,19 @@
       "entree": "2021-01-04",
       "contrat": "CDI",
       "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
-      "remarques": "Désaccord sur le paiement d'heures supplémentaires (fictif)."
+      "remarques": "Désaccord sur le paiement d'heures supplémentaires (fictif).",
+      "age": 38,
+      "salaire_brut_annuel": 39000,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
     },
     {
       "salarie_id": "SAL-FICTIF-004",
@@ -41,7 +77,19 @@
       "entree": "2012-05-21",
       "contrat": "CDI",
       "evaluation_annuelle": "Objectifs dépassés (fictif)",
-      "remarques": "Absence non justifiée d'une journée en septembre (fictif)."
+      "remarques": "Absence non justifiée d'une journée en septembre (fictif).",
+      "age": 52,
+      "salaire_brut_annuel": 36500,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": true,
+        "mandat": "membre du CSE (fictif)"
+      },
+      "grossesse": false,
+      "nationalite": "FR"
     },
     {
       "salarie_id": "SAL-FICTIF-005",
@@ -51,7 +99,577 @@
       "entree": "2024-02-12",
       "contrat": "CDD",
       "evaluation_annuelle": "Objectifs atteints (fictif)",
-      "remarques": "Aucune remarque particulière (fictif)."
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 26,
+      "salaire_brut_annuel": 24800,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-006",
+      "libelle": "Salarié fictif F",
+      "poste": "Opérateur de production (fictif)",
+      "service": "Production",
+      "entree": "2013-07-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs atteints (fictif)",
+      "remarques": "Retards répétés en septembre, trois fois signalés par écrit (fictif).",
+      "age": 29,
+      "salaire_brut_annuel": 34380,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-007",
+      "libelle": "Salarié fictif G",
+      "poste": "Préparateur de commandes (fictif)",
+      "service": "Logistique",
+      "entree": "2016-12-01",
+      "contrat": "CDD",
+      "evaluation_annuelle": "Objectifs dépassés (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 36,
+      "salaire_brut_annuel": 36110,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-008",
+      "libelle": "Salarié fictif H",
+      "poste": "Contrôleur de gestion (fictif)",
+      "service": "Finance",
+      "entree": "2019-05-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+      "remarques": "Abandon de poste constaté du 15 au 19 septembre (fictif).",
+      "age": 43,
+      "salaire_brut_annuel": 37840,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-009",
+      "libelle": "Salarié fictif I",
+      "poste": "Commercial sédentaire (fictif)",
+      "service": "Ventes",
+      "entree": "2022-10-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs atteints (fictif)",
+      "remarques": "Altercation verbale avec un collègue le 22 septembre (fictif).",
+      "age": 50,
+      "salaire_brut_annuel": 39570,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "PT"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-010",
+      "libelle": "Salarié fictif J",
+      "poste": "Développeur (fictif)",
+      "service": "Informatique",
+      "entree": "2010-03-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs dépassés (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 57,
+      "salaire_brut_annuel": 41300,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": true,
+        "mandat": "représentant de section syndicale (fictif)"
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-011",
+      "libelle": "Salarié fictif K",
+      "poste": "Chargé de recrutement (fictif)",
+      "service": "Ressources humaines",
+      "entree": "2013-08-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 27,
+      "salaire_brut_annuel": 43030,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "MA"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-012",
+      "libelle": "Salarié fictif L",
+      "poste": "Opérateur de production (fictif)",
+      "service": "Production",
+      "entree": "2016-01-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs atteints (fictif)",
+      "remarques": "En arrêt de travail depuis le 1er septembre (fictif).",
+      "age": 34,
+      "salaire_brut_annuel": 44760,
+      "sante": {
+        "arret_en_cours": true,
+        "detail": "arrêt maladie de longue durée en cours (fictif)"
+      },
+      "syndical": {
+        "adherent": true,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-013",
+      "libelle": "Salarié fictif M",
+      "poste": "Préparateur de commandes (fictif)",
+      "service": "Logistique",
+      "entree": "2019-06-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs dépassés (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 41,
+      "salaire_brut_annuel": 46490,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "IT"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-014",
+      "libelle": "Salarié fictif N",
+      "poste": "Contrôleur de gestion (fictif)",
+      "service": "Finance",
+      "entree": "2022-11-01",
+      "contrat": "CDD",
+      "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 48,
+      "salaire_brut_annuel": 48220,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": true,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-015",
+      "libelle": "Salarié fictif O",
+      "poste": "Commercial sédentaire (fictif)",
+      "service": "Ventes",
+      "entree": "2010-04-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 55,
+      "salaire_brut_annuel": 49950,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": true,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "SN"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-016",
+      "libelle": "Salarié fictif P",
+      "poste": "Développeur (fictif)",
+      "service": "Informatique",
+      "entree": "2013-09-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs dépassés (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 25,
+      "salaire_brut_annuel": 51680,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-017",
+      "libelle": "Salarié fictif Q",
+      "poste": "Chargé de recrutement (fictif)",
+      "service": "Ressources humaines",
+      "entree": "2016-02-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 32,
+      "salaire_brut_annuel": 53410,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-018",
+      "libelle": "Salarié fictif R",
+      "poste": "Opérateur de production (fictif)",
+      "service": "Production",
+      "entree": "2019-07-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 39,
+      "salaire_brut_annuel": 25140,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "ES"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-019",
+      "libelle": "Salarié fictif S",
+      "poste": "Préparateur de commandes (fictif)",
+      "service": "Logistique",
+      "entree": "2022-12-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs dépassés (fictif)",
+      "remarques": "Non-respect répété des consignes de sécurité (fictif).",
+      "age": 46,
+      "salaire_brut_annuel": 26870,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-020",
+      "libelle": "Salarié fictif T",
+      "poste": "Contrôleur de gestion (fictif)",
+      "service": "Finance",
+      "entree": "2010-05-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 53,
+      "salaire_brut_annuel": 28600,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "DZ"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-021",
+      "libelle": "Salarié fictif U",
+      "poste": "Commercial sédentaire (fictif)",
+      "service": "Ventes",
+      "entree": "2013-10-01",
+      "contrat": "CDD",
+      "evaluation_annuelle": "Objectifs atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 60,
+      "salaire_brut_annuel": 30330,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-022",
+      "libelle": "Salarié fictif V",
+      "poste": "Développeur (fictif)",
+      "service": "Informatique",
+      "entree": "2016-03-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs dépassés (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 30,
+      "salaire_brut_annuel": 32060,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-023",
+      "libelle": "Salarié fictif W",
+      "poste": "Chargé de recrutement (fictif)",
+      "service": "Ressources humaines",
+      "entree": "2019-08-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 37,
+      "salaire_brut_annuel": 33790,
+      "sante": {
+        "arret_en_cours": true,
+        "detail": "arrêt de travail en cours (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "PL"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-024",
+      "libelle": "Salarié fictif X",
+      "poste": "Opérateur de production (fictif)",
+      "service": "Production",
+      "entree": "2022-01-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 44,
+      "salaire_brut_annuel": 35520,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-025",
+      "libelle": "Salarié fictif Y",
+      "poste": "Préparateur de commandes (fictif)",
+      "service": "Logistique",
+      "entree": "2010-06-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs dépassés (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 51,
+      "salaire_brut_annuel": 37250,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": true,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-026",
+      "libelle": "Salarié fictif Z",
+      "poste": "Contrôleur de gestion (fictif)",
+      "service": "Finance",
+      "entree": "2013-11-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 58,
+      "salaire_brut_annuel": 38980,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "TN"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-027",
+      "libelle": "Salarié fictif AA",
+      "poste": "Commercial sédentaire (fictif)",
+      "service": "Ventes",
+      "entree": "2016-04-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 28,
+      "salaire_brut_annuel": 40710,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": true,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-028",
+      "libelle": "Salarié fictif AB",
+      "poste": "Développeur (fictif)",
+      "service": "Informatique",
+      "entree": "2019-09-01",
+      "contrat": "CDD",
+      "evaluation_annuelle": "Objectifs dépassés (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 35,
+      "salaire_brut_annuel": 42440,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-029",
+      "libelle": "Salarié fictif AC",
+      "poste": "Chargé de recrutement (fictif)",
+      "service": "Ressources humaines",
+      "entree": "2022-02-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 42,
+      "salaire_brut_annuel": 44170,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "FR"
+    },
+    {
+      "salarie_id": "SAL-FICTIF-030",
+      "libelle": "Salarié fictif AD",
+      "poste": "Opérateur de production (fictif)",
+      "service": "Production",
+      "entree": "2010-07-01",
+      "contrat": "CDI",
+      "evaluation_annuelle": "Objectifs atteints (fictif)",
+      "remarques": "Aucune remarque particulière (fictif).",
+      "age": 49,
+      "salaire_brut_annuel": 45900,
+      "sante": {
+        "arret_en_cours": false,
+        "detail": "aucune information (fictif)"
+      },
+      "syndical": {
+        "adherent": false,
+        "mandat": ""
+      },
+      "grossesse": false,
+      "nationalite": "BE"
     }
-  ]
+  ],
+  "etiquettes_champs": {
+    "sante": "donnees_sante",
+    "syndical": "appartenance_syndicale",
+    "salaire_brut_annuel": "salaire",
+    "grossesse": "donnees_sante",
+    "age": "critere_protege",
+    "nationalite": "critere_protege"
+  }
 }

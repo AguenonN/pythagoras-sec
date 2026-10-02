@@ -106,7 +106,9 @@ class TestVocabulaire(unittest.TestCase):
     def test_outils_vises(self):
         v = vocab_demo()
         self.assertEqual(v.outils_vises({"serveur": "rh-synthetique", "acces": "action"}),
-                         [("rh-synthetique", "decider_prime"), ("rh-synthetique", "proposer_sanction")])
+                         [("rh-synthetique", n) for n in (
+                             "attribuer_prime", "convoquer_entretien_prealable", "decider_prime", "envoyer_message_salarie",
+                             "exporter_paie", "licencier", "proposer_sanction", "sanctionner")])
         self.assertEqual(v.outils_vises({"serveur": "banque-synthetique", "outil": "attribuer_pret"}),
                          [("banque-synthetique", "attribuer_pret")])
 

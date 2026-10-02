@@ -228,7 +228,8 @@ class TestVerifications(Base):
                         {"id": "s", "type": "sujet", "groupe": "salaries-proteges", "champ": ""}],
              "effets": [{"effet": "refuser"}]}
         self.refuse("Aucune décision RH visant un salarié du groupe salaries-proteges (Code du travail).", p,
-                    "l'argument /salarie_ids n'existe pas pour rh-synthetique/proposer_sanction")
+                    "l'argument /salarie_ids n'existe pas pour rh-synthetique/attribuer_prime, "
+                    "rh-synthetique/convoquer_entretien_prealable")
 
     def test_arbre_invalide_rendu_a_mistral(self):
         p = d_seuil()

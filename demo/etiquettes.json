@@ -1,21 +1,69 @@
 {
-  "commentaire": "Étiquettes du registre de démonstration, lues par internal/registredemo. Une étiquette de serveur vaut pour tous ses outils ; une étiquette d'outil s'y ajoute. « */outil » vaut pour l'outil de ce nom sur tout serveur. personnes_concernees : pointeur de l'argument qui désigne la personne concernée, par outil.",
+  "commentaire": "Étiquettes du registre de démonstration, lues par internal/registredemo. Une étiquette de serveur vaut pour tous ses outils ; une étiquette d'outil s'y ajoute. « */outil » vaut pour l'outil de ce nom sur tout serveur. personnes_concernees : pointeur de l'argument qui désigne la personne concernée, par outil. Secteurs banque et RH (session secteurs) : donnees_client, transfert_donnees, mouvement_fonds, donnees_sante, appartenance_syndicale, salaire.",
   "version": 1,
   "serveurs": {
-    "recherche-entreprises": ["donnees_client", "externe"],
-    "gels-avoirs": ["externe"],
-    "taux-officiel": ["externe"],
-    "eurlex": ["externe"],
-    "legifrance": ["externe"],
-    "rh-synthetique": ["donnees_personnelles"]
+    "recherche-entreprises": [
+      "donnees_client",
+      "externe"
+    ],
+    "gels-avoirs": [
+      "externe"
+    ],
+    "taux-officiel": [
+      "externe"
+    ],
+    "eurlex": [
+      "externe"
+    ],
+    "legifrance": [
+      "externe"
+    ],
+    "rh-synthetique": [
+      "donnees_personnelles"
+    ]
   },
   "outils": {
-    "banque-synthetique/evaluer_dossier": ["donnees_client"],
-    "*/remettre_rapport": ["production_rapport"]
+    "banque-synthetique/evaluer_dossier": [
+      "donnees_client"
+    ],
+    "*/remettre_rapport": [
+      "production_rapport"
+    ],
+    "banque-synthetique/lister_comptes_client": [
+      "donnees_client"
+    ],
+    "banque-synthetique/historique_operations": [
+      "donnees_client"
+    ],
+    "banque-synthetique/exporter_donnees_client": [
+      "donnees_client",
+      "transfert_donnees"
+    ],
+    "banque-synthetique/effectuer_virement": [
+      "mouvement_fonds"
+    ],
+    "rh-synthetique/consulter_fiche": [
+      "appartenance_syndicale",
+      "donnees_sante",
+      "salaire"
+    ],
+    "rh-synthetique/lister_salaries": [
+      "salaire"
+    ],
+    "rh-synthetique/exporter_paie": [
+      "salaire",
+      "transfert_donnees"
+    ]
   },
   "personnes_concernees": {
     "rh-synthetique/consulter_salarie": "/salarie_id",
     "rh-synthetique/decider_prime": "/salarie_ids",
-    "rh-synthetique/proposer_sanction": "/salarie_id"
+    "rh-synthetique/proposer_sanction": "/salarie_id",
+    "rh-synthetique/consulter_fiche": "/salarie_id",
+    "rh-synthetique/convoquer_entretien_prealable": "/salarie_id",
+    "rh-synthetique/sanctionner": "/salarie_id",
+    "rh-synthetique/licencier": "/salarie_id",
+    "rh-synthetique/attribuer_prime": "/salarie_id",
+    "rh-synthetique/envoyer_message_salarie": "/salarie_id"
   }
 }

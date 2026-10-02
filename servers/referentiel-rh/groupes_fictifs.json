@@ -6,9 +6,45 @@
   },
   "appartenances": {
     "SAL-FICTIF-001": [],
-    "SAL-FICTIF-002": ["salaries-proteges"],
-    "SAL-FICTIF-003": ["contentieux-en-cours"],
-    "SAL-FICTIF-004": ["salaries-proteges", "contentieux-en-cours"],
-    "SAL-FICTIF-005": []
+    "SAL-FICTIF-002": [
+      "salaries-proteges"
+    ],
+    "SAL-FICTIF-003": [
+      "contentieux-en-cours"
+    ],
+    "SAL-FICTIF-004": [
+      "salaries-proteges",
+      "contentieux-en-cours"
+    ],
+    "SAL-FICTIF-005": [],
+    "SAL-FICTIF-006": [],
+    "SAL-FICTIF-007": [],
+    "SAL-FICTIF-008": [],
+    "SAL-FICTIF-009": [],
+    "SAL-FICTIF-010": [
+      "salaries-proteges"
+    ],
+    "SAL-FICTIF-011": [],
+    "SAL-FICTIF-012": [],
+    "SAL-FICTIF-013": [],
+    "SAL-FICTIF-014": [],
+    "SAL-FICTIF-015": [],
+    "SAL-FICTIF-016": [],
+    "SAL-FICTIF-017": [
+      "contentieux-en-cours"
+    ],
+    "SAL-FICTIF-018": [],
+    "SAL-FICTIF-019": [],
+    "SAL-FICTIF-020": [],
+    "SAL-FICTIF-021": [],
+    "SAL-FICTIF-022": [],
+    "SAL-FICTIF-023": [],
+    "SAL-FICTIF-024": [],
+    "SAL-FICTIF-025": [],
+    "SAL-FICTIF-026": [],
+    "SAL-FICTIF-027": [],
+    "SAL-FICTIF-028": [],
+    "SAL-FICTIF-029": [],
+    "SAL-FICTIF-030": []
   }
 }
