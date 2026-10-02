@@ -358,6 +358,15 @@ class TestSourceDesignee(Base):
         self.assertTrue(source_designee("recherche-entreprises", "le serveur de recherche d'entreprises"))
         self.assertFalse(source_designee("banque-synthetique", "toute attribution de prêt de plus de 2 M€"))
 
+    def test_outil_de_lecture_designe_par_ses_mots(self):
+        from compilateur.verifications_v2 import outil_designe
+        t = "Une décision de prêt fondée sur la base interne des taux doit être validée"
+        self.assertTrue(outil_designe("banque-synthetique/get_taux_interne", t, "read"))
+        self.assertFalse(outil_designe("banque-synthetique/get_taux_usure", t, "read"))
+        # Une action n'est jamais une source : ses mots ne la désignent pas.
+        self.assertFalse(outil_designe("banque-synthetique/attribuer_pret", "attribuer un prêt", "action"))
+        self.assertTrue(outil_designe("gels-avoirs/verifier_gel", "le registre des gels d'avoirs", "read"))
+
     def test_condition_ajoutee_refusee(self):
         p = d_seuil()
         p["racine"] = "e"

@@ -99,6 +99,27 @@ def source_designee(serveur, source):
     return all(_racine(m) in mots for m in _nom(serveur).split())
 
 
+# Verbes en tête d'un nom d'outil, qui ne désignent pas la source.
+_VERBES_OUTIL = {"get", "lire", "obtenir", "consulter", "rechercher", "chercher", "verifier", "lister"}
+
+
+def outil_designe(outil, source, acces=None):
+    """Le juriste a-t-il désigné cet outil (« serveur/outil ») comme source ?
+    Son serveur l'est ; ou, pour un outil de lecture (une source de données,
+    jamais une action), chaque mot de son nom hors verbe de tête figure dans
+    la source, au pluriel près (« base interne des taux » désigne
+    get_taux_interne)."""
+    serveur, _, nom = outil.partition("/")
+    if source_designee(serveur, source):
+        return True
+    if acces != "read":
+        return False
+    mots = _nom(nom).split()
+    if mots and mots[0] in _VERBES_OUTIL:
+        mots = mots[1:]
+    return bool(mots) and source_designee(" ".join(mots), source)
+
+
 def transmis_ecrit(source):
     """Le juriste a-t-il dit qu'un appel parti suffit, quel qu'en soit le
     résultat ? Sinon « consulté » veut dire « données reçues », le plus fermé."""
@@ -178,7 +199,11 @@ def verifier_directive(p, d, vocab, source, prefixe):
                 v.valeur(ou, f["valeur"])
         elif cle == "session.a_consulte":
             sv = f.get("serveur") or (f.get("outil") or "").split("/")[0]
-            if sv and not source_designee(sv, source):
+            if f.get("outil"):
+                designee = outil_designe(f["outil"], source, vocab.acces(*f["outil"].split("/", 1)))
+            else:
+                designee = not sv or source_designee(sv, source)
+            if not designee:
                 v.err("%s : la source %s n'est pas désignée par le juriste (ni son nom ni ses mots dans le texte "
                       "ou les réponses) ; ne pas ajouter de condition", ou, sv)
             if f.get("critere") == "transmis" and not transmis_ecrit(source):
