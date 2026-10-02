@@ -1,0 +1,5 @@
+{"ts":"2026-10-02T15:01:49.067006835Z","empreinte":"a4f1a0367c3c2a2675a93ab2f64c09dbf2a20cecc0d518719ff9e419bbf25fc2","outil":"evaluer_dossier","arguments_origine":{"dossier_id":"DOS-FICTIF-004"}}
+{"ts":"2026-10-02T15:01:49.069568896Z","empreinte":"df06e999545ba93ea3093447e7d1802e90f7e35af8d447c57dba1d700cdd7131","outil":"rechercher_entreprise","arguments_origine":{"siren":"000000000"}}
+{"ts":"2026-10-02T15:01:49.072259656Z","empreinte":"ffb88a9e1efada7ab92a40eff423f774d24015b1597531a8be58240e3b833762","outil":"verifier_gel","arguments_origine":{"nom":"SOCIETE FICTIVE ALPHA SANCTIONNEE"}}
+{"ts":"2026-10-02T15:01:49.531879481Z","empreinte":"781a5b77980c92b19d9488b4007da05569c1dfe9ce94770415a175079698f2df","outil":"get_taux_usure","arguments_origine":{"categorie":"decouvert-societes-non-financieres","date_reference":"2026-10-02"}}
+{"ts":"2026-10-02T15:01:49.536087925Z","empreinte":"cc91e1ff0a1f31fc400263f7929a3745840f6283236ba2d66cc4bd181d3f2d73","outil":"attribuer_pret","arguments_origine":{"dossier_id":"DOS-FICTIF-004","montant":900000,"siren":"000000000"}}
