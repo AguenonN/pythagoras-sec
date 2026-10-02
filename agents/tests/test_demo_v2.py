@@ -86,3 +86,31 @@ class TestDemoV2(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertIsNone(jeu)
         self.assertIn("Jeu refusé par le vérificateur", ecrit)
+
+
+class TestDemoJeuExistant(unittest.TestCase):
+    """--jeu-existant : la démo texte rend la version n+1 du jeu de démo,
+    v2 par défaut, la directive ajoutée numérotée à la suite."""
+
+    def test_ajout_au_jeu_de_demo(self):
+        from compilateur import directive_go
+        demo_json = os.path.join(directive_go.RACINE, "demo", "directives", "demo.json")
+        propo = reponse(appel("proposer_jeu", {"directives": [{
+            "extrait": "Aucune action d'agent le week-end, heure de Paris",
+            "fondements": [{"texte": "Règlement intérieur", "article": "12"}],
+            "declencheur": {"serveur": "*", "outil": "*", "acces": "action"}, "racine": "n1",
+            "noeuds": [{"id": "n1", "type": "temps", "jours": ["samedi", "dimanche"], "fuseau": "Europe/Paris"}],
+            "effets": [{"effet": "refuser"}]}]}))
+        cl = ClientScripte(propo, propo)
+        with mock.patch("compilateur.demo.mistral.Client", return_value=cl):
+            rc, ecrit, jeu, _, _ = lancer(["refuser"], "--texte", "Aucune action d'agent le week-end, heure de Paris "
+                                          "(Règlement intérieur, art. 12).", "--date-effet", "2026-10-05",
+                                          "--jeu-existant", demo_json, schema=())
+        self.assertEqual(rc, 0, ecrit)
+        with open(demo_json, encoding="utf-8") as f:
+            demo_jeu = json.load(f)
+        self.assertEqual((jeu["jeu"]["id"], jeu["jeu"]["version"]), ("demo", demo_jeu["jeu"]["version"] + 1))
+        self.assertEqual(jeu["directives"][:-1], demo_jeu["directives"])
+        self.assertEqual((jeu["directives"][-1]["id"], jeu["directives"][-1]["statut"]), ("D-009", "brouillon"))
+        self.assertIn("Ajout au jeu demo", ecrit)
+        self.assertNotIn("Directive D-001", ecrit)

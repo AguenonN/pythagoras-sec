@@ -25,6 +25,7 @@ import urllib.request
 
 URL = "https://api.mistral.ai/v1/chat/completions"
 MODELE = "mistral-small-latest"
+MODELES = ("mistral-small-latest", "mistral-medium-latest")
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 ENREGISTREMENTS = os.path.join(ICI, "enregistrements")
@@ -53,10 +54,13 @@ def empreinte(corps):
 
 class Client:
     def __init__(self, mode="rejeu", enregistrements=ENREGISTREMENTS, etat=ETAT,
-                 max_appels=None, transport=None, dormir=time.sleep):
+                 max_appels=None, transport=None, dormir=time.sleep, modele=MODELE):
         if mode not in ("rejeu", "reel"):
             raise ValueError("mode inconnu : %r" % mode)
+        if modele not in MODELES:
+            raise ValueError("modèle inconnu : %r (%s)" % (modele, ", ".join(MODELES)))
         self.mode = mode
+        self.modele = modele
         self.enregistrements = enregistrements
         self.etat = etat
         if max_appels is None:
@@ -70,7 +74,7 @@ class Client:
         """``options`` complète le corps (parallel_tool_calls…) ; absentes, la
         requête et donc son empreinte sont celles d'avant leur ajout."""
         corps = {
-            "model": MODELE,
+            "model": self.modele,
             "temperature": 0,
             "random_seed": 0,
             "messages": messages,

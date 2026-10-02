@@ -2,6 +2,7 @@
 brouillon, questions, refus motivés, vérifications, questions du code."""
 
 import json
+import os
 import unittest
 
 from compilateur import compilateur_v2 as c2
@@ -375,10 +376,14 @@ class TestDesignationPersonne(Base):
     SI = {"question": "q", "reponse": "refuser", "champ": "si_indetermine", "origine": "compilateur"}
 
     def propo(self, feuille):
-        noeud = ({"id": "a", "type": "demandeur", "groupe": "prestataires-externes"} if feuille == "demandeur" else
-                 {"id": "a", "type": "sujet", "groupe": "prestataires-externes", "champ": "/siren"})
+        demandeur = {"id": "a", "type": "demandeur", "groupe": "prestataires-externes"}
+        sujet = {"id": "a", "type": "sujet", "groupe": "prestataires-externes", "champ": "/siren"}
+        if feuille == "les deux":
+            noeuds = [{"id": "r", "type": "et", "enfants": ["a", "b"]}, demandeur, dict(sujet, id="b")]
+        else:
+            noeuds = [demandeur if feuille == "demandeur" else sujet]
         return jeu({"extrait": "x", "fondements": [{"texte": "RGPD", "article": "32"}], "declencheur": dict(PRET),
-                    "racine": "a", "noeuds": [noeud], "effets": [{"effet": "refuser"}]})
+                    "racine": noeuds[0]["id"], "noeuds": noeuds, "effets": [{"effet": "refuser"}]})
 
     def designation(self, valeur):
         return {"question": "q", "reponse": valeur, "champ": "designation_personne", "origine": "compilateur"}
@@ -403,18 +408,53 @@ class TestDesignationPersonne(Base):
         r = self.compiler(self.TEXTE, ClientScripte(self.propo("sujet")), [self.designation("Personne concernée"), self.SI])
         self.assertEqual(r["etat"], c2.JEU, r["erreurs"])
 
-    def test_reponse_contraire_refuse_sans_rappel(self):
-        for feuille, valeur, motif in (("demandeur", "personne_concernee", "la personne qui lance les agents (feuille demandeur)"),
-                                       ("sujet", "demandeur", "la personne concernée par l'action (feuille sujet)")):
+    def test_reponse_sans_feuille_correspondante_refuse_sans_rappel(self):
+        for feuille, valeur, motif in (("demandeur", "personne_concernee",
+                                        "désigne la personne concernée par l'action, mais aucune condition du jeu ne "
+                                        "porte sur une feuille sujet (seulement : directive D-001 (feuille demandeur))"),
+                                       ("sujet", "demandeur",
+                                        "désigne le demandeur (la personne qui lance les agents), mais aucune condition "
+                                        "du jeu ne porte sur une feuille demandeur (seulement : directive D-001 (feuille sujet))")):
             cl = ClientScripte(self.propo(feuille))
             r = self.compiler(self.TEXTE, cl, [self.designation(valeur), self.SI])
             self.assertEqual(r["etat"], c2.REFUSE)
             self.assertIsNone(r["jeu"])
             self.assertEqual(len(cl.recus), 1, "pas de rappel à Mistral")
             self.assertEqual(len(r["erreurs"]), 1)
-            self.assertIn("directive D-001 : la condition porte sur " + motif, r["erreurs"][0])
+            self.assertIn(motif, r["erreurs"][0])
             self.assertIn("« utilisateur »", r["erreurs"][0])
             self.assertEqual(r["consignation"][0]["champ"], "designation_personne")
+
+    def test_demandeur_et_sujet_dans_la_meme_regle(self):
+        """Une règle peut viser le demandeur et la personne concernée : la
+        réponse dit seulement à quelle feuille le mot correspond, et le jeu
+        est accepté dans les deux sens."""
+        for valeur in ("demandeur", "personne_concernee"):
+            cl = ClientScripte(self.propo("les deux"))
+            r = self.compiler(self.TEXTE, cl, [self.designation(valeur), self.SI])
+            self.assertEqual(r["etat"], c2.JEU, (valeur, r["erreurs"]))
+            self.assertEqual(r["consignation"][0], self.designation(valeur))
+            self.assertEqual(sorted(r["jeu"]["directives"][0]["condition"]["et"][i].popitem()[0] for i in (0, 1)),
+                             ["demandeur", "sujet"])
+
+    def test_question_tient_avec_un_jeu_existant(self):
+        with open(os.path.join(directive_go.RACINE, "demo", "directives", "demo.json"), encoding="utf-8") as f:
+            demo = json.load(f)
+        r = c2.compiler_jeu(self.TEXTE, "ignore", self.vocab, ClientScripte(self.propo("les deux")),
+                            "juriste@cabinet.fr", "2026-10-04T00:00:00Z", existant=demo)
+        self.assertEqual([q["champ"] for q in r["questions"]], ["designation_personne", "si_indetermine"])
+        self.assertIn("D-009", r["questions"][1]["question"])
+        r = c2.compiler_jeu(self.TEXTE, "ignore", self.vocab, ClientScripte(self.propo("sujet")),
+                            "juriste@cabinet.fr", "2026-10-04T00:00:00Z", existant=demo,
+                            reponses=[self.designation("demandeur"), self.SI])
+        self.assertEqual(r["etat"], c2.REFUSE)
+        self.assertIn("directive D-009 (feuille sujet)", r["erreurs"][0])
+        r = c2.compiler_jeu(self.TEXTE, "ignore", self.vocab, ClientScripte(self.propo("demandeur")),
+                            "juriste@cabinet.fr", "2026-10-04T00:00:00Z", existant=demo,
+                            reponses=[self.designation("demandeur"), self.SI])
+        self.assertEqual(r["etat"], c2.JEU, r["erreurs"])
+        self.assertEqual((r["jeu"]["jeu"]["id"], r["jeu"]["jeu"]["version"], r["ajoutees"]), ("demo", 2, ["D-009"]))
+        self.assertEqual(r["jeu"]["directives"][:8], demo["directives"])
 
     def test_reponse_hors_options_redemandee(self):
         r = self.compiler(self.TEXTE, ClientScripte(self.propo("demandeur")), [self.designation("les deux"), self.SI])

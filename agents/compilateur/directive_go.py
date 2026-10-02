@@ -49,8 +49,10 @@ def verifier(jeu, exiger_brouillon=True):
     return rapport["ok"], rapport.get("erreurs", []), rapport.get("empreinte", "")
 
 
-def relire(jeu):
-    r = _lancer("relire", jeu)
+def relire(jeu, directives=None):
+    """Relecture du jeu ; ``directives`` (identifiants) : seulement celles-ci,
+    jugées dans le jeu entier (ajout à un jeu existant)."""
+    r = _lancer("relire", jeu, ["--directives", ",".join(directives)] if directives else [])
     if r.returncode != 0:
         raise ErreurOutil("directive relire : " + r.stderr.decode("utf-8", "replace"))
     return r.stdout.decode("utf-8")

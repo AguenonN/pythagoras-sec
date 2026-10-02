@@ -170,7 +170,8 @@ class TestDemandeur(Scenario, unittest.TestCase):
                           for r in sc["reponses"]]
         r, _ = derouler_gele(sc, mistral.Client(mode="rejeu"))
         self.assertEqual(r["etat"], c2.REFUSE)
-        self.assertIn("feuille demandeur", r["erreurs"][0])
+        self.assertIn("aucune condition du jeu ne porte sur une feuille sujet", r["erreurs"][0])
+        self.assertIn("directive U-001 (feuille demandeur)", r["erreurs"][0])
 
     def test_demandeur_et_etiquettes(self):
         d, = self.directives()

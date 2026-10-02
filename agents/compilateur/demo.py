@@ -17,6 +17,7 @@ de deux fonctions, lire et écrire.
 """
 
 import argparse
+import json
 import os
 import sys
 
@@ -84,13 +85,14 @@ def _poser(lire, ecrire, q):
         ecrire("   Réponse attendue : %s.\n" % " ou ".join(q["options"]))
 
 
-def derouler_v2(lire, ecrire, texte, jeu_id, vocab, client, auteur, date_effet, prefixe_id="D"):
+def derouler_v2(lire, ecrire, texte, jeu_id, vocab, client, auteur, date_effet, prefixe_id="D", existant=None):
     """Comme ``derouler``, pour un jeu v2 : rend le résultat final de
-    compilateur_v2.compiler_jeu."""
+    compilateur_v2.compiler_jeu. ``existant`` : le jeu auquel ajouter."""
     reponses = []
     for _ in range(TOURS_MAX + 1):
         r = compilateur_v2.compiler_jeu(texte, jeu_id, vocab, client, auteur=auteur,
-                                        date_effet=date_effet, reponses=reponses, prefixe_id=prefixe_id)
+                                        date_effet=date_effet, reponses=reponses, prefixe_id=prefixe_id,
+                                        existant=existant)
         if r["etat"] not in (compilateur_v2.QUESTIONS, compilateur_v2.NON_OBSERVABLE):
             break
         if r["etat"] == compilateur_v2.NON_OBSERVABLE:
@@ -139,7 +141,13 @@ def principal(argv=None, lire=input, ecrire=sys.stdout.write):
     ap.set_defaults(v1=False)  # explicite : sinon argparse prendrait le défaut de --v2 (store_false)
     ap.add_argument("--vocabulaire", default=VOCABULAIRE, help="étiquettes, rôles et groupes (v2)")
     ap.add_argument("--prefixe-id", default="D", help="préfixe des identifiants de directive (v2) : D-001, D-002…")
+    ap.add_argument("--jeu-existant", help="jeu auquel ajouter (v2) : la sortie est sa version n+1, les directives "
+                                           "existantes inchangées, les nouvelles en brouillon, numérotées à la suite")
     a = ap.parse_args(argv)
+    existant = None
+    if a.jeu_existant:
+        with open(a.jeu_existant, encoding="utf-8") as f:
+            existant = json.load(f)
 
     texte = a.texte
     while not texte or not texte.strip():
@@ -154,7 +162,7 @@ def principal(argv=None, lire=input, ecrire=sys.stdout.write):
 
     if not a.v1:
         r = derouler_v2(lire, ecrire, texte, a.jeu, vocabulaire.Vocabulaire.lire(a.catalogue, a.vocabulaire),
-                        mistral.Client(mode=a.mode), a.auteur, date, prefixe_id=a.prefixe_id)
+                        mistral.Client(mode=a.mode), a.auteur, date, prefixe_id=a.prefixe_id, existant=existant)
         if r["etat"] != compilateur_v2.JEU:
             return 1
     else:
