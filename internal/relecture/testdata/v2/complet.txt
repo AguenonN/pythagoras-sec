@@ -1,5 +1,5 @@
 Jeu complet-v2, version 1, en vigueur à partir du 01/09/2026 à 00:00 UTC, auteur juriste@cabinet.fr.
-Empreinte : sha256:e78233c92236c645f1b176b474964b4a62cafdfbfafd7c000c9c563843dcc12e.
+Empreinte : sha256:d3af0c76dd0f62cbc92fde41ae68671207c8773f0fb46802434d76faf45df388.
 3 directives, évaluées dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
 Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.
 
@@ -43,4 +43,8 @@ Alors :
 
 Directive X-003, version 1, active (appliquée), fondée sur Exemple.
 Applicable aux appels à partir du 01/09/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
-Verrou interdiction. Pour tous les appelants : tout appel à supprimer_tout, sur tout serveur, est refusé, sans condition.
+Pour tous les appelants.
+Quand : tout appel à l'outil supprimer_tout, sur tout serveur.
+Condition : aucune, la directive s'applique à chaque fois.
+Alors :
+  - l'appel est refusé

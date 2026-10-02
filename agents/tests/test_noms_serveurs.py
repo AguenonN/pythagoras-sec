@@ -1,15 +1,15 @@
 """Les seuls noms de serveurs autorisés. Tout nom de serveur présent
 dans le catalogue, dans les énumérations offertes à Mistral, dans ses
 propositions enregistrées ou dans les exemples appartient à cette liste.
-Les tests négatifs emploient gels-avoirs, autorisé mais absent du catalogue
-d'exemple, pour vérifier qu'un serveur hors catalogue est refusé."""
+Les enregistrements sont ceux du format v2 (proposer_jeu) ; le format v1
+est retiré."""
 
 import glob
 import json
 import os
 import unittest
 
-from .aides import EXEMPLES, catalogue_exemple
+from .aides import EXEMPLES, catalogue_demo
 
 SERVEURS = {"taux-officiel", "banque-synthetique", "recherche-entreprises",
             "gels-avoirs", "eurlex", "legifrance", "rh-synthetique", "referentiel-rh"}
@@ -17,19 +17,23 @@ ENREGISTREMENTS = os.path.join(os.path.dirname(EXEMPLES), "enregistrements")
 
 
 def serveurs_d_une_proposition(p):
+    """Les serveurs que nomme une proposition de proposer_jeu."""
     noms = set()
-    cible = p.get("cible") or {}
-    if cible.get("serveur") not in (None, "*"):
-        noms.add(cible["serveur"])
-    pr = p.get("provenance") or {}
-    noms.update(pr.get("serveurs") or [])
-    noms.update(o.split("/", 1)[0] for o in pr.get("outils") or [])
+    for d in p.get("directives") or []:
+        sv = (d.get("declencheur") or {}).get("serveur")
+        if sv not in (None, "", "*"):
+            noms.add(sv)
+        for n in d.get("noeuds") or []:
+            if n.get("serveur"):
+                noms.add(n["serveur"])
+            if n.get("outil"):
+                noms.add(n["outil"].split("/", 1)[0])
     return noms
 
 
 class TestNomsServeurs(unittest.TestCase):
     def test_catalogue(self):
-        self.assertLessEqual(set(catalogue_exemple().noms_serveurs()), SERVEURS)
+        self.assertLessEqual(set(catalogue_demo().noms_serveurs()), SERVEURS)
 
     def test_enregistrements(self):
         fichiers = sorted(glob.glob(os.path.join(ENREGISTREMENTS, "*.json")))
@@ -38,13 +42,14 @@ class TestNomsServeurs(unittest.TestCase):
             with open(chemin, encoding="utf-8") as f:
                 e = json.load(f)
             for outil in e["requete"]["tools"]:
-                props = outil["function"]["parameters"]["properties"]
-                if "cible" in props:
-                    enum = set(props["cible"]["properties"]["serveur"]["enum"]) - {"*"}
-                    self.assertLessEqual(enum, SERVEURS, chemin)
-                    self.assertLessEqual(set(props["provenance"]["properties"]["serveurs"]["items"]["enum"]), SERVEURS, chemin)
+                if outil["function"]["name"] != "proposer_jeu":
+                    continue
+                d = outil["function"]["parameters"]["properties"]["directives"]["items"]["properties"]
+                enum = set(d["declencheur"]["properties"]["serveur"]["enum"]) - {"*"}
+                self.assertLessEqual(enum, SERVEURS, chemin)
+                self.assertLessEqual(set(d["noeuds"]["items"]["properties"]["serveur"]["enum"]), SERVEURS, chemin)
             for tc in e["reponse"]["choices"][0]["message"].get("tool_calls") or []:
-                if tc["function"]["name"] == "proposer_directive":
+                if tc["function"]["name"] == "proposer_jeu":
                     p = json.loads(tc["function"]["arguments"])
                     self.assertLessEqual(serveurs_d_une_proposition(p), SERVEURS, chemin)
 

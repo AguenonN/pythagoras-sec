@@ -25,7 +25,6 @@ import re
 
 from . import arbre, directive_go, verifications_v2
 from . import outils_v2
-from .compilateur import fondement
 from .verifications import sans_accents
 
 QUESTIONS = "questions"
@@ -115,6 +114,25 @@ def _date(iso, cle):
 
 def _pose(v):
     return v not in (None, "", [], {})
+
+
+_ARTICLE = re.compile(r"^\s*(?:l['’])?art(?:icle|\.)?\s*([A-Za-z]?\d[\w.\-§]*)\s+(?:du |de la |des |de l['’])?(\S.*)$", re.IGNORECASE)
+_PREFIXE_ARTICLE = re.compile(r"^\s*art(?:icle|\.)?\s*", re.IGNORECASE)
+
+
+def fondement(f):
+    """Range « Art. 22 RGPD » en texte RGPD, article 22 : même contenu,
+    autrement découpé ; rien n'est ajouté."""
+    texte = (f.get("texte") or "").strip()
+    article = (f.get("article") or "").strip()
+    m = _ARTICLE.match(texte)
+    if m and not article:
+        article, texte = m.group(1).strip(), m.group(2).strip()
+    article = _PREFIXE_ARTICLE.sub("", article)
+    out = {"texte": texte}
+    if article:
+        out["article"] = article
+    return out
 
 
 def construire_directive(p, texte, id_directive, date_effet, prefixe):

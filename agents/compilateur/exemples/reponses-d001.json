@@ -1,6 +1,0 @@
-[
-  {"question": "Souhaitez-vous que l'action « attribuer un prêt » soit bloquée (effet refuser) ou soumise à validation humaine (effet attendre_validation) ?",
-   "reponse": "Le prêt peut être attribué, mais seulement après validation humaine."},
-  {"question": "Jusqu'à quelle date cette directive doit-elle être relue (champ revision_avant) ?",
-   "reponse": "À relire avant le 31/12/2026."}
-]

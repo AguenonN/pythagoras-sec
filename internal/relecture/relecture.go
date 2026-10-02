@@ -27,12 +27,7 @@ func Jeu(j *directive.Jeu) string {
 	fmt.Fprintf(&b, "%s, évaluée%s dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, "+
 		"l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).\n",
 		compte(len(j.Directives), "directive", "directives"), s(len(j.Directives)))
-	for _, d := range j.Directives {
-		if d.EstV2() {
-			b.WriteString("Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.\n")
-			break
-		}
-	}
+	b.WriteString("Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.\n")
 	for _, d := range j.Directives {
 		b.WriteString("\n")
 		b.WriteString(Directive(d))
@@ -40,19 +35,11 @@ func Jeu(j *directive.Jeu) string {
 	return b.String()
 }
 
-// Directive rend une directive v1 en trois lignes : identité et fondement,
-// validité, règle. Une directive v2 est rendue par directiveV2.
+// Directive rend une directive (schéma v2, docs/schema-directive-v2.md) :
+// identité et fondements, validité, déclencheur, condition, effets. Le
+// format v1 est retiré : cmd/directive le refuse avant toute relecture.
 func Directive(d directive.Directive) string {
-	if d.EstV2() {
-		return directiveV2(d)
-	}
-	var b strings.Builder
-	fmt.Fprintf(&b, "Directive %s, version %d, %s, fondée sur %s.\n",
-		d.ID, d.Version, statut(d.Statut), fondement(d.Fondement))
-	fmt.Fprintf(&b, "Applicable aux appels à partir du %s, sans date de fin ; %s.\n",
-		date(d.DateEffet), revision(d.RevisionAvant))
-	fmt.Fprintf(&b, "Verrou %s. %s\n", d.Verrou, regle(d))
-	return b.String()
+	return directiveV2(d)
 }
 
 func statut(s directive.Statut) string {
@@ -103,27 +90,6 @@ func date(t time.Time) string {
 	return t.Format("02/01/2006") + " à " + h + " UTC"
 }
 
-func regle(d directive.Directive) string {
-	p := perimetre(d.Perimetre) + " : "
-	c := cible(d.Cible)
-	switch d.Verrou {
-	case directive.Interdiction:
-		return p + c + " " + effet(d.Effet) + ", sans condition."
-	case directive.ApprobationHumaine:
-		return p + c + " " + effet(d.Effet) + "."
-	case directive.SeuilArgument:
-		return p + c + " " + conditions(d.Condition) + " " + effet(d.Effet) + ". " + indetermine(d)
-	case directive.ProvenanceSession:
-		return p + provenance(d.Provenance) + ", " + c + " " + effet(d.Effet) + "."
-	case directive.SourceAttestee:
-		return p + c + " " + effet(d.Effet) +
-			" si l'attestation de ce serveur au registre (identité, schémas épinglés) a échoué."
-	case directive.ChampsAutorises:
-		return p + champs(c, d.Champs)
-	}
-	return p + c + " " + effet(d.Effet) + "."
-}
-
 // perimetre reprend la règle de Decide : un appelant non prouvé tombe sous
 // toute directive à périmètre.
 func perimetre(p *directive.Perimetre) string {
@@ -137,40 +103,6 @@ func perimetre(p *directive.Perimetre) string {
 	}
 	return "Pour " + pluriel(len(p.Appelants), "l'appelant", "les appelants") + " " +
 		strings.Join(p.Appelants, ", ") + ", et pour tout appelant dont l'identité n'est pas prouvée"
-}
-
-func cible(c directive.Cible) string {
-	switch {
-	case c.Serveur == "*" && c.Outil == "*":
-		return "tout appel d'outil, sur tout serveur,"
-	case c.Serveur == "*":
-		return "tout appel à " + c.Outil + ", sur tout serveur,"
-	case c.Outil == "*":
-		return "tout appel à un outil du serveur " + c.Serveur
-	}
-	return "tout appel à " + c.Outil + " sur " + c.Serveur
-}
-
-func effet(e directive.Effet) string {
-	switch e {
-	case directive.Refuser:
-		return "est refusé"
-	case directive.AttendreValidation:
-		return "exige une validation humaine"
-	case directive.Caviarder:
-		return "est transmis après caviardage"
-	case directive.Autoriser:
-		return "est autorisé"
-	}
-	return "a l'effet inconnu " + strconv.Quote(string(e))
-}
-
-func conditions(cs []directive.Condition) string {
-	parts := make([]string, len(cs))
-	for i, c := range cs {
-		parts[i] = "dont l'argument " + c.Champ + " " + operation(c)
-	}
-	return strings.Join(parts, " et ")
 }
 
 func operation(c directive.Condition) string {
@@ -187,8 +119,6 @@ func operation(c directive.Condition) string {
 		return "est égal à " + valeur(c.Valeur)
 	case directive.OpDiff:
 		return "est différent de " + valeur(c.Valeur)
-	case directive.OpDans:
-		return "vaut l'une des valeurs " + valeur(c.Valeur)
 	case directive.OpPresent:
 		return "est présent"
 	case directive.OpAbsent:
@@ -224,50 +154,6 @@ func valeur(v any) string {
 	}
 	b, _ := json.Marshal(v)
 	return string(b)
-}
-
-// indetermine suit Decide : sans ignorer validé, une condition impossible à
-// évaluer refuse l'appel, quel que soit l'effet demandé.
-func indetermine(d directive.Directive) string {
-	si := "Si l'une de ces conditions ne peut pas être évaluée (argument absent ou de type inattendu), "
-	if len(d.Condition) == 1 {
-		si = "Si cette condition ne peut pas être évaluée (argument absent ou de type inattendu), "
-	}
-	if d.SiIndetermine == directive.IndetermineIgnorer {
-		return si + "la directive ne s'applique pas à cet appel (choix validé par " + d.SiIndetermineValidePar + ")."
-	}
-	return si + "l'appel est refusé."
-}
-
-func provenance(p *directive.Provenance) string {
-	if p == nil {
-		return "si la session a consulté (provenance absente)"
-	}
-	var sources []string
-	for _, sv := range p.Serveurs {
-		sources = append(sources, "du serveur "+sv)
-	}
-	for _, o := range p.Outils {
-		sv, outil, _ := strings.Cut(o, "/")
-		sources = append(sources, "de l'outil "+outil+" du serveur "+sv)
-	}
-	liste := strings.Join(sources, " ou ")
-	if p.Critere == directive.Transmis {
-		return "si la session a déjà transmis un appel à destination " + liste + " (quel qu'en soit le résultat)"
-	}
-	return "si la session a reçu des données " + liste
-}
-
-func champs(c string, ch *directive.Champs) string {
-	if ch == nil {
-		return c + " (liste de champs absente)."
-	}
-	liste := pluriel(len(ch.Autorises), "le champ", "les champs") + " " + strings.Join(ch.Autorises, ", ")
-	const couvre = " (un champ autorisé couvre aussi tout son contenu)"
-	if ch.Mode == directive.ModeRefuser {
-		return c + " ne peut contenir que " + liste + couvre + " ; un appel qui en contient un autre est refusé."
-	}
-	return c + " ne transmet que " + liste + couvre + " ; tout autre champ est retiré avant transmission."
 }
 
 // pluriel choisit la forme selon n ; compte la précède du nombre.

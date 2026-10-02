@@ -484,3 +484,62 @@ class TestDesignationPersonne(Base):
                        ("l’agent humain décide", "l’agent humain"), ("Les utilisatrices", "utilisatrices")):
             self.assertEqual(c2.mot_personne_ambigu(t), mot)
         self.assertIsNone(c2.mot_personne_ambigu("Aucun appel le week-end."))
+
+
+class TestCasReprisDuV1(Base):
+    """Les trois cas que seuls les scénarios v1 enregistrés couvraient (seuil
+    non chiffré, serveur absent, champs vers un partenaire), gardés en tests
+    scriptés v2 au retrait du v1, sans appel Mistral."""
+
+    SEUIL = "Au-delà d'un montant significatif, l'attribution d'un prêt est bloquée (Politique de crédit, art. 3.2)."
+    PARTENAIRE = "Le serveur partenaire ne doit recevoir que le SIREN de l'entreprise (RGPD, art. 5)."
+    SI = {"question": "q", "reponse": "refuser", "champ": "si_indetermine", "origine": "compilateur"}
+
+    def test_seuil_non_chiffre(self):
+        # Mistral demande le montant ; un montant inventé est refusé ; celui
+        # que donne le juriste est accepté.
+        q = reponse(appel("poser_question", {"question": "Quel montant exact ?", "sujet": "seuil",
+                                             "extrait": "montant significatif"}))
+        r = self.compiler(self.SEUIL, ClientScripte(q))
+        self.assertEqual((r["etat"], r["questions"][0]["sujet"]), (c2.QUESTIONS, "seuil"))
+        r = self.compiler(self.SEUIL, ClientScripte(jeu(d_seuil()), jeu(d_seuil())))
+        self.assertEqual(r["etat"], c2.REFUSE)
+        self.assertTrue(any("la valeur 500000 n'est pas écrite" in e for e in r["erreurs"]), r["erreurs"])
+        rep = [{"question": "Quel montant exact ?", "reponse": "500 000 euros."}, self.SI]
+        r = self.compiler(self.SEUIL, ClientScripte(jeu(d_seuil())), rep)
+        self.assertEqual(r["etat"], c2.JEU, r["erreurs"])
+        self.assertEqual(r["jeu"]["directives"][0]["condition"],
+                         {"argument": {"champ": "/montant", "op": ">", "valeur": 500000}})
+
+    def test_serveur_absent_du_catalogue(self):
+        p = dict(d_seuil(), declencheur={"serveur": "serveur-inconnu", "outil": "attribuer_pret"})
+        r = self.compiler(CREDIT, ClientScripte(jeu(p), jeu(p)))
+        self.assertEqual(r["etat"], c2.REFUSE)
+        self.assertTrue(any("serveur serveur-inconnu absent du catalogue" in e for e in r["erreurs"]), r["erreurs"])
+        # Le nom n'est même pas offert : l'énumération du function calling le borne.
+        cl = ClientScripte(jeu(d_seuil()))
+        self.compiler(CREDIT, cl)
+        offerts = {o["function"]["name"]: o for o in cl.recus[0][1]}
+        enum = offerts["proposer_jeu"]["function"]["parameters"]["properties"]["directives"]["items"]["properties"][
+            "declencheur"]["properties"]["serveur"]["enum"]
+        self.assertNotIn("serveur-inconnu", enum)
+
+    def test_champs_vers_un_partenaire(self):
+        # « le serveur partenaire » est confirmé par le juriste, pas supposé.
+        q = reponse(appel("poser_question", {"question": "Quel serveur est le partenaire ?", "sujet": "cible",
+                                             "extrait": "serveur partenaire"}))
+        r = self.compiler(self.PARTENAIRE, ClientScripte(q))
+        self.assertEqual(r["etat"], c2.QUESTIONS)
+        p = {"extrait": "Le serveur partenaire ne doit recevoir que le SIREN de l'entreprise",
+             "fondements": [{"texte": "RGPD", "article": "5"}],
+             "declencheur": {"serveur": "recherche-entreprises", "outil": "*"}, "racine": "", "noeuds": [],
+             "effets": [{"effet": "caviarder", "champs_autorises": ["/siren"], "mode": "caviarder"}]}
+        rep = [{"question": "Quel serveur est le partenaire ?", "reponse": "recherche-entreprises"}]
+        r = self.compiler(self.PARTENAIRE, ClientScripte(jeu(p)), rep)
+        self.assertEqual(r["etat"], c2.JEU, r["erreurs"])
+        d, = r["jeu"]["directives"]
+        self.assertEqual(d["effets"], [{"effet": "caviarder", "champs_autorises": ["/siren"], "mode": "caviarder"}])
+        # Un champ qui n'existe pour aucun outil visé est refusé.
+        p["effets"] = [{"effet": "caviarder", "champs_autorises": ["/siren", "/revenu"], "mode": "caviarder"}]
+        r = self.compiler(self.PARTENAIRE, ClientScripte(jeu(p), jeu(p)), rep)
+        self.assertEqual(r["etat"], c2.REFUSE)

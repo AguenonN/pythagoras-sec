@@ -1,8 +1,9 @@
 // Command directive vérifie et relit un jeu de directives lu sur l'entrée
 // standard. C'est le seul juge de ce que le compilateur propose : aucune
 // sortie de modèle n'est acceptée sans passer par le chargeur strict.
-// Un jeu peut porter des directives v1 et v2 (docs/schema-directive-v2.md) :
-// le chargeur et la relecture traitent les deux.
+// Seul le format v2 est admis (docs/schema-directive-v2.md) : une directive
+// v1 (clé verrou, ou sans déclencheur) est refusée par verifier et relire,
+// une erreur par directive fautive, désignée par sa position.
 //
 //	directive verifier [--exiger-brouillon] < jeu.json   {"ok":true,...} ou {"ok":false,"erreurs":[...]}
 //	directive relire   [--directives D-009,D-010] < jeu.json
@@ -97,6 +98,7 @@ func verifier(donnees []byte, exigerBrouillon bool, stdout io.Writer) int {
 	if err != nil {
 		r.Erreurs = erreurs(err)
 	}
+	r.Erreurs = append(r.Erreurs, formatV1(donnees, r.Erreurs)...)
 	if exigerBrouillon {
 		r.Erreurs = append(r.Erreurs, horsBrouillon(jeu, donnees)...)
 	}
@@ -116,9 +118,14 @@ func verifier(donnees []byte, exigerBrouillon bool, stdout io.Writer) int {
 
 func relire(donnees []byte, ids []string, stdout, stderr io.Writer) int {
 	jeu, err := directive.Charger(donnees)
+	var refus []string
 	if err != nil {
+		refus = erreurs(err)
+	}
+	refus = append(refus, formatV1(donnees, refus)...)
+	if len(refus) > 0 {
 		fmt.Fprintln(stderr, "directive: jeu refusé, pas de relecture :")
-		for _, e := range erreurs(err) {
+		for _, e := range refus {
 			fmt.Fprintln(stderr, "  -", e)
 		}
 		return 1
@@ -166,6 +173,36 @@ func horsBrouillon(jeu *directive.Jeu, donnees []byte) []string {
 			nom = "directive " + l.ID
 		}
 		out = append(out, fmt.Sprintf("directive: %s: statut %q, brouillon exigé", nom, l.Statut))
+	}
+	return out
+}
+
+// marqueV1 est la phrase du refus d'une directive v1, celle du chargeur une
+// fois le v1 retiré de internal/directive (session v2-seul).
+const marqueV1 = "format de directive v1 non pris en charge"
+
+// formatV1 rend une erreur par directive au format v1 (clé verrou, ou pas de
+// déclencheur), désignée par sa position, sans rien citer du document ;
+// rien si le document est illisible ou si le chargeur l'a déjà dit.
+func formatV1(donnees []byte, deja []string) []string {
+	for _, e := range deja {
+		if strings.Contains(e, marqueV1) {
+			return nil
+		}
+	}
+	var brut struct {
+		Directives []map[string]json.RawMessage `json:"directives"`
+	}
+	if json.Unmarshal(donnees, &brut) != nil {
+		return nil
+	}
+	var out []string
+	for i, d := range brut.Directives {
+		_, verrou := d["verrou"]
+		_, declencheur := d["declencheur"]
+		if verrou || !declencheur {
+			out = append(out, fmt.Sprintf("directive: directive %d: %s : réécrire en v2", i+1, marqueV1))
+		}
 	}
 	return out
 }

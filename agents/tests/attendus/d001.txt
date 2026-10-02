@@ -1,7 +1,0 @@
-Jeu credit-pme, version 1, en vigueur à partir du 04/10/2026 à 00:00 UTC, auteur juriste@cabinet.fr.
-Empreinte : sha256:829a044691b58c86d5fb315f3c99a841322fdefff00922a16ee5bde1036582d8.
-1 directive, évaluée dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
-
-Directive D-001, version 1, brouillon (non appliquée tant que le juriste ne l'a pas passée en observation ou active), fondée sur l'art. 22 RGPD.
-Applicable aux appels à partir du 04/10/2026 à 00:00 UTC, sans date de fin ; à relire avant le 31/12/2026 à 00:00 UTC (passée cette date, la directive reste appliquée et une alerte est émise).
-Verrou provenance_session. Pour tous les appelants : si la session a reçu des données du serveur taux-officiel, tout appel à attribuer_pret sur banque-synthetique exige une validation humaine.

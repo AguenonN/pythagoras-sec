@@ -17,7 +17,57 @@ Rien n'est poussé ni fusionné ; `main` n'est pas touchée.
 | 6, 8 | `c7f61e3` | Choix du modèle sur mesures (**`mistral-medium-latest`** par défaut du compilateur) ; parcours de scène week-end et base interne (D-009) enregistrés par le service et rejoués sans réseau ; D-010 après D-009 |
 | 2 | `dbe19ed` | Relecture des formes de gate-v2 : `$racine/…` sous un quantificateur, directives d'évènement ; fichier attendu `testdata/v2/gate-v2.txt`, trois fuseaux machine |
 | 7 | `49ea878` | RH et top management sur `mistral-medium-latest` : jeux acceptés du premier coup, relectures stables, enregistrés et rejoués (4 appels) |
-| 9 | (ce commit) | « Ne pas discriminer » : refus motivé enregistré (1 appel) et rejoué |
+| 9 | `1d7ae76` | « Ne pas discriminer » : refus motivé enregistré (1 appel) et rejoué |
+| 10 | (ce commit) | Retrait du v1 : `--v1`, `proposer_directive`, parcours v1, 8 enregistrements v1 et leur catalogue gelé, gabarit de relecture v1 ; `directive verifier` et `relire` n'acceptent que du v2 ; trois cas v1 gardés en tests scriptés v2 |
+
+### Étape 10 — retrait du v1
+
+- **Supprimés** : `compilateur/compilateur.py` (parcours v1),
+  `compilateur/outils.py` (`proposer_directive`), `--v1`/`--v2` de la démo,
+  les 8 enregistrements v1, `tests/donnees/catalogue-enregistrements.json`,
+  `exemples/reponses-*.json`, `tests/test_compilateur.py`,
+  `test_scenarios.py`, `test_demo.py`, `attendus/d001.txt` ;
+  `verifier_proposition` (v1) de `verifications.py` (les fonctions de
+  lecture des montants, dates et valeurs restent, `verifications_v2` s'en
+  sert) ; le gabarit v1 de `internal/relecture` (`regle`, `cible`, `effet`,
+  `conditions`, `provenance`, `champs`, `indetermine` v1, l'opérateur `in`) et
+  ses attendus `credit-pme.txt`, `variantes.txt`.
+- **`python -m compilateur`** devient un tour de compilation v2 sans
+  dialogue (mêmes codes de sortie : 0 jeu, 3 questions ou refus motivé,
+  1 erreurs) ; `fondement()` passe dans `compilateur_v2`.
+- **`directive verifier` et `relire`** refusent toute directive v1 (clé
+  `verrou`, ou pas de `declencheur`) : « directive: directive N: format de
+  directive v1 non pris en charge : réécrire en v2 », par position, sans
+  rien citer du document — la phrase même du chargeur de la session
+  v2-seul, et n'est pas répétée quand le chargeur la dit déjà (après
+  fusion). Tests Go (`TestV1_Refuse`) et Python.
+- **Cas v1 gardés en tests scriptés v2** (`TestCasReprisDuV1`) : seuil non
+  chiffré (question, montant inventé refusé, montant du juriste accepté),
+  serveur absent du catalogue (refusé, et absent de l'énumération offerte),
+  champs vers un partenaire (serveur confirmé par question, caviardage
+  `/siren`, champ inexistant refusé).
+- `agents/README.md`, section du compilateur : mise à jour (elle citait
+  les fichiers v1 supprimés).
+
+**Coordination avec la session v2-seul** (lu dans son rapport,
+`docs/rapports/v2-seul.md` de sa branche, et son patch non commité) :
+
+- Mes tests ne lisent plus `internal/directive/testdata/credit-pme.json` ni
+  `v2/complet.json`, que son patch réécrit en v2 : `cmd/directive` lit
+  `v2/credit.json`, la relecture lit ma copie
+  `internal/relecture/testdata/complet-v2.json` (la directive X-003 réécrite
+  **exactement** comme dans son patch). Après fusion et application du
+  patch, mes attendus n'ont pas à être régénérés.
+- **Je garde `internal/relecture/testdata/variantes.json` (v1)**, que je ne lis
+  plus : trois tests de `internal/directive` le lisent encore sur ma
+  branche (`TestChargerV1_EmpreintesInchangees`, `TestConvertirV1_SixVerrous`,
+  `TestRejeu_V1IdentiqueSousV2`), et son patch les supprime. À supprimer
+  après application du patch (une ligne).
+- `internal/relecture` n'appelle plus `EstV2` ni aucun identifiant v1
+  (`Verrou`, `Cible`, `Provenance`, `Champs`, `OpDans`) : sa
+  « décision 2 » (identifiants inertes) peut aller jusqu'au bout pour
+  B. `internal/console` (C) appelle encore `relecture.Directive` : elle
+  rend désormais toute directive par le gabarit v2.
 
 ### Étape 9 — « ne pas discriminer »
 
@@ -215,6 +265,11 @@ jeu existant.
     dit (« tout appel d'outil, sur tout serveur »). Si la scène veut « pas
     d'**action** le week-end » (titre de D-010 aux contrats), le juriste doit
     l'écrire, et ce texte-là n'est pas enregistré.
+17. **`agents/README.md` modifié** (section du compilateur seulement) : il
+    n'est attribué à personne aux contrats §5, et ne citait plus que des
+    fichiers supprimés.
+18. **`variantes.json` (v1) gardé** dans `internal/relecture/testdata` tant que
+    des tests de `internal/directive` le lisent (voir étape 10).
 
 ## 4. Blocages
 

@@ -1,11 +1,9 @@
-"""Ce que le code vérifie avant le chargeur strict : que Mistral n'a rien
-inventé.
+"""Lecture de ce que le juriste a écrit : montants, durées, dates, valeurs.
 
 Le chargeur Go garantit qu'une directive est bien formée ; il ne peut pas
 savoir si un montant, une date ou un fondement vient du juriste. Ces
-contrôles comparent chaque valeur proposée au texte du juriste et à ses
-réponses, et chaque nom au catalogue. Toute valeur introuvable est une
-erreur, renvoyée à Mistral pour correction puis, au besoin, au juriste.
+fonctions retrouvent dans le texte du juriste et ses réponses les valeurs
+écrites ; verifications_v2 y compare chaque valeur proposée.
 """
 
 import datetime
@@ -136,55 +134,3 @@ def valeur_ecrite(v, source):
     if isinstance(v, bool):
         return True  # vrai / faux : porté par l'opérateur, pas une quantité
     return False
-
-
-def verifier_proposition(p, source, catalogue):
-    """Rend la liste des valeurs non justifiées de la proposition brute ``p``."""
-    erreurs = []
-    cible = p.get("cible") or {}
-    serveur, outil = cible.get("serveur", ""), cible.get("outil", "")
-    if not catalogue.cible_existe(serveur, outil):
-        erreurs.append("cible (%s, %s) absente du catalogue" % (serveur or "?", outil or "?"))
-
-    for c in p.get("condition") or []:
-        champ = c.get("champ", "")
-        admis = catalogue.arguments_de(serveur, outil)
-        if admis and champ not in admis:
-            erreurs.append("condition : l'argument %s n'existe pas pour la cible (%s)" % (champ, ", ".join(sorted(admis))))
-        if "valeur" in c and c["valeur"] is not None and not valeur_ecrite(c["valeur"], source):
-            erreurs.append("condition : la valeur %r n'est pas écrite par le juriste ; pose une question" % (c["valeur"],))
-
-    pr = p.get("provenance")
-    if pr:
-        for s in pr.get("serveurs") or []:
-            if s not in catalogue.serveurs:
-                erreurs.append("provenance : serveur %s absent du catalogue" % s)
-        for o in pr.get("outils") or []:
-            if o not in catalogue.outils_qualifies():
-                erreurs.append("provenance : outil %s absent du catalogue" % o)
-
-    ch = p.get("champs")
-    if ch:
-        admis = catalogue.arguments_de(serveur, outil)
-        for a in ch.get("autorises") or []:
-            if admis and a not in admis:
-                erreurs.append("champs : l'argument %s n'existe pas pour la cible (%s)" % (a, ", ".join(sorted(admis))))
-
-    for a in p.get("perimetre") or []:
-        if a not in catalogue.appelants:
-            erreurs.append("perimetre : appelant %s absent du catalogue" % a)
-
-    ecrites = dates(source)
-    d = p.get("revision_avant")
-    if d and d not in ecrites:
-        erreurs.append("revision_avant : la date %s n'est pas écrite par le juriste ; pose une question" % d)
-
-    f = p.get("fondement") or {}
-    for cle in ("texte", "article"):
-        v = f.get(cle)
-        if v and _normaliser(v) not in _normaliser(source):
-            erreurs.append("fondement.%s : %r n'est pas écrit par le juriste" % (cle, v))
-
-    if p.get("si_indetermine") == "ignorer":
-        erreurs.append("si_indetermine: ignorer ne peut pas être proposé ; seul le juriste le demande")
-    return erreurs

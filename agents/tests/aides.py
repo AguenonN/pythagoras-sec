@@ -12,12 +12,6 @@ EXEMPLES = os.path.join(os.path.dirname(ICI), "compilateur", "exemples")
 # (go run ./cmd/registre-demo -catalogue ...).
 CATALOGUE_DEMO = os.path.join(EXEMPLES, "catalogue-demo.json")
 
-# Catalogue écrit à la main avant le registre de démo, gelé : les réponses
-# Mistral enregistrées des scénarios du compilateur (test_scenarios) ont été
-# obtenues avec lui, et l'empreinte de chaque requête dépend de son contenu.
-# Le modifier invaliderait ces enregistrements.
-CATALOGUE_ENREGISTRE = os.path.join(ICI, "donnees", "catalogue-enregistrements.json")
-
 # Catalogue généré tel qu'il était quand les scénarios v2 du compilateur
 # (test_scenarios_v2, parcours week-end de test_demo_v2) ont été enregistrés
 # auprès de Mistral, gelé pour la même raison : le catalogue généré a changé
@@ -31,10 +25,6 @@ CATALOGUE_V2_ENREGISTRE = os.path.join(ICI, "donnees", "catalogue-v2-enregistrem
 # l'annuaire (go run ./cmd/registre-demo -vocabulaire ...), et chaque requête
 # enregistrée embarque le vocabulaire.
 VOCABULAIRE_V2_ENREGISTRE = os.path.join(ICI, "donnees", "vocabulaire-v2-enregistrements.json")
-
-
-def catalogue_exemple():
-    return catalogue.Catalogue.lire(CATALOGUE_ENREGISTRE)
 
 
 def catalogue_demo():
@@ -68,13 +58,3 @@ class ClientScripte:
         self.recus.append((json.loads(json.dumps(messages)), outils))
         self.options.append(options)
         return self.reponses.pop(0)
-
-
-D001 = {
-    "verrou": "provenance_session",
-    "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"},
-    "effet": "attendre_validation",
-    "fondement": {"texte": "RGPD", "article": "22"},
-    "revision_avant": "2026-12-31",
-    "provenance": {"serveurs": ["taux-officiel"]},
-}

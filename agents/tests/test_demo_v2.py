@@ -12,7 +12,7 @@ from compilateur import demo, scenarios_v2
 from .aides import CATALOGUE_DEMO, CATALOGUE_V2_ENREGISTRE, VOCABULAIRE_V2_ENREGISTRE, ClientScripte, appel, reponse
 
 
-def lancer(saisies, *args, schema=("--v2",), catalogue=CATALOGUE_DEMO):
+def lancer(saisies, *args, schema=(), catalogue=CATALOGUE_DEMO):
     saisies = list(saisies)
     ecrit = []
     with tempfile.TemporaryDirectory() as tmp:
@@ -30,8 +30,8 @@ def lancer(saisies, *args, schema=("--v2",), catalogue=CATALOGUE_DEMO):
 
 
 class TestDemoV2(unittest.TestCase):
-    def test_v2_par_defaut(self):
-        # Sans option, la démo compile en v2 : c'est proposer_jeu qui est offert.
+    def test_v2_seul(self):
+        # La démo compile en v2 : c'est proposer_jeu qui est offert ; --v1 n'existe plus.
         s = reponse(appel("signaler_non_observable", {"extrait": "x", "raison": "Pas observable.", "question": "Critère ?"}))
         cl = ClientScripte(*[s] * 5)
         with mock.patch("compilateur.demo.mistral.Client", return_value=cl):
@@ -39,10 +39,9 @@ class TestDemoV2(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertIn("refuse de traduire un critère non observable", ecrit)
         self.assertIn("proposer_jeu", [o["function"]["name"] for o in cl.recus[0][1]])
-
-    def test_v1_et_v2_exclusifs(self):
-        with self.assertRaises(SystemExit):
-            lancer([], "--texte", "x", "--date-effet", "2026-10-05", schema=("--v1", "--v2"))
+        for option in ("--v1", "--v2"):
+            with self.assertRaises(SystemExit):
+                lancer([], "--texte", "x", "--date-effet", "2026-10-05", option)
 
     def test_parcours_week_end(self):
         sc = scenarios_v2.lire("weekend")
