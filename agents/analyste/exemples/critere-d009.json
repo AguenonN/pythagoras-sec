@@ -1,0 +1,10 @@
+{
+ "commentaire": "Reprise telle quelle de la proposition de l'Analyste par le juriste, passée au compilateur (contrats §4). Les réponses sont celles du juriste aux questions posées, par texte exact (questions de Mistral) ou identifiant (questions du code).",
+ "proposition": "propositions/A-source-interne-perimee-banque-synthetique.attribuer_pret.json",
+ "auteur": "julie.juridique@exemple.test",
+ "jeu_existant": "demo/directives/demo.json",
+ "date_effet": "2026-10-04T11:05:00+02:00",
+ "reponses": {
+  "si_indetermine": "refuser"
+ }
+}

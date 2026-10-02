@@ -1,0 +1,34 @@
+{
+ "id": "A-action-sans-controle-banque-synthetique.attribuer_pret",
+ "date": "2026-10-02T15:12:06Z",
+ "constat": {
+  "type": "action_sans_controle_humain",
+  "detail": "Constat : action sans contrôle humain. 1 action(s) banque-synthetique/attribuer_pret transmise(s) sans validation humaine ni directive appliquée, pour un montant au moins égal à 100 000 €.\n- 20261002-170144-base-interne-sans-d009-rejeu, entrée 5 (2026-10-02, dossier DOS-FICTIF-003) : montant 150 000 €, au moins égal au seuil de 100 000 € ; action autorisée, transmise, sans directive appliquée.",
+  "occurrences": [
+   {
+    "session": "20261002-170144-base-interne-sans-d009-rejeu",
+    "seq_action": 5,
+    "action": "banque-synthetique/attribuer_pret",
+    "date_action": "2026-10-02T15:01:45.5358923Z",
+    "transmise": true,
+    "decision": {
+     "effet": "autoriser",
+     "directives_appliquees": [],
+     "validation_humaine": "aucune"
+    },
+    "seuil": 100000,
+    "champ_montant": "/montant",
+    "valeurs_coffre": {
+     "montant": 150000,
+     "dossier": "DOS-FICTIF-003"
+    }
+   }
+  ]
+ },
+ "sessions": [
+  "20261002-170144-base-interne-sans-d009-rejeu"
+ ],
+ "texte_propose": "Attribution d'un prêt : si le montant est égal ou supérieur à 100 000 € et qu'aucune validation humaine n'a été enregistrée pour cette action dans la session, l'attribution du prêt est soumise à la validation d'un analyste-risques.",
+ "fondement_propose": "Code monétaire et financier — article L562-4 (à valider par le juriste).",
+ "explication": "Dans la session 20261002-170144-base-interne-sans-d009-rejeu, un prêt d'un montant égal ou supérieur à 100 000 € a été attribué sans aucune validation humaine ni directive applicable. Aucune règle n'imposait de validation pour ce montant précis, bien que des seuils supérieurs (2 000 000 €) ou des conditions spécifiques (taux d'usure) soient couverts."
+}
