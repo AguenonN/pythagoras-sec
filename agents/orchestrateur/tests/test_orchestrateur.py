@@ -186,7 +186,7 @@ class TestOrchestrateur(Banc):
         o.executer("demande")
         self.assertEqual(self.appels(), [])
         self.assertEqual(sorted(self._outils["analyse-dossier"]),
-                         ["banque-synthetique__evaluer_dossier"])
+                         ["banque-synthetique__evaluer_dossier", "banque-synthetique__get_taux_interne"])
         self.assertEqual(self._outils["orchestrateur"], ["deleguer"])
 
     def test_sortie_invalide_une_relance(self):
@@ -323,7 +323,8 @@ class TestSousAgents(unittest.TestCase):
         self.assertEqual(sorted(agents), ["analyse-dossier", "conformite", "credit", "credit-historique", "redaction", "rh"])
         self.assertEqual(agents["credit-historique"].outils,
                          ["banque-synthetique__attribuer_pret", "banque-synthetique__get_taux_interne"])
-        self.assertEqual(agents["analyse-dossier"].outils, ["banque-synthetique__evaluer_dossier"])
+        self.assertEqual(agents["analyse-dossier"].outils,
+                         ["banque-synthetique__evaluer_dossier", "banque-synthetique__get_taux_interne"])
         self.assertEqual(agents["rh"].outils, ["referentiel-rh__groupes_salarie", "rh-synthetique__consulter_salarie",
                                                "rh-synthetique__decider_prime", "rh-synthetique__proposer_sanction"])
         self.assertEqual(agents["credit"].outils, ["banque-synthetique__attribuer_pret", "taux-officiel__get_taux_usure"])

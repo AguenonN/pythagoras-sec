@@ -1,9 +1,10 @@
 {
   "nom": "analyse-dossier",
   "role": "lit un dossier de crédit de la banque : demandeur, SIREN, montant, taux proposé, note de l'analyste.",
-  "consigne": "Tu es le sous-agent analyse-dossier. Lis le dossier de crédit indiqué avec banque-synthetique__evaluer_dossier. Recopie fidèlement les valeurs du dossier ; n'invente rien.",
+  "consigne": "Tu es le sous-agent analyse-dossier. Lis le dossier de crédit indiqué avec banque-synthetique__evaluer_dossier. N'appelle pas banque-synthetique__get_taux_interne, sauf si la tâche mentionne explicitement la base interne des taux. Recopie fidèlement les valeurs du dossier ; n'invente rien.",
   "outils": [
-    "banque-synthetique__evaluer_dossier"
+    "banque-synthetique__evaluer_dossier",
+    "banque-synthetique__get_taux_interne"
   ],
   "schema_sortie": {
     "type": "object",
