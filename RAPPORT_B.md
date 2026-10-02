@@ -3,7 +3,7 @@
 Branche `feat/compilateur-final`, worktree `~/cybercar/mcp_rogue-compilateur-final`.
 Rien n'est poussé ni fusionné ; `main` n'est pas touchée.
 
-**Compteur d'appels Mistral réels : 0 / 25.**
+**Compteur d'appels Mistral réels : 10 / 25** (étape 6 : 8 ; étape 8 : 2). Aucune génération interrompue.
 
 ## 1. Ce qui est fait
 
@@ -12,7 +12,55 @@ Rien n'est poussé ni fusionné ; `main` n'est pas touchée.
 | — | `3e9149c` | `demo/directives/demo.json` et `demo/annuaire-source.json` repris **à l'identique** de `feat/demo-reelle` (`ca3bbdd`), voir décision 1 |
 | 1 | `2ac033d` | Vocabulaire généré : `go run ./cmd/registre-demo -vocabulaire …` ; tests de divergence Go et Python ; ancien vocabulaire gelé pour les enregistrements existants |
 | 3 | `7c53da0` | `directive relire --directives D-009,…` : relecture des seules directives ajoutées, jugées dans le jeu entier |
-| 3, 5, 4, 2 bis | (ce commit) | `python -m compilateur.service` (contrat §4) ; ajout à un jeu existant (version n+1, numérotation à la suite) ; correctif demandeur **et** sujet ; `scenarios_v2 --catalogue --vocabulaire --jeu-existant --modele` ; `demo --jeu-existant` |
+| 3, 5, 4, 2 bis | `120e504` | `python -m compilateur.service` (contrat §4) ; ajout à un jeu existant (version n+1, numérotation à la suite) ; correctif demandeur **et** sujet ; `scenarios_v2 --catalogue --vocabulaire --jeu-existant --modele` ; `demo --jeu-existant` |
+| — | `d191eb0` | Un outil de lecture est désigné par ses propres mots (« base interne des taux » → `get_taux_interne`) ; une action ne l'est jamais |
+| 6, 8 | (ce commit) | Choix du modèle sur mesures (**`mistral-medium-latest`** par défaut du compilateur) ; parcours de scène week-end et base interne (D-009) enregistrés par le service et rejoués sans réseau ; D-010 après D-009 |
+
+### Étape 6 — choix du modèle, sur mesures
+
+Même texte, même fondement, mêmes réponses du juriste, `--jeu-existant
+demo/directives/demo.json`, par le service. Le budget (8 appels) ne
+permettait **qu'un passage** par modèle et par texte (température 0 et
+graine fixe : un second passage identique serait servi par le cache).
+Les deux parcours medium ont été terminés sur le budget de l'étape 8 (2
+appels), dont ils sont les enregistrements.
+
+| Modèle | Texte | Appels | Questions obtenues | Jeu accepté du premier coup | Jeu fidèle au texte | Générations interrompues |
+|---|---|---|---|---|---|---|
+| small | week-end | 3 | 1 : fuseau (texte libre, demande aussi des heures) | non : article du fondement omis, corrigé | **non : condition inversée** (`non(samedi, dimanche)` : refus **en semaine**), acceptée par le code, visible à la relecture (« Si la condition suivante est fausse ») | 0 |
+| small | base interne | 3 | 2 : « durée d'un trimestre » (hors sujet : c'est la raison de la règle), validation ou notification | non : nœud inventé (`attendre_validation` comme feuille), puis groupe `analystes-credit` inventé en feuille `sujet` | **refusé** par le code après la correction | 0 |
+| medium | week-end | 2 | 1 : fuseau, options = liste fermée des fuseaux | **oui** | **oui** : `temps(samedi, dimanche, Europe/Paris)` → refuser, fondement art. 12 | 0 |
+| medium | base interne | 2 | 3 : cible (attribuer_pret seul ?), validation ou refus, rôle « analyste des risques » = `analyste-risques` (option) | **oui** | **oui** : identique à D-009 des contrats (`a_consulte get_taux_interne` → attendre_validation `analyste-risques`), critère `donnees_recues` | 0 |
+
+**Retenu : `mistral-medium-latest`** (`mistral.MODELE_COMPILATEUR`, défaut de
+`service`, `demo` et `scenarios_v2` ; `--modele` ou `COMPILATEUR_MODELE`
+pour en changer). Le client Mistral garde `mistral-small-latest` par
+défaut : la boucle et l'orchestrateur de la session A l'utilisent. Les
+mesures sont rejouées par `tests/test_service_scene.py` (`TestChoixDuModele`).
+
+### Étape 8 — textes de la scène, enregistrés pour le secours
+
+Parcours (`agents/compilateur/exemples/service/weekend.json` et
+`base-interne.json`) : la requête du contrat §4 et les réponses du juriste.
+Rejoués sans réseau par `tests/test_service_scene.py` :
+
+- **week-end** : question fuseau (Mistral) → `si_indetermine` (code) → jeu
+  candidat `demo.v2.json`, D-009 en brouillon (refus de tout appel d'outil
+  le samedi et le dimanche, heure de Paris), accepté par `directive verifier`,
+  relecture attendue `tests/attendus/service/weekend.txt` ;
+- **base interne** : trois questions (Mistral) → `si_indetermine` → D-009
+  identique à celle des contrats, relecture attendue
+  `tests/attendus/service/base-interne.txt` ;
+- **D-010 après D-009** : le week-end ajouté au jeu qui contient déjà D-009
+  (activée) rend D-010, version 3, sans nouvel enregistrement ;
+- le parcours week-end est aussi déroulé **par la ligne de commande**, une
+  requête JSON par appel, comme la console l'appellera : 1, 1, puis 0 appel
+  nouveau au dernier rappel.
+
+Sur scène, en secours : `python -m compilateur.service` (mode `rejeu` par
+défaut) avec exactement ces textes, ce fondement et ces réponses. En mode
+`reel`, ces textes sont rejoués sans appel ; un autre texte part vers
+Mistral.
 
 ### Le service (`agents/compilateur/service.py`)
 
@@ -99,6 +147,24 @@ jeu existant.
     la console est admis.
 12. **Correctif demandeur/sujet jugé sur le jeu entier** : il suffit qu'une
     feuille du type désigné figure dans une des directives proposées.
+13. **Fondements des textes de scène** : le brief ne les donne pas. Week-end :
+    « Règlement intérieur, article 12 » (celui des jeux de référence v2) ;
+    base interne : « Code monétaire et financier, article L313-5-1 » (celui de
+    la D-009 écrite par la session A). Auteur `julie.juridique@exemple.test`,
+    date d'effet celle de l'exemple du contrat §4. Seuls texte, fondement et
+    réponses entrent dans les requêtes : un autre auteur ou une autre date
+    se rejoue aussi.
+14. **Réponses du juriste aux questions de Mistral** : écrites par moi, au plus
+    près du texte. Base interne : « retard d'un trimestre » est la raison de
+    la règle, pas une condition ; la cible est `attribuer_pret` seul.
+15. **Un passage par modèle et par texte** au lieu de trois : le budget de 8
+    appels n'en permettait pas plus (voir le tableau).
+16. **La version medium du week-end bloque aussi la lecture** : « aucune
+    exécution de workflow agentique » ne distingue pas lecture et action, et
+    medium n'a pas posé la question. C'est fidèle au texte ; la relecture le
+    dit (« tout appel d'outil, sur tout serveur »). Si la scène veut « pas
+    d'**action** le week-end » (titre de D-010 aux contrats), le juriste doit
+    l'écrire, et ce texte-là n'est pas enregistré.
 
 ## 4. Blocages
 

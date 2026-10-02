@@ -1,0 +1,605 @@
+{
+ "reponse": {
+  "choices": [
+   {
+    "finish_reason": "tool_calls",
+    "index": 0,
+    "message": {
+     "content": "",
+     "role": "assistant",
+     "tool_calls": [
+      {
+       "function": {
+        "arguments": "{\"directives\": [{\"extrait\": \"Une décision de prêt fondée sur la base interne des taux doit être validée par un analyste des risques, la base pouvant être en retard d'un trimestre sur le seuil légal.\", \"fondements\": [{\"texte\": \"Code monétaire et financier\", \"article\": \"L313-5-1\"}], \"declencheur\": {\"serveur\": \"banque-synthetique\", \"outil\": \"attribuer_pret\"}, \"racine\": \"n1\", \"noeuds\": [{\"id\": \"n1\", \"type\": \"et\", \"enfants\": [\"n2\", \"n3\"]}, {\"id\": \"n2\", \"type\": \"a_consulte\", \"outil\": \"banque-synthetique/get_taux_interne\", \"critere\": \"donnees_recues\"}, {\"id\": \"n3\", \"type\": \"sujet\", \"groupe\": \"analystes-credit\"}], \"effets\": [{\"effet\": \"attendre_validation\", \"par_role\": \"analyste-risques\"}]}]}",
+        "name": "proposer_jeu"
+       },
+       "id": "aKK9ECSTo",
+       "index": 0,
+       "type": "function"
+      }
+     ]
+    }
+   }
+  ],
+  "created": 1790925889,
+  "id": "e21be9f6493c447cb02d61dc2d00f783",
+  "model": "mistral-small-latest",
+  "object": "chat.completion",
+  "usage": {
+   "completion_tokens": 249,
+   "prompt_tokens": 7431,
+   "prompt_tokens_details": {
+    "cached_tokens": 7024
+   },
+   "service_tier": "standard",
+   "total_tokens": 7680
+  }
+ },
+ "requete": {
+  "messages": [
+   {
+    "content": "Tu es le compilateur de directives d'une équipe juridique. Tu ne décides rien : tu traduis fidèlement le texte du juriste en un JEU de directives structurées, ou tu poses des questions, ou tu signales un critère non observable. Le code vérifiera ta proposition, puis le juriste la relira et la validera.\n\nRègles absolues :\n1. N'utilise que des valeurs écrites par le juriste (dans son texte ou ses réponses) ou des noms du catalogue. N'invente jamais un montant, une date, une heure, un fuseau, un serveur, un outil, un argument, une étiquette, un rôle, un groupe ni un fondement. Une étiquette, un rôle ou un groupe n'est utilisable que si le juriste l'a écrit ou choisi dans une réponse : sinon, pose une question en proposant les noms connus qui pourraient convenir, sans en choisir un.\n2. Un paragraphe peut contenir plusieurs règles : propose alors plusieurs directives dans le même jeu, une par règle, dans l'ordre du texte. Pour chacune, recopie dans « extrait » le passage exact du texte qu'elle traduit, mot pour mot.\n3. Pose une question (poser_question, une par point, plusieurs à la fois si besoin) au lieu de proposer, notamment :\n   - seuil non chiffré (« montant significatif », « gros montant ») : demande le montant exact (sujet seuil) ;\n   - règle horaire ou calendaire sans fuseau (« le week-end », « la nuit », « après 20 h ») : demande le fuseau (sujet fuseau) en proposant des fuseaux admis ;\n   - « de manière autonome », « sans contrôle », « automatiquement » : demande si l'action exige une validation humaine (attendre_validation) ou est interdite (refuser) (sujet autonome) ;\n   - « l'utilisateur », « user », « la personne » : demande s'il s'agit du demandeur (la personne pour qui l'agent travaille, feuille demandeur) ou de la personne concernée par l'action (feuille sujet) (sujet demandeur_ou_personne_concernee) ;\n   - « rapport », « données client » ou toute catégorie de serveurs ou d'outils : demande à quelle étiquette du registre la rattacher (sujet etiquette), en proposant les étiquettes connues ;\n   - « aucune exécution », « bloquer », « interdire » sans préciser : demande s'il faut bloquer aussi la consultation (outils de lecture) ou seulement la production et les actions (outils classés action) (sujet consultation_ou_production) ;\n   - un rôle ou un groupe désigné par une lettre ou une formule (« groupe X », « une telle personne ») : demande lequel parmi les noms connus (sujet role ou groupe) ;\n   - fondement juridique absent (sujet fondement) ; durée provisoire sans date (« en attendant », « pour l'instant ») : demande la date de relecture (sujet revision_avant).\n4. Signale un critère non observable (signaler_non_observable) quand la règle repose sur une notion qu'aucune feuille ne peut constater dans un appel : une intention, une qualité morale, un effet (« ne pas discriminer », « de bonne foi »), ou une implication de personnes sans critère (« impliquant le top management », « décision importante »). Explique pourquoi ce n'est pas observable, et demande par quel critère observable (montant, outil, groupe, étiquette…) le remplacer. Ne propose rien pour cette règle tant que le juriste n'a pas donné ce critère.\n5. Ne propose un jeu que lorsque chaque valeur est déterminée par le texte, les réponses et le catalogue. Ne retire aucune condition du texte et n'en ajoute aucune : chaque « si », « sans », « à partir de », « au-delà de », « le week-end »… devient un nœud de la condition.\n6. Ne pose pas de question sur ce que le texte fixe déjà. « attend une validation humaine » sans autre précision : attendre_validation sans par_role ni quatre_yeux. par_role et destinataire_role seulement pour un rôle que le juriste a nommé ou choisi.\n\nUne directive (proposer_jeu) :\n- declencheur : la cible de l'appel d'outil. serveur et outil du catalogue ou « * » ; etiquette (étiquette du registre portée par le serveur cible) ; acces « action » pour ne viser que les outils classés action, « read » pour la lecture, seulement si le juriste distingue lecture et actions et si cela écarte des outils de la cible (jamais sur un outil nommé). Les clés présentes se combinent en ET.\n- condition : une liste de nœuds à plat (noeuds), chacun avec un id unique ; racine est l'id du nœud racine, qui doit figurer dans noeuds ; sans condition, racine vaut \"\" et noeuds vaut []. Un nœud et, ou cite ses enfants dans enfants ; non, existe, tous citent exactement un enfant. Chaque nœud n'a qu'un parent. Au plus 6 niveaux et 64 nœuds.\n  Types de nœuds :\n  - et, ou, non ;\n  - existe / tous : champ = pointeur vers une liste en argument (par exemple /salarie_ids) ; l'enfant est évalué sur chaque élément, et dans l'enfant champ vaut \"\" pour désigner l'élément lui-même ;\n  - argument : champ (pointeur JSON), op, valeur ;\n  - a_consulte : la session a consulté un serveur (serveur), un outil (outil « serveur/outil ») ou un serveur portant une étiquette (etiquette) ; critere donnees_recues (données reçues, le choix par défaut pour « consulter », « consultation ») ou transmis (appel parti, quel que soit le résultat, seulement si le juriste le dit). « sans consultation de X » s'écrit non(a_consulte X). Toute règle qui vise l'usage des informations d'une source (« à partir de », « sur la base de », « en utilisant les informations de » A) porte la condition a_consulte A ;\n  - demandeur : la personne pour qui l'agent travaille, selon l'annuaire : groupe, ou identites ;\n  - sujet : la personne concernée par l'action, désignée par l'identifiant au pointeur champ ; groupe ;\n  - temps : jours, heure_de et heure_a (HH:MM, intervalle [de, a[), date_op et date_valeur (AAAA-MM-JJ) ; fuseau obligatoire ;\n  - etiquette_cible : le serveur cible porte l'étiquette ;\n  - attestation : verifiee (booléen), mode ;\n  - metadonnee_reponse : sur une réponse reçue d'un serveur (serveur) ou d'un serveur étiqueté (etiquette), meta source.origine ou source.date, op, valeur ;\n  - appelant (egal ou prefixe), sous_agent_declare (egal ou dans).\n- effets : une liste. refuser ; attendre_validation (par_role, quatre_yeux vrai seulement si le juriste demande deux personnes ou « quatre yeux ») ; caviarder (champs_autorises, mode caviarder ou refuser ; cible avec un serveur nommé) ; notifier (destinataire_role) ; marquer (etiquette). refuser ne se combine ni avec attendre_validation ni avec caviarder.\n- fondements : le premier est celui que citent les motifs ; texte seul (RGPD, Code civil) et article seul (22), recopié chaque fois que le juriste l'écrit.\nUne condition sur un argument doit porter sur un argument de chaque outil visé : sinon, restreins la cible ou fais une directive par outil.\n",
+    "role": "system"
+   },
+   {
+    "content": "Catalogue des serveurs et outils disponibles :\n{\n \"origine\": \"généré par cmd/registre-demo depuis demo/registre.json ; ne pas modifier à la main\",\n \"serveurs\": [\n  {\n   \"nom\": \"taux-officiel\",\n   \"outils\": [\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/categorie\",\n      \"/date_reference\"\n     ],\n     \"description\": \"Seuil de l'usure en vigueur pour une catégorie de crédit (Banque de France, séries trimestrielles Webstat) : seuil, trimestre, date de publication, identifiant de série. Signale aussi un seuil déjà publié pour le trimestre suivant. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).\",\n     \"nom\": \"get_taux_usure\"\n    }\n   ]\n  },\n  {\n   \"nom\": \"recherche-entreprises\",\n   \"outils\": [\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/siren\"\n     ],\n     \"description\": \"Fiche d'une entreprise française par son SIREN, depuis l'API Recherche d'entreprises (données SIRENE/RNE) : dénomination, forme juridique, état administratif, siège, activité. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).\",\n     \"nom\": \"rechercher_entreprise\"\n    }\n   ]\n  },\n  {\n   \"nom\": \"gels-avoirs\",\n   \"outils\": [\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/nom\"\n     ],\n     \"description\": \"Cherche un nom dans le registre national des gels des avoirs (DG Trésor) : correspondances exactes ou partielles, nature, fondements juridiques, et date de publication du registre. Une correspondance est un signal à examiner, pas une identification. Le champ source indique si le registre est obtenu à l'instant (direct) ou lu dans un enregistrement daté (rejeu).\",\n     \"nom\": \"verifier_gel\"\n    }\n   ]\n  },\n  {\n   \"nom\": \"eurlex\",\n   \"outils\": [\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/article\",\n      \"/celex\"\n     ],\n     \"description\": \"Texte d'un article d'un acte de l'Union européenne (numéro CELEX et numéro d'article), dans la version publiée au Journal officiel, non consolidée. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).\",\n     \"nom\": \"lire_article\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/celex\"\n     ],\n     \"description\": \"Métadonnées d'un acte de l'Union européenne par son numéro CELEX (CELLAR, Office des publications) : titre, dates, statut en vigueur, actes modificatifs. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).\",\n     \"nom\": \"rechercher_acte\"\n    }\n   ]\n  },\n  {\n   \"nom\": \"legifrance\",\n   \"outils\": [\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/date_reference\",\n      \"/identifiant\"\n     ],\n     \"description\": \"Texte d'un article de loi ou de règlement français (Légifrance, DILA) par son identifiant LEGIARTI : texte de la version en vigueur à la date de référence, numéro de version, dates de début et de fin, et version suivante déjà publiée. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).\",\n     \"nom\": \"lire_article\"\n    }\n   ]\n  },\n  {\n   \"nom\": \"banque-synthetique\",\n   \"outils\": [\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/dossier_id\",\n      \"/montant\",\n      \"/siren\"\n     ],\n     \"description\": \"Attribue un prêt sur un dossier de la banque synthétique (action, données fictives : aucun prêt réel n'est accordé). Le SIREN doit être celui du dossier et le montant au plus le montant demandé.\",\n     \"nom\": \"attribuer_pret\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/dossier_id\"\n     ],\n     \"description\": \"Lit un dossier de demande de crédit de la banque synthétique (données fictives) : demandeur, SIREN, objet, montant, durée, taux proposé, pièces et note de l'analyste.\",\n     \"nom\": \"evaluer_dossier\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/categorie\"\n     ],\n     \"description\": \"Seuil de l'usure pour une catégorie de crédit, selon la base interne de la banque synthétique (données fictives).\",\n     \"nom\": \"get_taux_interne\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/contenu\",\n      \"/destinataire\",\n      \"/dossier_id\"\n     ],\n     \"description\": \"Remet un rapport sur un dossier à un destinataire de la banque synthétique (action fictive : le rapport est seulement enregistré en mémoire, rien n'est envoyé). Rend une référence de remise.\",\n     \"nom\": \"remettre_rapport\"\n    }\n   ]\n  },\n  {\n   \"nom\": \"rh-synthetique\",\n   \"outils\": [\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/salarie_id\"\n     ],\n     \"description\": \"Lit la fiche d'un salarié de l'entreprise synthétique (données fictives) : poste, service, ancienneté, contrat, évaluation, remarques.\",\n     \"nom\": \"consulter_salarie\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/montant\",\n      \"/salarie_ids\"\n     ],\n     \"description\": \"Décide une prime pour un ou plusieurs salariés de l'entreprise synthétique (action, données fictives : aucune prime réelle).\",\n     \"nom\": \"decider_prime\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/motif\",\n      \"/salarie_id\"\n     ],\n     \"description\": \"Propose une sanction disciplinaire pour un salarié de l'entreprise synthétique (action, données fictives : aucune sanction réelle ; la proposition n'est pas une décision).\",\n     \"nom\": \"proposer_sanction\"\n    }\n   ]\n  },\n  {\n   \"nom\": \"referentiel-rh\",\n   \"outils\": [\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/salarie_id\"\n     ],\n     \"description\": \"Groupes d'un salarié de l'entreprise synthétique dans le référentiel RH (données fictives), par exemple salaries-proteges ou contentieux-en-cours.\",\n     \"nom\": \"groupes_salarie\"\n    }\n   ]\n  }\n ]\n}\n\nÉtiquettes, rôles et groupes connus :\n{\n \"etiquettes\": [\n  {\n   \"description\": \"étiquette du registre, portée par : serveur recherche-entreprises, outil banque-synthetique/evaluer_dossier\",\n   \"nom\": \"donnees_client\"\n  },\n  {\n   \"description\": \"étiquette du registre, portée par : serveur rh-synthetique\",\n   \"nom\": \"donnees_personnelles\"\n  },\n  {\n   \"description\": \"étiquette du registre, portée par : serveur eurlex, serveur gels-avoirs, serveur legifrance, serveur recherche-entreprises, serveur taux-officiel\",\n   \"nom\": \"externe\"\n  },\n  {\n   \"description\": \"étiquette du registre, portée par : outil remettre_rapport (tout serveur)\",\n   \"nom\": \"production_rapport\"\n  }\n ],\n \"groupes\": [\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"analystes-credit\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"conseillers-credit\"\n  },\n  {\n   \"description\": \"Salariés en litige en cours avec l'entreprise (fictif) ; toute mesure les concernant est à examiner avec le service juridique. Référentiel RH : personne concernée par l'action (feuille sujet).\",\n   \"nom\": \"contentieux-en-cours\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"direction-juridique\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"direction-risques\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"juridique\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"managers\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"prestataires-externes\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"rh\"\n  },\n  {\n   \"description\": \"Salariés bénéficiant d'une protection particulière (fictif : par exemple représentant du personnel) ; toute mesure les concernant suit une procédure spéciale. Référentiel RH : personne concernée par l'action (feuille sujet).\",\n   \"nom\": \"salaries-proteges\"\n  }\n ],\n \"roles\": [\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"analyste-risques\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"directeur-risques\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"direction-juridique\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"drh\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"emetteur-identite\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"juridique\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"responsable-rh\"\n  }\n ]\n}\n\nFuseaux admis : America/Cayenne, America/Guadeloupe, America/Martinique, America/New_York, Asia/Singapore, Asia/Tokyo, Europe/Amsterdam, Europe/Berlin, Europe/Brussels, Europe/Dublin, Europe/London, Europe/Luxembourg, Europe/Madrid, Europe/Paris, Europe/Rome, Europe/Zurich, Indian/Mayotte, Indian/Reunion, Pacific/Noumea, Pacific/Tahiti, UTC\n\nTexte du juriste :\n<<<\nUne décision de prêt fondée sur la base interne des taux doit être validée par un analyste des risques, la base pouvant être en retard d'un trimestre sur le seuil légal.\n>>>\n\nFondement donné par le juriste :\n<<<\nCode monétaire et financier, article L313-5-1\n>>>\n\nRéponses du juriste à tes questions :\n- Question : Veuillez préciser la durée d'un trimestre pour évaluer le retard de la base interne par rapport au seuil légal (par exemple, 3 mois, 90 jours, etc.).\n  Réponse : Ce n'est pas une condition, c'est la raison de la règle : la directive s'applique dès que la base interne des taux a été consultée, quelle que soit sa date.\n- Question : La validation par un analyste des risques est-elle une étape obligatoire avant toute attribution de prêt fondée sur la base interne des taux ? Si oui, faut-il attendre une validation humaine (attendre_validation) ou simplement notifier le rôle analyste-risques ?\n  Réponse : Oui : l'attribution du prêt attend la validation humaine d'un analyste-risques.\n\nCes réponses sont définitives : ne repose pas ces questions. Si chaque valeur est maintenant déterminée, appelle proposer_jeu.",
+    "role": "user"
+   },
+   {
+    "content": "",
+    "role": "assistant",
+    "tool_calls": [
+     {
+      "function": {
+       "arguments": "{\"directives\": [{\"extrait\": \"Une décision de prêt fondée sur la base interne des taux doit être validée par un analyste des risques, la base pouvant être en retard d'un trimestre sur le seuil légal.\", \"fondements\": [{\"texte\": \"Code monétaire et financier\"}], \"declencheur\": {\"serveur\": \"banque-synthetique\", \"outil\": \"attribuer_pret\"}, \"racine\": \"n1\", \"noeuds\": [{\"id\": \"n1\", \"type\": \"et\", \"enfants\": [\"n2\", \"n3\"]}, {\"id\": \"n2\", \"type\": \"a_consulte\", \"outil\": \"banque-synthetique/get_taux_interne\", \"critere\": \"donnees_recues\"}, {\"id\": \"n3\", \"type\": \"attendre_validation\", \"par_role\": \"analyste-risques\", \"quatre_yeux\": false}], \"effets\": [{\"effet\": \"attendre_validation\", \"par_role\": \"analyste-risques\"}]}]}",
+       "name": "proposer_jeu"
+      },
+      "id": "svaGRd72P",
+      "index": 0,
+      "type": "function"
+     }
+    ]
+   },
+   {
+    "content": "Refusé par le vérificateur :\n- directive 1 (D-009) : condition : nœud n3 : type 'attendre_validation' inconnu (a_consulte, appelant, argument, attestation, demandeur, et, etiquette_cible, existe, metadonnee_reponse, non, ou, sous_agent_declare, sujet, temps, tous)\n- directive 1 (D-009) : fondements[0] : le juriste cite l'article L313-5-1 de Code monétaire et financier ; recopie-le dans article\nCorrige le jeu, ou pose une question si une information manque.",
+    "name": "proposer_jeu",
+    "role": "tool",
+    "tool_call_id": "svaGRd72P"
+   }
+  ],
+  "model": "mistral-small-latest",
+  "random_seed": 0,
+  "temperature": 0,
+  "tool_choice": "any",
+  "tools": [
+   {
+    "function": {
+     "description": "Propose le jeu compilé, une directive par règle du texte, quand le texte, les réponses et le catalogue déterminent chaque valeur.",
+     "name": "proposer_jeu",
+     "parameters": {
+      "properties": {
+       "directives": {
+        "items": {
+         "properties": {
+          "declencheur": {
+           "properties": {
+            "acces": {
+             "enum": [
+              "action",
+              "read"
+             ],
+             "type": "string"
+            },
+            "etiquette": {
+             "enum": [
+              "donnees_client",
+              "donnees_personnelles",
+              "externe",
+              "production_rapport"
+             ],
+             "type": "string"
+            },
+            "outil": {
+             "enum": [
+              "attribuer_pret",
+              "consulter_salarie",
+              "decider_prime",
+              "evaluer_dossier",
+              "get_taux_interne",
+              "get_taux_usure",
+              "groupes_salarie",
+              "lire_article",
+              "proposer_sanction",
+              "rechercher_acte",
+              "rechercher_entreprise",
+              "remettre_rapport",
+              "verifier_gel",
+              "*"
+             ],
+             "type": "string"
+            },
+            "serveur": {
+             "enum": [
+              "banque-synthetique",
+              "eurlex",
+              "gels-avoirs",
+              "legifrance",
+              "recherche-entreprises",
+              "referentiel-rh",
+              "rh-synthetique",
+              "taux-officiel",
+              "*"
+             ],
+             "type": "string"
+            }
+           },
+           "type": "object"
+          },
+          "effets": {
+           "items": {
+            "properties": {
+             "champs_autorises": {
+              "items": {
+               "enum": [
+                "/article",
+                "/categorie",
+                "/celex",
+                "/contenu",
+                "/date_reference",
+                "/destinataire",
+                "/dossier_id",
+                "/identifiant",
+                "/montant",
+                "/motif",
+                "/nom",
+                "/salarie_id",
+                "/salarie_ids",
+                "/siren"
+               ],
+               "type": "string"
+              },
+              "type": "array"
+             },
+             "destinataire_role": {
+              "enum": [
+               "analyste-risques",
+               "directeur-risques",
+               "direction-juridique",
+               "drh",
+               "emetteur-identite",
+               "juridique",
+               "responsable-rh"
+              ],
+              "type": "string"
+             },
+             "effet": {
+              "enum": [
+               "refuser",
+               "attendre_validation",
+               "caviarder",
+               "notifier",
+               "marquer"
+              ],
+              "type": "string"
+             },
+             "etiquette": {
+              "enum": [
+               "donnees_client",
+               "donnees_personnelles",
+               "externe",
+               "production_rapport"
+              ],
+              "type": "string"
+             },
+             "mode": {
+              "enum": [
+               "caviarder",
+               "refuser"
+              ],
+              "type": "string"
+             },
+             "par_role": {
+              "enum": [
+               "analyste-risques",
+               "directeur-risques",
+               "direction-juridique",
+               "drh",
+               "emetteur-identite",
+               "juridique",
+               "responsable-rh"
+              ],
+              "type": "string"
+             },
+             "quatre_yeux": {
+              "type": "boolean"
+             }
+            },
+            "required": [
+             "effet"
+            ],
+            "type": "object"
+           },
+           "type": "array"
+          },
+          "extrait": {
+           "description": "Le passage du texte du juriste que traduit cette directive, recopié mot pour mot.",
+           "type": "string"
+          },
+          "fondements": {
+           "items": {
+            "properties": {
+             "article": {
+              "description": "Le numéro d'article seul, tel que 22.",
+              "type": "string"
+             },
+             "texte": {
+              "description": "Le nom du texte seul, tel que RGPD ou Code civil.",
+              "type": "string"
+             }
+            },
+            "required": [
+             "texte"
+            ],
+            "type": "object"
+           },
+           "type": "array"
+          },
+          "noeuds": {
+           "description": "La condition, à plat.",
+           "items": {
+            "properties": {
+             "champ": {
+              "description": "Pointeur JSON d'un argument ; \"\" pour l'élément courant sous existe ou tous.",
+              "enum": [
+               "/article",
+               "/categorie",
+               "/celex",
+               "/contenu",
+               "/date_reference",
+               "/destinataire",
+               "/dossier_id",
+               "/identifiant",
+               "/montant",
+               "/motif",
+               "/nom",
+               "/salarie_id",
+               "/salarie_ids",
+               "/siren",
+               ""
+              ],
+              "type": "string"
+             },
+             "critere": {
+              "enum": [
+               "donnees_recues",
+               "transmis"
+              ],
+              "type": "string"
+             },
+             "dans": {
+              "items": {
+               "type": "string"
+              },
+              "type": "array"
+             },
+             "date_op": {
+              "enum": [
+               ">",
+               ">=",
+               "<",
+               "<=",
+               "==",
+               "!="
+              ],
+              "type": "string"
+             },
+             "date_valeur": {
+              "description": "AAAA-MM-JJ",
+              "type": "string"
+             },
+             "egal": {
+              "type": "string"
+             },
+             "enfants": {
+              "description": "Identifiants des enfants (et, ou : au moins un ; non, existe, tous : exactement un).",
+              "items": {
+               "type": "string"
+              },
+              "type": "array"
+             },
+             "etiquette": {
+              "enum": [
+               "donnees_client",
+               "donnees_personnelles",
+               "externe",
+               "production_rapport"
+              ],
+              "type": "string"
+             },
+             "fuseau": {
+              "enum": [
+               "America/Cayenne",
+               "America/Guadeloupe",
+               "America/Martinique",
+               "America/New_York",
+               "Asia/Singapore",
+               "Asia/Tokyo",
+               "Europe/Amsterdam",
+               "Europe/Berlin",
+               "Europe/Brussels",
+               "Europe/Dublin",
+               "Europe/London",
+               "Europe/Luxembourg",
+               "Europe/Madrid",
+               "Europe/Paris",
+               "Europe/Rome",
+               "Europe/Zurich",
+               "Indian/Mayotte",
+               "Indian/Reunion",
+               "Pacific/Noumea",
+               "Pacific/Tahiti",
+               "UTC"
+              ],
+              "type": "string"
+             },
+             "groupe": {
+              "enum": [
+               "analystes-credit",
+               "conseillers-credit",
+               "contentieux-en-cours",
+               "direction-juridique",
+               "direction-risques",
+               "juridique",
+               "managers",
+               "prestataires-externes",
+               "rh",
+               "salaries-proteges"
+              ],
+              "type": "string"
+             },
+             "heure_a": {
+              "description": "HH:MM",
+              "type": "string"
+             },
+             "heure_de": {
+              "description": "HH:MM",
+              "type": "string"
+             },
+             "id": {
+              "description": "Identifiant unique du nœud, tel que n1.",
+              "type": "string"
+             },
+             "identites": {
+              "items": {
+               "type": "string"
+              },
+              "type": "array"
+             },
+             "jours": {
+              "items": {
+               "enum": [
+                "lundi",
+                "mardi",
+                "mercredi",
+                "jeudi",
+                "vendredi",
+                "samedi",
+                "dimanche"
+               ],
+               "type": "string"
+              },
+              "type": "array"
+             },
+             "meta": {
+              "enum": [
+               "source.origine",
+               "source.date"
+              ],
+              "type": "string"
+             },
+             "mode": {
+              "enum": [
+               "spiffe",
+               "tls-pin",
+               "binaire",
+               "aucune"
+              ],
+              "type": "string"
+             },
+             "op": {
+              "enum": [
+               ">",
+               ">=",
+               "<",
+               "<=",
+               "==",
+               "!=",
+               "dans",
+               "prefixe",
+               "present",
+               "absent"
+              ],
+              "type": "string"
+             },
+             "outil": {
+              "description": "serveur/outil",
+              "enum": [
+               "banque-synthetique/attribuer_pret",
+               "banque-synthetique/evaluer_dossier",
+               "banque-synthetique/get_taux_interne",
+               "banque-synthetique/remettre_rapport",
+               "eurlex/lire_article",
+               "eurlex/rechercher_acte",
+               "gels-avoirs/verifier_gel",
+               "legifrance/lire_article",
+               "recherche-entreprises/rechercher_entreprise",
+               "referentiel-rh/groupes_salarie",
+               "rh-synthetique/consulter_salarie",
+               "rh-synthetique/decider_prime",
+               "rh-synthetique/proposer_sanction",
+               "taux-officiel/get_taux_usure"
+              ],
+              "type": "string"
+             },
+             "prefixe": {
+              "type": "string"
+             },
+             "serveur": {
+              "enum": [
+               "banque-synthetique",
+               "eurlex",
+               "gels-avoirs",
+               "legifrance",
+               "recherche-entreprises",
+               "referentiel-rh",
+               "rh-synthetique",
+               "taux-officiel"
+              ],
+              "type": "string"
+             },
+             "type": {
+              "enum": [
+               "a_consulte",
+               "appelant",
+               "argument",
+               "attestation",
+               "demandeur",
+               "et",
+               "etiquette_cible",
+               "existe",
+               "metadonnee_reponse",
+               "non",
+               "ou",
+               "sous_agent_declare",
+               "sujet",
+               "temps",
+               "tous"
+              ],
+              "type": "string"
+             },
+             "valeur": {
+              "description": "Nombre, chaîne, booléen, ou liste pour dans ; absente pour present et absent."
+             },
+             "verifiee": {
+              "type": "boolean"
+             }
+            },
+            "required": [
+             "id",
+             "type"
+            ],
+            "type": "object"
+           },
+           "type": "array"
+          },
+          "racine": {
+           "description": "Identifiant du nœud racine ; vide s'il n'y a pas de condition.",
+           "type": "string"
+          },
+          "revision_avant": {
+           "description": "AAAA-MM-JJ, écrite par le juriste.",
+           "type": "string"
+          }
+         },
+         "required": [
+          "extrait",
+          "fondements",
+          "declencheur",
+          "effets"
+         ],
+         "type": "object"
+        },
+        "type": "array"
+       }
+      },
+      "required": [
+       "directives"
+      ],
+      "type": "object"
+     }
+    },
+    "type": "function"
+   },
+   {
+    "function": {
+     "description": "Pose une question au juriste quand une information manque ou est ambiguë. Une question par point.",
+     "name": "poser_question",
+     "parameters": {
+      "properties": {
+       "extrait": {
+        "description": "Les mots du juriste qui posent question, recopiés.",
+        "type": "string"
+       },
+       "options": {
+        "description": "Réponses possibles, s'il y en a un nombre fermé.",
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       "question": {
+        "description": "La question, en français, adressée au juriste.",
+        "type": "string"
+       },
+       "sujet": {
+        "enum": [
+         "seuil",
+         "fuseau",
+         "autonome",
+         "demandeur_ou_personne_concernee",
+         "etiquette",
+         "consultation_ou_production",
+         "role",
+         "groupe",
+         "cible",
+         "argument",
+         "perimetre",
+         "fondement",
+         "revision_avant",
+         "effet",
+         "autre"
+        ],
+        "type": "string"
+       }
+      },
+      "required": [
+       "question",
+       "sujet"
+      ],
+      "type": "object"
+     }
+    },
+    "type": "function"
+   },
+   {
+    "function": {
+     "description": "Refuse de traduire une règle qui repose sur un critère non observable dans un appel d'outil, en expliquant pourquoi, et demande un critère observable.",
+     "name": "signaler_non_observable",
+     "parameters": {
+      "properties": {
+       "extrait": {
+        "description": "Les mots du juriste qui portent le critère, recopiés.",
+        "type": "string"
+       },
+       "question": {
+        "description": "La question au juriste : par quel critère observable le remplacer ?",
+        "type": "string"
+       },
+       "raison": {
+        "description": "Pourquoi aucune feuille ne peut constater ce critère dans un appel.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "extrait",
+       "raison",
+       "question"
+      ],
+      "type": "object"
+     }
+    },
+    "type": "function"
+   }
+  ]
+ }
+}

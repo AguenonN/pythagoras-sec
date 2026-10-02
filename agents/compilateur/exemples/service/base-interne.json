@@ -1,0 +1,17 @@
+{
+ "requete": {
+  "texte": "Une décision de prêt fondée sur la base interne des taux doit être validée par un analyste des risques, la base pouvant être en retard d'un trimestre sur le seuil légal.",
+  "fondement": "Code monétaire et financier, article L313-5-1",
+  "auteur": "julie.juridique@exemple.test",
+  "jeu_existant": "demo/directives/demo.json",
+  "date_effet": "2026-10-04T11:05:00+02:00"
+ },
+ "reponses": {
+  "Veuillez préciser la durée d'un trimestre pour évaluer le retard de la base interne par rapport au seuil légal (par exemple, 3 mois, 90 jours, etc.).": "Ce n'est pas une condition, c'est la raison de la règle : la directive s'applique dès que la base interne des taux a été consultée, quelle que soit sa date.",
+  "La validation par un analyste des risques est-elle une étape obligatoire avant toute attribution de prêt fondée sur la base interne des taux ? Si oui, faut-il attendre une validation humaine (attendre_validation) ou simplement notifier le rôle analyste-risques ?": "Oui : l'attribution du prêt attend la validation humaine d'un analyste-risques.",
+  "si_indetermine": "refuser",
+  "La règle vise-t-elle uniquement l'outil « attribuer_pret » de la banque synthétique, ou aussi d'autres outils comme « evaluer_dossier » ou « get_taux_interne » ?": "Uniquement l'outil attribuer_pret : c'est la décision de prêt qui attend la validation.",
+  "La validation par un analyste des risques doit-elle être une validation humaine (attendre_validation) ou s'agit-il d'une interdiction si la condition n'est pas remplie (refuser) ?": "Une validation humaine : l'attribution du prêt attend la validation.",
+  "Le rôle « analyste des risques » correspond-il au rôle « analyste-risques » du catalogue ?": "Oui, analyste-risques."
+ }
+}

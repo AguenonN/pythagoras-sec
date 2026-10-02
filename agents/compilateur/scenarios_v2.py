@@ -102,7 +102,7 @@ def principal(argv=None, sortie=sys.stdout):
     ap.add_argument("--catalogue", default=CATALOGUE)
     ap.add_argument("--vocabulaire", default=COMPLEMENT)
     ap.add_argument("--jeu-existant", help="jeu auquel ajouter : le résultat est sa version n+1")
-    ap.add_argument("--modele", choices=list(mistral.MODELES), default=mistral.MODELE)
+    ap.add_argument("--modele", choices=list(mistral.MODELES), default=mistral.MODELE_COMPILATEUR)
     a = ap.parse_args(argv)
     options = {"etat": a.etat} if a.etat else {}
     existant = None

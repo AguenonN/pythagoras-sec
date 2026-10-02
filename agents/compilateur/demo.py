@@ -141,6 +141,7 @@ def principal(argv=None, lire=input, ecrire=sys.stdout.write):
     ap.set_defaults(v1=False)  # explicite : sinon argparse prendrait le défaut de --v2 (store_false)
     ap.add_argument("--vocabulaire", default=VOCABULAIRE, help="étiquettes, rôles et groupes (v2)")
     ap.add_argument("--prefixe-id", default="D", help="préfixe des identifiants de directive (v2) : D-001, D-002…")
+    ap.add_argument("--modele", choices=list(mistral.MODELES), default=mistral.MODELE_COMPILATEUR)
     ap.add_argument("--jeu-existant", help="jeu auquel ajouter (v2) : la sortie est sa version n+1, les directives "
                                            "existantes inchangées, les nouvelles en brouillon, numérotées à la suite")
     a = ap.parse_args(argv)
@@ -162,7 +163,8 @@ def principal(argv=None, lire=input, ecrire=sys.stdout.write):
 
     if not a.v1:
         r = derouler_v2(lire, ecrire, texte, a.jeu, vocabulaire.Vocabulaire.lire(a.catalogue, a.vocabulaire),
-                        mistral.Client(mode=a.mode), a.auteur, date, prefixe_id=a.prefixe_id, existant=existant)
+                        mistral.Client(mode=a.mode, modele=a.modele), a.auteur, date, prefixe_id=a.prefixe_id,
+                        existant=existant)
         if r["etat"] != compilateur_v2.JEU:
             return 1
     else:

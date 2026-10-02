@@ -476,7 +476,8 @@ def contradictions_personne(jeu, reponses, texte):
 
 def _conclure(resultat, jeu, reponses, auteur, existant=None, date_effet=None):
     complet, restantes, consignation = appliquer_reponses(jeu, reponses, auteur, resultat["texte"])
-    resultat["consignation"] = consignation
+    # Les erreurs d'une proposition corrigée depuis ne valent plus.
+    resultat["consignation"], resultat["erreurs"] = consignation, []
     if restantes:
         resultat.update(etat=QUESTIONS, questions=restantes, jeu=None)
         return resultat

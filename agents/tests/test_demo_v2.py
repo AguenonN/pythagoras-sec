@@ -53,6 +53,7 @@ class TestDemoV2(unittest.TestCase):
                    rep["Quel fuseau horaire appliquer pour le week-end ?"],
                    "peut-être", "refuser"]
         rc, ecrit, jeu, consigne, reste = lancer(saisies, "--prefixe-id", "W", "--vocabulaire", VOCABULAIRE_V2_ENREGISTRE,
+                                                 "--modele", "mistral-small-latest",
                                                  catalogue=CATALOGUE_V2_ENREGISTRE)
         self.assertEqual(rc, 0, ecrit)
         self.assertEqual(reste, [])

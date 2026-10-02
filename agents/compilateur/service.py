@@ -182,7 +182,7 @@ def _reponse(conversation, etat, questions=(), non_observable=None, relecture=""
 
 
 class Service:
-    def __init__(self, mode="rejeu", modele=mistral.MODELE, racine=RACINE, dossier=None,
+    def __init__(self, mode="rejeu", modele=mistral.MODELE_COMPILATEUR, racine=RACINE, dossier=None,
                  catalogue=CATALOGUE, vocabulaire_=VOCABULAIRE, client=None, fuseaux=None):
         """``client`` : fabrique (modele) → client Mistral, pour les tests ;
         par défaut, mistral.Client dans le mode donné."""
@@ -364,7 +364,7 @@ def principal(argv=None, entree=sys.stdin, sortie=sys.stdout):
                                        "une requête : chaque réponse du service est écrite, une par ligne")
     ap.add_argument("--mode", choices=["rejeu", "reel"], default=os.environ.get("COMPILATEUR_MODE", "rejeu"))
     ap.add_argument("--modele", choices=list(mistral.MODELES),
-                    default=os.environ.get("COMPILATEUR_MODELE", mistral.MODELE))
+                    default=os.environ.get("COMPILATEUR_MODELE", mistral.MODELE_COMPILATEUR))
     ap.add_argument("--dossier", help="dossier des conversations (défaut : <racine>/%s)" % DOSSIER)
     ap.add_argument("--catalogue", default=CATALOGUE)
     ap.add_argument("--vocabulaire", default=VOCABULAIRE)
