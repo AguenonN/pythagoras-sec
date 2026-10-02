@@ -10,8 +10,6 @@ import json
 import os
 import unittest
 
-from compilateur import compilateur
-
 from .aides import CATALOGUE_DEMO, catalogue_demo
 
 RACINE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -78,7 +76,7 @@ class TestCatalogueDemo(unittest.TestCase):
         self.assertIn("/siren", c.arguments_de("recherche-entreprises", "*"))
         self.assertFalse(c.cible_existe("taux-imposteur", "*"))
         # Le catalogue entre tel quel dans le message montré au modèle.
-        self.assertIn("get_taux_usure", compilateur.message_utilisateur("texte", c, []))
+        self.assertIn("get_taux_usure", c.pour_le_modele())
 
 
 if __name__ == "__main__":

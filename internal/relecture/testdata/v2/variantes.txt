@@ -53,17 +53,17 @@ Alors :
 Si la règle ne peut pas être évaluée pour un appel (information absente, illisible ou inconnue du registre), la directive ne s'applique pas à cet appel (choix validé par Me Dupont).
 
 Directive W-003, version 1, brouillon (non appliquée tant que le juriste ne l'a pas passée en observation ou active), fondée sur Politique interne.
-Applicable aux appels à partir du 04/10/2026 à 08:00 UTC, sans date de fin ; sans échéance de relecture.
+Applicable aux évènements à partir du 04/10/2026 à 08:00 UTC, sans date de fin ; sans échéance de relecture.
 Pour tous les appelants.
-Quand : à l'échec d'une attestation du serveur taux-officiel (évènement réservé, pas encore évalué par l'engine).
+Quand : à chaque attestation en échec du serveur taux-officiel (connexion ou changement).
 Condition : aucune, la directive s'applique à chaque fois.
 Alors :
   - le rôle « rssi » est notifié en temps réel ; si la notification ne part pas, l'évènement suit son cours
 
 Directive W-004, version 1, brouillon (non appliquée tant que le juriste ne l'a pas passée en observation ou active), fondée sur Politique interne.
-Applicable aux appels à partir du 04/10/2026 à 08:00 UTC, sans date de fin ; sans échéance de relecture.
+Applicable aux évènements à partir du 04/10/2026 à 08:00 UTC, sans date de fin ; sans échéance de relecture.
 Pour tous les appelants.
-Quand : à la purge des données (évènement réservé, pas encore évalué par l'engine).
+Quand : à chaque purge du coffre.
 Condition : aucune, la directive s'applique à chaque fois.
 Alors :
   - l'évènement est marqué « purge » au journal

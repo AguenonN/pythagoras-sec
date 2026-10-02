@@ -1,0 +1,19 @@
+{
+ "requete": {
+  "texte": "Désormais, aucune exécution de workflow agentique le week-end.",
+  "fondement": "Règlement intérieur, article 12",
+  "auteur": "julie.juridique@exemple.test",
+  "jeu_existant": "demo/directives/demo.json",
+  "date_effet": "2026-10-04T11:05:00+02:00"
+ },
+ "reponses": {
+  "Le week-end correspond-il à un fuseau horaire spécifique (ex : Europe/Paris) ? Si oui, précisez les jours et heures exacts (ex : samedi 00:00 à dimanche 23:59).": "L'heure de Paris (Europe/Paris) ; le week-end, c'est le samedi et le dimanche, toute la journée.",
+  "si_indetermine": "refuser",
+  "Quel fuseau horaire doit être utilisé pour définir le week-end (samedi et dimanche) ?": "Europe/Paris"
+ },
+ "variantes": {
+  "Quel fuseau horaire doit être utilisé pour définir le week-end (samedi et dimanche) ?": [
+   "Europe/Paris, l'heure de Paris."
+  ]
+ }
+}

@@ -2,6 +2,7 @@
 brouillon, questions, refus motivés, vérifications, questions du code."""
 
 import json
+import os
 import unittest
 
 from compilateur import compilateur_v2 as c2
@@ -357,6 +358,15 @@ class TestSourceDesignee(Base):
         self.assertTrue(source_designee("recherche-entreprises", "le serveur de recherche d'entreprises"))
         self.assertFalse(source_designee("banque-synthetique", "toute attribution de prêt de plus de 2 M€"))
 
+    def test_outil_de_lecture_designe_par_ses_mots(self):
+        from compilateur.verifications_v2 import outil_designe
+        t = "Une décision de prêt fondée sur la base interne des taux doit être validée"
+        self.assertTrue(outil_designe("banque-synthetique/get_taux_interne", t, "read"))
+        self.assertFalse(outil_designe("banque-synthetique/get_taux_usure", t, "read"))
+        # Une action n'est jamais une source : ses mots ne la désignent pas.
+        self.assertFalse(outil_designe("banque-synthetique/attribuer_pret", "attribuer un prêt", "action"))
+        self.assertTrue(outil_designe("gels-avoirs/verifier_gel", "le registre des gels d'avoirs", "read"))
+
     def test_condition_ajoutee_refusee(self):
         p = d_seuil()
         p["racine"] = "e"
@@ -375,10 +385,14 @@ class TestDesignationPersonne(Base):
     SI = {"question": "q", "reponse": "refuser", "champ": "si_indetermine", "origine": "compilateur"}
 
     def propo(self, feuille):
-        noeud = ({"id": "a", "type": "demandeur", "groupe": "prestataires-externes"} if feuille == "demandeur" else
-                 {"id": "a", "type": "sujet", "groupe": "prestataires-externes", "champ": "/siren"})
+        demandeur = {"id": "a", "type": "demandeur", "groupe": "prestataires-externes"}
+        sujet = {"id": "a", "type": "sujet", "groupe": "prestataires-externes", "champ": "/siren"}
+        if feuille == "les deux":
+            noeuds = [{"id": "r", "type": "et", "enfants": ["a", "b"]}, demandeur, dict(sujet, id="b")]
+        else:
+            noeuds = [demandeur if feuille == "demandeur" else sujet]
         return jeu({"extrait": "x", "fondements": [{"texte": "RGPD", "article": "32"}], "declencheur": dict(PRET),
-                    "racine": "a", "noeuds": [noeud], "effets": [{"effet": "refuser"}]})
+                    "racine": noeuds[0]["id"], "noeuds": noeuds, "effets": [{"effet": "refuser"}]})
 
     def designation(self, valeur):
         return {"question": "q", "reponse": valeur, "champ": "designation_personne", "origine": "compilateur"}
@@ -403,18 +417,53 @@ class TestDesignationPersonne(Base):
         r = self.compiler(self.TEXTE, ClientScripte(self.propo("sujet")), [self.designation("Personne concernée"), self.SI])
         self.assertEqual(r["etat"], c2.JEU, r["erreurs"])
 
-    def test_reponse_contraire_refuse_sans_rappel(self):
-        for feuille, valeur, motif in (("demandeur", "personne_concernee", "la personne qui lance les agents (feuille demandeur)"),
-                                       ("sujet", "demandeur", "la personne concernée par l'action (feuille sujet)")):
+    def test_reponse_sans_feuille_correspondante_refuse_sans_rappel(self):
+        for feuille, valeur, motif in (("demandeur", "personne_concernee",
+                                        "désigne la personne concernée par l'action, mais aucune condition du jeu ne "
+                                        "porte sur une feuille sujet (seulement : directive D-001 (feuille demandeur))"),
+                                       ("sujet", "demandeur",
+                                        "désigne le demandeur (la personne qui lance les agents), mais aucune condition "
+                                        "du jeu ne porte sur une feuille demandeur (seulement : directive D-001 (feuille sujet))")):
             cl = ClientScripte(self.propo(feuille))
             r = self.compiler(self.TEXTE, cl, [self.designation(valeur), self.SI])
             self.assertEqual(r["etat"], c2.REFUSE)
             self.assertIsNone(r["jeu"])
             self.assertEqual(len(cl.recus), 1, "pas de rappel à Mistral")
             self.assertEqual(len(r["erreurs"]), 1)
-            self.assertIn("directive D-001 : la condition porte sur " + motif, r["erreurs"][0])
+            self.assertIn(motif, r["erreurs"][0])
             self.assertIn("« utilisateur »", r["erreurs"][0])
             self.assertEqual(r["consignation"][0]["champ"], "designation_personne")
+
+    def test_demandeur_et_sujet_dans_la_meme_regle(self):
+        """Une règle peut viser le demandeur et la personne concernée : la
+        réponse dit seulement à quelle feuille le mot correspond, et le jeu
+        est accepté dans les deux sens."""
+        for valeur in ("demandeur", "personne_concernee"):
+            cl = ClientScripte(self.propo("les deux"))
+            r = self.compiler(self.TEXTE, cl, [self.designation(valeur), self.SI])
+            self.assertEqual(r["etat"], c2.JEU, (valeur, r["erreurs"]))
+            self.assertEqual(r["consignation"][0], self.designation(valeur))
+            self.assertEqual(sorted(r["jeu"]["directives"][0]["condition"]["et"][i].popitem()[0] for i in (0, 1)),
+                             ["demandeur", "sujet"])
+
+    def test_question_tient_avec_un_jeu_existant(self):
+        with open(os.path.join(directive_go.RACINE, "demo", "directives", "demo.json"), encoding="utf-8") as f:
+            demo = json.load(f)
+        r = c2.compiler_jeu(self.TEXTE, "ignore", self.vocab, ClientScripte(self.propo("les deux")),
+                            "juriste@cabinet.fr", "2026-10-04T00:00:00Z", existant=demo)
+        self.assertEqual([q["champ"] for q in r["questions"]], ["designation_personne", "si_indetermine"])
+        self.assertIn("D-009", r["questions"][1]["question"])
+        r = c2.compiler_jeu(self.TEXTE, "ignore", self.vocab, ClientScripte(self.propo("sujet")),
+                            "juriste@cabinet.fr", "2026-10-04T00:00:00Z", existant=demo,
+                            reponses=[self.designation("demandeur"), self.SI])
+        self.assertEqual(r["etat"], c2.REFUSE)
+        self.assertIn("directive D-009 (feuille sujet)", r["erreurs"][0])
+        r = c2.compiler_jeu(self.TEXTE, "ignore", self.vocab, ClientScripte(self.propo("demandeur")),
+                            "juriste@cabinet.fr", "2026-10-04T00:00:00Z", existant=demo,
+                            reponses=[self.designation("demandeur"), self.SI])
+        self.assertEqual(r["etat"], c2.JEU, r["erreurs"])
+        self.assertEqual((r["jeu"]["jeu"]["id"], r["jeu"]["jeu"]["version"], r["ajoutees"]), ("demo", 2, ["D-009"]))
+        self.assertEqual(r["jeu"]["directives"][:8], demo["directives"])
 
     def test_reponse_hors_options_redemandee(self):
         r = self.compiler(self.TEXTE, ClientScripte(self.propo("demandeur")), [self.designation("les deux"), self.SI])
@@ -435,3 +484,62 @@ class TestDesignationPersonne(Base):
                        ("l’agent humain décide", "l’agent humain"), ("Les utilisatrices", "utilisatrices")):
             self.assertEqual(c2.mot_personne_ambigu(t), mot)
         self.assertIsNone(c2.mot_personne_ambigu("Aucun appel le week-end."))
+
+
+class TestCasReprisDuV1(Base):
+    """Les trois cas que seuls les scénarios v1 enregistrés couvraient (seuil
+    non chiffré, serveur absent, champs vers un partenaire), gardés en tests
+    scriptés v2 au retrait du v1, sans appel Mistral."""
+
+    SEUIL = "Au-delà d'un montant significatif, l'attribution d'un prêt est bloquée (Politique de crédit, art. 3.2)."
+    PARTENAIRE = "Le serveur partenaire ne doit recevoir que le SIREN de l'entreprise (RGPD, art. 5)."
+    SI = {"question": "q", "reponse": "refuser", "champ": "si_indetermine", "origine": "compilateur"}
+
+    def test_seuil_non_chiffre(self):
+        # Mistral demande le montant ; un montant inventé est refusé ; celui
+        # que donne le juriste est accepté.
+        q = reponse(appel("poser_question", {"question": "Quel montant exact ?", "sujet": "seuil",
+                                             "extrait": "montant significatif"}))
+        r = self.compiler(self.SEUIL, ClientScripte(q))
+        self.assertEqual((r["etat"], r["questions"][0]["sujet"]), (c2.QUESTIONS, "seuil"))
+        r = self.compiler(self.SEUIL, ClientScripte(jeu(d_seuil()), jeu(d_seuil())))
+        self.assertEqual(r["etat"], c2.REFUSE)
+        self.assertTrue(any("la valeur 500000 n'est pas écrite" in e for e in r["erreurs"]), r["erreurs"])
+        rep = [{"question": "Quel montant exact ?", "reponse": "500 000 euros."}, self.SI]
+        r = self.compiler(self.SEUIL, ClientScripte(jeu(d_seuil())), rep)
+        self.assertEqual(r["etat"], c2.JEU, r["erreurs"])
+        self.assertEqual(r["jeu"]["directives"][0]["condition"],
+                         {"argument": {"champ": "/montant", "op": ">", "valeur": 500000}})
+
+    def test_serveur_absent_du_catalogue(self):
+        p = dict(d_seuil(), declencheur={"serveur": "serveur-inconnu", "outil": "attribuer_pret"})
+        r = self.compiler(CREDIT, ClientScripte(jeu(p), jeu(p)))
+        self.assertEqual(r["etat"], c2.REFUSE)
+        self.assertTrue(any("serveur serveur-inconnu absent du catalogue" in e for e in r["erreurs"]), r["erreurs"])
+        # Le nom n'est même pas offert : l'énumération du function calling le borne.
+        cl = ClientScripte(jeu(d_seuil()))
+        self.compiler(CREDIT, cl)
+        offerts = {o["function"]["name"]: o for o in cl.recus[0][1]}
+        enum = offerts["proposer_jeu"]["function"]["parameters"]["properties"]["directives"]["items"]["properties"][
+            "declencheur"]["properties"]["serveur"]["enum"]
+        self.assertNotIn("serveur-inconnu", enum)
+
+    def test_champs_vers_un_partenaire(self):
+        # « le serveur partenaire » est confirmé par le juriste, pas supposé.
+        q = reponse(appel("poser_question", {"question": "Quel serveur est le partenaire ?", "sujet": "cible",
+                                             "extrait": "serveur partenaire"}))
+        r = self.compiler(self.PARTENAIRE, ClientScripte(q))
+        self.assertEqual(r["etat"], c2.QUESTIONS)
+        p = {"extrait": "Le serveur partenaire ne doit recevoir que le SIREN de l'entreprise",
+             "fondements": [{"texte": "RGPD", "article": "5"}],
+             "declencheur": {"serveur": "recherche-entreprises", "outil": "*"}, "racine": "", "noeuds": [],
+             "effets": [{"effet": "caviarder", "champs_autorises": ["/siren"], "mode": "caviarder"}]}
+        rep = [{"question": "Quel serveur est le partenaire ?", "reponse": "recherche-entreprises"}]
+        r = self.compiler(self.PARTENAIRE, ClientScripte(jeu(p)), rep)
+        self.assertEqual(r["etat"], c2.JEU, r["erreurs"])
+        d, = r["jeu"]["directives"]
+        self.assertEqual(d["effets"], [{"effet": "caviarder", "champs_autorises": ["/siren"], "mode": "caviarder"}])
+        # Un champ qui n'existe pour aucun outil visé est refusé.
+        p["effets"] = [{"effet": "caviarder", "champs_autorises": ["/siren", "/revenu"], "mode": "caviarder"}]
+        r = self.compiler(self.PARTENAIRE, ClientScripte(jeu(p), jeu(p)), rep)
+        self.assertEqual(r["etat"], c2.REFUSE)

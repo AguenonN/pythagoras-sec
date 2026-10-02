@@ -17,7 +17,7 @@ func lancer(t *testing.T, entree string, args ...string) (int, string, string) {
 
 func fixture(t *testing.T) string {
 	t.Helper()
-	b, err := os.ReadFile("../../internal/directive/testdata/credit-pme.json")
+	b, err := os.ReadFile("../../internal/directive/testdata/v2/credit.json")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -46,8 +46,10 @@ func TestVerifier_ToutesLesErreurs(t *testing.T) {
 	}{
 		{"illisible", `{"jeu":`, []string{"document illisible"}},
 		{"champ inconnu", `{"jeu":{},"directives":[],"bonus":1}`, []string{"unknown field"}},
-		{"plusieurs défauts", `{"jeu":{"id":"t","version":1,"date_effet":"2026-10-04T08:00:00Z","auteur":"j"},"directives":[{"id":"D-1","version":1,"statut":"proposee","date_effet":"2026-10-04T08:00:00Z","texte_fr":"t","fondement":{"texte":"RGPD"},"verrou":"interdiction","cible":{"serveur":"","outil":"*"},"effet":"attendre_validation"}]}`,
-			[]string{`statut "proposee" inconnu`, "cible.serveur", `effet "attendre_validation" non admis`}},
+		{"plusieurs défauts", `{"jeu":{"id":"t","version":1,"date_effet":"2026-10-04T08:00:00Z","auteur":"j"},"directives":[{"id":"D-1","version":1,"statut":"proposee","date_effet":"2026-10-04T08:00:00Z","texte_fr":"t","fondements":[],"declencheur":{"evenement":"appel_outil","cible":{"serveur":"*","outil":"*"}},"effets":[{"effet":"autoriser"}]}]}`,
+			[]string{`statut "proposee" inconnu`, "fondements", "autoriser n'est pas un effet"}},
+		{"format v1", `{"jeu":{"id":"t","version":1,"date_effet":"2026-10-04T08:00:00Z","auteur":"j"},"directives":[{"id":"D-1","version":1,"statut":"active","date_effet":"2026-10-04T08:00:00Z","texte_fr":"t","fondement":{"texte":"RGPD"},"verrou":"interdiction","cible":{"serveur":"*","outil":"*"},"effet":"refuser"}]}`,
+			[]string{"directive 1: format de directive v1 non pris en charge : réécrire en v2"}},
 	}
 	for _, c := range cases {
 		t.Run(c.nom, func(t *testing.T) {
@@ -76,7 +78,7 @@ func TestRelire(t *testing.T) {
 	if rc != 0 {
 		t.Fatalf("rc = %d", rc)
 	}
-	attendu, err := os.ReadFile("../../internal/relecture/testdata/credit-pme.txt")
+	attendu, err := os.ReadFile("../../internal/relecture/testdata/v2/credit.txt")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -107,7 +109,7 @@ func TestVerifier_ExigerBrouillon(t *testing.T) {
 	if rc != 1 || r.OK || len(r.Erreurs) != 4 || r.Empreinte != "" {
 		t.Fatalf("rc=%d rapport=%+v", rc, r)
 	}
-	if r.Erreurs[0] != `directive: directive D-001: statut "active", brouillon exigé` {
+	if r.Erreurs[0] != `directive: directive C-001: statut "active", brouillon exigé` {
 		t.Errorf("erreur 1 = %q", r.Erreurs[0])
 	}
 
@@ -124,15 +126,47 @@ func TestVerifier_ExigerBrouillon(t *testing.T) {
 // Un jeu que le chargeur refuse voit aussi ses statuts contrôlés : la liste
 // reste complète.
 func TestVerifier_ExigerBrouillon_JeuInvalide(t *testing.T) {
-	doc := `{"jeu":{"id":"t","version":1,"date_effet":"2026-10-04T08:00:00Z","auteur":"j"},"directives":[{"id":"D-1","version":1,"statut":"observation","date_effet":"2026-10-04T08:00:00Z","texte_fr":"t","fondement":{"texte":"RGPD"},"verrou":"interdiction","cible":{"serveur":"*","outil":"*"},"effet":"caviarder"}]}`
+	doc := `{"jeu":{"id":"t","version":1,"date_effet":"2026-10-04T08:00:00Z","auteur":"j"},"directives":[{"id":"D-1","version":1,"statut":"observation","date_effet":"2026-10-04T08:00:00Z","texte_fr":"t","fondements":[{"texte":"RGPD"}],"declencheur":{"evenement":"appel_outil","cible":{"serveur":"*","outil":"*"}},"effets":[{"effet":"caviarder","champs_autorises":["/siren"],"mode":"caviarder"}]}]}`
 	rc, out, _ := lancer(t, doc, "verifier", "--exiger-brouillon")
 	var r Rapport
 	if err := json.Unmarshal([]byte(out), &r); err != nil {
 		t.Fatal(err)
 	}
-	if rc != 1 || len(r.Erreurs) != 2 || !strings.Contains(r.Erreurs[0], "non admis") ||
+	if rc != 1 || len(r.Erreurs) != 2 || !strings.Contains(r.Erreurs[0], "caviarder") ||
 		!strings.Contains(r.Erreurs[1], `statut "observation", brouillon exigé`) {
 		t.Fatalf("rc=%d erreurs=%q", rc, r.Erreurs)
+	}
+}
+
+// Le format v1 est retiré : verifier et relire le refusent, une erreur par
+// directive fautive, désignée par sa position, sans rien citer du document.
+func TestV1_Refuse(t *testing.T) {
+	v2 := `{"id":"D-1","version":1,"statut":"active","date_effet":"2026-10-04T08:00:00Z","texte_fr":"t","fondements":[{"texte":"RGPD"}],"declencheur":{"evenement":"appel_outil","cible":{"serveur":"*","outil":"*"}},"effets":[{"effet":"refuser"}]}`
+	v1 := `{"id":"D-2","version":1,"statut":"active","date_effet":"2026-10-04T08:00:00Z","texte_fr":"secret","fondement":{"texte":"RGPD"},"verrou":"interdiction","cible":{"serveur":"*","outil":"*"},"effet":"refuser"}`
+	doc := `{"jeu":{"id":"t","version":1,"date_effet":"2026-10-04T08:00:00Z","auteur":"j"},"directives":[` + v2 + `,` + v1 + `]}`
+	rc, out, _ := lancer(t, doc, "verifier")
+	r := Rapport{}
+	if err := json.Unmarshal([]byte(out), &r); err != nil {
+		t.Fatal(err)
+	}
+	if rc != 1 || r.OK || r.Empreinte != "" {
+		t.Fatalf("rc=%d rapport=%+v", rc, r)
+	}
+	n := 0
+	for _, e := range r.Erreurs {
+		if strings.Contains(e, "format de directive v1") {
+			n++
+			if e != "directive: directive 2: format de directive v1 non pris en charge : réécrire en v2" {
+				t.Errorf("erreur %q", e)
+			}
+		}
+	}
+	if n != 1 {
+		t.Fatalf("une erreur v1 attendue : %q", r.Erreurs)
+	}
+	rc, out, errOut := lancer(t, doc, "relire")
+	if rc != 1 || out != "" || !strings.Contains(errOut, "directive 2: format de directive v1") || strings.Contains(errOut, "secret") {
+		t.Fatalf("relire : rc=%d out=%q err=%q", rc, out, errOut)
 	}
 }
 

@@ -1,24 +1,93 @@
 {
-  "origine": "écrit à la main pour la démonstration : le registre de démo ne porte encore ni étiquettes, ni rôles, ni groupes ; à générer depuis le registre et l'annuaire dès qu'ils les porteront",
+  "origine": "généré par go run ./cmd/registre-demo -vocabulaire agents/compilateur/exemples/vocabulaire-demo.json, depuis demo/etiquettes.json, demo/annuaire-source.json et servers/referentiel-rh/groupes_fictifs.json ; ne pas modifier à la main",
   "etiquettes": [
-    {"nom": "donnees_client", "description": "serveur qui sert des données relatives aux clients (dossiers, fiches, comptes)"},
-    {"nom": "production_rapport", "description": "outil qui rédige ou produit un rapport, une note ou un document"},
-    {"nom": "officiel", "description": "serveur qui sert une source officielle (administration, journal officiel, banque centrale)"},
-    {"nom": "donnees_rh", "description": "serveur qui sert des données relatives aux salariés"}
+    {
+      "nom": "donnees_client",
+      "description": "étiquette du registre, portée par : serveur recherche-entreprises, outil banque-synthetique/evaluer_dossier"
+    },
+    {
+      "nom": "donnees_personnelles",
+      "description": "étiquette du registre, portée par : serveur rh-synthetique"
+    },
+    {
+      "nom": "externe",
+      "description": "étiquette du registre, portée par : serveur eurlex, serveur gels-avoirs, serveur legifrance, serveur recherche-entreprises, serveur taux-officiel"
+    },
+    {
+      "nom": "production_rapport",
+      "description": "étiquette du registre, portée par : outil remettre_rapport (tout serveur)"
+    }
   ],
   "roles": [
-    {"nom": "directeur-risques", "description": "directeur ou directrice des risques"},
-    {"nom": "juridique", "description": "direction juridique"},
-    {"nom": "conformite", "description": "responsable de la conformité"},
-    {"nom": "dpo", "description": "délégué à la protection des données"},
-    {"nom": "drh", "description": "direction des ressources humaines"},
-    {"nom": "rssi", "description": "responsable de la sécurité des systèmes d'information"}
+    {
+      "nom": "analyste-risques",
+      "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
+    },
+    {
+      "nom": "directeur-risques",
+      "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
+    },
+    {
+      "nom": "direction-juridique",
+      "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
+    },
+    {
+      "nom": "drh",
+      "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
+    },
+    {
+      "nom": "emetteur-identite",
+      "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
+    },
+    {
+      "nom": "juridique",
+      "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
+    },
+    {
+      "nom": "responsable-rh",
+      "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
+    }
   ],
   "groupes": [
-    {"nom": "prestataires-externes", "description": "annuaire : personnes extérieures à l'entreprise (prestataires, intérimaires)"},
-    {"nom": "stagiaires", "description": "annuaire : stagiaires et alternants"},
-    {"nom": "comite-direction", "description": "annuaire : membres du comité de direction (top management)"},
-    {"nom": "salaries-proteges", "description": "référentiel RH : salariés bénéficiant d'une protection particulière (représentants du personnel)"},
-    {"nom": "contentieux-en-cours", "description": "référentiel RH : salariés en litige en cours avec l'entreprise"}
+    {
+      "nom": "analystes-credit",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "conseillers-credit",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "contentieux-en-cours",
+      "description": "Salariés en litige en cours avec l'entreprise (fictif) ; toute mesure les concernant est à examiner avec le service juridique. Référentiel RH : personne concernée par l'action (feuille sujet)."
+    },
+    {
+      "nom": "direction-juridique",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "direction-risques",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "juridique",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "managers",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "prestataires-externes",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "rh",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "salaries-proteges",
+      "description": "Salariés bénéficiant d'une protection particulière (fictif : par exemple représentant du personnel) ; toute mesure les concernant suit une procédure spéciale. Référentiel RH : personne concernée par l'action (feuille sujet)."
+    }
   ]
 }

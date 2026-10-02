@@ -32,7 +32,12 @@ func rapport(t *testing.T, out string) Rapport {
 func TestV2_VerifierEtRelire(t *testing.T) {
 	for _, nom := range []string{"credit", "weekend", "top-management", "rh", "demandeur", "complet"} {
 		t.Run(nom, func(t *testing.T) {
-			jeu := lire(t, "../../internal/directive/testdata/v2/"+nom+".json")
+			chemin := "../../internal/directive/testdata/v2/" + nom + ".json"
+			if nom == "complet" {
+				// Copie v2 seul du jeu complet (voir internal/relecture).
+				chemin = "../../internal/relecture/testdata/complet-v2.json"
+			}
+			jeu := lire(t, chemin)
 			rc, out, _ := lancer(t, jeu, "verifier")
 			if r := rapport(t, out); rc != 0 || !r.OK || !strings.HasPrefix(r.Empreinte, "sha256:") {
 				t.Fatalf("rc=%d rapport=%+v", rc, r)
@@ -106,5 +111,35 @@ func TestFuseaux(t *testing.T) {
 	}
 	if rc, _, errOut := lancer(t, "", "fuseaux", "x"); rc != 2 || !strings.Contains(errOut, "usage") {
 		t.Fatalf("argument en trop accepté : rc=%d", rc)
+	}
+}
+
+// relire --directives : seulement les directives ajoutées, jugées dans le
+// jeu entier (version n+1 du jeu de démo).
+func TestV2_RelireDirectivesAjoutees(t *testing.T) {
+	var jeu map[string]any
+	if err := json.Unmarshal([]byte(lire(t, "../../demo/directives/demo.json")), &jeu); err != nil {
+		t.Fatal(err)
+	}
+	var w map[string]any
+	if err := json.Unmarshal([]byte(lire(t, "../../internal/directive/testdata/v2/weekend.json")), &w); err != nil {
+		t.Fatal(err)
+	}
+	d := w["directives"].([]any)[0].(map[string]any)
+	d["id"], d["statut"] = "D-009", "brouillon"
+	jeu["directives"] = append(jeu["directives"].([]any), d)
+	jeu["jeu"].(map[string]any)["version"] = 2
+	b, _ := json.Marshal(jeu)
+
+	rc, out, errOut := lancer(t, string(b), "relire", "--directives", "D-009")
+	if rc != 0 {
+		t.Fatalf("rc=%d %s", rc, errOut)
+	}
+	if !strings.HasPrefix(out, "Ajout au jeu demo, version 2 : 1 directive ajoutée (D-009), évaluée après 8 directives existantes") ||
+		strings.Contains(out, "D-001") || !strings.Contains(out, "Directive D-009, version 1, brouillon") {
+		t.Fatalf("relecture :\n%s", out)
+	}
+	if rc, _, _ := lancer(t, string(b), "relire", "--directives", "D-010"); rc != 2 {
+		t.Fatalf("identifiant absent : rc=%d", rc)
 	}
 }

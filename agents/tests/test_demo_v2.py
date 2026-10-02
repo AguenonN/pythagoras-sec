@@ -9,10 +9,10 @@ from unittest import mock
 
 from compilateur import demo, scenarios_v2
 
-from .aides import CATALOGUE_DEMO, CATALOGUE_V2_ENREGISTRE, ClientScripte, appel, reponse
+from .aides import CATALOGUE_DEMO, CATALOGUE_V2_ENREGISTRE, VOCABULAIRE_V2_ENREGISTRE, ClientScripte, appel, reponse
 
 
-def lancer(saisies, *args, schema=("--v2",), catalogue=CATALOGUE_DEMO):
+def lancer(saisies, *args, schema=(), catalogue=CATALOGUE_DEMO):
     saisies = list(saisies)
     ecrit = []
     with tempfile.TemporaryDirectory() as tmp:
@@ -30,8 +30,8 @@ def lancer(saisies, *args, schema=("--v2",), catalogue=CATALOGUE_DEMO):
 
 
 class TestDemoV2(unittest.TestCase):
-    def test_v2_par_defaut(self):
-        # Sans option, la démo compile en v2 : c'est proposer_jeu qui est offert.
+    def test_v2_seul(self):
+        # La démo compile en v2 : c'est proposer_jeu qui est offert ; --v1 n'existe plus.
         s = reponse(appel("signaler_non_observable", {"extrait": "x", "raison": "Pas observable.", "question": "Critère ?"}))
         cl = ClientScripte(*[s] * 5)
         with mock.patch("compilateur.demo.mistral.Client", return_value=cl):
@@ -39,10 +39,9 @@ class TestDemoV2(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertIn("refuse de traduire un critère non observable", ecrit)
         self.assertIn("proposer_jeu", [o["function"]["name"] for o in cl.recus[0][1]])
-
-    def test_v1_et_v2_exclusifs(self):
-        with self.assertRaises(SystemExit):
-            lancer([], "--texte", "x", "--date-effet", "2026-10-05", schema=("--v1", "--v2"))
+        for option in ("--v1", "--v2"):
+            with self.assertRaises(SystemExit):
+                lancer([], "--texte", "x", "--date-effet", "2026-10-05", option)
 
     def test_parcours_week_end(self):
         sc = scenarios_v2.lire("weekend")
@@ -52,7 +51,9 @@ class TestDemoV2(unittest.TestCase):
                    rep["Quel est le fondement juridique applicable pour cette règle ?"],
                    rep["Quel fuseau horaire appliquer pour le week-end ?"],
                    "peut-être", "refuser"]
-        rc, ecrit, jeu, consigne, reste = lancer(saisies, "--prefixe-id", "W", catalogue=CATALOGUE_V2_ENREGISTRE)
+        rc, ecrit, jeu, consigne, reste = lancer(saisies, "--prefixe-id", "W", "--vocabulaire", VOCABULAIRE_V2_ENREGISTRE,
+                                                 "--modele", "mistral-small-latest",
+                                                 catalogue=CATALOGUE_V2_ENREGISTRE)
         self.assertEqual(rc, 0, ecrit)
         self.assertEqual(reste, [])
         self.assertIn("besoin de précisions", ecrit)
@@ -85,3 +86,31 @@ class TestDemoV2(unittest.TestCase):
         self.assertEqual(rc, 1)
         self.assertIsNone(jeu)
         self.assertIn("Jeu refusé par le vérificateur", ecrit)
+
+
+class TestDemoJeuExistant(unittest.TestCase):
+    """--jeu-existant : la démo texte rend la version n+1 du jeu de démo,
+    v2 par défaut, la directive ajoutée numérotée à la suite."""
+
+    def test_ajout_au_jeu_de_demo(self):
+        from compilateur import directive_go
+        demo_json = os.path.join(directive_go.RACINE, "demo", "directives", "demo.json")
+        propo = reponse(appel("proposer_jeu", {"directives": [{
+            "extrait": "Aucune action d'agent le week-end, heure de Paris",
+            "fondements": [{"texte": "Règlement intérieur", "article": "12"}],
+            "declencheur": {"serveur": "*", "outil": "*", "acces": "action"}, "racine": "n1",
+            "noeuds": [{"id": "n1", "type": "temps", "jours": ["samedi", "dimanche"], "fuseau": "Europe/Paris"}],
+            "effets": [{"effet": "refuser"}]}]}))
+        cl = ClientScripte(propo, propo)
+        with mock.patch("compilateur.demo.mistral.Client", return_value=cl):
+            rc, ecrit, jeu, _, _ = lancer(["refuser"], "--texte", "Aucune action d'agent le week-end, heure de Paris "
+                                          "(Règlement intérieur, art. 12).", "--date-effet", "2026-10-05",
+                                          "--jeu-existant", demo_json, schema=())
+        self.assertEqual(rc, 0, ecrit)
+        with open(demo_json, encoding="utf-8") as f:
+            demo_jeu = json.load(f)
+        self.assertEqual((jeu["jeu"]["id"], jeu["jeu"]["version"]), ("demo", demo_jeu["jeu"]["version"] + 1))
+        self.assertEqual(jeu["directives"][:-1], demo_jeu["directives"])
+        self.assertEqual((jeu["directives"][-1]["id"], jeu["directives"][-1]["statut"]), ("D-009", "brouillon"))
+        self.assertIn("Ajout au jeu demo", ecrit)
+        self.assertNotIn("Directive D-001", ecrit)

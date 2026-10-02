@@ -11,16 +11,21 @@ import (
 )
 
 // Jeux v2 relus : les scénarios de internal/directive (non modifiés, lus
-// seulement) et un jeu de variantes qui emploie chaque nœud, chaque
-// feuille, chaque effet et chaque évènement.
+// seulement), une copie de son jeu complet (testdata/complet-v2.json, la
+// directive X-003 réécrite en v2 comme le fait la session v2-seul) et un
+// jeu de variantes qui emploie chaque nœud, chaque feuille, chaque effet et
+// chaque évènement.
 var casV2 = []struct{ nom, jeu, attendu string }{
 	{"credit", "../directive/testdata/v2/credit.json", "testdata/v2/credit.txt"},
 	{"weekend", "../directive/testdata/v2/weekend.json", "testdata/v2/weekend.txt"},
 	{"top-management", "../directive/testdata/v2/top-management.json", "testdata/v2/top-management.txt"},
 	{"rh", "../directive/testdata/v2/rh.json", "testdata/v2/rh.txt"},
 	{"demandeur", "../directive/testdata/v2/demandeur.json", "testdata/v2/demandeur.txt"},
-	{"complet", "../directive/testdata/v2/complet.json", "testdata/v2/complet.txt"},
+	{"complet", "testdata/complet-v2.json", "testdata/v2/complet.txt"},
 	{"variantes", "testdata/variantes-v2.json", "testdata/v2/variantes.txt"},
+	// Formes ajoutées par la session gate-v2 : $racine sous un
+	// quantificateur, directives d'évènement évaluées par l'engine.
+	{"gate-v2", "testdata/gate-v2.json", "testdata/v2/gate-v2.txt"},
 }
 
 // TestJeuV2_Attendu compare la relecture de chaque jeu v2 au fichier
@@ -67,7 +72,7 @@ func TestJeuV2_FuseauxMachine(t *testing.T) {
 		t.Skip("déjà dans un sous-processus")
 	}
 	for _, tz := range []string{"UTC", "Asia/Tokyo", "America/Los_Angeles"} {
-		cmd := exec.Command(os.Args[0], "-test.run=^(TestJeuV2_Attendu|TestJeu_Attendu)$", "-test.count=1")
+		cmd := exec.Command(os.Args[0], "-test.run=^TestJeuV2_Attendu$", "-test.count=1")
 		cmd.Env = append(os.Environ(), "TZ="+tz, "RELECTURE_SOUS_PROCESSUS=1")
 		if out, err := cmd.CombinedOutput(); err != nil {
 			t.Fatalf("TZ=%s : %v\n%s", tz, err, out)
@@ -154,16 +159,13 @@ func TestJeuV2_RienDInconnu(t *testing.T) {
 	}
 }
 
-// TestJeuV1_Inchange : un jeu sans directive v2 n'a pas la phrase sur le
-// cumul, et une directive v1 d'un jeu mixte est relue comme avant.
-func TestJeuV1_Inchange(t *testing.T) {
-	v1 := Jeu(charger(t, "../directive/testdata/credit-pme.json"))
-	if strings.Contains(v1, "se cumulent") {
-		t.Error("jeu v1 : phrase de cumul inattendue")
-	}
-	mixte := Jeu(charger(t, "../directive/testdata/v2/complet.json"))
-	if !strings.Contains(mixte, "Verrou interdiction. Pour tous les appelants : tout appel à supprimer_tout, sur tout serveur, est refusé, sans condition.\n") {
-		t.Error("directive v1 d'un jeu mixte : relecture v1 attendue")
+// TestJeu_SansV1 : le gabarit v1 est retiré ; la phrase sur le cumul des
+// notifications et des marques est toujours écrite.
+func TestJeu_SansV1(t *testing.T) {
+	for _, c := range casV2 {
+		if got := Jeu(charger(t, c.jeu)); !strings.Contains(got, "se cumulent") || strings.Contains(got, "Verrou ") {
+			t.Errorf("%s : relecture inattendue", c.nom)
+		}
 	}
 }
 

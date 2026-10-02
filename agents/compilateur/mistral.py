@@ -24,7 +24,13 @@ import urllib.error
 import urllib.request
 
 URL = "https://api.mistral.ai/v1/chat/completions"
-MODELE = "mistral-small-latest"
+MODELE = "mistral-small-latest"   # défaut du client, partagé avec la boucle et l'orchestrateur
+MODELES = ("mistral-small-latest", "mistral-medium-latest")
+# Modèle par défaut du compilateur de directives, retenu sur mesures
+# (week-end et base interne, RAPPORT_B.md) : small inversait la condition du
+# week-end et inventait des nœuds ; medium a rendu les deux jeux justes du
+# premier coup.
+MODELE_COMPILATEUR = "mistral-medium-latest"
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 ENREGISTREMENTS = os.path.join(ICI, "enregistrements")
@@ -53,10 +59,13 @@ def empreinte(corps):
 
 class Client:
     def __init__(self, mode="rejeu", enregistrements=ENREGISTREMENTS, etat=ETAT,
-                 max_appels=None, transport=None, dormir=time.sleep):
+                 max_appels=None, transport=None, dormir=time.sleep, modele=MODELE):
         if mode not in ("rejeu", "reel"):
             raise ValueError("mode inconnu : %r" % mode)
+        if modele not in MODELES:
+            raise ValueError("modèle inconnu : %r (%s)" % (modele, ", ".join(MODELES)))
         self.mode = mode
+        self.modele = modele
         self.enregistrements = enregistrements
         self.etat = etat
         if max_appels is None:
@@ -70,7 +79,7 @@ class Client:
         """``options`` complète le corps (parallel_tool_calls…) ; absentes, la
         requête et donc son empreinte sont celles d'avant leur ajout."""
         corps = {
-            "model": MODELE,
+            "model": self.modele,
             "temperature": 0,
             "random_seed": 0,
             "messages": messages,
@@ -110,6 +119,14 @@ class Client:
         with open(os.path.join(self.etat, "budget.json"), "w", encoding="utf-8") as f:
             json.dump(budget, f)
 
+    def _journal(self, corps, issue):
+        """Une ligne par appel réel (``.etat/appels.jsonl``) : modèle,
+        empreinte de la requête, issue. Ni la clé ni le contenu."""
+        os.makedirs(self.etat, exist_ok=True)
+        with open(os.path.join(self.etat, "appels.jsonl"), "a", encoding="utf-8") as f:
+            f.write(json.dumps({"date": time.strftime("%Y-%m-%dT%H:%M:%S"), "modele": corps.get("model"),
+                                "requete": empreinte(corps)[:12], "issue": issue[:200]}, ensure_ascii=False) + "\n")
+
     def _appeler(self, corps):
         cle = os.environ.get("MISTRAL_API_KEY", "")
         if not cle:
@@ -131,10 +148,15 @@ class Client:
                     # Génération interrompue côté Mistral : ce n'est pas une
                     # réponse, elle n'est ni rendue ni enregistrée.
                     raise ErreurTransitoire("génération interrompue (finish_reason: error)")
+                self._journal(corps, "ok")
                 return reponse
             except ErreurTransitoire as e:
+                self._journal(corps, str(e))
                 derniere_erreur = e
                 self.dormir(2 ** (tentative + 1))
+            except ErreurMistral as e:
+                self._journal(corps, str(e))
+                raise
         raise ErreurMistral("échec après %d tentatives : %s" % (TENTATIVES, derniere_erreur))
 
 

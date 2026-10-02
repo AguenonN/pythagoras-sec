@@ -10,6 +10,10 @@
    "reponse": "Le critère est le montant : toute attribution de prêt (attribuer_pret) de plus de 2 M€. La personne dans la boucle est le rôle directeur-risques, en quatre yeux (deux personnes distinctes). Le signalement est une notification au rôle juridique. Fondement : Politique de crédit, art. 7.1."
   },
   {
+   "question": "Par quel critère observable (par exemple : un rôle spécifique, un groupe, un outil, une étiquette, un montant seuil) remplacer cette condition pour qu'elle puisse être vérifiée automatiquement ?",
+   "reponse": "Le critère est le montant : toute attribution de prêt (attribuer_pret) de plus de 2 M€. La personne dans la boucle est le rôle directeur-risques, en quatre yeux (deux personnes distinctes). Le signalement est une notification au rôle juridique. Fondement : Politique de crédit, art. 7.1."
+  },
+  {
    "champ": "si_indetermine",
    "reponse": "refuser"
   },

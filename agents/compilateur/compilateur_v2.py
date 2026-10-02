@@ -25,7 +25,6 @@ import re
 
 from . import arbre, directive_go, verifications_v2
 from . import outils_v2
-from .compilateur import fondement
 from .verifications import sans_accents
 
 QUESTIONS = "questions"
@@ -51,7 +50,7 @@ def _choix(texte):
     return re.sub(r"\s+", "_", sans_accents(texte or "").strip().lower().rstrip("."))
 
 
-def message_utilisateur(texte, vocab, reponses):
+def message_utilisateur(texte, vocab, reponses, fondement=None):
     parts = [
         "Catalogue des serveurs et outils disponibles :",
         vocab.pour_le_modele(),
@@ -61,6 +60,10 @@ def message_utilisateur(texte, vocab, reponses):
         texte,
         ">>>",
     ]
+    if fondement:
+        # Absent, le message est celui d'avant l'ajout du champ : les
+        # requêtes enregistrées sans fondement restent valables.
+        parts += ["", "Fondement donné par le juriste :", "<<<", fondement, ">>>"]
     vues, uniques = set(), []
     for r in reponses:
         cle = (r["question"].strip(), r["reponse"].strip())
@@ -111,6 +114,25 @@ def _date(iso, cle):
 
 def _pose(v):
     return v not in (None, "", [], {})
+
+
+_ARTICLE = re.compile(r"^\s*(?:l['’])?art(?:icle|\.)?\s*([A-Za-z]?\d[\w.\-§]*)\s+(?:du |de la |des |de l['’])?(\S.*)$", re.IGNORECASE)
+_PREFIXE_ARTICLE = re.compile(r"^\s*art(?:icle|\.)?\s*", re.IGNORECASE)
+
+
+def fondement(f):
+    """Range « Art. 22 RGPD » en texte RGPD, article 22 : même contenu,
+    autrement découpé ; rien n'est ajouté."""
+    texte = (f.get("texte") or "").strip()
+    article = (f.get("article") or "").strip()
+    m = _ARTICLE.match(texte)
+    if m and not article:
+        article, texte = m.group(1).strip(), m.group(2).strip()
+    article = _PREFIXE_ARTICLE.sub("", article)
+    out = {"texte": texte}
+    if article:
+        out["article"] = article
+    return out
 
 
 def construire_directive(p, texte, id_directive, date_effet, prefixe):
@@ -284,6 +306,42 @@ def _ordonner(d):
     return {k: d[k] for k in _ORDRE if k in d}
 
 
+# -- ajout à un jeu existant ------------------------------------------------
+
+_ID_NUMERO = re.compile(r"^(.*?)(\d+)$")
+
+
+def numeros_suivants(existant, prefixe_id, n):
+    """Les ``n`` identifiants qui suivent ceux du jeu existant : D-009,
+    D-010… après D-008. Le préfixe et la largeur sont ceux des directives
+    existantes qui portent ``prefixe_id`` ; un identifiant déjà pris est sauté."""
+    pris = {d.get("id") for d in existant.get("directives", [])}
+    dernier, largeur = 0, 3
+    for i in pris:
+        m = _ID_NUMERO.match(i or "")
+        if m and m.group(1) == prefixe_id + "-":
+            dernier = max(dernier, int(m.group(2)))
+            largeur = max(largeur, len(m.group(2)))
+    out, k = [], dernier
+    while len(out) < n:
+        k += 1
+        i = "%s-%0*d" % (prefixe_id, largeur, k)
+        if i not in pris:
+            out.append(i)
+    return out
+
+
+def candidat(existant, ajout, auteur, date_effet):
+    """Version n+1 du même jeu : les directives existantes telles quelles,
+    dans leur ordre, puis les directives ajoutées (en brouillon). L'empreinte
+    et la signature de la version n ne valent pas pour n+1 : elles ne sont
+    pas reprises."""
+    meta = existant["jeu"]
+    return {"jeu": {"id": meta["id"], "version": int(meta["version"]) + 1, "date_effet": date_effet,
+                    "auteur": auteur},
+            "directives": json.loads(json.dumps(existant["directives"])) + ajout["directives"]}
+
+
 # -- échange avec Mistral ----------------------------------------------------
 
 def _appels(reponse):
@@ -304,19 +362,30 @@ def _appels(reponse):
     return message, appels
 
 
-def compiler_jeu(texte, jeu_id, vocab, client, auteur, date_effet, reponses=(), prefixe_id="D"):
+def compiler_jeu(texte, jeu_id, vocab, client, auteur, date_effet, reponses=(), prefixe_id="D",
+                 existant=None, fondement=None):
     """Rend un dict : etat (questions | non_observable | jeu | refuse | erreurs)
     et le détail.
 
     ``date_effet`` : horodatage RFC 3339 fixé par le juriste.
-    ``reponses`` : [{"question", "reponse", "champ"?, "options"?, "origine"?}]."""
+    ``reponses`` : [{"question", "reponse", "champ"?, "options"?, "origine"?}].
+    ``existant`` : le jeu auquel ajouter (dict) ; le résultat est alors sa
+    version n+1 (``jeu``), les directives ajoutées numérotées à la suite
+    (``ajoutees``), et la relecture ne montre qu'elles. ``jeu_id`` est alors
+    celui du jeu existant. Le jeu existant n'entre pas dans la requête à
+    Mistral : un enregistrement reste valable quand le jeu change.
+    ``fondement`` : le fondement saisi à part par le juriste."""
     reponses = list(reponses)
-    source = "\n".join([texte] + [r["reponse"] for r in reponses if not _du_code(r)])
+    if existant is not None:
+        jeu_id = existant["jeu"]["id"]
+    source = "\n".join([texte] + ([fondement] if fondement else []) +
+                       [r["reponse"] for r in reponses if not _du_code(r)])
     resultat = {"texte": texte, "reponses": reponses, "questions": [], "non_observables": [],
-                "erreurs": [], "jeu": None, "relecture": None, "tentatives": 0, "consignation": []}
+                "erreurs": [], "jeu": None, "relecture": None, "tentatives": 0, "consignation": [],
+                "ajoutees": []}
     messages = [
         {"role": "system", "content": outils_v2.CONSIGNE},
-        {"role": "user", "content": message_utilisateur(texte, vocab, reponses)},
+        {"role": "user", "content": message_utilisateur(texte, vocab, reponses, fondement)},
     ]
     offerts = outils_v2.outils(vocab)
 
@@ -364,17 +433,20 @@ def compiler_jeu(texte, jeu_id, vocab, client, auteur, date_effet, reponses=(), 
             erreurs.append("proposer_jeu : aucune directive")
             brutes = []
         directives = []
+        ids = (numeros_suivants(existant, prefixe_id, len(brutes)) if existant is not None
+               else ["%s-%03d" % (prefixe_id, i) for i in range(1, len(brutes) + 1)])
         for i, p in enumerate(brutes, 1):
             if not isinstance(p, dict):
                 erreurs.append("directive %d : objet attendu" % i)
                 continue
-            id_directive = "%s-%03d" % (prefixe_id, i)
+            id_directive = ids[i - 1]
             prefixe = "directive %d (%s) : " % (i, id_directive)
             d, err = construire_directive(p, texte, id_directive, date_effet, prefixe)
             erreurs += err
             erreurs += verifications_v2.verifier_directive(p, d, vocab, source, prefixe)
             directives.append(d)
-        jeu = {"jeu": {"id": jeu_id, "version": 1, "date_effet": date_effet, "auteur": auteur},
+        version = 1 if existant is None else int(existant["jeu"]["version"]) + 1
+        jeu = {"jeu": {"id": jeu_id, "version": version, "date_effet": date_effet, "auteur": auteur},
                "directives": directives}
         ok, err_go = True, []
         if directives:
@@ -382,7 +454,7 @@ def compiler_jeu(texte, jeu_id, vocab, client, auteur, date_effet, reponses=(), 
         erreurs += err_go
         resultat["jeu"] = jeu
         if not erreurs and ok:
-            return _conclure(resultat, jeu, reponses, auteur)
+            return _conclure(resultat, jeu, reponses, auteur, existant, date_effet)
         resultat["erreurs"] = erreurs
         if tentative == 2:
             break
@@ -400,24 +472,30 @@ def compiler_jeu(texte, jeu_id, vocab, client, auteur, date_effet, reponses=(), 
 
 
 def contradictions_personne(jeu, reponses, texte):
-    """Les feuilles qui contredisent la réponse du juriste à la question
-    demandeur / personne concernée ; vide si la question n'a pas lieu."""
+    """La réponse du juriste à la question demandeur / personne concernée
+    dit à quelle feuille le mot ambigu correspond. Une règle peut viser à la
+    fois le demandeur et la personne concernée : le jeu n'est refusé que si
+    aucune feuille du type désigné n'y figure. Rend les erreurs (vide si la
+    question n'a pas lieu ou si la réponse trouve sa feuille)."""
     if not mot_personne_ambigu(texte):
         return []
     r = reponse_du_code(reponses, CHAMP_PERSONNE, OPTIONS_PERSONNE)
     if r is None:
         return []
-    autre, sens = ("sujet", "la personne concernée par l'action") if r[0] == "demandeur" else \
-        ("demandeur", "la personne qui lance les agents")
-    choisi = "le demandeur" if r[0] == "demandeur" else "la personne concernée par l'action"
-    return ["directive %s : la condition porte sur %s (feuille %s), alors que le juriste a répondu que « %s » "
-            "désigne %s ; jeu refusé, à reformuler" % (did, sens, cle, mot_personne_ambigu(texte), choisi)
-            for did, cle in _feuilles(jeu, (autre,))]
+    voulue, choisi = ("demandeur", "le demandeur (la personne qui lance les agents)") if r[0] == "demandeur" else \
+        ("sujet", "la personne concernée par l'action")
+    presentes = _feuilles(jeu, ("demandeur", "sujet"))
+    if any(cle == voulue for _, cle in presentes):
+        return []
+    autres = ", ".join("directive %s (feuille %s)" % (did, cle) for did, cle in presentes)
+    return ["le juriste a répondu que « %s » désigne %s, mais aucune condition du jeu ne porte sur une feuille %s "
+            "(seulement : %s) ; jeu refusé, à reformuler" % (mot_personne_ambigu(texte), choisi, voulue, autres)]
 
 
-def _conclure(resultat, jeu, reponses, auteur):
+def _conclure(resultat, jeu, reponses, auteur, existant=None, date_effet=None):
     complet, restantes, consignation = appliquer_reponses(jeu, reponses, auteur, resultat["texte"])
-    resultat["consignation"] = consignation
+    # Les erreurs d'une proposition corrigée depuis ne valent plus.
+    resultat["consignation"], resultat["erreurs"] = consignation, []
     if restantes:
         resultat.update(etat=QUESTIONS, questions=restantes, jeu=None)
         return resultat
@@ -431,5 +509,18 @@ def _conclure(resultat, jeu, reponses, auteur):
     if not ok:
         resultat.update(etat=REFUSE, erreurs=err_go, jeu_refuse=complet, jeu=None)
         return resultat
-    resultat.update(etat=JEU, erreurs=[], jeu=complet, relecture=directive_go.relire(complet))
+    if existant is None:
+        resultat.update(etat=JEU, erreurs=[], jeu=complet, relecture=directive_go.relire(complet))
+        return resultat
+    # Version n+1 du jeu existant : le chargeur juge le jeu entier (les
+    # directives existantes gardent leur statut, seules les ajoutées sont
+    # en brouillon, contrôlé ci-dessus) ; la relecture ne montre que l'ajout.
+    ids = [d["id"] for d in complet["directives"]]
+    entier = candidat(existant, complet, auteur, date_effet)
+    ok, err_go, _ = directive_go.verifier(entier, exiger_brouillon=False)
+    if not ok:
+        resultat.update(etat=REFUSE, erreurs=err_go, jeu_refuse=entier, jeu=None)
+        return resultat
+    resultat.update(etat=JEU, erreurs=[], jeu=entier, ajoutees=ids,
+                    relecture=directive_go.relire(entier, directives=ids))
     return resultat

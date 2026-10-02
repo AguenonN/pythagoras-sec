@@ -4,8 +4,10 @@ Trois sources, aucune tenue en double :
 
 - le catalogue généré depuis le registre de démo (serveurs, outils, accès,
   arguments), ``exemples/catalogue-demo.json`` ;
-- un complément pour ce que le registre et l'annuaire ne portent pas encore
-  (étiquettes, rôles, groupes), ``exemples/vocabulaire-demo.json`` ;
+- le complément (étiquettes, rôles, groupes), ``exemples/vocabulaire-demo.json``,
+  généré lui aussi (``go run ./cmd/registre-demo -vocabulaire ...``) : étiquettes
+  de ``demo/etiquettes.json``, rôles et groupes de ``demo/annuaire-source.json``,
+  groupes des personnes concernées du référentiel RH ;
 - les fuseaux admis par le chargeur Go (``directive fuseaux``).
 
 Chaque liste devient une énumération du function calling : Mistral ne peut
