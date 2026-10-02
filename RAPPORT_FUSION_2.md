@@ -15,11 +15,18 @@ existe). Base `9a74714` : tout vert (Python : 192 tests, 1 ignoré).
 | # | Étape | Commit | Contrôle |
 |---|---|---|---|
 | 1 | fusion `feat/compilateur-final` (B, `61411a8`) | `dfbabec` ; rapport versé `8a21fb1` | vet, race, Python (191, 1 ignoré) : verts |
+| 2 | fusion `feat/console-finale` (C, `d7cc668`) | `5ec973e` ; rapports `5ec866e` | vet, race, Python (191, 1 ignoré) : verts |
 
 ### 1. B — compilateur
 
 - Conflits : **aucun** (fusion automatique).
 - `RAPPORT_B.md` → `docs/rapports/compilateur-final.md` (commit séparé).
+
+### 2. C — console
+
+- Conflits : **aucun** (fusion automatique).
+- `RAPPORT_C.md` → `docs/rapports/console-finale.md` ; `RAPPORT_NUIT.md`
+  (une ligne renvoyant à `RAPPORT_C.md`) supprimé.
 
 ## Écarts restants
 
