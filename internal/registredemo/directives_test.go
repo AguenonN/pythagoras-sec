@@ -142,11 +142,12 @@ func TestJeuIntegrationDevantRegistreDemo(t *testing.T) {
 	}
 }
 
-// Tous les jeux de demo/directives passent le chargeur strict et le
-// démarrage du gate devant le registre de démo étiqueté (schémas et
-// étiquettes versionnés), et devant demo/registre.json s'il a été
-// régénéré (go run ./cmd/registre-demo). Le registre de démo porte
-// production_rapport sur banque-synthetique/remettre_rapport et
+// Le jeu de la démo (demo/directives/demo.json, et son historique) et les
+// jeux de test de l'intégration (test/integration/testdata) passent le
+// chargeur strict et le démarrage du gate devant le registre de démo
+// étiqueté (schémas et étiquettes versionnés), et devant demo/registre.json
+// s'il a été régénéré (go run ./cmd/registre-demo). Le registre de démo
+// porte production_rapport sur banque-synthetique/remettre_rapport et
 // donnees_client sur evaluer_dossier, que rapport.json vise.
 func TestTousLesJeuxDemo(t *testing.T) {
 	racine, err := filepath.Abs("../..")
@@ -184,14 +185,21 @@ func TestTousLesJeuxDemo(t *testing.T) {
 		}
 	}
 
-	jeux, err := filepath.Glob(filepath.Join(racine, "demo", "directives", "*.json"))
-	if err != nil {
+	var jeux []string
+	for _, motif := range []string{"demo/directives/*.json", "demo/directives/historique/*.json", "test/integration/testdata/*.json"} {
+		m, err := filepath.Glob(filepath.Join(racine, motif))
+		if err != nil {
+			t.Fatal(err)
+		}
+		jeux = append(jeux, m...)
+	}
+	if _, err := os.Stat(filepath.Join(racine, "demo", "directives", "demo.json")); err != nil {
 		t.Fatal(err)
 	}
-	if len(jeux) == 0 {
-		t.Fatal("aucun jeu dans demo/directives")
-	}
 	for _, chemin := range jeux {
+		if filepath.Base(chemin) == "origines.json" {
+			continue // origine des directives (console), pas un jeu
+		}
 		b, err := os.ReadFile(chemin)
 		if err != nil {
 			t.Fatal(err)

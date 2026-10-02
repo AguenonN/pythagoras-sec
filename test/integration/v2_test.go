@@ -138,7 +138,7 @@ var paris = func() *time.Location {
 	return l
 }()
 
-const jeuWeekEnd = "demo/directives/weekend.json"
+const jeuWeekEnd = "test/integration/testdata/weekend.json"
 
 func TestWeekEnd(t *testing.T) {
 	pret := map[string]any{"dossier_id": "DOS-FICTIF-002", "siren": "382891752", "montant": 400000}
@@ -198,7 +198,7 @@ func TestWeekEnd(t *testing.T) {
 	}
 }
 
-const jeuTopManagement = "demo/directives/top-management.json"
+const jeuTopManagement = "test/integration/testdata/top-management.json"
 
 const (
 	claire = "claire.analyste@exemple.test"
@@ -307,7 +307,7 @@ func TestTopManagement_SansEcranRefus(t *testing.T) {
 	b.commandeJournal(t)
 }
 
-const jeuRH = "demo/directives/rh.json"
+const jeuRH = "test/integration/testdata/rh.json"
 
 // RH : le gate résout les groupes des salariés désignés par
 // personnes_concernees auprès de referentiel-rh (attesté) avant Decide.
@@ -415,7 +415,7 @@ func preparerRegistreRapports(dir string, demo *registre.Registre) error {
 	return os.WriteFile(cheminRapports, b, 0o600)
 }
 
-const jeuRapport = "demo/directives/rapport.json"
+const jeuRapport = "test/integration/testdata/rapport.json"
 
 // Demandeur du groupe prestataires-externes, données client reçues, puis
 // rapport : refus, et le DPO est notifié.

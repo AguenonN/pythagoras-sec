@@ -2,8 +2,8 @@
 « base interne » passent le chargeur strict (directive verifier) et se
 relisent sans gabarit de repli (directive relire). Le démarrage du gate
 devant le registre de démo est contrôlé par
-internal/registredemo.TestTousLesJeuxDemo, qui charge tous les jeux de
-demo/directives."""
+internal/registredemo.TestTousLesJeuxDemo, qui charge demo.json, son
+historique et les jeux de test de l'intégration."""
 
 import json
 import os
