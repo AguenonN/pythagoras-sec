@@ -358,3 +358,15 @@ func TestLancerUneDemande(t *testing.T) {
 		t.Fatalf("échec attendu : %+v", x[0])
 	}
 }
+
+func TestTitreSansEspaceFinale(t *testing.T) {
+	for texte, attendu := range map[string]string{
+		"Décision top management : au-delà de 2 000 000 euros, …": "Décision top management",
+		"Gels vérifiés avant tout prêt : aucun prêt…":             "Gels vérifiés avant tout prêt",
+		"Aucune action le week-end.":                              "Aucune action le week-end",
+	} {
+		if got := Titre(texte); got != attendu {
+			t.Errorf("Titre(%q) = %q, attendu %q", texte, got, attendu)
+		}
+	}
+}

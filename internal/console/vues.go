@@ -182,7 +182,7 @@ func reglesDe(j *directive.Jeu) *Regles {
 func Titre(texte string) string {
 	t := strings.TrimSpace(texte)
 	if i := strings.IndexAny(t, ".;:"); i > 0 {
-		t = t[:i]
+		t = strings.TrimSpace(t[:i]) // « Titre : texte » (espace avant les deux-points)
 	}
 	r := []rune(t)
 	if len(r) > 60 {
