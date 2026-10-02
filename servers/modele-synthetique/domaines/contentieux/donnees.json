@@ -1,0 +1,22 @@
+{
+  "avertissement": "DONNÉES FICTIVES inventées pour la démonstration : cabinet, clients, dossiers et pièces imaginaires, aucune personne ni affaire réelle.",
+  "collections": {
+    "dossiers": [
+      {"id": "DOSSIER-FICTIF-001", "client": "SOCIETE-FICTIVE-ALPHA", "matiere": "contentieux commercial", "juridiction": "tribunal de commerce (fictif)", "statut": "en cours", "avocat": "Me Avocat-Fictif-1", "enjeu_euros": 450000},
+      {"id": "DOSSIER-FICTIF-002", "client": "SOCIETE-FICTIVE-BETA", "matiere": "droit social", "juridiction": "conseil de prud'hommes (fictif)", "statut": "en cours", "avocat": "Me Avocat-Fictif-2", "enjeu_euros": 38000},
+      {"id": "DOSSIER-FICTIF-003", "client": "SOCIETE-FICTIVE-GAMMA", "matiere": "propriété intellectuelle", "juridiction": "tribunal judiciaire (fictif)", "statut": "clos", "avocat": "Me Avocat-Fictif-1", "enjeu_euros": 120000}
+    ],
+    "pieces_client": [
+      {"id": "PCLIENT-FICTIVE-001", "dossier_id": "DOSSIER-FICTIF-001", "libelle": "Contrat de fourniture signé (fictif)", "confidentialite": "secret professionnel"},
+      {"id": "PCLIENT-FICTIVE-002", "dossier_id": "DOSSIER-FICTIF-001", "libelle": "Échange de courriels avec le client (fictif)", "confidentialite": "secret professionnel"},
+      {"id": "PCLIENT-FICTIVE-003", "dossier_id": "DOSSIER-FICTIF-002", "libelle": "Contrat de travail (fictif)", "confidentialite": "secret professionnel"},
+      {"id": "PCLIENT-FICTIVE-004", "dossier_id": "DOSSIER-FICTIF-003", "libelle": "Certificat d'enregistrement de marque (fictif)", "confidentialite": "public"}
+    ],
+    "echeances": [
+      {"id": "ECH-FICTIVE-001", "dossier_id": "DOSSIER-FICTIF-001", "nature": "dépôt des conclusions en réponse", "date": "2026-10-15", "statut": "à venir"},
+      {"id": "ECH-FICTIVE-002", "dossier_id": "DOSSIER-FICTIF-001", "nature": "audience de plaidoirie", "date": "2026-11-20", "statut": "à venir"},
+      {"id": "ECH-FICTIVE-003", "dossier_id": "DOSSIER-FICTIF-002", "nature": "dépôt des conclusions récapitulatives", "date": "2026-10-05", "statut": "à venir"},
+      {"id": "ECH-FICTIVE-004", "dossier_id": "DOSSIER-FICTIF-003", "nature": "notification de l'arrêt", "date": "2026-03-02", "statut": "passée"}
+    ]
+  }
+}

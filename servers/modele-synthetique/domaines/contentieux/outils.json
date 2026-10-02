@@ -1,0 +1,59 @@
+{
+  "description": "Cabinet fictif : dossiers contentieux, pièces client (secret professionnel), échéances, dépôt de conclusions.",
+  "outils": [
+    {
+      "nom": "lire_dossier",
+      "description": "Lit un dossier contentieux : client, matière, juridiction, statut, avocat, enjeu.",
+      "genre": "lire",
+      "readOnlyHint": true,
+      "collection": "dossiers",
+      "arguments": [
+        {"nom": "dossier_id", "type": "string", "description": "identifiant du dossier, par exemple DOSSIER-FICTIF-001", "obligatoire": true, "champ": "id"}
+      ]
+    },
+    {
+      "nom": "lister_pieces_client",
+      "description": "Liste les pièces remises par le client pour un dossier (couvertes par le secret professionnel).",
+      "genre": "lister",
+      "readOnlyHint": true,
+      "collection": "pieces_client",
+      "arguments": [
+        {"nom": "dossier_id", "type": "string", "description": "identifiant du dossier"}
+      ]
+    },
+    {
+      "nom": "lire_piece_client",
+      "description": "Lit une pièce client (secret professionnel).",
+      "genre": "lire",
+      "readOnlyHint": true,
+      "collection": "pieces_client",
+      "arguments": [
+        {"nom": "piece_id", "type": "string", "description": "identifiant de la pièce, par exemple PCLIENT-FICTIVE-001", "obligatoire": true, "champ": "id"}
+      ]
+    },
+    {
+      "nom": "lister_echeances",
+      "description": "Liste les échéances de procédure, éventuellement pour un dossier ou un statut (à venir, passée).",
+      "genre": "lister",
+      "readOnlyHint": true,
+      "collection": "echeances",
+      "arguments": [
+        {"nom": "dossier_id", "type": "string", "description": "identifiant du dossier"},
+        {"nom": "statut", "type": "string", "description": "à venir ou passée"}
+      ]
+    },
+    {
+      "nom": "deposer_conclusions",
+      "description": "Dépose des conclusions auprès de la juridiction pour un dossier (action : enregistrée en mémoire, fictive).",
+      "genre": "action",
+      "readOnlyHint": false,
+      "reference_prefixe": "CONCLUSIONS-FICTIVES",
+      "verifie": [{"argument": "dossier_id", "collection": "dossiers", "champ": "id"}],
+      "arguments": [
+        {"nom": "dossier_id", "type": "string", "description": "identifiant du dossier", "obligatoire": true},
+        {"nom": "titre", "type": "string", "description": "intitulé des conclusions", "obligatoire": true},
+        {"nom": "pieces_jointes", "type": "liste", "description": "identifiants des pièces jointes"}
+      ]
+    }
+  ]
+}
