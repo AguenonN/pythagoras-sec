@@ -8,6 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
+
+	"mcprogue/internal/annuaire"
 )
 
 func get(t *testing.T, srv *Serveur, chemin string) (int, string) {
@@ -126,4 +129,39 @@ func TestListesPleinesJamaisNull(t *testing.T) {
 		must(t, json.Unmarshal([]byte(corps), &v))
 		aucunNull(t, chemin, v, "")
 	}
+}
+
+// Session lancée avec --horloge-depart : la console signe à l'heure simulée
+// (départ + temps écoulé) et le jeton est accepté par un gate dont l'horloge
+// part du même instant ; signé à l'heure réelle, il serait périmé.
+func TestSignatureALHeureSimulee(t *testing.T) {
+	b := nouveauBanc(t)
+	id, fin := b.demandeAsync(claire, "Peut-on accorder un prêt de 120 000 euros ?")
+	st := b.attendreStatut(id, StatutEnAttente)
+	att := st.Dossier.Attente
+	depart := time.Now().UTC().Add(48 * time.Hour).Truncate(time.Second)
+	h, _ := json.Marshal(map[string]string{"depart": depart.Format(time.RFC3339),
+		"reel": time.Now().UTC().Add(-30 * time.Second).Format(time.RFC3339Nano)})
+	must(t, os.WriteFile(filepath.Join(st.Journal.Dossier(), "horloge.json"), h, 0o644))
+
+	if _, err := b.Dep.Valider(id, anna, "analyste-risques"); err != nil {
+		t.Fatal(err)
+	}
+	jeton, err := os.ReadFile(filepath.Join(b.racine, "demo", "execution", "approbations", att.EmpreinteTransmise, anna+".jwt"))
+	must(t, err)
+	loc, _, err := b.Dep.Annuaire()
+	must(t, err)
+	// Horloge du gate : départ + 30 s (temps écoulé) + une marge de lancement.
+	gate := depart.Add(35 * time.Second)
+	ap, err := annuaire.VerifierApprobation(loc, strings.TrimSpace(string(jeton)), att.EmpreinteTransmise, gate)
+	if err != nil {
+		t.Fatalf("jeton refusé à l'horloge simulée : %v", err)
+	}
+	if d := ap.Date.Sub(depart.Add(30 * time.Second)); d < -2*time.Second || d > 5*time.Second {
+		t.Fatalf("iat %v loin de départ + 30 s", ap.Date)
+	}
+	if _, err := annuaire.VerifierApprobation(loc, strings.TrimSpace(string(jeton)), att.EmpreinteTransmise, time.Now()); err == nil {
+		t.Fatal("le jeton doit porter l'heure simulée, pas l'heure réelle")
+	}
+	_ = fin
 }

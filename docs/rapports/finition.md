@@ -10,6 +10,7 @@ Branche `feat/finition`. Mis à jour après chaque commit.
   - Tests : `sansappel_test.go` (dossier sans journal et journal vide : texte de la réponse, statut, demandeur ; aucune liste `null` sur dossier vide et sur sessions réelles).
   - Vérifié dans Chromium (Playwright) : aucune erreur JavaScript, texte de la réponse affiché.
 - **Point 1 — test instable.** `TestCompilationEssaiEtActivation` attendait 1,1 s fixes pour que la date d'effet (à la seconde) suive le dernier appel. Remplacé par `attendreSecondeApresJournaux` (banc_test.go) : attend que la seconde en cours soit strictement postérieure à toute entrée de journal ; plus de marge. Preuve : `go test -race -count=50 ./internal/console/` vert (314 s), lancé pendant deux suites complètes en parallèle (celles-ci ont pu finir avant la fin des 50 passages).
+- **Point 2 — signature à l'horloge simulée.** `Valider` lit `horloge.json` du dossier de session (`depart`, `reel`, écrit par `lancer-demo.sh`), calcule départ + temps écoulé (même calcul que `lancer-demo.sh valider`), passe `-horloge` à `mcp-approve` et contrôle les rôles à cette heure. Sans `horloge.json` : heure réelle, inchangé. Test `TestSignatureALHeureSimulee` : jeton accepté par `annuaire.VerifierApprobation` à l'horloge du gate, refusé à l'heure réelle.
 
 ## Décisions prises seul
 

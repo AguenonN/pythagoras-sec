@@ -3,6 +3,7 @@ package console
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -73,7 +74,15 @@ func (d *Depot) Valider(journalID, valideur, role string) (*AttenteVue, error) {
 	if d.LireRejet(att.EmpreinteTransmise) != nil {
 		return nil, refus(409, "Cette demande a déjà été rejetée : aucune signature n'est plus acceptée.")
 	}
-	possibles, err := d.Valideurs(att.Roles, time.Now())
+	// Session lancée avec --horloge-depart : le gate vit à l'heure simulée, le
+	// jeton doit être signé à cette heure et les rôles contrôlés à cette heure.
+	maintenant := time.Now()
+	argHorloge := []string{}
+	if h, simulee := horlogeSimulee(st.Journal.Dossier(), maintenant); simulee {
+		maintenant = h
+		argHorloge = []string{"-horloge", h.UTC().Format(time.RFC3339)}
+	}
+	possibles, err := d.Valideurs(att.Roles, maintenant)
 	if err != nil {
 		return nil, refus(409, "Annuaire indisponible : %v", err)
 	}
@@ -89,6 +98,7 @@ func (d *Depot) Valider(journalID, valideur, role string) (*AttenteVue, error) {
 	ch := d.Chemins()
 	argv := append(append([]string{}, d.Commandes.Approuver...), "valider",
 		"-cles", ch.Cles, "-valideur", valideur, "-role", role, "-empreinte", att.EmpreinteTransmise)
+	argv = append(argv, argHorloge...)
 	ctx, annuler := context.WithTimeout(context.Background(), 60*time.Second)
 	defer annuler()
 	out, errOut, err := d.Commandes.executer(ctx, argv, nil)
@@ -284,4 +294,28 @@ func secretsRetires(s string) string {
 		}
 	}
 	return s
+}
+
+// horlogeSimulee rend l'heure du gate d'une session lancée avec
+// --horloge-depart : le départ consigné dans horloge.json, plus le temps réel
+// écoulé depuis le lancement (le calcul de « lancer-demo.sh valider »).
+// Sans horloge.json, ou illisible : l'heure réelle, et false.
+func horlogeSimulee(dossier string, maintenant time.Time) (time.Time, bool) {
+	b, err := os.ReadFile(filepath.Join(dossier, "horloge.json"))
+	if err != nil {
+		return maintenant, false
+	}
+	var h struct {
+		Depart string `json:"depart"`
+		Reel   string `json:"reel"`
+	}
+	if json.Unmarshal(b, &h) != nil {
+		return maintenant, false
+	}
+	depart, err1 := time.Parse(time.RFC3339Nano, h.Depart)
+	reel, err2 := time.Parse(time.RFC3339Nano, h.Reel)
+	if err1 != nil || err2 != nil {
+		return maintenant, false
+	}
+	return depart.Add(maintenant.Sub(reel)).Truncate(time.Second), true
 }
