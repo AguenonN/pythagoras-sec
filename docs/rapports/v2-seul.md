@@ -138,11 +138,18 @@ recontrôlé sur une copie (`git archive HEAD`) : `go vet ./...`,
 
 ### Étape 3 (et fin des étapes 1, 5) : prête, **non commitée**
 
-Le retrait du v1 dans `internal/directive` est fait dans l'arbre de
-travail du worktree, vérifié, et **arrêté avant commit** parce qu'il rend
-rouges des tests qui ne sont pas à moi (§4). Le même changement est
-enregistré dans `nuit/v2-seul-etape-finale.patch` (s'applique sur
-`02e3f59`, contrôlé par `git apply --check`).
+Le retrait du v1 dans `internal/directive` a été fait et vérifié dans
+l'arbre de travail, puis **arrêté avant commit** parce qu'il rend rouges
+des tests qui ne sont pas à moi (§4). En fin de mission, l'arbre a été
+remis à l'état du dernier commit ; le changement n'existe plus que sous
+forme de patch, identique octet pour octet au `git diff HEAD --binary`
+de l'arbre (19 fichiers, dont le nouveau `internal/directive/obsolete.go`
+et les suppressions de `convertir.go` et `decide_v1_ref_test.go`) :
+
+- `~/v2-seul-etape-finale.patch` (hors du worktree) ;
+- `nuit/v2-seul-etape-finale.patch` (dans le worktree, non suivi).
+
+Application : voir §7.
 
 Contenu :
 
@@ -316,7 +323,8 @@ cd mcp_rogue-v2-seul
 git log --oneline 9a74714..HEAD          # commits de la session
 git status --short                        # étape 3 en cours (non commitée)
 go vet ./...
-# Mon périmètre, avec l'étape 3 :
+go test -race -count=1 ./...              # état commité : tout vert
+# Les commandes ci-dessous supposent le patch appliqué (§7) :
 go test -race -count=1 ./internal/directive ./internal/journal ./internal/rejeu \
   ./internal/gate ./internal/registredemo ./test/...
 # Refus du v1 :
@@ -327,6 +335,46 @@ go test -count=1 -v ./test/integration | grep '^rejeu'   # 26 journaux, tous rej
 for tz in UTC Asia/Tokyo; do TZ=$tz go test -count=1 -run TestWeekEnd ./test/integration; done
 # Les rouges attendus hors périmètre (§4) :
 go test -count=1 ./cmd/directive ./internal/relecture ./internal/console
-# Sans l'étape 3 (état commité, tout vert), sur une copie hors du worktree :
-#   d=$(mktemp -d) && git archive HEAD | tar -x -C "$d" && (cd "$d" && go test -race -count=1 ./...)
+# Étape 3 : voir §7 (patch, à appliquer après la fusion de B et C).
 ```
+
+## 7. Appliquer l'étape 3 après la fusion de B et C
+
+À faire sur la branche qui porte la fusion de v2-seul, de B (compilateur,
+relecture) et de C (console), une fois ces deux sessions sans v1 :
+
+```sh
+git status --short                                   # arbre propre
+git apply --check ~/v2-seul-etape-finale.patch       # doit ne rien dire
+git apply --index ~/v2-seul-etape-finale.patch       # applique et indexe (obsolete.go compris)
+go vet ./...
+go test -race -count=1 ./...
+(cd agents && .venv/bin/python -m unittest discover -s tests -t .)
+git commit -m "directive : format v1 retiré ; un document v1 est refusé au chargement"
+```
+
+Si `git apply --check` échoue (un fichier du patch a bougé à la fusion) :
+`git apply --3way --index ~/v2-seul-etape-finale.patch`, puis résoudre
+les conflits ; seuls `internal/directive/`, `internal/rejeu/rejeu_test.go`
+et `docs/schema-directive-v2.md` sont touchés.
+
+Tests attendus après application :
+
+- **Verts, sans condition** (déjà vérifiés le 2026-10-01 sur 02e3f59 + le
+  patch) : `internal/directive` (dont `TestCharger_RefuseV1` et les cinq
+  tests de déterminisme), `internal/journal`, `internal/rejeu`,
+  `internal/gate`, `internal/registredemo`, `test`, `test/gate`,
+  `test/integration` (« rejeu : 26 journaux régénérés, tous vérifiés et
+  rejoués sans écart »), avec `TZ=UTC` comme `TZ=Asia/Tokyo`.
+- **Verts seulement si B et C ont retiré leur v1** : `cmd/directive`,
+  `internal/relecture`, `agents/` (Python), `internal/console` — la liste
+  exacte des tests rouges sans ces retraits est au §4. Un de ces tests
+  encore rouge après la fusion signifie qu'un jeu ou un gabarit v1 reste
+  chez B ou C : à corriger chez eux, pas dans le patch. Attention en
+  particulier aux goldens de B qui lisent nos jeux :
+  `internal/relecture/testdata/credit-pme.txt` et
+  `testdata/v2/complet.txt` doivent être régénérés sur
+  `internal/directive/testdata/credit-pme.json` et `v2/complet.json`
+  **réécrits par le patch**.
+- `go vet ./...` vert dans tous les cas (les identifiants v1 gardés
+  inertes dans `obsolete.go` assurent la compilation de B, C et D).
