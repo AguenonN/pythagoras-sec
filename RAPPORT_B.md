@@ -130,7 +130,7 @@ sous-processus `TZ=UTC`, `Asia/Tokyo`, `America/Los_Angeles`) :
   notifications et marques appliquées) ; « Applicable aux évènements ».
 - Attendus existants modifiés : seules les trois lignes « Quand » des
   évènements de `complet.txt` et `variantes.txt`.
-| 8 | (ce commit) | Parcours de scène aussi enregistrés avec l'**option cliquée** (« Europe/Paris », « analyste-risques ») ; la réponse en toutes lettres reste enregistrée (2 appels) |
+| 8 | `c383204` | Parcours de scène aussi enregistrés avec l'**option cliquée** (« Europe/Paris », « analyste-risques ») ; la réponse en toutes lettres reste enregistrée (2 appels) |
 
 ### Fiche de secours pour la scène (rejeu, sans réseau)
 
