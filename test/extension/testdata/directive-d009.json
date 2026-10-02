@@ -1,0 +1,11 @@
+{
+  "id": "D-009",
+  "version": 1,
+  "statut": "brouillon",
+  "date_effet": "@DATE@",
+  "texte_fr": "Indemnisation d'un sinistre : une indemnisation supérieure à 100 000 euros n'est jamais validée par un agent.",
+  "fondements": [{"texte": "Politique d'indemnisation — à valider par le juriste", "article": "4.2"}],
+  "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "assurance-synthetique", "outil": "valider_indemnisation"}},
+  "condition": {"argument": {"champ": "/montant", "op": ">", "valeur": 100000}},
+  "effets": [{"effet": "refuser"}]
+}
