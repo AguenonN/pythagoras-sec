@@ -137,3 +137,28 @@ func TestScenarioGabarit(t *testing.T) {
 		t.Errorf("le test du gabarit devait être ignoré :\n%s", sortie)
 	}
 }
+
+// Le second domaine fourni (contentieux) crée lui aussi un serveur complet,
+// avec ses étiquettes, sans toucher aux fichiers de la démo figée.
+func TestDomaineContentieux(t *testing.T) {
+	if imbrique() {
+		t.Skip()
+	}
+	dir := copierDepot(t)
+	etiquettes := lire(t, filepath.Join(dir, "demo", "etiquettes.json"))
+	bash(t, dir, `D=servers/modele-synthetique/domaines/contentieux
+scripts/nouveau-serveur.sh cabinet-contentieux $D/donnees.json $D/outils.json $D/etiquettes.json`)
+	supp := lire(t, filepath.Join(dir, "demo", "serveurs-supplementaires.json"))
+	if !strings.Contains(supp, `"cabinet-contentieux/deposer_conclusions": ["externe"]`) {
+		t.Errorf("étiquettes :\n%s", supp)
+	}
+	if lire(t, filepath.Join(dir, "demo", "etiquettes.json")) != etiquettes {
+		t.Error("demo/etiquettes.json a changé")
+	}
+	// Relancé avec --regenerer, rien ne change.
+	avant := lire(t, filepath.Join(dir, "servers", "cabinet-contentieux", "schema.json"))
+	bash(t, dir, "scripts/nouveau-serveur.sh --regenerer cabinet-contentieux")
+	if lire(t, filepath.Join(dir, "servers", "cabinet-contentieux", "schema.json")) != avant {
+		t.Error("schema.json non reproductible")
+	}
+}
