@@ -215,7 +215,10 @@ def contexte(constat, sessions, jeu_courant, catalogue):
     return out
 
 
-def proposition(constat, redaction, date=None):
+def proposition(constat, redaction, date=None, extras=None):
+    """``extras`` : champs facultatifs (``sessions_similaires``,
+    ``fondements_suggeres``), ignorés par la console tant qu'elle ne les
+    affiche pas."""
     date = date or datetime.datetime.now(datetime.timezone.utc).replace(microsecond=0)
     return {
         "id": constat["id"],
@@ -225,6 +228,7 @@ def proposition(constat, redaction, date=None):
         "texte_propose": redaction["texte_propose"],
         "fondement_propose": redaction["fondement_propose"],
         "explication": redaction["explication"],
+        **(extras or {}),
     }
 
 

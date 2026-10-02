@@ -1,0 +1,108 @@
+{
+ "format": 1,
+ "scenario": "rh-fiche",
+ "demande": "Montre-moi la fiche du salarié SAL-FICTIF-001",
+ "demandeur": "helene.rh@exemple.test",
+ "date": "2026-10-02",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/directives/demo.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "scripte (réponses écrites à la main, aucun appel Mistral)",
+ "session": null,
+ "appels_mistral": 0,
+ "resultat": null,
+ "validations": [],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "content": "",
+       "tool_calls": [
+        {
+         "id": "s1",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"rh\", \"tache\": \"Consulter la fiche du salarié SAL-FICTIF-001.\"}"
+         },
+         "index": 0
+        }
+       ]
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  },
+  {
+   "agent": "rh",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "content": "",
+       "tool_calls": [
+        {
+         "id": "s2",
+         "type": "function",
+         "function": {
+          "name": "rh-synthetique__consulter_salarie",
+          "arguments": "{\"salarie_id\": \"SAL-FICTIF-001\"}"
+         },
+         "index": 0
+        }
+       ]
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  },
+  {
+   "agent": "rh",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "content": "{\"action\": \"consultation\", \"salaries\": [\"SAL-FICTIF-001\"], \"effectuee\": true, \"reference\": null, \"detail\": \"Fiche consultée.\"}",
+       "tool_calls": null
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "content": "Voici la fiche du salarié SAL-FICTIF-001 (fictif).",
+       "tool_calls": null
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  }
+ ]
+}

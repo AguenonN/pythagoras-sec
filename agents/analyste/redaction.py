@@ -27,7 +27,9 @@ RACINE = os.path.dirname(os.path.dirname(ICI))
 ENREGISTREMENTS = os.path.join(ICI, "enregistrements")
 ETAT = os.path.join(os.path.dirname(ICI), ".etat", "analyste")
 ANNUAIRE = os.path.join(RACINE, "demo", "annuaire-source.json")
-MAX_APPELS = 15  # budget du brief E
+MAX_APPELS = 15  # budget du brief E (première partie)
+ETAT_SUITE = os.path.join(os.path.dirname(ICI), ".etat", "analyste-suite")
+MAX_APPELS_SUITE = 40  # budget de la suite « embeddings », embeddings compris
 A_VALIDER = "à valider par le juriste"
 
 NATURES = {
@@ -143,8 +145,11 @@ def messages(constat, roles_):
 
 
 def client(mode="rejeu", enregistrements=ENREGISTREMENTS):
-    return mistral.Client(mode=mode, enregistrements=enregistrements, etat=ETAT, max_appels=MAX_APPELS,
-                          modele=mistral.MODELE)
+    # Depuis la suite « embeddings » du brief E, les appels réels comptent
+    # dans son budget (40, embeddings compris) ; les 15 premiers sont épuisés
+    # à 13 (compteur dans ETAT).
+    return mistral.Client(mode=mode, enregistrements=enregistrements, etat=ETAT_SUITE,
+                          max_appels=MAX_APPELS_SUITE, modele=mistral.MODELE)
 
 
 def _arguments(reponse):

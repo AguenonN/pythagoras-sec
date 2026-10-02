@@ -1,6 +1,6 @@
 {
  "id": "A-action-sans-controle-banque-synthetique.attribuer_pret",
- "date": "2026-10-02T15:12:06Z",
+ "date": "2026-10-02T15:50:28Z",
  "constat": {
   "type": "action_sans_controle_humain",
   "detail": "Constat : action sans contrôle humain. 1 action(s) banque-synthetique/attribuer_pret transmise(s) sans validation humaine ni directive appliquée, pour un montant au moins égal à 100 000 €.\n- 20261002-170144-base-interne-sans-d009-rejeu, entrée 5 (2026-10-02, dossier DOS-FICTIF-003) : montant 150 000 €, au moins égal au seuil de 100 000 € ; action autorisée, transmise, sans directive appliquée.",
@@ -30,5 +30,43 @@
  ],
  "texte_propose": "Attribution d'un prêt : si le montant est égal ou supérieur à 100 000 € et qu'aucune validation humaine n'a été enregistrée pour cette action dans la session, l'attribution du prêt est soumise à la validation d'un analyste-risques.",
  "fondement_propose": "Code monétaire et financier — article L562-4 (à valider par le juriste).",
- "explication": "Dans la session 20261002-170144-base-interne-sans-d009-rejeu, un prêt d'un montant égal ou supérieur à 100 000 € a été attribué sans aucune validation humaine ni directive applicable. Aucune règle n'imposait de validation pour ce montant précis, bien que des seuils supérieurs (2 000 000 €) ou des conditions spécifiques (taux d'usure) soient couverts."
+ "explication": "Dans la session 20261002-170144-base-interne-sans-d009-rejeu, un prêt d'un montant égal ou supérieur à 100 000 € a été attribué sans aucune validation humaine ni directive applicable. Aucune règle n'imposait de validation pour ce montant précis, bien que des seuils supérieurs (2 000 000 €) ou des conditions spécifiques (taux d'usure) soient couverts.",
+ "sessions_similaires": [
+  {
+   "session": "20261002-170145-base-interne-avec-d009-rejeu",
+   "score": 0.994,
+   "proche_de": "20261002-170144-base-interne-sans-d009-rejeu",
+   "score_constat": 0.867
+  },
+  {
+   "session": "20261002-170148-consigne-sans-d001-rejeu",
+   "score": 0.976,
+   "proche_de": "20261002-170144-base-interne-sans-d009-rejeu",
+   "score_constat": 0.872
+  },
+  {
+   "session": "20261002-170149-consigne-avec-d001-rejeu",
+   "score": 0.976,
+   "proche_de": "20261002-170144-base-interne-sans-d009-rejeu",
+   "score_constat": 0.872
+  }
+ ],
+ "fondements_suggeres": [
+  {
+   "id": "CONSO-L314-6",
+   "code": "Code de la consommation",
+   "article": "L314-6",
+   "score": 0.824,
+   "lien": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000032303335",
+   "mention": "suggestion — à valider par le juriste"
+  },
+  {
+   "id": "RGPD-22",
+   "code": "Règlement (UE) 2016/679 (RGPD)",
+   "article": "22",
+   "score": 0.811,
+   "lien": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32016R0679",
+   "mention": "suggestion — à valider par le juriste"
+  }
+ ]
 }

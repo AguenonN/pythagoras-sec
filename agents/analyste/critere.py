@@ -69,7 +69,7 @@ def _sous_non(noeud, ref, nie=False):
 
 def fabrique(mode):
     return lambda modele: mistral.Client(mode=mode, modele=modele, enregistrements=ENREGISTREMENTS,
-                                         etat=redaction.ETAT, max_appels=redaction.MAX_APPELS)
+                                         etat=redaction.ETAT_SUITE, max_appels=redaction.MAX_APPELS_SUITE)
 
 
 def lire_parcours(chemin):

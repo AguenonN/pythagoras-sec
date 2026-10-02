@@ -1,0 +1,2 @@
+{"ts":"2026-10-02T15:48:34.531690713Z","empreinte":"17d8f61074cddacac3229c6215723571eb4ddb80710f27b05a8d749a1aea74e6","outil":"evaluer_dossier","arguments_origine":{"dossier_id":"DOS-FICTIF-002"}}
+{"ts":"2026-10-02T15:48:34.536859801Z","empreinte":"26eb1c4847c17ffd1ce417329928ab6d71c7377029d1be9237a742db5fa59085","outil":"remettre_rapport","arguments_origine":{"contenu":"Rapport de crédit fictif du dossier DOS-FICTIF-002.","destinataire":"comité","dossier_id":"DOS-FICTIF-002"}}

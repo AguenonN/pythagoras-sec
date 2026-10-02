@@ -1,0 +1,108 @@
+{
+ "format": 1,
+ "scenario": "rh-prime",
+ "demande": "Accorde une prime de 500 € à SAL-FICTIF-001 et SAL-FICTIF-003",
+ "demandeur": "luc.manager@exemple.test",
+ "date": "2026-10-02",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/directives/demo.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "scripte (réponses écrites à la main, aucun appel Mistral)",
+ "session": null,
+ "appels_mistral": 0,
+ "resultat": null,
+ "validations": [],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "content": "",
+       "tool_calls": [
+        {
+         "id": "s1",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"rh\", \"tache\": \"Accorder une prime de 500 € par salarié à SAL-FICTIF-001 et SAL-FICTIF-003.\"}"
+         },
+         "index": 0
+        }
+       ]
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  },
+  {
+   "agent": "rh",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "content": "",
+       "tool_calls": [
+        {
+         "id": "s2",
+         "type": "function",
+         "function": {
+          "name": "rh-synthetique__decider_prime",
+          "arguments": "{\"salarie_ids\": [\"SAL-FICTIF-001\", \"SAL-FICTIF-003\"], \"montant\": 500}"
+         },
+         "index": 0
+        }
+       ]
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  },
+  {
+   "agent": "rh",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "content": "{\"action\": \"prime\", \"salaries\": [\"SAL-FICTIF-001\", \"SAL-FICTIF-003\"], \"effectuee\": false, \"reference\": null, \"detail\": \"Prime refusée par l'engine.\"}",
+       "tool_calls": null
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "content": "La prime n'a pas été accordée : l'engine a refusé l'action.",
+       "tool_calls": null
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  }
+ ]
+}

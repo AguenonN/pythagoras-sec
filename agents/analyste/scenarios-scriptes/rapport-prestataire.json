@@ -1,0 +1,179 @@
+{
+ "format": 1,
+ "scenario": "rapport-prestataire",
+ "demande": "Rédige et remets le rapport de crédit du dossier DOS-FICTIF-002 au comité",
+ "demandeur": "bruno.prestataire@exemple.test",
+ "date": "2026-10-02",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/directives/demo.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "scripte (réponses écrites à la main, aucun appel Mistral)",
+ "session": null,
+ "appels_mistral": 0,
+ "resultat": null,
+ "validations": [],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "content": "",
+       "tool_calls": [
+        {
+         "id": "s1",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"analyse-dossier\", \"tache\": \"Lire le dossier DOS-FICTIF-002.\"}"
+         },
+         "index": 0
+        }
+       ]
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  },
+  {
+   "agent": "analyse-dossier",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "content": "",
+       "tool_calls": [
+        {
+         "id": "s2",
+         "type": "function",
+         "function": {
+          "name": "banque-synthetique__evaluer_dossier",
+          "arguments": "{\"dossier_id\": \"DOS-FICTIF-002\"}"
+         },
+         "index": 0
+        }
+       ]
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  },
+  {
+   "agent": "analyse-dossier",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "content": "{\"dossier_id\": \"DOS-FICTIF-002\", \"demandeur\": \"BIOCOOP\", \"siren\": \"382891752\", \"montant_demande\": 400000, \"categorie_taux\": \"decouvert-societes-non-financieres\", \"taux_propose_pourcent\": 19.05, \"synthese\": \"Dossier fictif lu.\"}",
+       "tool_calls": null
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "content": "",
+       "tool_calls": [
+        {
+         "id": "s3",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"redaction\", \"tache\": \"Remettre au comité le rapport de crédit du dossier DOS-FICTIF-002.\"}"
+         },
+         "index": 0
+        }
+       ]
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  },
+  {
+   "agent": "redaction",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "content": "",
+       "tool_calls": [
+        {
+         "id": "s4",
+         "type": "function",
+         "function": {
+          "name": "banque-synthetique__remettre_rapport",
+          "arguments": "{\"dossier_id\": \"DOS-FICTIF-002\", \"destinataire\": \"comité\", \"contenu\": \"Rapport de crédit fictif du dossier DOS-FICTIF-002.\"}"
+         },
+         "index": 0
+        }
+       ]
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  },
+  {
+   "agent": "redaction",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "content": "{\"dossier_id\": \"DOS-FICTIF-002\", \"destinataire\": \"comité\", \"reference\": null, \"resume\": \"Remise refusée par l'engine.\"}",
+       "tool_calls": null
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "content": "Le rapport n'a pas été remis : l'engine a refusé la remise.",
+       "tool_calls": null
+      }
+     }
+    ],
+    "model": "scripte"
+   }
+  }
+ ]
+}

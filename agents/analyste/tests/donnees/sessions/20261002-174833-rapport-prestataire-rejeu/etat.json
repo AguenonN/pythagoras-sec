@@ -1,0 +1,8 @@
+{
+ "statut": "bloque",
+ "demande": "Rédige et remets le rapport de crédit du dossier DOS-FICTIF-002 au comité",
+ "demandeur": "bruno.prestataire@exemple.test",
+ "debut": "2026-10-02T15:48:33Z",
+ "fin": "2026-10-02T15:48:34Z",
+ "attente": null
+}

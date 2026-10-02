@@ -1,0 +1,95 @@
+{
+  "jeu": {"id": "demo", "version": 1, "date_effet": "2026-09-01T00:00:00Z", "auteur": "julie.juridique@exemple.test"},
+  "directives": [
+    {
+      "id": "D-001", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Gels vérifiés avant tout prêt : aucun prêt n'est attribué si le registre national des gels des avoirs n'a pas été consulté, avec une réponse reçue, dans la même demande.",
+      "fondements": [{"texte": "Code monétaire et financier — à valider par le juriste", "article": "L562-4"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"non": {"session.a_consulte": {"outil": "gels-avoirs/verifier_gel", "critere": "donnees_recues"}}},
+      "effets": [{"effet": "refuser"}]
+    },
+    {
+      "id": "D-002", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Taux officiel consulté : un prêt attribué à partir du seuil de l'usure du serveur de taux officiel attend la validation d'un analyste risques.",
+      "fondements": [{"texte": "Code monétaire et financier — à valider par le juriste", "article": "L313-5-1"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"session.a_consulte": {"serveur": "taux-officiel", "critere": "transmis"}},
+      "effets": [{"effet": "attendre_validation", "par_role": "analyste-risques"}]
+    },
+    {
+      "id": "D-003", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Source officielle attestée : aucun appel au serveur de taux officiel dont l'attestation n'est pas vérifiée.",
+      "fondements": [{"texte": "Politique de sécurité des sources de données — à valider par le juriste", "article": "3"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "taux-officiel", "outil": "*"}},
+      "condition": {"attestation": {"verifiee": false}},
+      "effets": [{"effet": "refuser"}]
+    },
+    {
+      "id": "D-004", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "SIREN seul vers l'extérieur : le service de recherche d'entreprises ne reçoit que le SIREN ; tout autre champ est retiré avant l'envoi.",
+      "fondements": [{"texte": "RGPD — à valider par le juriste", "article": "5.1.c"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "recherche-entreprises", "outil": "*"}},
+      "effets": [{"effet": "caviarder", "champs_autorises": ["/siren"], "mode": "caviarder"}]
+    },
+    {
+      "id": "D-005", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Décision top management : au-delà de 2 000 000 euros, l'attribution d'un prêt attend la validation d'un directeur des risques, distinct du demandeur, et la direction juridique est prévenue sur-le-champ ; si elle ne peut pas l'être, l'attribution est refusée.",
+      "fondements": [{"texte": "Politique de crédit — à valider par le juriste", "article": "7.1"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"argument": {"champ": "/montant", "op": ">", "valeur": 2000000}},
+      "effets": [
+        {"effet": "attendre_validation", "par_role": "directeur-risques", "quatre_yeux": true},
+        {"effet": "notifier", "destinataire_role": "direction-juridique", "rythme": "temps_reel", "si_echec": "refuser"}
+      ]
+    },
+    {
+      "id": "D-006", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "RH : contentieux hors scope. Aucune action d'agent sur des données personnelles ne vise un salarié qui fait l'objet d'un contentieux en cours.",
+      "fondements": [{"texte": "Code du travail — à valider par le juriste", "article": "L1121-1"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"etiquette": "donnees_personnelles", "acces": "action"}},
+      "condition": {"ou": [
+        {"et": [
+          {"argument": {"champ": "/salarie_ids", "op": "present"}},
+          {"existe": {"champ": "/salarie_ids", "condition": {"sujet": {"groupe": "contentieux-en-cours"}}}}
+        ]},
+        {"et": [
+          {"argument": {"champ": "/salarie_id", "op": "present"}},
+          {"sujet": {"groupe": "contentieux-en-cours", "champ": "/salarie_id"}}
+        ]}
+      ]},
+      "effets": [{"effet": "refuser"}]
+    },
+    {
+      "id": "D-007", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "RH : salariés protégés. Toute action d'agent sur des données personnelles qui vise un salarié protégé attend la validation de la responsable RH.",
+      "fondements": [{"texte": "Code du travail — à valider par le juriste", "article": "L2411-1"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"etiquette": "donnees_personnelles", "acces": "action"}},
+      "condition": {"ou": [
+        {"et": [
+          {"argument": {"champ": "/salarie_ids", "op": "present"}},
+          {"existe": {"champ": "/salarie_ids", "condition": {"sujet": {"groupe": "salaries-proteges"}}}}
+        ]},
+        {"et": [
+          {"argument": {"champ": "/salarie_id", "op": "present"}},
+          {"sujet": {"groupe": "salaries-proteges", "champ": "/salarie_id"}}
+        ]}
+      ]},
+      "effets": [{"effet": "attendre_validation", "par_role": "responsable-rh"}]
+    },
+    {
+      "id": "D-008", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Rapport sur données client : un prestataire externe n'obtient pas de rapport dans une demande qui a consulté des données client ; la direction juridique est prévenue sur-le-champ, et si elle ne peut pas l'être, le rapport est refusé.",
+      "fondements": [{"texte": "RGPD — à valider par le juriste", "article": "32"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"etiquette": "production_rapport"}},
+      "condition": {"et": [
+        {"demandeur": {"groupe": "prestataires-externes"}},
+        {"session.a_consulte": {"etiquette": "donnees_client", "critere": "transmis"}}
+      ]},
+      "effets": [
+        {"effet": "refuser"},
+        {"effet": "notifier", "destinataire_role": "direction-juridique", "rythme": "temps_reel", "si_echec": "refuser"}
+      ]
+    }
+  ]
+}

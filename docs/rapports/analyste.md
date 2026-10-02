@@ -9,7 +9,10 @@ Branche `feat/analyste`, partie de `5b83cd5`. Rien de poussé ni fusionné.
 | `b5bd9b6` | Détecteurs déterministes, couverture par les directives, regroupement en constats, journaux de test |
 | `b08908f` | Rédaction par Mistral, écriture des propositions (contrats §6), mesure par rejeu, critère D-009, enregistrements |
 | `221badd` | La mesure rejoue toutes les sessions passées, pas seulement celles du constat |
-| (ce rapport) | `RAPPORT_E.md`, `RAPPORT_NUIT.md` |
+| `db892ba` | Rapport (alors `RAPPORT_E.md`), `RAPPORT_NUIT.md` |
+| `d8e9180` | Rapport déplacé ici ; écarts au contrat §6 acceptés par Manu |
+| `268743a` | Suite embeddings, étape 1 : corpus local des fondements (§7) |
+| (étape 2) | Suite embeddings : sessions similaires et fondements suggérés (§7) |
 
 **Critère de réussite : atteint, enregistré, rejouable hors ligne.**
 - Le détecteur « source interne périmée » trouve DOS-FICTIF-002 (passage nominal : base interne consultée à l'entrée 2, trimestre 2026-Q3 ; taux officiel consulté à l'entrée 5, trimestre 2026-Q4 ; attribution transmise à l'entrée 7).
@@ -98,3 +101,50 @@ env -u MISTRAL_API_KEY python3 -m analyste.critere | tail -5      # "conforme_d0
 ```
 
 La mesure par rejeu demande `bin/journal`, construit par `scripts/lancer-demo.sh`. Le test `test_rejeu` est sauté s'il manque.
+
+## 7. Suite du vendredi 17 h 35 : embeddings Mistral
+
+Les embeddings servent à **proposer**, jamais à décider. Ils n'ajoutent que deux champs facultatifs à une proposition. Aucun constat n'est créé ni écarté par un score, et rien n'entre dans l'engine. Un test vérifie que les constats et les textes proposés sont identiques avec ou sans embeddings.
+
+### Fait
+
+**Étape 1, corpus local** (`agents/analyste/corpus/`, `python -m analyste.corpus`, commit `268743a`).
+- Contenu : CMF L313-5-1 ; Code de la consommation L314-6, dans sa version en vigueur au 02/10/2026 (`LEGIARTI000032303335`, abrogation différée au 20/11/2026) ; RGPD articles 5, 22 et 32.
+- Provenance : texte public rendu **par les serveurs MCP `legifrance` et `eurlex` du projet**, en `REJEU` sur leurs enregistrements, car aucun identifiant PISTE n'est dans l'environnement. Pas de donnée personnelle : le filtre d'`eurlex` retire les signataires.
+- Chaque article garde sa source (serveur, outil, arguments, date, `sha256`) et un lien public.
+- L'empreinte du corpus est consignée dans `index.json` (`sha256:1983a756…`) et vérifiée au chargement : un corpus retouché à la main ne se charge pas. Reconstruit à l'identique en rejeu (test).
+- **Indisponibles, consignés et jamais écrits de mémoire** : CMF L562-4 (D-001), Code du travail L1121-1 (D-006) et L2411-1 (D-007). Aucun enregistrement, et PISTE serait nécessaire. Les politiques internes de D-003 et D-005 ne sont pas publiques : hors corpus.
+
+**Étape 2, sessions similaires et fondements suggérés.**
+- **Client d'embeddings** (`plongements.py`, `mistral-embed`) : un enregistrement par texte (`enregistrements/plongements/<sha256(modèle, texte)>.json`). En réel, les textes manquants partent en un seul lot ; en rejeu (défaut et tests), un texte inconnu lève `EnregistrementAbsent`. Le corpus est embarqué une fois.
+- **`sessions_similaires`** : jusqu'à 3 sessions passées terminées, hors celles qui fondent le constat, avec `score`, `proche_de` et `score_constat`, au-dessus d'un **seuil de 0,95**.
+- **`fondements_suggeres`** : les 2 articles du corpus les plus proches du texte proposé, avec `score`, `lien` et la mention « suggestion — à valider par le juriste ».
+- **Pour la fusion (contrat §6)** : ces deux champs sont facultatifs. La console les ignore tant qu'elle ne les affiche pas : son `json.Unmarshal` ignore les champs inconnus. `python -m analyste proposer --sans-plongements` s'en passe. Si un embedding manque, la proposition est écrite quand même, sans ces champs, et un avertissement est émis.
+- **Trois parcours hors crédit**, pour que le seuil ait un sens : RH prime refusée par D-006, fiche RH consultée, rapport d'un prestataire refusé par D-008. Ils ont été joués devant le vrai gate et les vrais serveurs avec des réponses de modèle **écrites à la main** (`agents/analyste/scenarios-scriptes/`, aucun appel Mistral), comme la répétition du 01/10, puis figés dans les journaux de test : il y en a désormais 9.
+
+Résultats sur les 9 sessions (rejouables hors ligne, copies dans `exemples/propositions/`) :
+
+| Proposition | Sessions similaires (score) | Fondements suggérés (score) |
+|---|---|---|
+| source interne périmée (D-009) | base-interne-avec-d009 (0,994), consigne-sans-d001 (0,990), consigne-avec-d001 (0,990) | Conso L314-6 (0,818), CMF L313-5-1 (0,817) |
+| action sans contrôle humain | base-interne-avec-d009 (0,994), consigne ×2 (0,976) | Conso L314-6 (0,824), RGPD art. 22 (0,811) |
+| entreprise non retrouvée | nominal (0,990), top-management (0,985), base-interne-avec-d009 (0,981) | CMF L313-5-1 (0,807), Conso L314-6 (0,803) |
+
+**Budget de la suite : 3 appels réels sur 40, tous `mistral-embed`.** Le premier a confirmé que le modèle est disponible pour la clé. Les deux autres ont servi à calibrer : les trois parcours hors crédit, puis une forme de texte rejetée. Les vecteurs devenus inutiles ont été retirés ; il reste 19 vecteurs enregistrés.
+
+### Décisions prises seul (suite)
+
+1. **On compare la session à la session, pas au constat.** L'embedding du constat est calculé, mais il sépare mal les parcours : de 0,79 à 0,88 contre les 9 sessions, et les sessions qui fondent le constat ne sortent même pas en tête. Le score qui ordonne est donc le plus grand cosinus entre une session et l'une des sessions fondatrices, deux textes du même genre (demande et appels du journal) : 0,97 à 0,99 pour les décisions de crédit, 0,92 à 0,94 pour la remise d'un rapport sur un dossier de crédit, 0,85 à 0,88 pour les parcours RH. Le score contre le constat reste affiché (`score_constat`) à titre indicatif. C'est une lecture de « à partir du texte du constat et des appels en cause » ; à reprendre si Manu tient à la comparaison au constat.
+2. **Seuil fixé à 0,95** sur ces scores : il cite les décisions de crédit et écarte les parcours RH et la remise de rapport. Il est fixé dans le code (`similarite.SEUIL_SESSIONS`) et vérifié par un test. Il ne repose que sur 9 sessions et devra être revu sur un historique réel plus large.
+3. **Textes plongés, jamais de valeur du coffre.**
+   - Une session : la demande (`etat.json`, déjà envoyée au modèle par l'orchestrateur) et la suite des appels (outil, accès, décision, directives, validation, résultat).
+   - Un constat : la nature du risque, le fait observable et les appels en cause.
+   - Un article : code, numéro et texte.
+   Un test le vérifie (une valeur du coffre n'apparaît que si la demande la contenait déjà).
+4. **Budget** : à partir de la suite, toute rédaction réelle (`redaction.client`) et le critère comptent dans le budget de la suite (`agents/.etat/analyste-suite`, 40) ; le premier budget (15) s'était arrêté à 13.
+5. **Propositions déjà écrites non enrichies** : une proposition n'est jamais réécrite. Les trois déjà dans `demo/execution/propositions/` n'ont donc pas ces champs. Elles les auront si l'on vide ce dossier (de démo, hors Git) avant de relancer `proposer`.
+6. **L314-6** relève du Code de la consommation, pas du CMF : il est classé ainsi dans le corpus.
+
+### Pas encore fait
+
+- Point 5 de la suite : détecteur « contournement d'un caviardage » (en cours, étape suivante).

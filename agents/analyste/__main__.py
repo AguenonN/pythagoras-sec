@@ -23,7 +23,7 @@ import sys
 
 from compilateur import mistral
 
-from . import couverture, detecteurs, journaux, mesure, propositions, redaction
+from . import couverture, detecteurs, journaux, mesure, plongements, propositions, redaction, similarite
 
 RACINE = detecteurs.RACINE
 SESSIONS = os.path.join(RACINE, "demo", "execution", "sessions")
@@ -40,13 +40,26 @@ def constats(sessions_dir, jeu, seuil=None, racine=RACINE):
     for c in cs:
         c["contexte"] = propositions.contexte(c, sessions, jeu_courant, catalogue)
     return {"sessions_lues": len(sessions), "constats": cs, "couverts": couverts,
-            "non_verifiables": non_verifiables}
+            "non_verifiables": non_verifiables, "_sessions": sessions}
 
 
-def proposer(sessions_dir, jeu, sortie, client, seuil=None, racine=RACINE, seulement=None):
-    """``seulement`` : identifiants des constats à rédiger (tous si vide)."""
+def suggestions(constat, redaction_, sessions, plongeur):
+    """Champs facultatifs (contrat §6) : sessions passées similaires et
+    fondements suggérés. Pour proposer seulement ; un échec (embedding non
+    enregistré, API) les omet, il n'empêche pas la proposition."""
+    try:
+        return {"sessions_similaires": similarite.sessions_similaires(constat, sessions, plongeur, redaction.NATURES),
+                "fondements_suggeres": similarite.fondements_suggeres(constat, redaction_, plongeur,
+                                                                      redaction.NATURES)}, None
+    except (mistral.ErreurMistral, OSError, ValueError) as e:
+        return {}, "%s : %s" % (type(e).__name__, e)
+
+
+def proposer(sessions_dir, jeu, sortie, client, seuil=None, racine=RACINE, seulement=None, plongeur=None):
+    """``seulement`` : identifiants des constats à rédiger (tous si vide) ;
+    ``plongeur`` : embeddings (``plongements.Plongeur``), None pour s'en passer."""
     res = constats(sessions_dir, jeu, seuil, racine)
-    ecrites, deja, erreurs = [], [], []
+    ecrites, deja, erreurs, avertissements = [], [], [], []
     for c in res["constats"]:
         if seulement and c["id"] not in seulement:
             continue
@@ -58,13 +71,19 @@ def proposer(sessions_dir, jeu, sortie, client, seuil=None, racine=RACINE, seule
         except (redaction.RedactionInvalide, mistral.ErreurMistral) as e:
             erreurs.append({"id": c["id"], "erreur": "%s : %s" % (type(e).__name__, e)})
             continue
-        p = propositions.proposition(c, r)
+        extras = {}
+        if plongeur is not None:
+            extras, avert = suggestions(c, r, res["_sessions"], plongeur)
+            if avert:
+                avertissements.append({"id": c["id"], "plongements": avert})
+        p = propositions.proposition(c, r, extras=extras)
         if propositions.ecrire(sortie, p):
             ecrites.append(p)
         else:
             deja.append(c["id"])
     return {"sessions_lues": res["sessions_lues"], "ecrites": ecrites, "deja_proposees": deja,
-            "couverts": res["couverts"], "non_verifiables": res["non_verifiables"], "erreurs": erreurs}
+            "couverts": res["couverts"], "non_verifiables": res["non_verifiables"], "erreurs": erreurs,
+            "avertissements": avertissements}
 
 
 def principal(argv=None, sortie=sys.stdout):
@@ -80,6 +99,8 @@ def principal(argv=None, sortie=sys.stdout):
             p.add_argument("--sortie", default=SORTIE)
             p.add_argument("--mode", choices=["rejeu", "reel"], default=os.environ.get("ANALYSTE_MODE", "rejeu"))
             p.add_argument("--constat", action="append", default=[], help="ne rédiger que ce constat (répétable)")
+            p.add_argument("--sans-plongements", action="store_true",
+                           help="ni sessions similaires ni fondements suggérés")
     m = sub.add_parser("mesurer")
     m.add_argument("id")
     m.add_argument("--propositions", default=SORTIE)
@@ -88,10 +109,12 @@ def principal(argv=None, sortie=sys.stdout):
 
     if a.commande == "constats":
         out = constats(a.sessions, a.jeu, a.seuil_montant)
+        out.pop("_sessions")
         code = 0
     elif a.commande == "proposer":
         out = proposer(a.sessions, a.jeu, a.sortie, redaction.client(a.mode), a.seuil_montant,
-                       seulement=a.constat)
+                       seulement=a.constat,
+                       plongeur=None if a.sans_plongements else plongements.Plongeur(a.mode))
         code = 1 if out["erreurs"] else 0
     else:
         out = mesure.mesurer(a.id, propositions=a.propositions, sessions=a.sessions)
