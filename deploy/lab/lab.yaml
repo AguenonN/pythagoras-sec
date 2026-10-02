@@ -1,0 +1,118 @@
+# Le lab SPIFFE du gate. Trust domain mcp.gcp.lab (SPIRE de deploy/gcp/k8s).
+#
+#   sa-gate    -> spiffe://mcp.gcp.lab/gate                 (gate, serveur mTLS et client mTLS)
+#   sa-banque  -> spiffe://mcp.gcp.lab/banque-synthetique   (sidecar spiffe-proxy)
+#   sa-agent   -> spiffe://mcp.gcp.lab/agent                (appelant admis par le gate)
+#   sa-rogue   -> AUCUNE entrée SPIRE, par construction     (aucune SVID, jamais)
+#
+# Les ConfigMaps registre-lab et directives-lab et le Secret cle-journal sont
+# créés par monter.sh (la clé du journal n'est jamais écrite dans un fichier).
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: sa-gate, namespace: mcp-lab}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: sa-banque, namespace: mcp-lab}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: sa-agent, namespace: mcp-lab}
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: sa-rogue, namespace: mcp-lab}
+---
+# Serveur de démo : banque-synthetique en HTTPS sur la boucle locale du pod
+# (certificat jetable), derrière un sidecar qui porte sa SVID et ne laisse
+# passer que le gate.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: banque-synthetique, namespace: mcp-lab, labels: {app: banque-synthetique}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: banque-synthetique}}
+  template:
+    metadata: {labels: {app: banque-synthetique}}
+    spec:
+      serviceAccountName: sa-banque
+      initContainers:
+        - name: gencert
+          image: mcp-gate-lab:local
+          imagePullPolicy: Never
+          command: ["/usr/local/bin/spiffe-proxy", "gencert", "-dir", "/tls"]
+          volumeMounts: [{name: tls, mountPath: /tls}]
+      containers:
+        - name: banque
+          image: mcp-gate-lab:local
+          imagePullPolicy: Never
+          command: ["/usr/local/bin/banque-synthetique", "-http", "127.0.0.1:9443",
+                    "-tls-cert", "/tls/tls.crt", "-tls-key", "/tls/tls.key", "-instantane", "/lab/instantane.json"]
+          env: [{name: DONNEES_MODE, value: REJEU}]
+          volumeMounts: [{name: tls, mountPath: /tls, readOnly: true}]
+        - name: spiffe-proxy
+          image: mcp-gate-lab:local
+          imagePullPolicy: Never
+          command: ["/usr/local/bin/spiffe-proxy", "-ecoute", ":8443", "-amont", "https://127.0.0.1:9443",
+                    "-appelants", "spiffe://mcp.gcp.lab/gate"]
+          env: [{name: SPIFFE_ENDPOINT_SOCKET, value: "unix:///spiffe/api.sock"}]
+          ports: [{containerPort: 8443}]
+          # N'écoute qu'une fois la SVID reçue : la sonde TCP vaut « identité reçue ».
+          readinessProbe: {tcpSocket: {port: 8443}, initialDelaySeconds: 3, periodSeconds: 5}
+          volumeMounts: [{name: spiffe, mountPath: /spiffe, readOnly: true}]
+      volumes:
+        - {name: tls, emptyDir: {}}
+        - {name: spiffe, hostPath: {path: /run/spire/sockets, type: Directory}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: banque-synthetique, namespace: mcp-lab}
+spec:
+  selector: {app: banque-synthetique}
+  ports: [{name: mtls, port: 8443, targetPort: 8443}]
+---
+# Le gate : client mTLS du serveur (identité épinglée au registre), serveur
+# mTLS de l'agent (seul spiffe://mcp.gcp.lab/agent est admis).
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: gate, namespace: mcp-lab, labels: {app: gate}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: gate}}
+  template:
+    metadata: {labels: {app: gate}}
+    spec:
+      serviceAccountName: sa-gate
+      containers:
+        - name: gate
+          image: mcp-gate-lab:local
+          imagePullPolicy: Never
+          command: ["/usr/local/bin/mcp-gate", "-registre", "/conf/registre.json", "-directives", "/conf/directives.json",
+                    "-journal", "/data/journal.jsonl", "-coffre", "/data/coffre.jsonl",
+                    "-ecoute-spiffe", ":9443", "-appelants-spiffe", "spiffe://mcp.gcp.lab/agent"]
+          env:
+            - {name: SPIFFE_ENDPOINT_SOCKET, value: "unix:///spiffe/api.sock"}
+            - {name: DONNEES_MODE, value: REJEU}
+            - name: MCP_GATE_CLE_JOURNAL
+              valueFrom: {secretKeyRef: {name: cle-journal, key: cle}}
+          ports: [{containerPort: 9443}]
+          readinessProbe: {tcpSocket: {port: 9443}, initialDelaySeconds: 3, periodSeconds: 5}
+          volumeMounts:
+            - {name: conf, mountPath: /conf, readOnly: true}
+            - {name: data, mountPath: /data}
+            - {name: spiffe, mountPath: /spiffe, readOnly: true}
+      volumes:
+        - name: conf
+          projected:
+            sources:
+              - configMap: {name: registre-lab, items: [{key: registre.json, path: registre.json}]}
+              - configMap: {name: directives-lab, items: [{key: directives.json, path: directives.json}]}
+        - {name: data, emptyDir: {}}
+        - {name: spiffe, hostPath: {path: /run/spire/sockets, type: Directory}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: gate, namespace: mcp-lab}
+spec:
+  selector: {app: gate}
+  ports: [{name: mtls, port: 9443, targetPort: 9443}]

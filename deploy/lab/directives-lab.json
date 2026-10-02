@@ -1,0 +1,11 @@
+{
+  "jeu": {"id": "lab", "version": 1, "date_effet": "2026-01-01T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+  "directives": [
+    {"id": "L-001", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
+     "texte_fr": "Au-delà de 2 000 000 euros, validation du directeur des risques, quatre yeux.",
+     "fondements": [{"texte": "Politique de crédit (lab)", "article": "7.1"}],
+     "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+     "condition": {"argument": {"champ": "/montant", "op": ">", "valeur": 2000000}},
+     "effets": [{"effet": "attendre_validation", "par_role": "directeur-risques", "quatre_yeux": true}]}
+  ]
+}
