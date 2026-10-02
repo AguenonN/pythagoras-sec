@@ -11,17 +11,17 @@ import (
 )
 
 // Jeux v2 relus : les scénarios de internal/directive (non modifiés, lus
-// seulement), une copie de son jeu complet (testdata/complet-v2.json, la
-// directive X-003 réécrite en v2 comme le fait la session v2-seul) et un
-// jeu de variantes qui emploie chaque nœud, chaque feuille, chaque effet et
-// chaque évènement.
+// seulement), dont son jeu complet et credit-pme, réécrits en v2 au retrait
+// du v1, et un jeu de variantes qui emploie chaque nœud, chaque feuille,
+// chaque effet et chaque évènement.
 var casV2 = []struct{ nom, jeu, attendu string }{
+	{"credit-pme", "../directive/testdata/credit-pme.json", "testdata/v2/credit-pme.txt"},
 	{"credit", "../directive/testdata/v2/credit.json", "testdata/v2/credit.txt"},
 	{"weekend", "../directive/testdata/v2/weekend.json", "testdata/v2/weekend.txt"},
 	{"top-management", "../directive/testdata/v2/top-management.json", "testdata/v2/top-management.txt"},
 	{"rh", "../directive/testdata/v2/rh.json", "testdata/v2/rh.txt"},
 	{"demandeur", "../directive/testdata/v2/demandeur.json", "testdata/v2/demandeur.txt"},
-	{"complet", "testdata/complet-v2.json", "testdata/v2/complet.txt"},
+	{"complet", "../directive/testdata/v2/complet.json", "testdata/v2/complet.txt"},
 	{"variantes", "testdata/variantes-v2.json", "testdata/v2/variantes.txt"},
 	// Formes ajoutées par la session gate-v2 : $racine sous un
 	// quantificateur, directives d'évènement évaluées par l'engine.

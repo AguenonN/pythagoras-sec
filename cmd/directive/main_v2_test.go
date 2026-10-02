@@ -33,10 +33,6 @@ func TestV2_VerifierEtRelire(t *testing.T) {
 	for _, nom := range []string{"credit", "weekend", "top-management", "rh", "demandeur", "complet"} {
 		t.Run(nom, func(t *testing.T) {
 			chemin := "../../internal/directive/testdata/v2/" + nom + ".json"
-			if nom == "complet" {
-				// Copie v2 seul du jeu complet (voir internal/relecture).
-				chemin = "../../internal/relecture/testdata/complet-v2.json"
-			}
 			jeu := lire(t, chemin)
 			rc, out, _ := lancer(t, jeu, "verifier")
 			if r := rapport(t, out); rc != 0 || !r.OK || !strings.HasPrefix(r.Empreinte, "sha256:") {
