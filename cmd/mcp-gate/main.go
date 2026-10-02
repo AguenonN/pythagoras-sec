@@ -22,6 +22,12 @@
 // exige du serveur l'identité SPIFFE épinglée au registre. Sans serveur
 // http-spiffe, SPIRE n'est pas sollicité.
 //
+// Avec -ecoute-spiffe host:port (lab, exige -appelants-spiffe), le gate est
+// servi en HTTP streamable + mTLS SPIFFE au lieu de stdio : seuls les SPIFFE
+// ID listés passent la poignée de main, et l'appelant consigné au journal est
+// celui du client, prouvé par son certificat. La démo reste en stdio
+// (appelant local-process).
+//
 // La clé HMAC du journal est lue dans MCP_GATE_CLE_JOURNAL (hexadécimal,
 // 32 octets au moins), jamais dans un fichier ni sur la ligne de commande.
 // Sans clé, sans registre ou sans jeu valide, rien ne démarre.
@@ -40,14 +46,18 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
 	"log/slog"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -92,7 +102,12 @@ func lancer() error {
 	cheminAnnuaire := flag.String("annuaire", "", "annuaire des habilitations signé (JSON) ; exige -annuaire-autorite")
 	cheminAutorite := flag.String("annuaire-autorite", "", "clé publique Ed25519 (base64) de l'autorité qui signe l'annuaire")
 	socketSpiffe := flag.String("spiffe-socket", "", "socket de la Workload API SPIFFE (unix:///...), pour les serveurs http-spiffe du registre ; défaut : SPIFFE_ENDPOINT_SOCKET")
+	ecouteSpiffe := flag.String("ecoute-spiffe", "", "lab : sert le gate en HTTP streamable + mTLS SPIFFE à cette adresse (host:port) au lieu de stdio ; l'appelant est le SPIFFE ID du client ; exige -appelants-spiffe")
+	appelantsSpiffe := flag.String("appelants-spiffe", "", "SPIFFE ID admis comme appelants avec -ecoute-spiffe, séparés par des virgules")
 	flag.Parse()
+	if *ecouteSpiffe != "" && *appelantsSpiffe == "" {
+		return errors.New("-ecoute-spiffe exige -appelants-spiffe : un gate que n'importe quelle charge du trust domain pourrait appeler n'est pas servi")
+	}
 	if *cheminRegistre == "" || *cheminJeu == "" || *cheminJournal == "" || *cheminCoffre == "" {
 		flag.Usage()
 		return errors.New("-registre, -directives, -journal et -coffre sont obligatoires")
@@ -162,7 +177,7 @@ func lancer() error {
 	ctxConnexion, annuler := context.WithTimeout(ctx, 30*time.Second)
 	defer annuler()
 	optsBackend := backend.Options{Stderr: os.Stderr, Logger: log}
-	if utiliseSpiffe(reg) {
+	if utiliseSpiffe(reg) || *ecouteSpiffe != "" {
 		// L'identité du gate n'est demandée à SPIRE que si le registre a
 		// un serveur http-spiffe : la démo en stdio n'en dépend pas.
 		if optsBackend.Spiffe, err = identity.NewSource(ctxConnexion, *socketSpiffe); err != nil {
@@ -171,7 +186,7 @@ func lancer() error {
 		defer optsBackend.Spiffe.Close()
 	}
 	g, err := gate.Demarrer(ctxConnexion, gate.Config{
-		Registre: reg, Jeu: *jeu, Journal: j, Coffre: coffre, Appelant: gate.AppelantStdio,
+		Registre: reg, Jeu: *jeu, Journal: j, Coffre: coffre, Appelant: appelantTransport(*ecouteSpiffe), AppelantSpiffe: *ecouteSpiffe != "",
 		Session: session.Config{DelaiBackend: *delai, MaxConsultations: *maxConsultations, AgeMax: *ageMax},
 		Backend: optsBackend,
 		Logger:  log, Annuaire: src, JetonDemandeur: os.Getenv(VarJetonDemandeur), Horloge: horloge,
@@ -189,7 +204,42 @@ func lancer() error {
 		a := g.Backend(s.Nom).Attestation()
 		log.Info("backend", "serveur", s.Nom, "transport", s.Transport, "attesté", a.Valide(), "détail", a.Detail)
 	}
+	if *ecouteSpiffe != "" {
+		return servirSpiffe(ctx, g, optsBackend.Spiffe, *ecouteSpiffe, *appelantsSpiffe, log)
+	}
 	return g.Servir(ctx, &mcp.StdioTransport{})
+}
+
+// appelantTransport : l'appelant fixe du transport ; vide en HTTP + SPIFFE,
+// où chaque appel porte l'identité de son client.
+func appelantTransport(ecouteSpiffe string) string {
+	if ecouteSpiffe != "" {
+		return ""
+	}
+	return gate.AppelantStdio
+}
+
+// servirSpiffe sert le gate en HTTP + mTLS jusqu'à la fin de ctx : seuls les
+// SPIFFE ID listés passent la poignée de main.
+func servirSpiffe(ctx context.Context, g *gate.Gate, src *identity.Source, adresse, appelants string, log *slog.Logger) error {
+	autorisant, err := identity.OnlyIDs(strings.Split(appelants, ",")...)
+	if err != nil {
+		return err
+	}
+	l, err := net.Listen("tcp", adresse)
+	if err != nil {
+		return err
+	}
+	srv := &http.Server{Handler: g.HandlerSpiffe(), ReadHeaderTimeout: 10 * time.Second}
+	go func() {
+		<-ctx.Done()
+		srv.Close()
+	}()
+	log.Info("gate servi en HTTP + mTLS SPIFFE", "adresse", l.Addr().String(), "appelants", appelants)
+	if err := srv.Serve(tls.NewListener(l, src.ServerTLS(autorisant))); err != nil && !errors.Is(err, http.ErrServerClosed) {
+		return err
+	}
+	return nil
 }
 
 // rechargerSurSignal recharge le jeu à chaque SIGHUP, jusqu'à la fin de
