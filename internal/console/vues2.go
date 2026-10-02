@@ -107,10 +107,7 @@ type VueRegles struct {
 }
 
 func fondementsDe(d directive.Directive) []directive.Fondement {
-	if len(d.Fondements) > 0 {
-		return d.Fondements
-	}
-	return []directive.Fondement{d.Fondement}
+	return d.Fondements
 }
 
 func evalueHeure(d directive.Directive) bool {

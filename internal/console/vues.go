@@ -257,11 +257,6 @@ func badge(e journal.Entree) string {
 		if d.Origine == "registre" || (e.Attestation != nil && !e.Attestation.Valide) {
 			return BadgeNonAttesta
 		}
-		for _, a := range d.Applications {
-			if a.Verrou == string(directive.SourceAttestee) && a.Appliquee {
-				return BadgeNonAttesta
-			}
-		}
 		return BadgeRefuse
 	case directive.AttendreValidation:
 		return BadgeAttente
@@ -279,34 +274,16 @@ func badge(e journal.Entree) string {
 type critereConsultation struct {
 	serveur, outil, etiquette string
 	critere                   directive.Critere
-	tout                      bool
 }
 
-func criteresProvenance(d *directive.Directive, verrou string) []critereConsultation {
+func criteresProvenance(d *directive.Directive) []critereConsultation {
 	var out []critereConsultation
-	if d != nil {
-		if p := d.Provenance; p != nil {
-			c := p.Critere
-			if c == "" {
-				c = directive.DonneesRecues
+	if d != nil && d.Arbre != nil {
+		parcourir(d.Arbre, func(n *directive.Noeud) {
+			if f := n.AConsulte; f != nil {
+				out = append(out, critereConsultation{serveur: f.Serveur, outil: f.Outil, etiquette: f.Etiquette, critere: f.Critere})
 			}
-			for _, s := range p.Serveurs {
-				out = append(out, critereConsultation{serveur: s, critere: c})
-			}
-			for _, o := range p.Outils {
-				out = append(out, critereConsultation{outil: o, critere: c})
-			}
-		}
-		if d.Arbre != nil {
-			parcourir(d.Arbre, func(n *directive.Noeud) {
-				if f := n.AConsulte; f != nil {
-					out = append(out, critereConsultation{serveur: f.Serveur, outil: f.Outil, etiquette: f.Etiquette, critere: f.Critere})
-				}
-			})
-		}
-	}
-	if len(out) == 0 && verrou == string(directive.ProvenanceSession) {
-		out = append(out, critereConsultation{tout: true, critere: directive.DonneesRecues})
+		})
 	}
 	return out
 }
@@ -336,8 +313,6 @@ func correspond(c critereConsultation, k journal.Consultation) bool {
 		return false
 	}
 	switch {
-	case c.tout:
-		return true
 	case c.serveur != "":
 		return k.Serveur == c.serveur
 	case c.outil != "":
@@ -362,7 +337,7 @@ func liens(e journal.Entree, jeu *directive.Jeu) []Lien {
 		if !a.Declenchee {
 			continue
 		}
-		cs := criteresProvenance(directiveDu(jeu, a.ID, a.Version), a.Verrou)
+		cs := criteresProvenance(directiveDu(jeu, a.ID, a.Version))
 		for _, k := range e.EtatSession {
 			for _, c := range cs {
 				if correspond(c, k) && !vus[[2]any{a.ID, k.Seq}] {

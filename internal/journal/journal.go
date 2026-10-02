@@ -123,11 +123,6 @@ type Application struct {
 	// fondements de la directive.
 	Resultat   string                `json:"resultat,omitempty"`
 	Fondements []directive.Fondement `json:"fondements,omitempty"`
-
-	// Verrou n'est plus jamais écrit ni lu (json:"-") : le format de
-	// directive v1, qui le portait, est retiré. Le champ Go reste le temps
-	// que internal/console (session C) cesse de le lire ; il vaut toujours "".
-	Verrou string `json:"-"`
 }
 
 type Decision struct {

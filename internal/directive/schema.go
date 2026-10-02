@@ -151,20 +151,6 @@ type Directive struct {
 	// Arbre s'écrit "condition" dans le document ; nil : vrai.
 	Arbre  *Noeud
 	Effets []EffetDirective
-
-	// Champs du format v1, retiré : jamais remplis par le chargeur, jamais
-	// lus par Decide. Ils restent le temps que les paquets des autres
-	// sessions (internal/relecture, internal/console, internal/gate)
-	// cessent de les nommer ; voir obsolete.go.
-	//
-	// Deprecated: format v1 retiré, toujours vides.
-	Fondement  Fondement
-	Verrou     Verrou
-	Cible      Cible
-	Condition  []Condition
-	Provenance *Provenance
-	Champs     *Champs
-	Effet      Effet
 }
 
 // EstV2 vaut vrai pour toute directive chargée : il n'y a plus d'autre
