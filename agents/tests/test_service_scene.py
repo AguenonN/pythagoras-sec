@@ -122,6 +122,23 @@ class TestScene(Base):
         ok, err, _ = directive_go.verifier(j, exiger_brouillon=False)
         self.assertTrue(ok, err)
 
+    def test_variantes_de_reponse_enregistrees(self):
+        """Une réponse écrite en toutes lettres plutôt que l'option cliquée
+        (« Europe/Paris, l'heure de Paris. ») est aussi enregistrée, et rend
+        le même jeu."""
+        for nom in ("weekend", "base-interne"):
+            chemin = os.path.join(PARCOURS, nom + ".json")
+            with open(chemin, encoding="utf-8") as f:
+                variantes = json.load(f)["variantes"]
+            requete, reponses = service.lire_parcours(chemin)
+            attendu = self.candidat(self.derouler(nom)[-1])["directives"]
+            for question, autres in variantes.items():
+                for autre in autres:
+                    s = service.Service(mode="rejeu", dossier=self.tmp)
+                    fin = service.parcours(s, requete, dict(reponses, **{question: autre}))[-1]
+                    self.assertEqual(fin["etat"], c2.JEU, (nom, autre, fin["erreurs"]))
+                    self.assertEqual(self.candidat(fin)["directives"], attendu)
+
     def test_rejeu_stable(self):
         a = self.derouler("weekend")[-1]
         b = self.derouler("weekend")[-1]

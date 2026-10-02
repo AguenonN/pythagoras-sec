@@ -1,9 +1,24 @@
 # Rapport — session B « compilateur » : fiable sur scène, branché sur la console
 
+## Résumé
+
+**Critère de réussite atteint.** En rejeu, sans réseau, le service du
+contrat §4 (`python -m compilateur.service`) déroule les parcours
+**week-end** et **base interne (D-009)** de bout en bout jusqu'au jeu
+candidat `demo.v2.json`, version n+1 du jeu `demo`, accepté par `directive
+verifier`. Le modèle par défaut du compilateur est **`mistral-medium-latest`**,
+choisi sur mesures (tableau à l'étape 6). **RH** et **top management** vont
+jusqu'au jeu accepté. Les étapes 1 à 10 sont faites.
+
+- `go vet ./...` et `go test -race ./...` verts à chaque commit ; tests
+  Python verts (191 à la fin, après le retrait des tests v1 ; rejeu seulement, aucun appel réel).
+- Aucun écart aux contrats ; deux interprétations signalées (décisions 5 et
+  6) et une copie de fichiers de la session A (décision 1).
+
 Branche `feat/compilateur-final`, worktree `~/cybercar/mcp_rogue-compilateur-final`.
 Rien n'est poussé ni fusionné ; `main` n'est pas touchée.
 
-**Compteur d'appels Mistral réels : 15 / 25** (étape 6 : 8 ; étape 8 : 2 ; étape 7 : 4 ; étape 9 : 1). Aucune génération interrompue.
+**Compteur d'appels Mistral réels : 17 / 25** (étape 6 : 8 ; étape 8 : 4 ; étape 7 : 4 ; étape 9 : 1). Aucune génération interrompue.
 
 ## 1. Ce qui est fait
 
@@ -18,7 +33,7 @@ Rien n'est poussé ni fusionné ; `main` n'est pas touchée.
 | 2 | `dbe19ed` | Relecture des formes de gate-v2 : `$racine/…` sous un quantificateur, directives d'évènement ; fichier attendu `testdata/v2/gate-v2.txt`, trois fuseaux machine |
 | 7 | `49ea878` | RH et top management sur `mistral-medium-latest` : jeux acceptés du premier coup, relectures stables, enregistrés et rejoués (4 appels) |
 | 9 | `1d7ae76` | « Ne pas discriminer » : refus motivé enregistré (1 appel) et rejoué |
-| 10 | (ce commit) | Retrait du v1 : `--v1`, `proposer_directive`, parcours v1, 8 enregistrements v1 et leur catalogue gelé, gabarit de relecture v1 ; `directive verifier` et `relire` n'acceptent que du v2 ; trois cas v1 gardés en tests scriptés v2 |
+| 10 | `96599b8` | Retrait du v1 : `--v1`, `proposer_directive`, parcours v1, 8 enregistrements v1 et leur catalogue gelé, gabarit de relecture v1 ; `directive verifier` et `relire` n'acceptent que du v2 ; trois cas v1 gardés en tests scriptés v2 |
 
 ### Étape 10 — retrait du v1
 
@@ -115,6 +130,26 @@ sous-processus `TZ=UTC`, `Asia/Tokyo`, `America/Los_Angeles`) :
   notifications et marques appliquées) ; « Applicable aux évènements ».
 - Attendus existants modifiés : seules les trois lignes « Quand » des
   évènements de `complet.txt` et `variantes.txt`.
+| 8 | (ce commit) | Parcours de scène aussi enregistrés avec l'**option cliquée** (« Europe/Paris », « analyste-risques ») ; la réponse en toutes lettres reste enregistrée (2 appels) |
+
+### Fiche de secours pour la scène (rejeu, sans réseau)
+
+En rejeu, une réponse n'est retrouvée que si la requête est **identique**
+à celle enregistrée : même texte, même fondement, mêmes réponses, mot pour
+mot. L'auteur, la date d'effet et le jeu existant n'entrent pas dans les
+requêtes (ils peuvent changer). Textes à saisir :
+
+| | Week-end | Base interne (D-009) |
+|---|---|---|
+| texte | `Désormais, aucune exécution de workflow agentique le week-end.` | `Une décision de prêt fondée sur la base interne des taux doit être validée par un analyste des risques, la base pouvant être en retard d'un trimestre sur le seuil légal.` |
+| fondement | `Règlement intérieur, article 12` | `Code monétaire et financier, article L313-5-1` |
+| questions de Mistral | fuseau → `Europe/Paris` (option) ou `Europe/Paris, l'heure de Paris.` | cible → `Uniquement l'outil attribuer_pret : c'est la décision de prêt qui attend la validation.` ; validation → `Une validation humaine : l'attribution du prêt attend la validation.` ; rôle → `analyste-risques` (option) ou `Oui, analyste-risques.` |
+| question du code | `si_indetermine` → `refuser` | `si_indetermine` → `refuser` |
+
+La source fait foi : `agents/compilateur/exemples/service/weekend.json` et
+`base-interne.json` (clés `reponses` et `variantes`). Les deux textes peuvent
+être compilés dans les deux ordres : le second ajouté devient D-010
+(testé).
 
 ### Étape 6 — choix du modèle, sur mesures
 
@@ -193,7 +228,15 @@ jeu existant.
 
 ## 2. Ce qui n'est pas fait
 
-(en cours)
+- **Trois passages par modèle** (étape 6) : un seul, faute de budget (voir
+  décision 15). Les mesures sont nettes (inversion et nœuds inventés pour
+  small, sans faute pour medium), mais sur un passage.
+- **Autres formulations de la scène** : seuls les textes, fondements et
+  réponses de la fiche de secours se rejouent sans réseau. Un texte dicté
+  autrement par le jury part vers Mistral (mode `reel`).
+- **`internal/relecture/testdata/variantes.json` (v1)** n'est pas supprimé :
+  des tests de `internal/directive` (session v2-seul) le lisent encore
+  (étape 10).
 
 ## 3. Décisions prises seul
 
@@ -273,17 +316,61 @@ jeu existant.
 
 ## 4. Blocages
 
-Aucun pour l'instant.
+Aucun. Aucune génération interrompue côté Mistral sur les 17 appels.
 
 ## 5. Questions pour Manu
 
-(aucune pour l'instant)
+1. **(Urgent, avant la scène) Week-end : bloquer aussi la lecture ?** Sur
+   « aucune exécution de workflow agentique le week-end », medium refuse
+   **tout** appel d'outil (lecture comprise) sans poser la question. C'est
+   fidèle au texte, et la relecture le dit. Si D-010 doit être « pas
+   d'**action** » (son titre aux contrats), il faut que le juriste l'écrive
+   (« aucune action d'agent le week-end »), et ce texte n'est pas encore
+   enregistré (2 appels).
+2. **(Avant la fusion) Ordre de fusion avec A et v2-seul.**
+   `demo/directives/demo.json` et `demo/annuaire-source.json` sont ici des
+   copies exactes de `feat/demo-reelle` (`ca3bbdd`) : la fusion avec A est
+   sans conflit tant que A ne les change plus. Si A change l'annuaire ou
+   les étiquettes, il faut régénérer le vocabulaire (`go run
+   ./cmd/registre-demo -vocabulaire …`) et réenregistrer les parcours de
+   scène, RH, top management et discrimination (≈ 10 appels), car chaque
+   requête embarque le vocabulaire. Après le patch de v2-seul, supprimer
+   `internal/relecture/testdata/variantes.json`.
+3. **(Pour C) Appel du service** : `cd agents && python -m
+   compilateur.service --mode reel` (ou `COMPILATEUR_MODE=reel`) pour
+   compiler en direct ; sans option, le service est en `rejeu` (jamais de
+   réseau). Codes de sortie : 0 pour toute réponse du contrat, y compris
+   `etat: erreurs` ; 2 pour une requête invalide. Si les options d'une
+   question sont proposées en boutons, envoyer l'option telle quelle
+   (c'est ce qui est enregistré).
+4. **(Faible) Budget restant : 8 appels.** Utilisables pour la question 1,
+   ou pour enregistrer d'autres formulations probables du jury.
 
 ## 6. Vérifier en 5 minutes
 
 ```sh
 cd ~/cybercar/mcp_rogue-compilateur-final
 go vet ./... && go test -race -count=1 ./cmd/registre-demo ./cmd/directive ./internal/relecture
-(cd agents && python3 -m unittest discover -s tests -t .)
-go run ./cmd/registre-demo -vocabulaire agents/compilateur/exemples/vocabulaire-demo.json && git diff --stat
+(cd agents && python3 -m unittest discover -s tests -t .)       # rejeu, aucun appel réel
+
+# Critère de réussite : les deux parcours de scène par le service, en rejeu,
+# jusqu'au jeu candidat version n+1, puis directive verifier.
+cd agents
+D=$(mktemp -d)
+for p in weekend base-interne; do
+  python3 -m compilateur.service --dossier $D --parcours compilateur/exemples/service/$p.json | tail -1
+done
+for f in $D/*/demo.v2.json; do go run ../cmd/directive verifier < $f; done
+
+# Une requête du contrat §4, à la main (rejeu) :
+echo '{"conversation": null, "texte": "Désormais, aucune exécution de workflow agentique le week-end.", "fondement": "Règlement intérieur, article 12", "auteur": "julie.juridique@exemple.test", "reponses": [], "jeu_existant": "demo/directives/demo.json", "date_effet": "2026-10-04T11:05:00+02:00"}' \
+  | python3 -m compilateur.service --dossier $D
+
+# RH, top management, discrimination (modèle retenu, rejeu) :
+python3 -m compilateur.scenarios_v2 rh | tail -12
+python3 -m compilateur.scenarios_v2 top-management | tail -12
+python3 -m compilateur.scenarios_v2 discrimination
+
+# Vocabulaire conforme à ses sources (aucune différence attendue) :
+cd .. && go run ./cmd/registre-demo -vocabulaire agents/compilateur/exemples/vocabulaire-demo.json && git diff --stat
 ```

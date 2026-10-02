@@ -12,6 +12,11 @@
   "si_indetermine": "refuser",
   "La règle vise-t-elle uniquement l'outil « attribuer_pret » de la banque synthétique, ou aussi d'autres outils comme « evaluer_dossier » ou « get_taux_interne » ?": "Uniquement l'outil attribuer_pret : c'est la décision de prêt qui attend la validation.",
   "La validation par un analyste des risques doit-elle être une validation humaine (attendre_validation) ou s'agit-il d'une interdiction si la condition n'est pas remplie (refuser) ?": "Une validation humaine : l'attribution du prêt attend la validation.",
-  "Le rôle « analyste des risques » correspond-il au rôle « analyste-risques » du catalogue ?": "Oui, analyste-risques."
+  "Le rôle « analyste des risques » correspond-il au rôle « analyste-risques » du catalogue ?": "analyste-risques"
+ },
+ "variantes": {
+  "Le rôle « analyste des risques » correspond-il au rôle « analyste-risques » du catalogue ?": [
+   "Oui, analyste-risques."
+  ]
  }
 }
