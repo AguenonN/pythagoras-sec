@@ -1,0 +1,37 @@
+{
+  "jeu": {"id": "credit-demo", "version": 1, "date_effet": "2026-09-01T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+  "directives": [
+    {
+      "id": "D-001", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Aucun prêt ne doit être attribué de manière autonome à partir des informations du serveur de taux officiel : l'attribution attend une validation humaine. (Démonstration : fondement à valider par le juriste.)",
+      "fondements": [{"texte": "RGPD — à valider par le juriste", "article": "22", "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"session.a_consulte": {"serveur": "taux-officiel", "critere": "donnees_recues"}},
+      "effets": [{"effet": "attendre_validation"}]
+    },
+    {
+      "id": "D-002", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Au-delà de 500 000 euros, l'attribution d'un prêt est bloquée. (Démonstration : fondement à valider par le juriste.)",
+      "fondements": [{"texte": "RGPD — à valider par le juriste", "article": "22", "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"}],
+      "si_indetermine": "refuser",
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"argument": {"champ": "/montant", "op": ">", "valeur": 500000}},
+      "effets": [{"effet": "refuser"}]
+    },
+    {
+      "id": "D-003", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Toute source de taux non attestée est rejetée. (Démonstration : fondement à valider par le juriste.)",
+      "fondements": [{"texte": "RGPD — à valider par le juriste", "article": "5", "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "taux-officiel", "outil": "*"}},
+      "condition": {"attestation": {"verifiee": false}},
+      "effets": [{"effet": "refuser"}]
+    },
+    {
+      "id": "D-004", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Le serveur de vérification d'entreprise ne reçoit que le SIREN ; tout autre champ est retiré avant l'envoi. (Démonstration : fondement à valider par le juriste.)",
+      "fondements": [{"texte": "RGPD — à valider par le juriste", "article": "5", "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "recherche-entreprises", "outil": "*"}},
+      "effets": [{"effet": "caviarder", "champs_autorises": ["/siren"], "mode": "caviarder"}]
+    }
+  ]
+}

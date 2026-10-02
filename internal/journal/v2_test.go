@@ -36,7 +36,7 @@ func TestDecision_AllerRetourV2(t *testing.T) {
 	if got := relue.VersDirective(); !reflect.DeepEqual(got, d) {
 		t.Fatalf("aller-retour\n%+v\n%+v", got, d)
 	}
-	// Une application d'un journal v1 n'a pas de résultat : faux.
+	// Une application sans résultat se relit faux.
 	if (&Decision{Applications: []Application{{ID: "D-1"}}}).VersDirective().Applications[0].Resultat != directive.Faux {
 		t.Fatal("résultat absent")
 	}

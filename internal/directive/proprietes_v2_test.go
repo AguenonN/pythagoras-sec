@@ -403,7 +403,7 @@ func directivesV1Aleatoires(g generateur) []Directive {
 	for k := 0; k < 1+g.r.Intn(5); k++ {
 		v := Verrou(g.choix(string(Interdiction), string(SeuilArgument), string(ProvenanceSession),
 			string(ApprobationHumaine), string(ChampsAutorises), string(SourceAttestee)))
-		d := dir(fmt.Sprintf("G-%d", k), v, Refuser, nil)
+		d := dirV1(fmt.Sprintf("G-%d", k), v, Refuser, nil)
 		d.Cible = Cible{Serveur: g.choix("banque", "*"), Outil: g.choix("attribuer_pret", "*")}
 		d.Statut = Statut(g.choix("active", "active", "observation", "brouillon"))
 		if g.r.Intn(4) == 0 {
@@ -457,7 +457,7 @@ func directivesV1Aleatoires(g generateur) []Directive {
 // tests du gate, du rejeu et de l'intégration citent.
 func jeuxV1DuDepot(t *testing.T) []Jeu {
 	var out []Jeu
-	for _, f := range []string{"testdata/credit-pme.json", "../../demo/directives/credit-demo.json", "../relecture/testdata/variantes.json"} {
+	for _, f := range []string{"testdata/credit-pme.json", "../relecture/testdata/variantes.json"} {
 		b, err := os.ReadFile(f)
 		if err != nil {
 			t.Fatal(err)

@@ -21,9 +21,10 @@ func decisionExemple() directive.Decision {
 		Arguments:        map[string]any{"siren": "1"},
 		ChampsRetires:    []string{"/nom"},
 		EmpreinteOrigine: "o", EmpreinteTransmise: "t",
-		Applications: []directive.Application{{ID: "D-1", Version: 1, Verrou: directive.ApprobationHumaine,
+		Applications: []directive.Application{{ID: "D-1", Version: 1,
 			Fondement: directive.Fondement{Texte: "RGPD", Article: "22"}, Statut: directive.Active,
-			Effet: directive.AttendreValidation, Declenchee: true, Appliquee: true, Motif: "validation humaine requise"}},
+			Effet: directive.AttendreValidation, Declenchee: true, Appliquee: true, Motif: "sans condition",
+			Resultat: directive.Vrai, Fondements: []directive.Fondement{{Texte: "RGPD", Article: "22"}}}},
 		Alertes: []string{"a"},
 	}
 }

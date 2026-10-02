@@ -70,6 +70,11 @@ type Config struct {
 	Session  session.Config
 	// Appelant est l'identité prouvée par le transport de l'agent.
 	Appelant string
+	// AppelantSpiffe : le gate est servi en HTTP + mTLS (HandlerSpiffe) et
+	// l'appelant de chaque appel est l'identité SPIFFE du client, prouvée
+	// par la poignée de main ; Appelant est alors ignoré. Un appel qui n'en
+	// porte aucune est refusé.
+	AppelantSpiffe bool
 	// Horloge est lue une fois par appel ; défaut time.Now.
 	Horloge func() time.Time
 	// Connecter ouvre un backend ; défaut backend.Connecter.
@@ -361,7 +366,13 @@ func (g *Gate) gestionnaire(expose string) mcp.ToolHandler {
 		if req.Params != nil {
 			brut, meta = req.Params.Arguments, req.Params.Meta
 		}
-		return g.Traiter(ctx, req.Session, expose, brut, meta), nil
+		appelant := g.cfg.Appelant
+		if g.cfg.AppelantSpiffe {
+			if appelant = appelantSpiffe(req); appelant == "" {
+				return refusEngine("Appel refusé : l'identité SPIFFE de l'appelant n'est pas prouvée."), nil
+			}
+		}
+		return g.traiter(ctx, req.Session, expose, brut, meta, appelant), nil
 	}
 }
 
@@ -370,6 +381,10 @@ func (g *Gate) gestionnaire(expose string) mcp.ToolHandler {
 // meta est le _meta de l'appel : seul sous_agent en est lu, pour le
 // journal ; rien n'en est transmis au serveur.
 func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string, brut json.RawMessage, meta mcp.Meta) *mcp.CallToolResult {
+	return g.traiter(ctx, ss, expose, brut, meta, g.cfg.Appelant)
+}
+
+func (g *Gate) traiter(ctx context.Context, ss *mcp.ServerSession, expose string, brut json.RawMessage, meta mcp.Meta, appelant string) *mcp.CallToolResult {
 	// Mesure de l'évaluation : horloge monotone du processus, jamais
 	// l'horloge de l'engine (qui peut être simulée) ; ne sert qu'au
 	// journal, jamais à Decide.
@@ -396,7 +411,7 @@ func (g *Gate) Traiter(ctx context.Context, ss *mcp.ServerSession, expose string
 
 	// 2. Entrer : le verrou est rendu sur tous les chemins.
 	g.suivre(ss)
-	tour, err := g.sessions.Entrer(ctx, ss, g.cfg.Appelant)
+	tour, err := g.sessions.Entrer(ctx, ss, appelant)
 	defer tour.Terminer()
 	if err != nil {
 		if !erreurSessionAttendue(err) {

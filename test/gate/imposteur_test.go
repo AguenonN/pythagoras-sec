@@ -35,24 +35,27 @@ import (
 	"mcprogue/internal/session"
 )
 
-// Le jeu du point de contrôle, plus une directive source_attestee sur la
+// Le jeu du point de contrôle, plus une directive d'attestation sur la
 // banque.
 const jeuImposteur = `{
   "jeu": {"id": "credit-pme-gate", "version": 3, "date_effet": "2026-01-01T00:00:00Z", "auteur": "juriste@cabinet.fr"},
   "directives": [
     {"id": "D-001", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Aucun prêt ne doit être attribué de manière autonome à partir des informations du serveur de taux officiel.",
-     "fondement": {"texte": "RGPD", "article": "22"},
-     "verrou": "provenance_session", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"},
-     "provenance": {"serveurs": ["taux-officiel"]}, "effet": "refuser"},
+     "fondements": [{"texte": "RGPD", "article": "22"}],
+     "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+     "condition": {"session.a_consulte": {"serveur": "taux-officiel", "critere": "donnees_recues"}},
+     "effets": [{"effet": "refuser"}]},
     {"id": "D-003", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Toute source de taux non attestée est rejetée.",
-     "fondement": {"texte": "RGPD", "article": "5"},
-     "verrou": "source_attestee", "cible": {"serveur": "taux-officiel", "outil": "*"}, "effet": "refuser"},
+     "fondements": [{"texte": "RGPD", "article": "5"}],
+     "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "taux-officiel", "outil": "*"}},
+     "condition": {"attestation": {"verifiee": false}}, "effets": [{"effet": "refuser"}]},
     {"id": "D-005", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Aucune demande de prêt ne part vers une banque dont l'identité n'est pas prouvée.",
-     "fondement": {"texte": "DORA", "article": "28"},
-     "verrou": "source_attestee", "cible": {"serveur": "banque-synthetique", "outil": "*"}, "effet": "refuser"}
+     "fondements": [{"texte": "DORA", "article": "28"}],
+     "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "*"}},
+     "condition": {"attestation": {"verifiee": false}}, "effets": [{"effet": "refuser"}]}
   ]
 }`
 
@@ -188,7 +191,7 @@ func imposteurBinaire(t *testing.T) (chemin, empreinte, temoin string) {
 
 // Le binaire au chemin du registre n'est pas celui épinglé : il n'est pas
 // lancé, l'agent voit la description épinglée, chaque appel est refusé par
-// source_attestee, qui cite sa directive et son fondement. La banque, elle,
+// la directive d'attestation D-003, qui cite son fondement. La banque, elle,
 // reste joignable.
 func TestImposteur_EmpreinteBinaire(t *testing.T) {
 	chemin, observe, temoin := imposteurBinaire(t)
@@ -210,7 +213,7 @@ func TestImposteur_EmpreinteBinaire(t *testing.T) {
 
 	r := appeler(t, b.cs, "taux-officiel__get_taux", map[string]any{"devise": "EUR"})
 	m := texte(r)
-	for _, attendu := range []string{"D-003 v1", "source_attestee", "RGPD art. 5"} {
+	for _, attendu := range []string{"refusé par D-003 v1 (RGPD art. 5)"} {
 		if !r.IsError || !strings.Contains(m, attendu) {
 			t.Fatalf("refus %q ne cite pas %q", m, attendu)
 		}
@@ -274,7 +277,7 @@ func TestImposteur_CatalogueEmpoisonne(t *testing.T) {
 }
 
 // Un serveur HTTP qui n'a pas la clé épinglée : aucune requête ne lui
-// parvient, ses appels sont refusés par source_attestee (D-005).
+// parvient, ses appels sont refusés par la directive d'attestation D-005.
 func TestImposteur_ClefTLS(t *testing.T) {
 	legitime := banque(t)
 	var requetes atomic.Int64

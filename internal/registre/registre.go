@@ -25,6 +25,8 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/spiffe/go-spiffe/v2/spiffeid"
+
 	"mcprogue/internal/directive"
 	"mcprogue/internal/nommage"
 	"mcprogue/internal/toolpin"
@@ -38,8 +40,8 @@ const (
 	Stdio Transport = "stdio"
 	// HTTP joint un serveur distant en HTTP streamable, TLS épinglé.
 	HTTP Transport = "http"
-	// HTTPSpiffe joint un serveur distant en mTLS SPIFFE. Réservé : le
-	// transport n'existe pas encore et le chargeur le refuse.
+	// HTTPSpiffe joint un serveur distant en HTTP streamable, mTLS SPIFFE :
+	// l'identité du serveur est son SPIFFE ID, épinglé au registre.
 	HTTPSpiffe Transport = "http-spiffe"
 )
 
@@ -354,7 +356,15 @@ func validerServeur(v *validation, p string, s *Serveur) {
 			v.f("%s: le transport http exige l'attestation tls-pin (mode %q)", p, a.Mode)
 		}
 	case HTTPSpiffe:
-		v.f("%s: le transport http-spiffe n'est pas encore disponible ; retirer le serveur ou changer de transport", p)
+		if s.Commande != nil {
+			v.f("%s: le transport http-spiffe n'admet pas de commande", p)
+		}
+		if !strings.HasPrefix(s.URL, "https://") {
+			v.f("%s: le transport http-spiffe exige une url https:// (url %q)", p, s.URL)
+		}
+		if a.Mode != ModeSpiffe {
+			v.f("%s: le transport http-spiffe exige l'attestation spiffe (mode %q)", p, a.Mode)
+		}
 	default:
 		v.f("%s: transport %q inconnu", p, s.Transport)
 	}
@@ -364,8 +374,11 @@ func validerServeur(v *validation, p string, s *Serveur) {
 			v.f("%s: attestation.attendu %q doit s'écrire sha256:<64 hexadécimaux minuscules>", p, a.Attendu)
 		}
 	case ModeSpiffe:
-		if !strings.HasPrefix(a.Attendu, "spiffe://") {
-			v.f("%s: attestation.attendu %q doit être un SPIFFE ID", p, a.Attendu)
+		if _, err := spiffeid.FromString(a.Attendu); err != nil {
+			v.f("%s: attestation.attendu %q doit être un SPIFFE ID (%v)", p, a.Attendu, err)
+		}
+		if s.Transport != HTTPSpiffe {
+			v.f("%s: l'attestation spiffe exige le transport http-spiffe (transport %q)", p, s.Transport)
 		}
 	default:
 		v.f("%s: mode d'attestation %q inconnu ou non admis (aucune attestation n'est jamais admise)", p, a.Mode)

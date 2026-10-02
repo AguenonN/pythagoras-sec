@@ -305,7 +305,7 @@ func Rejouer(en journal.Entree, res Resolveur, jeux Jeux, purges Purges, opts Op
 		ecart(CauseAlteration, ControleDecision, "la décision rejouée est %s, le journal affirme %s",
 			dec.Effet, r.Journalise)
 	}
-	if detail, ok := sortiesV2(en.Decision, dec); !ok {
+	if detail, ok := sorties(en.Decision, dec); !ok {
 		ecart(CauseAlteration, ControleDecision, "%s", detail)
 	}
 
@@ -343,23 +343,14 @@ func AppelDepuis(en journal.Entree, args map[string]any) directive.Appel {
 	}
 }
 
-// sortiesV2 confronte le détail de la décision à ce que le journal
-// affirme : motif, applications (résultat à trois valeurs compris),
-// alertes, et ce que la décision demande en plus de son effet
-// (notifications, marques, validation). Un rôle de validation retiré, une
-// notification effacée ou une condition indéterminée présentée comme
-// vraie est une altération, même si l'effet est le même. Un journal
-// antérieur à la v2 ne porte pas de résultat d'application : il n'est
-// alors pas comparé.
-func sortiesV2(j *journal.Decision, dec directive.Decision) (string, bool) {
+// sorties confronte le détail de la décision à ce que le journal affirme :
+// motif, applications (résultat à trois valeurs compris), alertes, et ce
+// que la décision demande en plus de son effet (notifications, marques,
+// validation). Un rôle de validation retiré, une notification effacée, un
+// résultat d'application effacé ou une condition indéterminée présentée
+// comme vraie est une altération, même si l'effet est le même.
+func sorties(j *journal.Decision, dec directive.Decision) (string, bool) {
 	r := journal.DepuisDecision(dec)
-	if len(j.Applications) == len(r.Applications) {
-		for i := range j.Applications {
-			if j.Applications[i].Resultat == "" {
-				r.Applications[i].Resultat = ""
-			}
-		}
-	}
 	switch {
 	case j.Motif != r.Motif:
 		return "le motif rejoué diffère du motif journalisé", false

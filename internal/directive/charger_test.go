@@ -104,7 +104,7 @@ func TestCharger_Accepte(t *testing.T) {
 
 func TestAlertes(t *testing.T) {
 	r := time.Date(2026, 12, 1, 0, 0, 0, 0, time.UTC)
-	j := jeu(dir("I", Interdiction, Refuser, func(d *Directive) { d.RevisionAvant = &r }))
+	j := jeu(interdire("I", func(d *Directive) { d.RevisionAvant = &r }))
 	if a := j.Alertes(r.Add(-time.Hour)); len(a) != 0 {
 		t.Errorf("alerte prématurée: %v", a)
 	}

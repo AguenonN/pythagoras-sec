@@ -6,7 +6,9 @@ import (
 	"mcprogue/internal/journal"
 )
 
-const cheminDirectivesV2 = "demo/directives/credit-demo-v2.json"
+// cheminDirectivesVersion2 est la version 2 du jeu de test credit-demo, qui
+// ajoute D-005.
+const cheminDirectivesVersion2 = "test/integration/testdata/credit-demo-v2.json"
 
 // basePerimee joue le scénario « base périmée » : consultation de la base
 // interne (T3 périmé), puis attribution du prêt, avec le jeu donné.
@@ -31,21 +33,22 @@ func basePerimee(t *testing.T, directives string) (attribution map[string]any, e
 	return attribution, erreur, appels
 }
 
-// Base périmée avec le jeu v2 : la provenance sur get_taux_interne (D-005)
-// met l'attribution en attente, alors que le jeu v1 l'autorise.
-func TestBasePerimeeJeuV2(t *testing.T) {
+// Base périmée avec la version 2 du jeu : la consultation de
+// get_taux_interne (D-005) met l'attribution en attente, alors que la
+// version 1 l'autorise.
+func TestBasePerimee_JeuVersion2(t *testing.T) {
 	sc, erreur, appels := basePerimee(t, cheminDirectives)
 	if erreur || appels[1].Decision.Effet != "autoriser" || appels[1].Resultat.Statut != journal.StatutOK {
-		t.Fatalf("jeu v1 : attribution non autorisée : %v %+v", sc, appels[1].Decision)
+		t.Fatalf("version 1 : attribution non autorisée : %v %+v", sc, appels[1].Decision)
 	}
 
-	sc, erreur, appels = basePerimee(t, cheminDirectivesV2)
+	sc, erreur, appels = basePerimee(t, cheminDirectivesVersion2)
 	if !erreur || sc["statut"] != "en_attente" || sc["directive"] != "D-005" || sc["version"] != float64(1) {
-		t.Fatalf("jeu v2 : attribution non mise en attente : %v", sc)
+		t.Fatalf("version 2 : attribution non mise en attente : %v", sc)
 	}
 	a := appels[1]
 	if a.Decision.Effet != "attendre_validation" || a.Resultat.Statut != journal.StatutNonTransmis {
-		t.Fatalf("jeu v2 : appel 2 : %+v, statut %s", a.Decision, a.Resultat.Statut)
+		t.Fatalf("version 2 : appel 2 : %+v, statut %s", a.Decision, a.Resultat.Statut)
 	}
 	d005 := false
 	for _, app := range a.Decision.Applications {

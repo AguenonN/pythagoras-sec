@@ -15,12 +15,14 @@ import (
 	"mcprogue/internal/registre"
 )
 
-// jeuCible est un jeu d'une interdiction sur la cible donnée.
+// jeuCible est un jeu d'une directive de refus sans condition sur la cible
+// donnée.
 func jeuCible(version int, serveur, outil string) string {
 	return `{"jeu": {"id": "gate-test", "version": ` + strconv.Itoa(version) + `, "date_effet": "2026-01-01T00:00:00Z", "auteur": "j"},
   "directives": [{"id": "D-X", "version": 1, "statut": "brouillon", "date_effet": "2026-01-01T00:00:00Z",
-    "texte_fr": "t", "fondement": {"texte": "RGPD"}, "verrou": "interdiction",
-    "cible": {"serveur": "` + serveur + `", "outil": "` + outil + `"}, "effet": "refuser"}]}`
+    "texte_fr": "t", "fondements": [{"texte": "RGPD"}],
+    "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "` + serveur + `", "outil": "` + outil + `"}},
+    "effets": [{"effet": "refuser"}]}]}`
 }
 
 func TestVerifierCibles(t *testing.T) {
@@ -100,20 +102,23 @@ func TestRecharger_CibleHorsRegistre(t *testing.T) {
 	t.Fatal("pas d'alerte")
 }
 
-// jeuProvenance est un jeu d'une directive provenance_session sur une cible
-// du registre, dont la provenance attend les serveurs et outils donnés.
+// jeuProvenance est un jeu d'une directive sur une cible du registre, dont
+// la condition attend la consultation des serveurs et outils donnés
+// (ou de session.a_consulte).
 func jeuProvenance(version int, serveurs, outils []string) string {
-	q := func(xs []string) string {
-		if len(xs) == 0 {
-			return "[]"
-		}
-		return `["` + strings.Join(xs, `", "`) + `"]`
+	var feuilles []string
+	for _, s := range serveurs {
+		feuilles = append(feuilles, `{"session.a_consulte": {"serveur": "`+s+`", "critere": "donnees_recues"}}`)
+	}
+	for _, o := range outils {
+		feuilles = append(feuilles, `{"session.a_consulte": {"outil": "`+o+`", "critere": "donnees_recues"}}`)
 	}
 	return `{"jeu": {"id": "gate-test", "version": ` + strconv.Itoa(version) + `, "date_effet": "2026-01-01T00:00:00Z", "auteur": "j"},
   "directives": [{"id": "D-P", "version": 1, "statut": "retiree", "date_effet": "2026-01-01T00:00:00Z",
-    "texte_fr": "t", "fondement": {"texte": "RGPD"}, "verrou": "provenance_session",
-    "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"},
-    "provenance": {"serveurs": ` + q(serveurs) + `, "outils": ` + q(outils) + `}, "effet": "refuser"}]}`
+    "texte_fr": "t", "fondements": [{"texte": "RGPD"}],
+    "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+    "condition": {"ou": [` + strings.Join(feuilles, ", ") + `]},
+    "effets": [{"effet": "refuser"}]}]}`
 }
 
 // Une provenance qui nomme un serveur ou un outil absent du registre est
@@ -178,7 +183,7 @@ func TestProvenanceHorsRegistre_DemarrageEtRechargement(t *testing.T) {
 			return nil, nil
 		},
 	})
-	if !errors.Is(err, ErrCibleHorsRegistre) || !strings.Contains(err.Error(), "provenance le serveur gels-avoirs") {
+	if !errors.Is(err, ErrCibleHorsRegistre) || !strings.Contains(err.Error(), "condition le serveur gels-avoirs") {
 		t.Fatalf("démarrage : %v", err)
 	}
 
@@ -188,7 +193,7 @@ func TestProvenanceHorsRegistre_DemarrageEtRechargement(t *testing.T) {
 		t.Fatalf("rechargement : %v", err)
 	}
 	for _, e := range b.entrees(t) {
-		if e.Type == journal.AlerteT && strings.Contains(e.Message, "provenance l'outil taux-officiel/get_taux_usure") {
+		if e.Type == journal.AlerteT && strings.Contains(e.Message, "condition l'outil taux-officiel/get_taux_usure") {
 			return
 		}
 	}

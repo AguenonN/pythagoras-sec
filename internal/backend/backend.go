@@ -36,6 +36,7 @@ import (
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"mcprogue/internal/directive"
+	"mcprogue/internal/identity"
 	"mcprogue/internal/registre"
 	"mcprogue/internal/toolpin"
 )
@@ -74,6 +75,9 @@ type Options struct {
 	Stderr io.Writer
 	// Logger reçoit les traces du client MCP ; nil les jette.
 	Logger *slog.Logger
+	// Spiffe fournit la SVID du gate et le bundle de confiance, pour les
+	// serveurs http-spiffe ; nil : ces serveurs ne se connectent pas.
+	Spiffe *identity.Source
 }
 
 // Implementation est ce que l'engine annonce aux serveurs.
@@ -92,9 +96,7 @@ func Connecter(ctx context.Context, s registre.Serveur, opts Options) (Backend, 
 	case registre.HTTP:
 		err = c.connecterHTTP(ctx)
 	case registre.HTTPSpiffe:
-		// Emplacement du transport HTTP + SPIFFE (mTLS, SPIFFE ID du
-		// serveur vérifié) : pas encore disponible.
-		err = c.echec("", "transport http-spiffe pas encore disponible", nil)
+		err = c.connecterSpiffe(ctx)
 	default:
 		err = c.echec("", "transport inconnu", nil)
 	}

@@ -199,6 +199,9 @@ func TestV2_AlterationsDetectees(t *testing.T) {
 		"marque effacée":            func(a []*journal.Entree) { a[2].Decision.Marques = nil },
 		"sous-agent":                func(a []*journal.Entree) { a[1].SousAgentDeclare = "espion" },
 		"source de la consultation": func(a []*journal.Entree) { a[1].Resultat.Source.Origine = "direct" },
+		// Un résultat d'application effacé n'est plus pris pour un journal
+		// d'avant la v2 : c'est une altération.
+		"résultat effacé": func(a []*journal.Entree) { a[0].Decision.Applications[0].Resultat = "" },
 	}
 	for nom, alterer := range cas {
 		t.Run(nom, func(t *testing.T) {

@@ -4,8 +4,8 @@ package main
 //
 //	mcp-approve annuaire-demo [-source demo/annuaire-source.json] \
 //	    [-sortie demo/annuaire.json] [-cles demo/execution/cles]
-//	mcp-approve identite -cles DIR -signataire ID [-demandeur ID] [-duree 8h]
-//	mcp-approve valider  -cles DIR -valideur ID -role ROLE -empreinte HEX [-duree 10m]
+//	mcp-approve identite -cles DIR -signataire ID [-demandeur ID] [-duree 8h] [-horloge RFC3339]
+//	mcp-approve valider  -cles DIR -valideur ID -role ROLE -empreinte HEX [-duree 10m] [-horloge RFC3339]
 //
 // annuaire-demo tire une clé par identité fictive et une pour l'autorité,
 // écrit l'annuaire signé et les clés (0600, répertoire ignoré par Git).
@@ -13,6 +13,11 @@ package main
 // (-demandeur-jeton ou MCP_GATE_JETON_DEMANDEUR) ; valider signe le jeton
 // d'approbation d'un appel en attente, que l'agent passe à la reprise dans
 // _meta.approvalToken. Les jetons sont écrits sur stdout, seuls.
+//
+// -horloge signe à l'instant simulé donné (iat), celui de mcp-gate
+// -horloge-depart : le gate, parti de cet instant, accepte le jeton. Sans
+// -horloge, l'heure réelle. Le jeton porte alors une heure qui n'est pas
+// celle de la machine : démonstration et tests seulement.
 
 import (
 	"errors"
@@ -30,6 +35,19 @@ var sousCommandes = map[string]func(args []string, out io.Writer) error{
 	"annuaire-demo": annuaireDemo,
 	"identite":      identite,
 	"valider":       valider,
+}
+
+// instantSignature lit la valeur de -horloge : l'instant simulé, ou
+// maintenant si elle est vide.
+func instantSignature(horloge string, maintenant func() time.Time) (time.Time, error) {
+	if horloge == "" {
+		return maintenant(), nil
+	}
+	t, err := time.Parse(time.RFC3339Nano, horloge)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("-horloge : %w", err)
+	}
+	return t, nil
 }
 
 func annuaireDemo(args []string, out io.Writer) error {
@@ -69,11 +87,16 @@ func identite(args []string, out io.Writer) error {
 	signataire := fs.String("signataire", "", "identité qui signe (le demandeur, ou un émetteur d'identité)")
 	demandeur := fs.String("demandeur", "", "demandeur (défaut : le signataire)")
 	duree := fs.Duration("duree", 8*time.Hour, "durée de vie (12h au plus)")
+	horloge := fs.String("horloge", "", "démonstration et tests : signe à cet instant simulé (RFC 3339), cohérent avec mcp-gate -horloge-depart")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if *signataire == "" {
 		return errors.New("-signataire obligatoire")
+	}
+	emis, err := instantSignature(*horloge, time.Now)
+	if err != nil {
+		return err
 	}
 	if *demandeur == "" {
 		*demandeur = *signataire
@@ -82,7 +105,7 @@ func identite(args []string, out io.Writer) error {
 	if err != nil {
 		return err
 	}
-	j, err := annuaire.SignerIdentite(cle, *signataire, *demandeur, time.Now(), *duree)
+	j, err := annuaire.SignerIdentite(cle, *signataire, *demandeur, emis, *duree)
 	if err != nil {
 		return err
 	}
@@ -97,17 +120,22 @@ func valider(args []string, out io.Writer) error {
 	role := fs.String("role", "", "rôle au titre duquel il valide")
 	empreinte := fs.String("empreinte", "", "empreinte_transmise de l'appel en attente")
 	duree := fs.Duration("duree", 10*time.Minute, "durée de vie (15m au plus)")
+	horloge := fs.String("horloge", "", "démonstration et tests : signe à cet instant simulé (RFC 3339), cohérent avec mcp-gate -horloge-depart")
 	if err := fs.Parse(args); err != nil {
 		return err
 	}
 	if *valideur == "" || *role == "" || *empreinte == "" {
 		return errors.New("-valideur, -role et -empreinte obligatoires")
 	}
+	emis, err := instantSignature(*horloge, time.Now)
+	if err != nil {
+		return err
+	}
 	cle, err := annuaire.LireCle(filepath.Join(*cles, annuaire.FichierCle(*valideur)))
 	if err != nil {
 		return err
 	}
-	j, err := annuaire.SignerApprobation(cle, *valideur, *role, *empreinte, time.Now(), *duree)
+	j, err := annuaire.SignerApprobation(cle, *valideur, *role, *empreinte, emis, *duree)
 	if err != nil {
 		return err
 	}
