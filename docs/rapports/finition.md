@@ -17,7 +17,24 @@ Branche `feat/finition`. Mis à jour après chaque commit.
   Non traités car hors console : écarts 1, 6, 7, 8, 10, 11, 12 de la fusion. Reste côté console : « Pourquoi c'est un risque » (écran 4) toujours « non disponible » (l'Analyste n'est pas relié à cet écran ; rien à lire de fiable).
 - **Point 4 ter — demandes suggérées.** `GET /api/suggestions` (`suggestions.go`) lit `demo/scenarios/*.json` (`titre`, `demande`, `demandeur`) en lecture seule, ignore les scénarios sans titre ou sans demande et les fichiers illisibles ; liste vide `[]` sans dossier. Poste conseiller : boutons « Demandes suggérées » ; un clic remplit la demande et le demandeur (si l'identité existe dans l'annuaire), rien n'est lancé sans « Lancer les agents ». Test `TestDemandesSuggerees` sur deux fichiers d'exemple de `internal/console/testdata/scenarios/` (+ un sans titre, un cassé).
 - **Point 3 (suite) — écran 4 et D-009.** Une directive qui n'existe que dans un jeu de travail sous lequel des sessions ont tourné (D-009 avant son activation, `demo/scenarios/jeux/avec-d009.json`) apparaît dans la liste de l'écran 4 ; la comparer rejoue « sans la directive D-009 » (cet ensemble privé d'elle) et « avec la directive D-009 » (cet ensemble). Test `TestComparaisonDUneDirectiveDeJeuDeTravail`. Sur les six journaux réels de `demo/scenarios/` (rejeu hors ligne) : 37 appels, 0 non rejouable (12 sur 44 avant).
+- **Point 5 — captures.** `docs/rapports/console-captures/reel/` (13 images, Chromium/Playwright) et le script `capturer-reel.py`. Journaux : les six scénarios de `demo/scenarios/` rejoués **hors ligne** (`lancer-demo.sh scenario <nom> --mode rejeu`, aucun appel Mistral, journaux chaînés intègres) + une demande sans appel d'outil (« Liste des employés de la boite ») dont les deux fichiers `etat.json` / `reponse.json` sont **écrits à la main pour la capture** (pas un journal produit par l'orchestrateur : pas de scénario enregistré sans appel d'outil). Aucune erreur JavaScript ni réponse d'API en erreur pendant la prise. `base-interne-avec-d009` finit en erreur (écart connu n° 1 de la fusion, enregistrement antérieur au garde-fou d'idempotence) ; ce journal est conservé tel quel.
+  Reproduire : `scripts/lancer-demo.sh` (prépare ; le registre local des gels du jour est copié du worktree principal, lecture seule), `export MCP_GATE_CLE_JOURNAL=$(printf 'finition captures' | sha256sum | cut -d' ' -f1)`, les six `scenario … --mode rejeu`, `bin/console -racine . -addr 127.0.0.1:8090 -approuver bin/mcp-approve`, puis `python capturer-reel.py http://127.0.0.1:8090 <dossier>`.
 
 ## Décisions prises seul
 
 - Une demande sans journal est « chaîne vérifiée, 0 entrée » : rien à rompre ; la pastille le dit en chiffres.
+- **Registre local des gels** (12 Mo, public) copié depuis `../mcp_rogue/servers/gels-avoirs/enregistrements_locaux` (lecture seule, hors dépôt Git) pour éviter le téléchargement, réseau interdit hors registres de paquets.
+- **Playwright** installé dans un environnement virtuel du répertoire temporaire de la session (pas dans le dépôt).
+- Une demande sans journal est affichée « chaîne vérifiée · 0 entrée » (rien à rompre).
+- Libellé à l'écran d'un jeu de travail : « règles de travail « nom » » (jamais « jeu », contrats §0).
+
+## Pas fait
+
+- « Pourquoi c'est un risque » (écran 4), notifications D-005 en triple, harmonisation des horloges du gate, secours `base-interne-avec-d009` à repasser en réel : hors console ou nécessitent Mistral.
+
+## Vérifier en 5 minutes
+
+```sh
+go vet ./... && go test -race -count=1 ./...
+go test -race -count=1 -run 'SansAppel|ListesVides|SignatureALHeure|SousJeu|JeuDeTravail|Suggerees' ./internal/console/
+```
