@@ -44,6 +44,8 @@ function h(tag, attrs, ...enfants) {
   return e;
 }
 const NOMBRE_ONGLET = { validation: 'attentes', redaction: 'propositions' };
+// Nom du valideur d'après l'annuaire, à défaut son identité.
+const nomValideur = (v) => v.nom || v.identite;
 const nd = (texte) => h('span', { class: 'nd' }, texte || ND);
 
 async function api(chemin, options) {

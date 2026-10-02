@@ -61,6 +61,11 @@ func (d *Depot) Chaine(st *Etat, jeux []JeuCharge, session string) (*VueChaine, 
 	if !ok {
 		return nil, false
 	}
+	for i := range v.Etapes {
+		for k := range v.Etapes[i].ValidePar {
+			v.Etapes[i].ValidePar[k].Nom = d.NomIdentite(v.Etapes[i].ValidePar[k].Identite)
+		}
+	}
 	if v.Demandeur != nil {
 		quand := v.Ouverte
 		if quand.IsZero() {

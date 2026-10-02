@@ -48,7 +48,7 @@
       fonde && fonde.length ? h('span', { class: 'lien-fonde' }, 'fonde ' + fonde.map(s => '#' + s).join(' ')) : null,
       !fonde && ids.length ? h('span', { class: 'second' }, ids.join(' · ')) : null,
       e.valide_au_seq ? h('span', { class: 'petit second' }, 'validé ensuite (appel n° ' + e.valide_au_seq + ')') : null,
-      e.valide_par && e.valide_par.length ? h('span', { class: 'petit ok-txt' }, 'validé par ' + e.valide_par.map(v => v.identite).join(', ')) : null,
+      e.valide_par && e.valide_par.length ? h('span', { class: 'petit ok-txt' }, 'validé par ' + e.valide_par.map(nomValideur).join(', ')) : null,
       e.suspect ? h('span', { class: 'non-txt', style: 'color:var(--ref)' }, 'non fiable') : null);
   }
 
@@ -82,7 +82,7 @@
   function Titre(t) {
     t = String(t).trim();
     const i = t.search(/[.;:]/);
-    if (i > 0) t = t.slice(0, i);
+    if (i > 0) t = t.slice(0, i).trim();
     const r = Array.from(t);
     if (r.length > 60) {
       const cut = r.slice(0, 60).join('');
@@ -105,7 +105,7 @@
       h('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap' }, badge(e.badge, e.libelle, 'grand'),
         h('span', { class: 'moyen second' }, heureSec(e.ts) + ' · Europe/Paris')),
       e.origine_libelle ? h('p', { class: 'moyen gras', style: 'color:var(--non)' }, e.origine_libelle) : null,
-      e.valide_par && e.valide_par.length ? h('p', { class: 'moyen ok-txt gras' }, 'Validé par ' + e.valide_par.map(v => v.identite + ' (' + v.role + ')').join(', ')) : null,
+      e.valide_par && e.valide_par.length ? h('p', { class: 'moyen ok-txt gras' }, 'Validé par ' + e.valide_par.map(v => nomValideur(v) + ' (' + v.role + ')').join(', ')) : null,
       appliquees.length ? appliquees.map(a => carteDirective(a, liens)) :
         h('div', { class: 'carte compacte' }, h('div', { class: 'moyen' }, motifAffiche(e.motif)), h('div', { class: 'moyen second' }, 'Aucune directive appliquée à cet appel.')),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },

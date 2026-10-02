@@ -8,7 +8,7 @@
 
   function detail(e) {
     const ids = [...new Set(e.applications.filter(a => a.appliquee).map(a => a.id))];
-    if (e.valide_par && e.valide_par.length) return 'Validé par ' + e.valide_par.map(v => v.identite + ' (' + v.role + ')').join(', ') + ', puis transmis';
+    if (e.valide_par && e.valide_par.length) return 'Validé par ' + e.valide_par.map(v => nomValideur(v) + ' (' + v.role + ')').join(', ') + ', puis transmis';
     switch (e.badge) {
       case 'caviarde':
         return 'Champs retirés avant envoi : ' + (e.champs_retires || []).join(', ') + (ids.length ? ' (' + ids.join(', ') + ')' : '');

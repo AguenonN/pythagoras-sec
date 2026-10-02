@@ -167,7 +167,7 @@ func (d *Depot) attenteDe(st *Etat, tous []JeuCharge, maintenant time.Time) (Att
 		a.Requis = 1
 	}
 	if reEmpreinte.MatchString(a.Empreinte) {
-		a.Deposes = len(jetonsDeposes(d.Chemins(), a.Empreinte))
+		a.Deposes = len(jetonsDeposes(d.Chemins(), a.Empreinte, false))
 		a.Rejet = d.LireRejet(a.Empreinte)
 	}
 	if v, err := d.Valideurs(a.Roles, maintenant); err == nil {
@@ -202,6 +202,9 @@ func (d *Depot) reprisesDe(st *Etat, tous []JeuCharge, maintenant time.Time) []A
 			d.remplir(&a, st, e, tous)
 		}
 		a.Requis = len(a.Roles)
+		if reEmpreinte.MatchString(emp) {
+			a.Deposes = len(jetonsDeposes(d.Chemins(), emp, true))
+		}
 		a.Controles = controlesDe(st, emp)
 		out = append(out, a)
 	}
@@ -249,12 +252,23 @@ func (d *Depot) remplir(a *AttenteVue, st *Etat, e *journal.Entree, tous []JeuCh
 
 // jetonsDeposes liste les valideurs qui ont déposé un jeton pour cette
 // empreinte (un fichier <valideur>.jwt chacun).
-func jetonsDeposes(ch Chemins, empreinte string) []string {
+//
+// Quand l'appel a été repris (avecUtilises), les jetons que l'orchestrateur a
+// consommés, renommés en « <valideur>.jwt.utilise », comptent aussi : sinon
+// une validation faite s'affichait « 0 jeton déposé ».
+func jetonsDeposes(ch Chemins, empreinte string, avecUtilises bool) []string {
 	ents, _ := os.ReadDir(dossierApprobations(ch, empreinte))
 	var out []string
 	for _, e := range ents {
-		if !e.IsDir() && strings.HasSuffix(e.Name(), ".jwt") && !strings.HasPrefix(e.Name(), ".") {
-			out = append(out, strings.TrimSuffix(e.Name(), ".jwt"))
+		n := e.Name()
+		if e.IsDir() || strings.HasPrefix(n, ".") {
+			continue
+		}
+		switch {
+		case strings.HasSuffix(n, ".jwt"):
+			out = append(out, strings.TrimSuffix(n, ".jwt"))
+		case avecUtilises && strings.HasSuffix(n, ".jwt.utilise"):
+			out = append(out, strings.TrimSuffix(n, ".jwt.utilise"))
 		}
 	}
 	sort.Strings(out)
