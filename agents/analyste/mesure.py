@@ -7,7 +7,8 @@ décision si la directive avait existé.
 - Reprise (modifiée ou telle quelle) et compilée : le jeu candidat de la
   conversation du compilateur (``demo/execution/compilation/<conv>/``,
   dernière version) est rejoué sur le journal de chaque session concernée,
-  par ``journal rejouer`` (chaîne vérifiée, clé ``MCP_GATE_CLE_JOURNAL``
+  et sur celui de toute autre session du dossier (les appels passés, pas
+  seulement ceux du constat), par ``journal rejouer`` (chaîne vérifiée, clé ``MCP_GATE_CLE_JOURNAL``
   lue dans l'environnement). Dans une **copie temporaire** du candidat, les
   directives ajoutées passent de ``brouillon`` à ``active`` avec une date
   d'effet antérieure aux journaux : c'est la question « si elle avait
@@ -42,6 +43,13 @@ def _lire(chemin):
             return json.load(f)
     except FileNotFoundError:
         return None
+
+
+def _lister(sessions):
+    try:
+        return [n for n in os.listdir(sessions) if os.path.isfile(os.path.join(sessions, n, "journal.jsonl"))]
+    except FileNotFoundError:
+        return []
 
 
 def jeu_candidat(dossier_compilation, conversation):
@@ -136,7 +144,8 @@ def mesurer(id_, racine=RACINE, propositions=None, sessions=None, compilation=No
         apres = os.path.join(tmp, "si-avait-existe.json")
         with open(apres, "w", encoding="utf-8") as f:
             json.dump(jeu, f, ensure_ascii=False)
-        for nom in concernees:
+        noms = sorted(set(concernees) | {n for n in _lister(sessions)})
+        for nom in noms:
             d = os.path.join(sessions, nom)
             if not os.path.isfile(os.path.join(d, "journal.jsonl")):
                 erreurs.append("%s : journal absent" % nom)

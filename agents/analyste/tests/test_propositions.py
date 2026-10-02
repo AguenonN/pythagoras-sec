@@ -190,7 +190,7 @@ class TestMesure(unittest.TestCase):
                 os.environ["MCP_GATE_CLE_JOURNAL"] = ancienne
         self.assertEqual(r["etat"], "mesuree", r)
         self.assertEqual(r["erreurs"], [])
-        self.assertEqual(len(r["sessions_rejouees"]), 3)
+        self.assertEqual(len(r["sessions_rejouees"]), 6)  # toutes les sessions, pas seulement le constat
         self.assertEqual(r["appels_changes"], 1)
         self.assertEqual(r["changements"], [{"seq": 5, "outil": "banque-synthetique/attribuer_pret",
                                              "avant": "autoriser", "apres": "attendre_validation",
