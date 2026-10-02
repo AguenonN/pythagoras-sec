@@ -351,7 +351,7 @@
    "version": 1,
    "statut": "active",
    "date_effet": "2026-09-01T00:00:00Z",
-   "texte_fr": "Base interne des taux : un prêt attribué alors que la demande a consulté la base interne des taux de la banque, dont le trimestre peut être périmé, attend la validation d'un analyste risques.",
+   "texte_fr": "Base interne des taux : un prêt attribué à partir de la seule base interne des taux de la banque, dont le trimestre peut être périmé, sans consultation du taux officiel dans la demande, attend la validation d'un analyste risques.",
    "fondements": [
     {
      "texte": "Code monétaire et financier — à valider par le juriste",
@@ -366,10 +366,22 @@
     }
    },
    "condition": {
-    "session.a_consulte": {
-     "outil": "banque-synthetique/get_taux_interne",
-     "critere": "transmis"
-    }
+    "et": [
+     {
+      "session.a_consulte": {
+       "outil": "banque-synthetique/get_taux_interne",
+       "critere": "transmis"
+      }
+     },
+     {
+      "non": {
+       "session.a_consulte": {
+        "serveur": "taux-officiel",
+        "critere": "transmis"
+       }
+      }
+     }
+    ]
    },
    "effets": [
     {

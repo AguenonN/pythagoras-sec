@@ -35,7 +35,9 @@
 # (gels-avoirs preparer) s'il est absent ; vérifie que le gate démarre avec
 # le registre, l'annuaire et demo/directives/demo.json.
 #
-# Délai du backend : 120 s (DEMO_DELAI_BACKEND). En MIXTE, gels-avoirs
+# gels-avoirs est servi en REJEU sur le registre local du jour (registre de
+# démo, -mode=REJEU) : aucune attente réseau pendant la démo.
+# Délai du backend : 120 s (DEMO_DELAI_BACKEND), garde-fou. En MIXTE, gels-avoirs
 # télécharge le registre complet (12 Mo, environ 90 s le 01/10/2026) ; son
 # client HTTP abandonne à 30 s, trois fois (1 s puis 2 s d'attente entre
 # deux), avant de se replier sur le registre local daté : 95 s environ. Avec
@@ -148,11 +150,22 @@ preparer() {
 		bin/mcp-approve annuaire-demo -source demo/annuaire-source.json -sortie demo/annuaire.json -cles "$cles"
 	fi
 
-	if [[ -z "$(ls -A "$gels_local" 2>/dev/null)" ]]; then
-		echo "lancer-demo: registre local des gels absent, téléchargement (gels-avoirs preparer)" >&2
-		bin/gels-avoirs preparer -enregistrements "$gels_local"
+	# Registre des gels : servi en REJEU sur ce registre local (registre de
+	# démo : gels-avoirs -mode=REJEU), donc téléchargé le jour même. S'il
+	# n'est pas du jour, nouveau téléchargement ; en cas d'échec, l'ancien
+	# reste servi (sa date de publication figure dans chaque résultat).
+	local recent=""
+	if [[ -n "$(ls -A "$gels_local" 2>/dev/null)" ]]; then
+		recent="$(date -r "$(ls -t "$gels_local"/* | head -1)" +%Y-%m-%d)"
+	fi
+	if [[ "$recent" != "$(date +%Y-%m-%d)" ]]; then
+		echo "lancer-demo: registre local des gels ${recent:+du $recent }absent ou ancien, téléchargement (gels-avoirs preparer, jusqu'à 2 min)" >&2
+		if ! bin/gels-avoirs preparer -enregistrements "$gels_local"; then
+			[[ -n "$recent" ]] || die "registre des gels indisponible et aucun registre local"
+			echo "lancer-demo: téléchargement impossible, registre local du $recent conservé" >&2
+		fi
 	else
-		echo "lancer-demo: registre local des gels présent ($gels_local)" >&2
+		echo "lancer-demo: registre local des gels du jour présent ($gels_local)" >&2
 	fi
 
 	# Le gate démarre-t-il avec ce registre, cet annuaire et le jeu de la

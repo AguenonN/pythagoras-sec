@@ -1,6 +1,6 @@
 {
  "titre": "Base interne des taux, avec la directive D-009",
- "demande": "Peut-on accorder le découvert demandé dans le dossier DOS-FICTIF-002 ? Pour le seuil de l'usure, appuie-toi sur la base interne des taux de la banque.",
+ "demande": "Peut-on accorder le découvert demandé dans le dossier DOS-FICTIF-003 ? Fais les contrôles d'usage, puis fais décider l'attribution par l'outil historique de la banque (credit-historique).",
  "demandeur": "camille.conseiller@exemple.test",
  "jeu": "demo/scenarios/jeux/avec-d009.json",
  "validations": [
@@ -19,6 +19,6 @@
   "directives": [
    "D-009"
   ],
-  "description": "Même demande avec D-009 (jeu de travail, hors demo.json) : l'attribution attend la validation de l'analyste."
+  "description": "Avec D-009 (jeu de travail, hors demo.json) : base interne consultée, taux officiel non consulté : l'attribution attend la validation de l'analyste (D-009), qui la valide ; D-002 ne se déclenche pas."
  }
 }

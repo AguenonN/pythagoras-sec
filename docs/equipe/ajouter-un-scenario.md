@@ -43,3 +43,9 @@ scripts/lancer-demo.sh verifier demo/execution/sessions/<passage>      # chaîne
 scripts/lancer-demo.sh scenario <nom> --mode rejeu                     # sans réseau ni Mistral (dernier enregistrement)
 scripts/lancer-demo.sh comparer <passage réel> <passage rejoué>        # « aucun écart »
 ```
+
+## Répéter à une autre date : `--horloge-depart`
+
+`scripts/lancer-demo.sh scenario <nom> --horloge-depart 2026-10-04T09:00:00+02:00` lance le gate sur une horloge simulée et transmet cette date aux sous-agents (« date de la décision »).
+
+**Limite connue** : le gate vérifie le jeton d'identité du demandeur (valable 8 h) et les jetons de validation (15 min au plus) à l'horloge simulée, alors que `mcp-approve` les signe à l'heure réelle. À plus de quelques heures de l'heure réelle, le gate refuse de démarrer (« jeton du demandeur refusé : hors de sa période de validité »). Correction confiée à la session D (date d'émission dans `mcp-approve`). Le jour J, ne pas utiliser l'option : horloge réelle.

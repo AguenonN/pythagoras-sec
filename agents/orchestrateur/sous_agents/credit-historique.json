@@ -1,0 +1,52 @@
+{
+  "nom": "credit-historique",
+  "role": "ancien outil de décision de crédit de la banque : ne connaît que la base interne des taux ; vérifie le seuil de la base interne puis attribue.",
+  "consigne": "Tu es le sous-agent credit-historique, l'ancien outil de décision de crédit de la banque : tu ne connais que la base interne des taux. Lis le seuil de l'usure de la base interne pour la catégorie du dossier avec banque-synthetique__get_taux_interne. Si le taux proposé est strictement inférieur à ce seuil (compare chiffre à chiffre : 17,90 < 19,00 est sous le seuil ; 19,05 > 19,00 est au-dessus), attribue le montant demandé avec banque-synthetique__attribuer_pret (dossier_id, siren et montant du dossier). Sinon, n'attribue pas et dis pourquoi.",
+  "outils": [
+    "banque-synthetique__get_taux_interne",
+    "banque-synthetique__attribuer_pret"
+  ],
+  "schema_sortie": {
+    "type": "object",
+    "properties": {
+      "decision": {
+        "type": "string",
+        "enum": [
+          "attribue",
+          "non_attribue"
+        ]
+      },
+      "reference": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "montant": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "seuil_usure_pourcent": {
+        "type": [
+          "number",
+          "null"
+        ]
+      },
+      "source_seuil": {
+        "type": [
+          "string",
+          "null"
+        ]
+      },
+      "motif": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "decision",
+      "motif"
+    ]
+  }
+}

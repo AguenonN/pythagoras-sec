@@ -55,8 +55,10 @@ class TestJeux(unittest.TestCase):
         self.assertEqual(jeu["directives"][:-1], demo["directives"])
         d = jeu["directives"][-1]
         self.assertEqual(d["id"], "D-009")
-        self.assertEqual(d["condition"], {"session.a_consulte": {"outil": "banque-synthetique/get_taux_interne",
-                                                                 "critere": "transmis"}})
+        # Base interne consultée, taux officiel non consulté (D-002 ne s'applique alors pas).
+        self.assertEqual(d["condition"], {"et": [
+            {"session.a_consulte": {"outil": "banque-synthetique/get_taux_interne", "critere": "transmis"}},
+            {"non": {"session.a_consulte": {"serveur": "taux-officiel", "critere": "transmis"}}}]})
         self.assertEqual(d["effets"], [{"effet": "attendre_validation", "par_role": "analyste-risques"}])
 
 

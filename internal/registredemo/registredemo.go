@@ -14,7 +14,8 @@
 //     compare à ce que le serveur annonce ;
 //   - accès : read si l'annotation readOnlyHint est vraie, action sinon,
 //     y compris sans annotation (fermé par défaut) ;
-//   - environnement transmis par nom : DONNEES_MODE pour tous,
+//   - environnement transmis par nom : DONNEES_MODE pour tous (gels-avoirs
+//     reçoit en plus -mode=REJEU, qui l'emporte : registre local du matin),
 //     PISTE_CLIENT_ID et PISTE_CLIENT_SECRET en plus pour legifrance ;
 //   - chemins absolus : binaire, enregistrements, instantané ;
 //   - étiquettes : celles de demo/etiquettes.json (versionné), posées sur
@@ -247,7 +248,10 @@ func commande(o Options, nom, binaire string) *registre.Commande {
 		}
 		c.Args = []string{"-enregistrements", abs(o.Racine, dir)}
 	case nom == "gels-avoirs":
-		c.Args = []string{"-enregistrements", abs(o.Racine, o.Gels)}
+		// Toujours en REJEU sur le registre local (gels-avoirs preparer, le
+		// matin de la démo) : le registre complet met jusqu'à 90 s à venir
+		// de l'API, aucune demande ne doit l'attendre.
+		c.Args = []string{"-enregistrements", abs(o.Racine, o.Gels), "-mode=REJEU"}
 	case nom == "banque-synthetique":
 		c.Args = []string{"-instantane", abs(o.Racine, "servers/taux-officiel/instantane_trimestre_precedent.json")}
 	}
