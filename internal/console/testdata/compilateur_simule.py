@@ -31,13 +31,22 @@ if conv:
     etat_f = os.path.join(base, conv, "etat.json")
     with open(etat_f) as f:
         etat = json.load(f)
+    # Comme le service réel : une conversation porte un seul texte ; une
+    # valeur donnée et différente ouvre une autre conversation.
+    for cle in ("texte", "fondement", "auteur", "jeu_existant", "date_effet"):
+        v = req.get(cle)
+        if v is not None and (v.strip() if isinstance(v, str) else v) != etat[cle]:
+            sortie({"conversation": conv, "etat": "erreurs",
+                    "erreurs": ["%s différent de celui de la conversation %s : ouvrir une nouvelle conversation"
+                                % (cle, conv)]})
     texte = etat["texte"]
-    req["fondement"] = etat["fondement"]
+    req.update({cle: etat[cle] for cle in ("fondement", "auteur", "jeu_existant", "date_effet")})
 else:
     conv = "c-" + hashlib.sha1(texte.encode()).hexdigest()[:8]
     os.makedirs(os.path.join(base, conv), exist_ok=True)
     with open(os.path.join(base, conv, "etat.json"), "w") as f:
-        json.dump({"texte": texte, "fondement": req.get("fondement", "")}, f)
+        json.dump({"texte": texte, "fondement": (req.get("fondement") or "").strip(), "auteur": req["auteur"],
+                   "jeu_existant": req["jeu_existant"], "date_effet": req["date_effet"]}, f)
 
 t = texte.lower()
 if "discrimin" in t:

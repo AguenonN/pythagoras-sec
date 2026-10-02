@@ -54,14 +54,17 @@ type ReponseQuestion struct {
 }
 
 // RequeteCompilateur est la requête du §4 (une ligne de JSON sur l'entrée).
+// Dans une conversation en cours, texte, fondement et date d'effet valent
+// null : le service reprend ceux de la conversation (il refuse une valeur
+// différente, qui serait une autre conversation).
 type RequeteCompilateur struct {
 	Conversation any               `json:"conversation"`
-	Texte        string            `json:"texte"`
-	Fondement    string            `json:"fondement"`
+	Texte        *string           `json:"texte"`
+	Fondement    *string           `json:"fondement"`
 	Auteur       string            `json:"auteur"`
 	Reponses     []ReponseQuestion `json:"reponses"`
 	JeuExistant  string            `json:"jeu_existant"`
-	DateEffet    string            `json:"date_effet"`
+	DateEffet    *string           `json:"date_effet"`
 }
 
 // ReponseCompilateur est la réponse du §4.
@@ -130,12 +133,19 @@ func (d *Depot) Compiler(texte, fondement, conversation string, reponses []Repon
 	if len(d.Commandes.Compilateur) == 0 {
 		return nil, refus(501, "Le service du compilateur n'est pas configuré.")
 	}
-	var conv any
+	req := RequeteCompilateur{Auteur: d.Juriste, Reponses: reponses, JeuExistant: d.cheminsRel().Directives}
 	if conversation != "" {
-		conv = conversation
+		req.Conversation = conversation
+		if texte != "" {
+			req.Texte = &texte
+		}
+		if fondement != "" {
+			req.Fondement = &fondement
+		}
+	} else {
+		date := time.Now().In(Paris()).Format(time.RFC3339)
+		req.Texte, req.Fondement, req.DateEffet = &texte, &fondement, &date
 	}
-	req := RequeteCompilateur{Conversation: conv, Texte: texte, Fondement: fondement, Auteur: d.Juriste,
-		Reponses: reponses, JeuExistant: d.cheminsRel().Directives, DateEffet: time.Now().In(Paris()).Format(time.RFC3339)}
 	if req.Reponses == nil {
 		req.Reponses = []ReponseQuestion{}
 	}
