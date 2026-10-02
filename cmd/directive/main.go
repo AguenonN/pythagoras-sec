@@ -5,7 +5,9 @@
 // le chargeur et la relecture traitent les deux.
 //
 //	directive verifier [--exiger-brouillon] < jeu.json   {"ok":true,...} ou {"ok":false,"erreurs":[...]}
-//	directive relire   < jeu.json                       relecture en français, par gabarit
+//	directive relire   [--directives D-009,D-010] < jeu.json
+//	                                                    relecture en français, par gabarit ; avec
+//	                                                    --directives, seulement celles-ci (ajout à un jeu)
 //	directive fuseaux                                   fuseaux admis par le chargeur, en JSON
 //
 // --exiger-brouillon refuse aussi toute directive dont le statut n'est pas
@@ -27,7 +29,7 @@ import (
 	"mcprogue/internal/relecture"
 )
 
-const usage = "usage : directive verifier [--exiger-brouillon] | relire < jeu.json | fuseaux"
+const usage = "usage : directive verifier [--exiger-brouillon] | relire [--directives id,id] < jeu.json | fuseaux"
 
 func main() {
 	os.Exit(run(os.Args[1:], os.Stdin, os.Stdout, os.Stderr))
@@ -42,10 +44,12 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	fs := flag.NewFlagSet(sous, flag.ContinueOnError)
 	fs.SetOutput(io.Discard)
 	var exigerBrouillon *bool
+	var seulement *string
 	switch sous {
 	case "verifier":
 		exigerBrouillon = fs.Bool("exiger-brouillon", false, "refuser toute directive qui n'est pas en brouillon")
 	case "relire":
+		seulement = fs.String("directives", "", "identifiants des seules directives à relire, séparés par des virgules")
 	case "fuseaux":
 		// La liste fermée du chargeur : le compilateur en tire l'énumération
 		// offerte au modèle, plutôt que d'en tenir une copie.
@@ -73,7 +77,11 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	if sous == "verifier" {
 		return verifier(donnees, *exigerBrouillon, stdout)
 	}
-	return relire(donnees, stdout, stderr)
+	var ids []string
+	if *seulement != "" {
+		ids = strings.Split(*seulement, ",")
+	}
+	return relire(donnees, ids, stdout, stderr)
 }
 
 // Rapport est la sortie JSON de verifier.
@@ -106,7 +114,7 @@ func verifier(donnees []byte, exigerBrouillon bool, stdout io.Writer) int {
 	return 0
 }
 
-func relire(donnees []byte, stdout, stderr io.Writer) int {
+func relire(donnees []byte, ids []string, stdout, stderr io.Writer) int {
 	jeu, err := directive.Charger(donnees)
 	if err != nil {
 		fmt.Fprintln(stderr, "directive: jeu refusé, pas de relecture :")
@@ -115,7 +123,16 @@ func relire(donnees []byte, stdout, stderr io.Writer) int {
 		}
 		return 1
 	}
-	io.WriteString(stdout, relecture.Jeu(jeu))
+	if ids == nil {
+		io.WriteString(stdout, relecture.Jeu(jeu))
+		return 0
+	}
+	texte, err := relecture.Ajout(jeu, ids)
+	if err != nil {
+		fmt.Fprintln(stderr, "directive:", err)
+		return 2
+	}
+	io.WriteString(stdout, texte)
 	return 0
 }
 
