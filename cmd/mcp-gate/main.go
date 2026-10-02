@@ -17,6 +17,11 @@
 // accepté est refusé comme déjà utilisé. Une chaîne rompue empêche le
 // démarrage.
 //
+// Un serveur http-spiffe du registre est joint en mTLS : le gate obtient sa
+// SVID de la Workload API SPIRE (-spiffe-socket, ou SPIFFE_ENDPOINT_SOCKET) et
+// exige du serveur l'identité SPIFFE épinglée au registre. Sans serveur
+// http-spiffe, SPIRE n'est pas sollicité.
+//
 // La clé HMAC du journal est lue dans MCP_GATE_CLE_JOURNAL (hexadécimal,
 // 32 octets au moins), jamais dans un fichier ni sur la ligne de commande.
 // Sans clé, sans registre ou sans jeu valide, rien ne démarre.
@@ -52,6 +57,7 @@ import (
 	"mcprogue/internal/backend"
 	"mcprogue/internal/directive"
 	"mcprogue/internal/gate"
+	"mcprogue/internal/identity"
 	"mcprogue/internal/journal"
 	"mcprogue/internal/registre"
 	"mcprogue/internal/session"
@@ -85,6 +91,7 @@ func lancer() error {
 	depart := flag.String("horloge-depart", "", "démonstration et tests : horloge simulée qui part de cet instant (RFC 3339) et avance au rythme réel ; signalée au journal")
 	cheminAnnuaire := flag.String("annuaire", "", "annuaire des habilitations signé (JSON) ; exige -annuaire-autorite")
 	cheminAutorite := flag.String("annuaire-autorite", "", "clé publique Ed25519 (base64) de l'autorité qui signe l'annuaire")
+	socketSpiffe := flag.String("spiffe-socket", "", "socket de la Workload API SPIFFE (unix:///...), pour les serveurs http-spiffe du registre ; défaut : SPIFFE_ENDPOINT_SOCKET")
 	flag.Parse()
 	if *cheminRegistre == "" || *cheminJeu == "" || *cheminJournal == "" || *cheminCoffre == "" {
 		flag.Usage()
@@ -154,10 +161,19 @@ func lancer() error {
 	defer arreter()
 	ctxConnexion, annuler := context.WithTimeout(ctx, 30*time.Second)
 	defer annuler()
+	optsBackend := backend.Options{Stderr: os.Stderr, Logger: log}
+	if utiliseSpiffe(reg) {
+		// L'identité du gate n'est demandée à SPIRE que si le registre a
+		// un serveur http-spiffe : la démo en stdio n'en dépend pas.
+		if optsBackend.Spiffe, err = identity.NewSource(ctxConnexion, *socketSpiffe); err != nil {
+			return err
+		}
+		defer optsBackend.Spiffe.Close()
+	}
 	g, err := gate.Demarrer(ctxConnexion, gate.Config{
 		Registre: reg, Jeu: *jeu, Journal: j, Coffre: coffre, Appelant: gate.AppelantStdio,
 		Session: session.Config{DelaiBackend: *delai, MaxConsultations: *maxConsultations, AgeMax: *ageMax},
-		Backend: backend.Options{Stderr: os.Stderr, Logger: log},
+		Backend: optsBackend,
 		Logger:  log, Annuaire: src, JetonDemandeur: os.Getenv(VarJetonDemandeur), Horloge: horloge,
 		Resolveur: resolveur(reg), JetonsConsommes: consommes,
 	})
@@ -220,6 +236,16 @@ func ecranNotifications(j *journal.Ecrivain, chemin string) (func(), error) {
 		<-fini
 		f.Close()
 	}, nil
+}
+
+// utiliseSpiffe : le registre déclare-t-il un serveur en mTLS SPIFFE ?
+func utiliseSpiffe(reg *registre.Registre) bool {
+	for _, s := range reg.Serveurs {
+		if s.Transport == registre.HTTPSpiffe {
+			return true
+		}
+	}
+	return false
 }
 
 // resolveur rend le résolveur des personnes concernées : l'outil

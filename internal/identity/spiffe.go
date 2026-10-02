@@ -90,6 +90,14 @@ func (s *Source) ClientHTTP(expected spiffeid.ID) *http.Client {
 	return &http.Client{Transport: &http.Transport{TLSClientConfig: cfg}}
 }
 
+// ClientTLS builds the mTLS client configuration: the workload presents its
+// own SVID, and the handshake completes only if the server's SVID chains to
+// the trust bundle and the authorizer accepts its SPIFFE ID. Callers that need
+// to record what was observed wrap the authorizer.
+func (s *Source) ClientTLS(authorizer tlsconfig.Authorizer) *tls.Config {
+	return tlsconfig.MTLSClientConfig(s.svid, s.bundle, authorizer)
+}
+
 // ServerTLS builds the tls.Config a server presents: its own SVID, plus the
 // authorizer deciding which callers it accepts.
 func (s *Source) ServerTLS(authorizer tlsconfig.Authorizer) *tls.Config {
