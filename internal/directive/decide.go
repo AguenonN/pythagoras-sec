@@ -95,19 +95,18 @@ type Appel struct {
 type Application struct {
 	ID            string
 	Version       int
-	Verrou        Verrou
-	Fondement     Fondement
+	Fondement     Fondement // le premier de Fondements
 	Statut        Statut
 	Effet         Effet // ce que la directive demande, si déclenchée
-	Declenchee    bool  // la condition/provenance/attestation a déclenché
+	Declenchee    bool  // et(cible, condition) a déclenché un effet
 	Appliquee     bool  // déclenchée ET statut active
 	Indetermine   bool
 	RevisionEchue bool
 	ChampsRetires []string
 	Motif         string
 
-	// v2 : résultat à trois valeurs de et(cible, condition), et tous les
-	// fondements (Fondement est le premier).
+	// Résultat à trois valeurs de et(cible, condition), et tous les
+	// fondements de la directive.
 	Resultat   Trivalent
 	Fondements []Fondement
 }
@@ -161,45 +160,6 @@ func dansPerimetre(p *Perimetre, appelant string) bool {
 		}
 	}
 	return false
-}
-
-// provenanceCorrespond dit si une consultation de la session satisfait la
-// provenance, et laquelle.
-func provenanceCorrespond(p *Provenance, consultations []Consultation) (string, bool) {
-	for _, c := range consultations {
-		if p.Critere != Transmis && c.Resultat != ResultatOK {
-			continue
-		}
-		for _, s := range p.Serveurs {
-			if s == c.Serveur {
-				return c.Serveur + " (" + string(c.Resultat) + ")", true
-			}
-		}
-		for _, o := range p.Outils {
-			if o == c.Serveur+"/"+c.Outil {
-				return o + " (" + string(c.Resultat) + ")", true
-			}
-		}
-	}
-	return "", false
-}
-
-// nombre accepte les formes qu'un décodeur JSON produit selon ses options.
-func nombre(v any) (float64, bool) {
-	switch n := v.(type) {
-	case float64:
-		return n, true
-	case float32:
-		return float64(n), true
-	case int:
-		return float64(n), true
-	case int64:
-		return float64(n), true
-	case json.Number:
-		f, err := n.Float64()
-		return f, err == nil
-	}
-	return 0, false
 }
 
 func valeurTexte(v any) string {

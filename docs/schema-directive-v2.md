@@ -5,8 +5,8 @@ directive), le compilateur (qui la met sous cette forme), la relecture (qui
 la lui rend en français), l'engine (qui fournit les entrées de `Decide`) et
 le rejeu. Toute évolution passe par une v3, jamais par une retouche silencieuse.
 
-Types Go : `internal/directive/schema.go` (enveloppe, v1) et
-`internal/directive/schema_v2.go` (v2). Chargeur : `directive.Charger`.
+Types Go : `internal/directive/schema.go` (enveloppe) et
+`internal/directive/schema_v2.go`. Chargeur : `directive.Charger`.
 
 ## 1. Pourquoi une v2
 
@@ -18,8 +18,8 @@ garde l'enveloppe juridique et remplace la logique par :
   feuilles d'une liste fermée), évaluée en logique à trois valeurs ;
 - une **liste d'effets**.
 
-Un jeu v1 reste accepté tel quel : chaque directive v1 est traduite en v2
-(§9) et évaluée par le même moteur.
+*Retrait du v1 (session v2-seul, décision de Manu)* : le format v1 n'est
+plus pris en charge ; un document v1 est refusé au chargement (§9).
 
 ## 2. Document
 
@@ -28,9 +28,8 @@ Un jeu garde sa forme : `{"jeu": {…}, "directives": [ … ]}`. Le bloc `jeu`
 inchangé. L'empreinte reste `sha256` du tableau `directives[]` en JSON
 canonique (clés triées), calculée sur la forme écrite de chaque directive.
 
-**Discriminant, par directive** : une directive qui porte la clé
-`declencheur` est une directive v2 ; sinon c'est une directive v1 (clé
-`verrou`). Porter les deux est refusé. Un jeu peut mêler v1 et v2.
+Toute directive porte la clé `declencheur`. Une directive qui ne la porte
+pas, ou qui porte la clé `verrou`, est au format v1 et refusée (§9).
 
 Exemple complet :
 
@@ -376,9 +375,7 @@ d'origine et transmise, **toutes** les directives évaluées
 Précisions (étape 2, sans changement de forme) : `Validation.Roles` réunit
 les `par_role` des directives appliquées dont l'effet est
 `attendre_validation` ; chaque rôle listé doit valider, et `QuatreYeux` vaut
-si l'une d'elles le demande. Le motif d'une directive v2 cite
-`id vN (fondement)` ; celui d'une v1 traduite reste `id vN (verrou,
-fondement)`.
+si l'une d'elles le demande. Le motif cite `id vN (fondement)`.
 
 ### 8.4 Motifs
 
@@ -393,27 +390,14 @@ retrouve les entrées : sur l'entrée `appel`, `version_registre`, `acces`,
 `etiquettes_cible`, `demandeur`, `sujets` (empreintes et groupes) ; sur une
 consultation, `etiquettes`, `version_registre`, `source` ; sur la décision,
 `notifications`, `marques`, `validation` ; sur une application, `resultat`
-et `fondements`. Un journal v1 se relit à l'identique.
+et `fondements`. Le champ `verrou` d'une application (v1) n'est plus écrit,
+et le rejeu compare toujours le `resultat` (son absence est une
+altération).
 
-## 9. Conversion v1 → v2
+## 9. Format v1
 
-Au chargement comme dans `Decide`, chaque directive v1 est traduite
-(`ConvertirV1`). L'enveloppe est reprise (`fondement` → `fondements: [fondement]`),
-le déclencheur est `{evenement: appel_outil, cible: {serveur, outil}}`.
-
-| Verrou v1 | Condition v2 | Effets v2 |
-|---|---|---|
-| `interdiction` | aucune | `[refuser]` |
-| `seuil_argument` | `et` des conditions (`in` = `dans`) | `[effet]` |
-| `provenance_session` | `ou` de `session.a_consulte` (chaque serveur, puis chaque outil, avec le critère) | `[effet]` |
-| `approbation_humaine` | aucune | `[attendre_validation]` |
-| `champs_autorises_par_destination` | aucune | `[caviarder {champs_autorises, mode}]` |
-| `source_attestee` | `attestation {verifiee: false}` | `[refuser]` |
-
-La traduction garde le verrou d'origine pour le journal et les motifs : une
-décision v1 rejouée après passage en v2 est identique (effet, arguments,
-empreintes, applications, motifs). Seule différence voulue : les nombres
-sont comparés en décimal exact, là où la v1 passait par `float64`.
+Retiré : un document v1 est refusé au chargement (« format de directive v1
+non pris en charge : réécrire en v2 »), sans conversion.
 
 ## 10. Chargeur strict
 

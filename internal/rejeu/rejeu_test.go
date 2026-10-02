@@ -446,7 +446,7 @@ func TestComparer_NouveauJeuEtPurge(t *testing.T) {
 	for i, d := range v2.Directives {
 		if d.ID == "D-002" {
 			d.Version = 2
-			d.Condition = []directive.Condition{{Champ: "/montant", Op: directive.OpSup, Valeur: 50000.0}}
+			d.Arbre = &directive.Noeud{Argument: &directive.Condition{Champ: "/montant", Op: directive.OpSup, Valeur: 50000.0}}
 			v2.Directives[i] = d
 		}
 	}

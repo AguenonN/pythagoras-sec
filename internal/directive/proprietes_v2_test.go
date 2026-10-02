@@ -159,12 +159,12 @@ func toutesLesDirectives(t *testing.T) Jeu {
 	for _, nom := range []string{"credit", "weekend", "top-management", "rh", "demandeur", "complet"} {
 		ds = append(ds, jeuV2(t, nom).Directives...)
 	}
-	v1, err := chargerTestdata(t)
+	pme, err := chargerTestdata(t)
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, d := range v1.Directives {
-		d.ID = "V1-" + d.ID
+	for _, d := range pme.Directives {
+		d.ID = "PME-" + d.ID
 		ds = append(ds, d)
 	}
 	j := jeu(ds...)
@@ -382,144 +382,11 @@ func TestArbresAleatoires_SansPaniqueNiDivergence(t *testing.T) {
 }
 
 // ---------------------------------------------------------------------------
-// Test 5 : les jeux v1 se rejouent sans écart après passage en v2.
+// Test 5 : tout journal régénéré par les tests se rejoue sans écart. Il vit
+// là où les journaux sont produits : test/integration (TestMain compte les
+// journaux et exige que chacun ait été vérifié et rejoué), internal/gate et
+// test/gate (rejouer à la fin de chaque banc), internal/rejeu.
 // ---------------------------------------------------------------------------
-
-// sansChampsV2 efface ce que seule la v2 remplit, pour comparer à l'oracle.
-func sansChampsV2(d Decision) Decision {
-	d.Validation = nil
-	apps := append([]Application(nil), d.Applications...)
-	for i := range apps {
-		apps[i].Resultat = 0
-	}
-	d.Applications = apps
-	return d
-}
-
-// directivesV1Aleatoires couvre les six verrous, l'observation, le
-// périmètre, les échéances et si_indetermine.
-func directivesV1Aleatoires(g generateur) []Directive {
-	var ds []Directive
-	for k := 0; k < 1+g.r.Intn(5); k++ {
-		v := Verrou(g.choix(string(Interdiction), string(SeuilArgument), string(ProvenanceSession),
-			string(ApprobationHumaine), string(ChampsAutorises), string(SourceAttestee)))
-		d := dirV1(fmt.Sprintf("G-%d", k), v, Refuser, nil)
-		d.Cible = Cible{Serveur: g.choix("banque", "*"), Outil: g.choix("attribuer_pret", "*")}
-		d.Statut = Statut(g.choix("active", "active", "observation", "brouillon"))
-		if g.r.Intn(4) == 0 {
-			d.Perimetre = &Perimetre{Appelants: []string{g.choix("spiffe://lab/a", "*", "spiffe://lab/b")}}
-		}
-		if g.r.Intn(4) == 0 {
-			r := t0.Add(time.Duration(g.r.Intn(3)-1) * time.Hour)
-			d.RevisionAvant = &r
-		}
-		if g.r.Intn(5) == 0 {
-			d.DateEffet = t0.Add(time.Hour) // pas encore en vigueur
-		}
-		switch v {
-		case ApprobationHumaine:
-			d.Effet = AttendreValidation
-		case SeuilArgument:
-			d.Effet = Effet(g.choix(string(Refuser), string(AttendreValidation)))
-			for n := 0; n < 1+g.r.Intn(3); n++ {
-				op := Op(g.choix(">", ">=", "<", "<=", "==", "!=", "in", "present", "absent"))
-				var val any
-				switch op {
-				case OpPresent, OpAbsent:
-				case OpDans:
-					val = []any{json.Number("500000"), "EUR", true}
-				default:
-					val = []any{json.Number("500000"), 500000.0, json.Number("0.5"), "EUR", true}[g.r.Intn(5)]
-				}
-				d.Condition = append(d.Condition, Condition{Champ: g.choix("/montant", "/devise", "/absent", "/l/0"), Op: op, Valeur: val})
-			}
-			if g.r.Intn(3) == 0 {
-				d.SiIndetermine, d.SiIndetermineValidePar = IndetermineIgnorer, "juriste"
-			}
-		case ProvenanceSession:
-			d.Effet = Effet(g.choix(string(Refuser), string(AttendreValidation)))
-			d.Provenance = &Provenance{Serveurs: []string{g.choix("taux-officiel", "crm")}, Outils: []string{g.choix("crm/fiche", "gels-avoirs/verifier")},
-				Critere: Critere(g.choix("", "transmis", "donnees_recues"))}
-		case ChampsAutorises:
-			mode := ModeChamps(g.choix("caviarder", "refuser"))
-			d.Effet = Caviarder
-			if mode == ModeRefuser {
-				d.Effet = Refuser
-			}
-			d.Champs = &Champs{Autorises: []string{g.choix("/montant", "/obj/x", "/devise")}, Mode: mode}
-		}
-		ds = append(ds, d)
-	}
-	return ds
-}
-
-// jeuxV1DuDepot rend les jeux v1 versionnés : ceux que les journaux des
-// tests du gate, du rejeu et de l'intégration citent.
-func jeuxV1DuDepot(t *testing.T) []Jeu {
-	var out []Jeu
-	for _, f := range []string{"testdata/credit-pme.json", "../relecture/testdata/variantes.json"} {
-		b, err := os.ReadFile(f)
-		if err != nil {
-			t.Fatal(err)
-		}
-		j, err := Charger(b)
-		if err != nil {
-			t.Fatal(err)
-		}
-		out = append(out, *j)
-	}
-	return out
-}
-
-func TestRejeu_V1IdentiqueSousV2(t *testing.T) {
-	g := generateur{rand.New(rand.NewSource(4))}
-	jeux := jeuxV1DuDepot(t)
-	comparer := func(nom string, j Jeu, etat EtatSession, a Appel) {
-		t.Helper()
-		ref := DecideV1Ref(j, etat, a)
-		v2 := sansChampsV2(Decide(j, etat, a))
-		if !reflect.DeepEqual(ref, v2) {
-			rb, _ := json.MarshalIndent(ref, "", " ")
-			vb, _ := json.MarshalIndent(v2, "", " ")
-			t.Fatalf("%s : la décision v2 diffère de la v1\nv1 : %s\nv2 : %s", nom, rb, vb)
-		}
-	}
-	serveurs := []string{"banque", "banque-synthetique", "taux-officiel", "recherche-entreprises", "partenaire"}
-	outils := []string{"attribuer_pret", "get_taux", "rechercher", "*"}
-	resultats := []Resultat{ResultatOK, ResultatErreur, ResultatIndisponible, ResultatRefuse}
-	n := 0
-	for i := 0; i < 4000; i++ {
-		var etat EtatSession
-		etat.Appelant = g.choix("", "spiffe://lab/a", "spiffe://lab/b")
-		for k := 0; k < g.r.Intn(4); k++ {
-			etat.Consultations = append(etat.Consultations, Consultation{Seq: k + 1,
-				Serveur: g.choix("taux-officiel", "crm", "gels-avoirs", "banque-synthetique"), Outil: g.choix("get_taux", "fiche", "verifier"),
-				Resultat: resultats[g.r.Intn(len(resultats))]})
-		}
-		a := Appel{Serveur: serveurs[g.r.Intn(len(serveurs))], Outil: outils[g.r.Intn(len(outils))], Horodatage: t0.Add(time.Duration(g.r.Intn(1e7)) * time.Second),
-			Arguments: map[string]any{
-				"montant": []any{json.Number("600000"), json.Number("100"), 500000.0, 1e6, "600000", json.Number("500000")}[g.r.Intn(6)],
-				"devise":  g.choix("EUR", "USD"), "siren": "552100554", "obj": map[string]any{"x": 1.0, "y": "z"}, "l": []any{json.Number("1")},
-				"emprunteur": map[string]any{"nom": "N", "adresse": "A"},
-			}}
-		if g.r.Intn(3) == 0 {
-			delete(a.Arguments, "montant")
-		}
-		a.Attestation = []Attestation{
-			{Mode: "binaire", Attendu: "a", Observe: "a", Schemas: true, Verifiee: true},
-			{Mode: "binaire", Attendu: "a", Observe: "b", Schemas: true},
-			{Mode: "spiffe", Attendu: "s", Observe: "s", Schemas: false, Detail: "schéma modifié"},
-			{},
-		}[g.r.Intn(4)]
-		for _, j := range jeux {
-			comparer(j.Meta.ID, j, etat, a)
-			n++
-		}
-		comparer("généré", jeu(directivesV1Aleatoires(g)...), etat, a)
-		n++
-	}
-	t.Logf("%d décisions v1 comparées à l'oracle", n)
-}
 
 // ---------------------------------------------------------------------------
 // Week-end : mêmes résultats quel que soit le fuseau de la machine.

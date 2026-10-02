@@ -108,7 +108,7 @@ func validerEvenement(v *validation, p string, d *Directive) {
 	}
 }
 
-// validerEnveloppe contrôle ce que v1 et v2 partagent.
+// validerEnveloppe contrôle l'enveloppe juridique de la directive.
 func validerEnveloppe(v *validation, p string, d *Directive) {
 	if d.ID == "" {
 		v.f("%s: id manquant", p)
@@ -429,8 +429,8 @@ func validerArgument(v *validation, p string, c Condition, dansQuantif bool) {
 		if s, ok := c.Valeur.(string); !ok || s == "" {
 			v.f("%s: l'opérateur prefixe exige une chaîne non vide", p)
 		}
-	case OpDans:
-		v.f("%s: opérateur \"in\" : écrire \"dans\" en v2", p)
+	case "in":
+		v.f("%s: opérateur \"in\" inconnu : écrire \"dans\"", p)
 	default:
 		v.f("%s: opérateur %q inconnu", p, c.Op)
 	}

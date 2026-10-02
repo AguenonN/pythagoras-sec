@@ -6,10 +6,11 @@
 // Le paquet tient trois choses et rien d'autre :
 //
 //   - le schéma d'un jeu de directives versionné et daté (ce fichier) ;
-//   - un chargeur strict qui refuse tout ce que le verrou n'exige pas
-//     (charger.go) ;
+//   - un chargeur strict qui refuse tout champ que le schéma n'admet pas
+//     (charger.go, charger_v2.go) ; le format v1 (verrous) n'est plus pris
+//     en charge ;
 //   - Decide, une fonction pure : (jeu, état de session, appel) → décision,
-//     sans horloge, sans I/O, sans vérification de jeton (decide.go). C'est
+//     sans horloge, sans I/O, sans vérification de jeton (decide_v2.go). C'est
 //     ce qui rend l'évaluation rejouable : le journal, les directives à une
 //     date, et l'on retrouve la décision.
 //
@@ -30,30 +31,6 @@ const (
 	Observation Statut = "observation"
 	Active      Statut = "active"
 	Retiree     Statut = "retiree"
-)
-
-// Verrou est la liste fermée de ce qu'une directive peut demander. Les quatre
-// premiers partagent l'évaluateur (cible, conditions, provenance, effet) ;
-// les deux derniers ont chacun le leur.
-type Verrou string
-
-const (
-	// Interdiction refuse l'outil ciblé, sans condition.
-	Interdiction Verrou = "interdiction"
-	// SeuilArgument refuse ou met en attente selon une condition sur les
-	// arguments (montant, catégorie...).
-	SeuilArgument Verrou = "seuil_argument"
-	// ProvenanceSession refuse ou met en attente si la session a déjà
-	// consulté certains serveurs ou outils.
-	ProvenanceSession Verrou = "provenance_session"
-	// ApprobationHumaine met l'outil ciblé en attente de validation.
-	ApprobationHumaine Verrou = "approbation_humaine"
-	// ChampsAutorises borne les champs qu'un serveur de destination reçoit :
-	// caviarde ou refuse, selon champs.mode.
-	ChampsAutorises Verrou = "champs_autorises_par_destination"
-	// SourceAttestee refuse tout appel vers un serveur dont l'attestation
-	// (registre) a échoué, en citant la directive et son fondement.
-	SourceAttestee Verrou = "source_attestee"
 )
 
 // Effet est ce qu'une décision demande à l'engine. Les valeurs sont ordonnées
@@ -87,8 +64,9 @@ func plusFort(a, b Effet) Effet {
 	return a
 }
 
-// Op est l'opérateur d'une condition. present et absent n'ont pas de valeur ;
-// les comparaisons d'ordre exigent des nombres.
+// Op est l'opérateur d'une feuille argument (ou d'une comparaison de date ou
+// de métadonnée). present et absent n'ont pas de valeur ; les comparaisons
+// d'ordre exigent des nombres. dans et prefixe : schema_v2.go.
 type Op string
 
 const (
@@ -98,14 +76,13 @@ const (
 	OpInfEgal Op = "<="
 	OpEgal    Op = "=="
 	OpDiff    Op = "!="
-	OpDans    Op = "in"
 	OpPresent Op = "present"
 	OpAbsent  Op = "absent"
 )
 
-// Critere précise ce qui compte comme « consulté » pour une provenance :
+// Critere précise ce qui compte comme « consulté » pour session.a_consulte :
 // un appel transmis quel que soit son résultat, ou seulement un appel dont
-// des données sont revenues. Le défaut est donnees_recues.
+// des données sont revenues. Il est obligatoire.
 type Critere string
 
 const (
@@ -122,8 +99,8 @@ const (
 )
 
 // SiIndetermine tranche une condition qui ne peut pas être évaluée (champ
-// absent, type inattendu). refuser est le défaut ; ignorer n'est accepté par
-// le chargeur que validé nommément par le juriste.
+// absent, type inattendu), à la racine seulement. refuser est le défaut ;
+// ignorer n'est accepté par le chargeur que validé nommément par le juriste.
 type SiIndetermine string
 
 const (
@@ -131,40 +108,20 @@ const (
 	IndetermineIgnorer SiIndetermine = "ignorer"
 )
 
-// Fondement est la base juridique citée par la directive et reprise dans
-// chaque entrée de journal.
+// Fondement est une base juridique de la directive ; le premier de
+// Fondements est cité par le motif et repris dans chaque entrée de journal.
 type Fondement struct {
 	Texte   string `json:"texte"`
 	Article string `json:"article,omitempty"`
 	URL     string `json:"url,omitempty"`
 }
 
-// Cible désigne (serveur logique, outil). "*" accepte tout sur un champ.
-type Cible struct {
-	Serveur string `json:"serveur"`
-	Outil   string `json:"outil"`
-}
-
-// Condition porte sur un champ des arguments désigné par un pointeur JSON.
+// Condition est une feuille argument : un champ des arguments désigné par
+// un pointeur JSON, un opérateur et la valeur de la directive.
 type Condition struct {
 	Champ  string `json:"champ"`
 	Op     Op     `json:"op"`
 	Valeur any    `json:"valeur,omitempty"`
-}
-
-// Provenance déclenche si la session a consulté l'un des serveurs, ou l'un
-// des outils notés "serveur/outil".
-type Provenance struct {
-	Serveurs []string `json:"serveurs,omitempty"`
-	Outils   []string `json:"outils,omitempty"`
-	Critere  Critere  `json:"critere,omitempty"`
-}
-
-// Champs est la liste blanche de pointeurs JSON qu'un serveur peut recevoir.
-// La correspondance est par préfixe : "/emprunteur" couvre tout l'objet.
-type Champs struct {
-	Autorises []string   `json:"autorises"`
-	Mode      ModeChamps `json:"mode"`
 }
 
 // Perimetre restreint la directive à certains appelants (SPIFFE ID ou "*").
@@ -174,45 +131,45 @@ type Perimetre struct {
 	Appelants []string `json:"appelants"`
 }
 
-// Directive est une règle validée par le juriste. Elle est v1 (Verrou,
-// Cible, Condition, Provenance, Champs, Effet) ou v2 (Declencheur, Arbre,
-// Effets, Fondements) ; l'enveloppe est commune. Sa forme JSON est celle
-// de sa version (directive_json.go).
+// Directive est une règle validée par le juriste : une enveloppe juridique,
+// un déclencheur, une condition en arbre et une liste d'effets
+// (docs/schema-directive-v2.md). Sa forme JSON est directive_json.go.
 type Directive struct {
-	ID        string    `json:"id"`
-	Version   int       `json:"version"`
-	Statut    Statut    `json:"statut"`
-	DateEffet time.Time `json:"date_effet"`
+	ID        string
+	Version   int
+	Statut    Statut
+	DateEffet time.Time
 	// RevisionAvant est une échéance de relecture. Passée, la directive reste
 	// active et une alerte est émise ; jamais de désactivation silencieuse.
-	RevisionAvant *time.Time `json:"revision_avant,omitempty"`
-	TexteFR       string     `json:"texte_fr"`
-	Fondement     Fondement  `json:"fondement"`
-	Verrou        Verrou     `json:"verrou"`
-	Cible         Cible      `json:"cible"`
-	Perimetre     *Perimetre `json:"perimetre,omitempty"`
+	RevisionAvant          *time.Time
+	TexteFR                string
+	Fondements             []Fondement
+	Perimetre              *Perimetre
+	SiIndetermine          SiIndetermine
+	SiIndetermineValidePar string
+	Declencheur            *Declencheur
+	// Arbre s'écrit "condition" dans le document ; nil : vrai.
+	Arbre  *Noeud
+	Effets []EffetDirective
 
-	Condition              []Condition   `json:"condition,omitempty"`
-	SiIndetermine          SiIndetermine `json:"si_indetermine,omitempty"`
-	SiIndetermineValidePar string        `json:"si_indetermine_valide_par,omitempty"`
-	Provenance             *Provenance   `json:"provenance,omitempty"`
-	Champs                 *Champs       `json:"champs,omitempty"`
-
-	Effet Effet `json:"effet"`
-
-	// v2 (docs/schema-directive-v2.md). Fondements remplace Fondement ;
-	// Arbre s'écrit "condition" dans le document v2.
-	Fondements  []Fondement      `json:"-"`
-	Declencheur *Declencheur     `json:"-"`
-	Arbre       *Noeud           `json:"-"`
-	Effets      []EffetDirective `json:"-"`
-
-	// verrouV1 est posé par ConvertirV1 : la directive v2 vient d'une v1,
-	// dont les motifs sont gardés à l'identique.
-	verrouV1 Verrou
+	// Champs du format v1, retiré : jamais remplis par le chargeur, jamais
+	// lus par Decide. Ils restent le temps que les paquets des autres
+	// sessions (internal/relecture, internal/console, internal/gate)
+	// cessent de les nommer ; voir obsolete.go.
+	//
+	// Deprecated: format v1 retiré, toujours vides.
+	Fondement  Fondement
+	Verrou     Verrou
+	Cible      Cible
+	Condition  []Condition
+	Provenance *Provenance
+	Champs     *Champs
+	Effet      Effet
 }
 
-// EstV2 dit si la directive est de forme v2.
+// EstV2 vaut vrai pour toute directive chargée : il n'y a plus d'autre
+// forme. Une directive construite à la main sans déclencheur n'est pas une
+// directive valide (Valider la refuse, Decide la tient pour un refus).
 func (d *Directive) EstV2() bool { return d.Declencheur != nil }
 
 // MetaJeu identifie le jeu : c'est lui qui est versionné, daté et signé.

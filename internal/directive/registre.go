@@ -21,8 +21,7 @@ type EntreeRegistre struct {
 }
 
 // ControleRegistre est une ligne de la relecture : un contrôle en vigueur sur
-// un serveur, dans le vocabulaire des verrous mais marqué comme venant du
-// registre, jamais d'une directive.
+// un serveur, marqué comme venant du registre, jamais d'une directive.
 type ControleRegistre struct {
 	Serveur  string
 	Controle string

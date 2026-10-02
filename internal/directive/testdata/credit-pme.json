@@ -1,59 +1,37 @@
 {
-  "jeu": {
-    "id": "credit-pme",
-    "version": 1,
-    "date_effet": "2026-10-04T08:00:00Z",
-    "auteur": "juriste@cabinet.fr"
-  },
+  "jeu": {"id": "credit-pme", "version": 1, "date_effet": "2026-10-04T08:00:00Z", "auteur": "juriste@cabinet.fr"},
   "directives": [
     {
-      "id": "D-001",
-      "version": 1,
-      "statut": "active",
-      "date_effet": "2026-10-04T08:00:00Z",
+      "id": "D-001", "version": 1, "statut": "active", "date_effet": "2026-10-04T08:00:00Z",
       "texte_fr": "En application de l'art. 22 RGPD, en attendant des solutions concrètes, plus aucun workload ne doit utiliser de manière autonome les informations du serveur de taux officiel pour attribuer un prêt.",
-      "fondement": { "texte": "RGPD", "article": "22", "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj" },
-      "verrou": "provenance_session",
-      "cible": { "serveur": "banque-synthetique", "outil": "attribuer_pret" },
-      "provenance": { "serveurs": ["taux-officiel"] },
-      "effet": "attendre_validation"
+      "fondements": [{"texte": "RGPD", "article": "22", "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"session.a_consulte": {"serveur": "taux-officiel", "critere": "donnees_recues"}},
+      "effets": [{"effet": "attendre_validation"}]
     },
     {
-      "id": "D-002",
-      "version": 1,
-      "statut": "active",
-      "date_effet": "2026-10-04T08:00:00Z",
-      "revision_avant": "2027-01-01T00:00:00Z",
+      "id": "D-002", "version": 1, "statut": "active", "date_effet": "2026-10-04T08:00:00Z", "revision_avant": "2027-01-01T00:00:00Z",
       "texte_fr": "Au-delà de 500 000 euros, blocage automatique.",
-      "fondement": { "texte": "RGPD", "article": "22" },
-      "verrou": "seuil_argument",
-      "cible": { "serveur": "banque-synthetique", "outil": "attribuer_pret" },
-      "condition": [ { "champ": "/montant", "op": ">", "valeur": 500000 } ],
+      "fondements": [{"texte": "RGPD", "article": "22"}],
       "si_indetermine": "refuser",
-      "effet": "refuser"
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"argument": {"champ": "/montant", "op": ">", "valeur": 500000}},
+      "effets": [{"effet": "refuser"}]
     },
     {
-      "id": "D-003",
-      "version": 1,
-      "statut": "active",
-      "date_effet": "2026-10-04T08:00:00Z",
+      "id": "D-003", "version": 1, "statut": "active", "date_effet": "2026-10-04T08:00:00Z",
       "texte_fr": "Toute source de taux non attestée est rejetée.",
-      "fondement": { "texte": "RGPD", "article": "22" },
-      "verrou": "source_attestee",
-      "cible": { "serveur": "taux-officiel", "outil": "*" },
-      "effet": "refuser"
+      "fondements": [{"texte": "RGPD", "article": "22"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "taux-officiel", "outil": "*"}},
+      "condition": {"attestation": {"verifiee": false}},
+      "effets": [{"effet": "refuser"}]
     },
     {
-      "id": "D-004",
-      "version": 1,
-      "statut": "active",
-      "date_effet": "2026-10-04T08:00:00Z",
+      "id": "D-004", "version": 1, "statut": "active", "date_effet": "2026-10-04T08:00:00Z",
       "texte_fr": "Le serveur partenaire de vérification d'entreprise ne reçoit que le SIREN.",
-      "fondement": { "texte": "RGPD", "article": "5", "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj" },
-      "verrou": "champs_autorises_par_destination",
-      "cible": { "serveur": "recherche-entreprises", "outil": "*" },
-      "champs": { "autorises": ["/siren"], "mode": "caviarder" },
-      "effet": "caviarder"
+      "fondements": [{"texte": "RGPD", "article": "5", "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "recherche-entreprises", "outil": "*"}},
+      "effets": [{"effet": "caviarder", "champs_autorises": ["/siren"], "mode": "caviarder"}]
     }
   ]
 }

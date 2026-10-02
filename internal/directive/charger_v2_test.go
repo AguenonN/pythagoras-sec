@@ -4,11 +4,13 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
 	"testing"
+	"time"
 )
 
 func lireJeuxV2(t *testing.T) map[string]*Jeu {
@@ -42,8 +44,8 @@ func TestChargerV2_Accepte(t *testing.T) {
 	if !x.EstV2() || len(x.Fondements) != 1 || len(x.Effets) != 4 || x.Arbre == nil || len(x.Arbre.Ou) != 12 {
 		t.Fatalf("directive v2 mal lue : %+v", x)
 	}
-	if c.Directives[2].EstV2() || c.Directives[2].Verrou != Interdiction {
-		t.Fatal("une directive v1 dans un jeu mêlé doit rester v1")
+	if x3 := c.Directives[2]; x3.Arbre != nil || len(x3.Effets) != 1 || x3.Effets[0].Effet != Refuser || x3.Declencheur.Cible.Outil != "supprimer_tout" {
+		t.Fatalf("directive sans condition mal lue : %+v", x3)
 	}
 	// Les nombres restent décimaux exacts, jamais float64.
 	if _, ok := x.Arbre.Ou[0].Et[0].Argument.Valeur.(json.Number); !ok {
@@ -68,25 +70,60 @@ func TestChargerV2_AllerRetour(t *testing.T) {
 	}
 }
 
-// Passer en v2 ne change l'empreinte d'aucun jeu v1 du dépôt : les journaux
-// existants citent ces empreintes. Valeurs calculées par le code d'avant la v2.
-func TestChargerV1_EmpreintesInchangees(t *testing.T) {
-	cas := map[string]string{
-		"testdata/credit-pme.json":             "sha256:78fd3b304e0eb6502891bb215d365a3e4a4e03c7f079e766b231523da325ed21",
-		"../relecture/testdata/variantes.json": "sha256:78d9a06f44bebe3f0b30991019358558ad99ccc59f14871bf763b62900f1619c",
+// Un document v1 (verrou, ou directive sans déclencheur) est refusé au
+// chargement, en bloc et par position, sans rien citer du document ; même
+// une seule directive v1 dans un jeu v2.
+func TestCharger_RefuseV1(t *testing.T) {
+	const secret = "TEXTE-DU-JURISTE-7c1e"
+	v1 := `{"id": "D-1", "version": 1, "statut": "active", "date_effet": "2026-10-04T08:00:00Z",
+	"texte_fr": "` + secret + `", "fondement": {"texte": "RGPD"}, "verrou": "interdiction",
+	"cible": {"serveur": "*", "outil": "*"}, "effet": "refuser"}`
+	sansDeclencheur := `{` + baseV2 + `, "effets": ` + refuser + `}`
+	verrouEnPlus := `{` + baseV2 + `, ` + declAppel + `, "verrou": "interdiction", "effets": ` + refuser + `}`
+	cas := []struct {
+		nom, doc  string
+		positions []string
+	}{
+		{"jeu v1", doc(v1), []string{"directive 1:"}},
+		{"une v1 dans un jeu v2", `{` + meta + `, "directives": [` + dv2("", refuser) + `, ` + v1 + `]}`, []string{"directive 2:"}},
+		{"deux v1", `{` + meta + `, "directives": [` + v1 + `, ` + dv2("", refuser) + `, ` + v1 + `]}`, []string{"directive 1:", "directive 3:"}},
+		{"sans déclencheur", doc(sansDeclencheur), []string{"directive 1:"}},
+		{"verrou et déclencheur", doc(verrouEnPlus), []string{"directive 1:"}},
 	}
-	for f, veut := range cas {
-		b, err := os.ReadFile(f)
-		if err != nil {
-			t.Fatal(err)
-		}
-		j, err := Charger(b)
-		if err != nil {
-			t.Fatalf("%s : %v", f, err)
-		}
-		if j.Meta.Empreinte != veut {
-			t.Errorf("%s : empreinte %s, attendu %s", f, j.Meta.Empreinte, veut)
-		}
+	for _, c := range cas {
+		t.Run(c.nom, func(t *testing.T) {
+			_, err := Charger([]byte(c.doc))
+			if !errors.Is(err, ErrFormatV1) {
+				t.Fatalf("erreur %v, attendu ErrFormatV1", err)
+			}
+			msg := err.Error()
+			if !strings.Contains(msg, "format de directive v1 non pris en charge : réécrire en v2") {
+				t.Fatalf("message %q", msg)
+			}
+			for _, p := range c.positions {
+				if !strings.Contains(msg, p) {
+					t.Fatalf("message %q ne situe pas %q", msg, p)
+				}
+			}
+			if strings.Count(msg, "\n")+1 != len(c.positions) {
+				t.Fatalf("message %q : une ligne par directive v1 attendue", msg)
+			}
+			for _, fuite := range []string{secret, "D-1", "interdiction", "RGPD"} {
+				if strings.Contains(msg, fuite) {
+					t.Fatalf("le message cite le document (%q) : %q", fuite, msg)
+				}
+			}
+		})
+	}
+	// Un jeu construit à la main avec une directive sans déclencheur est
+	// refusé par Valider, et Decide la tient pour un refus.
+	j := jeu(Directive{ID: "M", Version: 1, Statut: Active, DateEffet: t0.Add(-time.Hour), TexteFR: "t",
+		Fondements: []Fondement{{Texte: "f"}}, Effets: []EffetDirective{{Effet: Caviarder}}})
+	if err := Valider(&j); !errors.Is(err, ErrFormatV1) {
+		t.Fatalf("Valider : %v", err)
+	}
+	if d := Decide(j, EtatSession{}, appel(map[string]any{"a": 1.0})); d.Effet != Refuser || !d.Applications[0].Appliquee {
+		t.Fatalf("Decide sans déclencheur : %+v", d)
 	}
 }
 
@@ -133,7 +170,6 @@ func TestChargerV2_Refus(t *testing.T) {
 		{"champ inconnu feuille", doc(dv2(`{"argument": {"champ": "/a", "op": "present", "x": 1}}`, refuser)), "unknown field"},
 		{"champ inconnu effet", doc(dv2(``, `[{"effet": "refuser", "x": 1}]`)), "unknown field"},
 		{"fondement singulier en v2", doc(`{` + baseV2 + `, "fondement": {"texte": "x"}, ` + declAppel + `, "effets": ` + refuser + `}`), "unknown field"},
-		{"verrou et déclencheur", doc(`{` + baseV2 + `, "verrou": "interdiction", ` + declAppel + `, "effets": ` + refuser + `}`), "à la fois verrou"},
 		// Enveloppe.
 		{"fondements vides", doc(`{"id": "V-1", "version": 1, "statut": "active", "date_effet": "2026-10-04T08:00:00Z", "texte_fr": "t", "fondements": [], ` + declAppel + `, "effets": ` + refuser + `}`), "fondements manquants"},
 		{"fondement sans texte", doc(`{"id": "V-1", "version": 1, "statut": "active", "date_effet": "2026-10-04T08:00:00Z", "texte_fr": "t", "fondements": [{"article": "1"}], ` + declAppel + `, "effets": ` + refuser + `}`), "fondements[0].texte"},
@@ -290,39 +326,5 @@ func TestFuseaux_BaseFigee(t *testing.T) {
 	}
 	if _, ok := Fuseau("Local"); ok {
 		t.Error("Local ne doit jamais être admis")
-	}
-}
-
-// ConvertirV1 couvre les six verrous et garde le verrou d'origine.
-func TestConvertirV1_SixVerrous(t *testing.T) {
-	var toutes []Directive
-	for _, f := range []string{"testdata/credit-pme.json", "../relecture/testdata/variantes.json"} {
-		b, err := os.ReadFile(f)
-		if err != nil {
-			t.Fatal(err)
-		}
-		jeu, err := Charger(b)
-		if err != nil {
-			t.Fatal(err)
-		}
-		toutes = append(toutes, jeu.Directives...)
-	}
-	// Aucun jeu du dépôt n'emploie approbation_humaine seul.
-	toutes = append(toutes, Directive{ID: "A", Verrou: ApprobationHumaine, Cible: Cible{Serveur: "*", Outil: "*"}, Effet: AttendreValidation})
-	vus := map[Verrou]bool{}
-	for _, d := range toutes {
-		c := ConvertirV1(d)
-		if !c.EstV2() || c.VerrouV1() != d.Verrou || len(c.Effets) != 1 || c.Declencheur.Evenement != EvAppelOutil {
-			t.Fatalf("%s mal converti : %+v", d.ID, c)
-		}
-		if c.Declencheur.Cible.Serveur != d.Cible.Serveur || c.Declencheur.Cible.Outil != d.Cible.Outil {
-			t.Fatalf("%s : cible perdue", d.ID)
-		}
-		vus[d.Verrou] = true
-	}
-	for _, v := range []Verrou{Interdiction, SeuilArgument, ProvenanceSession, ApprobationHumaine, ChampsAutorises, SourceAttestee} {
-		if !vus[v] {
-			t.Errorf("verrou %s absent des jeux v1 du dépôt : conversion non couverte", v)
-		}
 	}
 }

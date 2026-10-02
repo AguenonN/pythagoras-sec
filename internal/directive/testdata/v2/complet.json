@@ -45,11 +45,10 @@
     },
     {
       "id": "X-003", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",
-      "texte_fr": "Directive v1 dans un jeu v2 : acceptée telle quelle.",
-      "fondement": {"texte": "Exemple"},
-      "verrou": "interdiction",
-      "cible": {"serveur": "*", "outil": "supprimer_tout"},
-      "effet": "refuser"
+      "texte_fr": "Aucun appel à l'outil supprimer_tout, quel que soit le serveur.",
+      "fondements": [{"texte": "Exemple"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "*", "outil": "supprimer_tout"}},
+      "effets": [{"effet": "refuser"}]
     }
   ]
 }

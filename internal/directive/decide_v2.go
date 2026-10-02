@@ -14,9 +14,6 @@ import (
 // fait ensuite sur EmpreinteTransmise), aucune entrée lue ailleurs que dans
 // ses arguments. Les directives sont parcourues dans l'ordre du jeu, ordre
 // canonique fixé par le document haché ; le caviardage cumulé en dépend.
-//
-// Toute directive est évaluée sous sa forme v2 : une directive v1 est
-// d'abord traduite par ConvertirV1, et garde ses motifs v1 à l'identique.
 func Decide(jeu Jeu, etat EtatSession, appel Appel) Decision {
 	return decider(jeu, etat, appel, EvAppelOutil)
 }
@@ -34,13 +31,24 @@ func decider(jeu Jeu, etat EtatSession, appel Appel, ev Evenement) Decision {
 	var roles []string
 	quatreYeux := false
 
-	for _, brute := range jeu.Directives {
-		d := ConvertirV1(brute)
+	for _, d := range jeu.Directives {
 		if d.Statut != Active && d.Statut != Observation {
 			continue
 		}
 		if d.DateEffet.After(appel.Horodatage) {
 			continue // non-rétroactivité
+		}
+		if d.Declencheur == nil {
+			// Sans déclencheur (forme v1, construite à la main : le
+			// chargeur la refuse) : fermée par défaut, un refus pour
+			// tout appel d'outil.
+			if ev == EvAppelOutil {
+				dec.Applications = append(dec.Applications, sansDeclencheur(d))
+				if d.Statut == Active {
+					dec.Effet = Refuser
+				}
+			}
+			continue
 		}
 		if d.Declencheur.Evenement != ev {
 			continue // un autre évènement
@@ -49,13 +57,9 @@ func decider(jeu Jeu, etat EtatSession, appel Appel, ev Evenement) Decision {
 		if rCible == Faux {
 			continue
 		}
-		v1 := d.verrouV1 != ""
 		app := Application{
-			ID: d.ID, Version: d.Version, Verrou: d.verrouV1, Fondement: premierFondement(d),
-			Statut: d.Statut, Effet: effetDeclare(d),
-		}
-		if !v1 {
-			app.Fondements = d.Fondements
+			ID: d.ID, Version: d.Version, Fondement: premierFondement(d),
+			Statut: d.Statut, Effet: effetDeclare(d), Fondements: d.Fondements,
 		}
 		var notes []string
 		if d.Perimetre != nil {
@@ -83,9 +87,7 @@ func decider(jeu Jeu, etat EtatSession, appel Appel, ev Evenement) Decision {
 		}
 		res = Et(rCible, res)
 		app.Resultat = res
-		if v1 {
-			notes = append(notes, notesV1(d, res, texte, etat.Consultations)...)
-		} else if d.Arbre != nil {
+		if d.Arbre != nil {
 			notes = append(notes, "condition : "+texte)
 		} else {
 			notes = append(notes, "sans condition")
@@ -229,32 +231,6 @@ func cibleV2(c *CibleV2, appel *Appel) (Trivalent, string) {
 	return r, ""
 }
 
-// notesV1 rend les notes d'une directive traduite d'une v1, mot pour mot
-// celles du Decide v1 : les journaux existants se relisent à l'identique.
-func notesV1(d Directive, res Trivalent, texte string, cs []Consultation) []string {
-	switch d.verrouV1 {
-	case Interdiction:
-		return []string{"outil interdit"}
-	case ApprobationHumaine:
-		return []string{"validation humaine requise"}
-	case SeuilArgument:
-		if res == Vrai {
-			return []string{"conditions satisfaites"}
-		}
-		return []string{texte}
-	case ProvenanceSession:
-		if d.Provenance != nil {
-			if quoi, ok := provenanceCorrespond(d.Provenance, cs); ok {
-				return []string{"la session a consulté " + quoi}
-			}
-		}
-		return []string{"aucune consultation correspondante dans la session"}
-	case SourceAttestee:
-		return []string{texte}
-	}
-	return nil
-}
-
 // effetDeclare est ce que la directive demande si elle se déclenche : le
 // plus fort de ses effets, caviarder en mode refuser comptant pour refuser.
 func effetDeclare(d Directive) Effet {
@@ -274,7 +250,22 @@ func premierFondement(d Directive) Fondement {
 	if len(d.Fondements) > 0 {
 		return d.Fondements[0]
 	}
-	return d.Fondement
+	return Fondement{}
+}
+
+// sansDeclencheur est l'application d'une directive qui n'a pas de
+// déclencheur : déclenchée, refus, appliquée si active.
+func sansDeclencheur(d Directive) Application {
+	app := Application{
+		ID: d.ID, Version: d.Version, Fondement: premierFondement(d), Fondements: d.Fondements,
+		Statut: d.Statut, Effet: Refuser, Declenchee: true, Appliquee: d.Statut == Active,
+		Indetermine: true, Resultat: Indetermine,
+		Motif: "directive sans déclencheur (format v1 non pris en charge), refus par défaut",
+	}
+	if d.Statut != Active {
+		app.Motif = "observation, non appliquée ; " + app.Motif
+	}
+	return app
 }
 
 // trierSorties met les notifications et les marques dans l'ordre canonique.
@@ -320,17 +311,13 @@ func sansDoublon(l []string) []string {
 	return out
 }
 
-// motif résume la décision en une phrase pour l'agent et le journal. Une
-// directive v1 est citée avec son verrou, une v2 avec son seul fondement.
+// motif résume la décision en une phrase pour l'agent et le journal : chaque
+// directive est citée avec son premier fondement.
 func motif(dec Decision) string {
 	var ids []string
 	for _, a := range dec.Applications {
 		if a.Appliquee && a.Effet == dec.Effet {
-			if a.Verrou != "" {
-				ids = append(ids, fmt.Sprintf("%s v%d (%s, %s)", a.ID, a.Version, a.Verrou, citer(a.Fondement)))
-			} else {
-				ids = append(ids, fmt.Sprintf("%s v%d (%s)", a.ID, a.Version, citer(a.Fondement)))
-			}
+			ids = append(ids, fmt.Sprintf("%s v%d (%s)", a.ID, a.Version, citer(a.Fondement)))
 		}
 	}
 	switch dec.Effet {

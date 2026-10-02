@@ -156,8 +156,8 @@ func (c *contexte) quantifier(q *Quantificateur, courant any, existe bool) (Triv
 	return acc, fmt.Sprintf("tous les éléments de %s (%d) satisfont la condition", q.Champ, len(tab))
 }
 
-// feuilleArgument : le texte est celui de la v1 pour qu'un seuil v1 garde
-// son motif à l'identique.
+// feuilleArgument : le texte cite le champ, l'opérateur et la valeur de la
+// directive, jamais celle de l'argument.
 func feuilleArgument(cd Condition, v any, trouve bool) (Trivalent, string) {
 	base := cd.Champ + " " + string(cd.Op) + " " + valeurTexte(cd.Valeur)
 	switch r := evaluerOp(cd.Op, cd.Valeur, v, trouve); r {
@@ -204,7 +204,7 @@ func evaluerOp(op Op, seuil, v any, trouve bool) Trivalent {
 			return Indetermine
 		}
 		return vf(eq == (op == OpEgal))
-	case OpDans, OpDansV2:
+	case OpDansV2:
 		liste, _ := seuil.([]any)
 		for _, e := range liste {
 			if eq, ok := egauxExacts(v, e); ok && eq {
@@ -341,8 +341,8 @@ func feuilleDemandeur(f *FeuilleDemandeur, d *Demandeur) (Trivalent, string) {
 	return suffixe(vf(d.Identite == f.Identite.Egal), base, "")
 }
 
-// feuilleAttestation recalcule la vérification ; le texte est celui de la
-// v1 (source_attestee).
+// feuilleAttestation recalcule la vérification (Attestation.Valide), sans
+// croire Verifiee.
 func feuilleAttestation(f *FeuilleAttestation, a Attestation) (Trivalent, string) {
 	valide := a.Valide()
 	texte := "serveur attesté (" + decrireAttestation(a) + ")"

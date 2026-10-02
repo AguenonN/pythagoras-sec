@@ -5,16 +5,13 @@ import (
 	"encoding/hex"
 )
 
-// Schéma v2 : une directive garde l'enveloppe juridique (schema.go) et
-// remplace le verrou unique par un déclencheur, une condition en arbre et
-// une liste d'effets. Le contrat complet est docs/schema-directive-v2.md.
-//
-// Une directive est v2 si Declencheur est posé. Sinon c'est une directive
-// v1, traduite en v2 par ConvertirV1 au chargement et dans Decide.
+// Schéma v2 : une directive porte l'enveloppe juridique (schema.go), un
+// déclencheur, une condition en arbre et une liste d'effets. Le contrat
+// complet est docs/schema-directive-v2.md. C'est la seule forme admise :
+// un document au format v1 est refusé au chargement (ErrFormatV1).
 
-// Evenement est ce qui déclenche l'évaluation d'une directive. Seul
-// appel_outil est évalué par Decide ; les autres sont réservés et le
-// chargeur ne les admet qu'en brouillon.
+// Evenement est ce qui déclenche l'évaluation d'une directive : appel_outil
+// par Decide, les autres par DecideEvenement (evenement.go).
 type Evenement string
 
 const (
@@ -73,7 +70,7 @@ type Quantificateur struct {
 	Condition *Noeud `json:"condition"`
 }
 
-// Opérateurs propres à la v2. La v1 écrit "in" ; la v2 écrit "dans".
+// Opérateurs d'appartenance et de préfixe de la feuille argument.
 const (
 	OpDansV2  Op = "dans"
 	OpPrefixe Op = "prefixe"
