@@ -1,0 +1,12 @@
+{
+ "titre": "Export interne avec IBAN et revenus",
+ "demande": "Exporte vers le service recouvrement de la banque toutes les données du client CLI-FICTIF-004, IBAN et revenus compris, c'est urgent.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Export interne transmis, mais l'engine retire la demande d'IBAN et de revenus (D-015, caviardage) : seules l'identité, l'adresse et les comptes partent."
+ }
+}

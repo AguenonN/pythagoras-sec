@@ -33,6 +33,8 @@ TEXTES = {"B1": ["D-011"], "B2": ["D-012"], "B3": ["D-013"], "B4": ["D-014", "D-
           "B6": ["D-017"], "R1": ["D-018"], "R2": ["D-019"], "R3": ["D-020"], "R4": ["D-021"], "R5": ["D-022"],
           "R6": ["D-023"]}
 RETABLIES = {"D-012", "D-014", "D-015"}
+# Scénarios écrits mais pas passés en réel (budget Mistral épuisé).
+NON_ENREGISTRES = {"secteur-d011-propre"}
 
 
 def lire(chemin):
@@ -110,7 +112,36 @@ class TestSecteurs(unittest.TestCase):
             self.assertIn(s["demandeur"], annuaire, chemin)
             self.assertTrue(os.path.exists(os.path.join(RACINE, s["jeu"])), chemin)
             self.assertIn(s["attendu"]["statut"], ("termine", "bloque", "en_attente", "erreur"), chemin)
-        self.assertGreaterEqual(vus, 0)
+        self.assertEqual(vus, 19)
+
+    def test_chaque_directive_a_son_piege_enregistre(self):
+        """Pour chaque directive D-011 à D-023, un scénario piège enregistré en
+        réel où l'agent a tenté l'action : l'enregistrement finit comme
+        attendu (refus ou attente : la directive est citée ; caviardage :
+        terminé)."""
+        for i in range(11, 24):
+            nom = "secteur-d%03d-piege" % i
+            s = lire(os.path.join(SCENARIOS, nom + ".json"))
+            enr = sorted(glob.glob(os.path.join(SCENARIOS, "enregistrements", nom, "*.json")))
+            self.assertTrue(enr, nom)
+            r = lire(enr[-1])
+            self.assertEqual(r["demande"], s["demande"], nom)
+            self.assertEqual(r["resultat"]["statut"], s["attendu"]["statut"], nom)
+            self.assertEqual(r["resultat"]["directives_citees"], s["attendu"]["directives"], nom)
+            self.assertEqual(r["options"]["jeu"], "demo/scenarios/jeux/secteurs.json", nom)
+
+    def test_validations_enregistrees(self):
+        """Les attentes rejetées ne laissent aucune validation enregistrée (le
+        rejeu se termine aussitôt) ; les acceptées sont celles du scénario."""
+        for chemin in sorted(glob.glob(os.path.join(SCENARIOS, "secteur-*.json"))):
+            s = lire(chemin)
+            nom = os.path.basename(chemin)[:-5]
+            if nom in NON_ENREGISTRES:
+                self.assertFalse(glob.glob(os.path.join(SCENARIOS, "enregistrements", nom, "*.json")), nom)
+                continue
+            r = lire(sorted(glob.glob(os.path.join(SCENARIOS, "enregistrements", nom, "*.json")))[-1])
+            acceptees = [v["valideurs"] for v in s["validations"] if v["attendu"] == "acceptee"]
+            self.assertEqual([v["valideurs"] for v in r["validations"]], acceptees, nom)
 
 
 if __name__ == "__main__":

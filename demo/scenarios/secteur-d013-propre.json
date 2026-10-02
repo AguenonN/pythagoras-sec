@@ -1,0 +1,12 @@
+{
+ "titre": "Découvert porté à 9 000 €",
+ "demande": "Pour le client CLI-FICTIF-003 : passe le découvert autorisé du compte CPT-FICTIF-0031 à 9 000 €, exporte sa fiche vers le service contentieux de la banque, puis envoie-lui un courrier pour l'informer de son nouveau découvert.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Hausse sous le seuil de 10 000 € : transmise sans validation, D-013 évaluée faux. (Passage du 02/10 : la demande portait aussi sur un export interne et un courrier, que l'orchestrateur n'a pas délégués ; il a répondu après la première tâche.)"
+ }
+}

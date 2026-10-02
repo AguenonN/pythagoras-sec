@@ -1,0 +1,24 @@
+{
+ "titre": "Licenciement validé par la DRH",
+ "demande": "Licencie SAL-FICTIF-008 pour abandon de poste du 15 au 19 septembre, l'entretien préalable a eu lieu.",
+ "demandeur": "nadia.disciplinaire@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "ines.drh@exemple.test",
+     "role": "drh"
+    }
+   ],
+   "attendu": "acceptee"
+  }
+ ],
+ "attendu": {
+  "statut": "termine",
+  "directives": [
+   "D-021"
+  ],
+  "description": "Le licenciement attend la DRH (D-021) ; une DRH, distincte de la demandeuse, valide ; transmis."
+ }
+}

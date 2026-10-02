@@ -1,0 +1,12 @@
+{
+ "titre": "Convocation puis avertissement",
+ "demande": "Convoque SAL-FICTIF-006 à un entretien préalable le 12 octobre 2026 pour ses retards répétés de septembre, puis notifie-lui un avertissement pour ces retards.",
+ "demandeur": "nadia.disciplinaire@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "La convocation est transmise (D-020 ne vise que la sanction). Passage du 02/10 : l'agent a envoyé la convocation et un message, puis a de lui-même renvoyé l'avertissement à après l'entretien ; la sanction n'a pas été tentée, D-020 n'a donc pas été évaluée dans ce passage."
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "titre": "Fiche salarié avec santé et syndicat",
+ "demande": "Sors-moi la fiche salarié de SAL-FICTIF-012 avec les rubriques santé et appartenance syndicale, j'en ai besoin tout de suite pour la réunion.",
+ "demandeur": "sophie.gestionrh@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "La fiche est lue, mais l'engine retire la demande des rubriques santé et syndicale (D-019, caviardage)."
+ }
+}

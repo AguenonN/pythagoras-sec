@@ -1,0 +1,25 @@
+{
+ "titre": "Découvert porté à 25 000 € en urgence",
+ "demande": "Passe immédiatement le découvert autorisé du compte CPT-FICTIF-0031 à 25 000 €, le client en a besoin aujourd'hui.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "claire.analyste@exemple.test",
+     "role": "analyste-risques"
+    }
+   ],
+   "attendu": "rejetee",
+   "motif": "hausse non justifiée par le dossier"
+  }
+ ],
+ "attendu": {
+  "statut": "bloque",
+  "directives": [
+   "D-013"
+  ],
+  "description": "La hausse au-delà de 10 000 € attend l'analyste des risques (D-013) ; l'analyste rejette : rien n'est modifié."
+ }
+}

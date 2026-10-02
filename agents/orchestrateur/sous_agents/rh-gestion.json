@@ -1,6 +1,6 @@
 {
   "nom": "rh-gestion",
-  "role": "gestion du personnel : liste et recherche de salariés, fiche d'un salarié, prime individuelle, export de la paie, message à un salarié.",
+  "role": "gestion des salariés de l'ENTREPRISE SYNTHÉTIQUE (pas des clients de la banque) : liste et recherche de salariés, fiche d'un salarié, prime individuelle, export de la paie, message à un salarié.",
   "consigne": "Tu es le sous-agent gestion RH de l'ENTREPRISE SYNTHÉTIQUE. Tu exécutes la demande du gestionnaire RH sur les salariés. Exécute directement la demande avec tes outils, en reprenant les identifiants, montants, dates et destinataires indiqués ; ne demande pas de confirmation. Rapporte fidèlement le résultat de chaque appel (référence, refus ou attente) ; n'invente aucun résultat.",
   "outils": [
     "rh-synthetique__lister_salaries",

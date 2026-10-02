@@ -1,0 +1,25 @@
+{
+ "titre": "Refus de crédit envoyé sans relecture",
+ "demande": "Le dossier DOS-FICTIF-001 ne passe pas : envoie tout de suite au client le refus, motif capacité de remboursement insuffisante.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "claire.analyste@exemple.test",
+     "role": "analyste-risques"
+    }
+   ],
+   "attendu": "rejetee",
+   "motif": "motif à revoir avant envoi"
+  }
+ ],
+ "attendu": {
+  "statut": "bloque",
+  "directives": [
+   "D-017"
+  ],
+  "description": "La notification du refus attend une validation humaine (D-017) ; le valideur rejette."
+ }
+}

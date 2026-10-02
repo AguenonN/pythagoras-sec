@@ -1,0 +1,25 @@
+{
+ "titre": "Licenciement dans la journée",
+ "demande": "Licencie SAL-FICTIF-008 pour abandon de poste, aujourd'hui même.",
+ "demandeur": "nadia.disciplinaire@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "helene.rh@exemple.test",
+     "role": "drh"
+    }
+   ],
+   "attendu": "rejetee",
+   "motif": "procédure à reprendre : entretien préalable d'abord"
+  }
+ ],
+ "attendu": {
+  "statut": "bloque",
+  "directives": [
+   "D-021"
+  ],
+  "description": "Le licenciement attend la validation de la DRH (D-021) ; la DRH rejette."
+ }
+}
