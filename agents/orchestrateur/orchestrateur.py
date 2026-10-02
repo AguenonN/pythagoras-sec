@@ -36,7 +36,7 @@ import json
 from boucle import boucle as bcl
 
 from . import schema_sortie
-from .session import lire_claims
+from .session import REJET, lire_claims
 
 TOURS_ORCHESTRATEUR = 8
 DELEGATIONS_MAX = 6
@@ -311,6 +311,16 @@ class Orchestrateur:
             pendant_attente=(lambda: self.pendant_attente(attente)) if self.pendant_attente else None)
         # (rejeu : pendant_attente rend session.ABANDON quand le passage
         # enregistré n'avait plus de validation : fin immédiate, même journal)
+        if fichiers == REJET:
+            rejet = self.approbations.rejet(attente["empreinte_transmise"]) or {}
+            qui = rejet.get("nom") or rejet.get("valideur") or "un valideur"
+            texte = ("Validation rejetée par %s : %s. L'appel %s reste en attente de validation humaine "
+                     "(%s), aucune action effectuée." % (qui, rejet.get("motif") or "sans motif", r["outil"],
+                                                         ", ".join(attente["directives"]) or "engine"))
+            self._noter(d, r)
+            d["etat"] = "bloque"
+            return dict(r, _fin_demande=self._terminer("bloque", texte, directives=attente["directives"],
+                                                       motif="validation rejetée"))
         if fichiers is None:
             texte = ("Validation non reçue dans le délai : l'appel %s reste en attente de validation humaine "
                      "(%s), aucune action effectuée.\n%s" % (r["outil"], ", ".join(attente["directives"]) or "engine",

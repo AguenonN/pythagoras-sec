@@ -219,6 +219,37 @@ class TestOrchestrateur(Banc):
         self.assertEqual(e["attente"]["directives"], ["D-002"])
         self.assertTrue(r["texte"].startswith("Validation non reçue dans le délai"))
 
+    def test_rejet_de_la_console_termine_bloque(self):
+        # La console (« Rejeter ») écrit approbations/<empreinte>/rejet.json.
+        o = self.orch([
+            ("orchestrateur", deleguer("credit", "Attribue")),
+            ("credit", appel("banque-synthetique__attribuer_pret", {"dossier_id": "DOS-1"})),
+        ], delai=600)
+        self.depots = [[("rejet.json", json.dumps({"valideur": "claire", "nom": "Claire Analyste",
+                                                    "motif": "taux non justifié", "date": "2026-10-04T09:00:00Z"}))]]
+        r = o.executer("demande")
+        self.assertEqual(r["statut"], "bloque")
+        self.assertEqual(self.etat()["attente"]["motif"], "validation rejetée")
+        self.assertTrue(r["texte"].startswith("Validation rejetée par Claire Analyste : taux non justifié."), r["texte"])
+        # aucune reprise : un seul tools/call de l'attribution, sans jeton
+        self.assertEqual([a["name"] for a in self.appels()], ["banque-synthetique__attribuer_pret"])
+
+    def test_rejet_d_une_demande_precedente_ecarte(self):
+        d = os.path.join(self.tmp, "approbations", EMPREINTE)
+        os.makedirs(d)
+        with open(os.path.join(d, "rejet.json"), "w") as f:
+            f.write("{}")  # même appel, demande précédente
+        o = self.orch([
+            ("orchestrateur", deleguer("credit", "Attribue")),
+            ("credit", appel("banque-synthetique__attribuer_pret", {"dossier_id": "DOS-1"})),
+            ("credit", texte(json.dumps(CREDIT_OK))),
+            ("orchestrateur", texte("fini")),
+        ])
+        self.depots = [[("claire.jwt", "jeton-ok")]]
+        r = o.executer("demande")
+        self.assertEqual(r["statut"], "termine")
+        self.assertEqual(sorted(os.listdir(d)), ["claire.jwt.utilise", "rejet.json.ancien"])
+
     def test_reprise_refusee_puis_acceptee(self):
         o = self.orch([
             ("orchestrateur", deleguer("credit", "Attribue")),

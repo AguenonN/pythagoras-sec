@@ -20,6 +20,7 @@ DELAI_VALIDATION = 600  # secondes : 10 minutes au plus (§3)
 INTERVALLE = 1.0
 MAX_JETONS = 8  # au plus 8 jetons par reprise (contrat de l'engine §6)
 ABANDON = "abandon"  # rendu par pendant_attente : aucune validation ne viendra (rejeu)
+REJET = "rejet.json"  # refus consigné par la console : {"valideur", "nom", "motif", "date"}
 
 
 def ecrire_atomique(chemin, donnees):
@@ -99,6 +100,25 @@ class Approbations:
         (suffixe .ancien), avant que l'attente ne soit annoncée."""
         for f in self.deposes(empreinte):
             os.replace(f, f + ".ancien")
+        r = os.path.join(self.dossier(empreinte), REJET)
+        if os.path.exists(r):
+            os.replace(r, r + ".ancien")
+
+    def rejet(self, empreinte):
+        """Le refus consigné par la console pour cette empreinte (contenu de
+        rejet.json), ou None. Un fichier illisible vaut refus : fermé par
+        défaut, avec un motif générique."""
+        r = os.path.join(self.dossier(empreinte), REJET)
+        if not os.path.exists(r):
+            return None
+        try:
+            with open(r, encoding="utf-8") as f:
+                v = json.load(f)
+            if isinstance(v, dict):
+                return v
+        except (OSError, ValueError):
+            pass
+        return {"motif": "refus illisible"}
 
     def deposes(self, empreinte):
         return sorted(glob.glob(os.path.join(self.dossier(empreinte), "*.jwt")))
@@ -106,11 +126,14 @@ class Approbations:
     def attendre(self, empreinte, requis, pendant_attente=None):
         """Attend au moins ``requis`` jetons (un par rôle), en relisant le
         dossier toutes les ``intervalle`` secondes, ``delai`` au plus. Rend
-        la liste des chemins, ou None si le délai est écoulé."""
+        la liste des chemins, None si le délai est écoulé, ou REJET si un
+        valideur a rejeté la demande (rejet.json, écrit par la console)."""
         os.makedirs(self.dossier(empreinte), exist_ok=True)
         fin = self.horloge() + self.delai
         premier = True
         while True:
+            if self.rejet(empreinte) is not None:
+                return REJET
             fichiers = self.deposes(empreinte)
             if len(fichiers) >= max(requis, 1):
                 return fichiers[:MAX_JETONS]
