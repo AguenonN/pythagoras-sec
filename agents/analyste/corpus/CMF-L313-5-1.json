@@ -1,0 +1,31 @@
+{
+ "id": "CMF-L313-5-1",
+ "code": "Code monétaire et financier",
+ "article": "L313-5-1",
+ "cite_par": [
+  "D-002",
+  "D-009"
+ ],
+ "lien": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000027643291",
+ "texte": "Pour les découverts en compte, constitue un prêt usuraire à une personne physique agissant pour ses besoins professionnels ou à une personne morale se livrant à une activité industrielle, commerciale, artisanale, agricole ou professionnelle non commerciale tout prêt conventionnel consenti à un taux effectif global qui excède, au moment où il est accordé, de plus du tiers, le taux effectif moyen pratiqué au cours du trimestre précédent par les établissements de crédit ou les sociétés de financement pour les opérations de même nature comportant des risques analogues telles que définies par l'autorité administrative après avis du Comité consultatif du secteur financier.\nLes conditions de calcul et de publicité des taux effectifs moyens mentionnés au premier alinéa sont fixées par décret.",
+ "source": {
+  "serveur": "legifrance",
+  "outil": "lire_article",
+  "arguments": {
+   "identifiant": "LEGIARTI000027643291",
+   "date_reference": "2026-10-02"
+  },
+  "mode": "REJEU",
+  "origine": "rejeu",
+  "date": "2026-09-29T22:13:54Z",
+  "url_consultee": "https://api.piste.gouv.fr/dila/legifrance/lf-engine-app/consult/getArticle",
+  "sha256": "297dbaf6f10f6637f218f471d2f93f6e706a39c3e879c5ca086c06d7d906412e"
+ },
+ "en_vigueur": {
+  "date_debut": "2014-01-01",
+  "date_fin": "2999-01-01",
+  "etat": "VIGUEUR",
+  "identifiant": "LEGIARTI000027643291",
+  "version": "3.0"
+ }
+}
