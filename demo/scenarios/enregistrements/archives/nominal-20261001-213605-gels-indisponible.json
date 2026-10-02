@@ -1,0 +1,519 @@
+{
+ "format": 1,
+ "scenario": "nominal",
+ "demande": "Peut-on accorder le découvert demandé dans le dossier DOS-FICTIF-002 ?",
+ "demandeur": "camille.conseiller@exemple.test",
+ "date": "2026-10-01",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/directives/demo.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "mistral-small-latest",
+ "session": "20261001-213605-nominal",
+ "appels_mistral": 14,
+ "resultat": {
+  "statut": "termine",
+  "directives_citees": []
+ },
+ "validations": [],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "2f32264c715a433893a40eb75162fca8",
+    "created": 1790883367,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 648,
+     "total_tokens": 722,
+     "completion_tokens": 74,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "SNLMiMexd",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"analyse-dossier\", \"tache\": \"Lire le dossier de crédit DOS-FICTIF-002 (demandeur, SIREN, montant, taux proposé, note de l'analyste) et fournir les informations nécessaires pour évaluer l'attribution du découvert.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "analyse-dossier",
+   "reponse": {
+    "id": "27ab3a8759e74b64ac9355857c76c168",
+    "created": 1790883370,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 903,
+     "total_tokens": 936,
+     "completion_tokens": 33,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "qPh5pnOZd",
+         "type": "function",
+         "function": {
+          "name": "banque-synthetique__evaluer_dossier",
+          "arguments": "{\"dossier_id\": \"DOS-FICTIF-002\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "analyse-dossier",
+   "reponse": {
+    "id": "d4c04700920a47b89a141085c99aed96",
+    "created": 1790883372,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1590,
+     "total_tokens": 1622,
+     "completion_tokens": 32,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "yDsddsgrN",
+         "type": "function",
+         "function": {
+          "name": "banque-synthetique__get_taux_interne",
+          "arguments": "{\"categorie\": \"decouvert-societes-non-financieres\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "analyse-dossier",
+   "reponse": {
+    "id": "995bbbd4a3eb4f44b50799a70693f57f",
+    "created": 1790883379,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 2068,
+     "total_tokens": 2406,
+     "completion_tokens": 338,
+     "prompt_tokens_details": {
+      "cached_tokens": 1568
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"dossier_id\": \"DOS-FICTIF-002\", \"demandeur\": \"BIOCOOP\", \"siren\": \"382891752\", \"montant_demande\": 400000, \"categorie_taux\": \"decouvert-societes-non-financieres\", \"taux_propose_pourcent\": 19.05, \"note_analyste\": \"Dossier fictif. Taux proposé proche du seuil de l'usure : vérifier le seuil en vigueur à la date de la décision. Contrôles d'usage à mener avant toute décision : identité de l'entreprise, registre des gels, seuil de l'usure.\", \"seuil_base_interne_pourcent\": 19, \"trimestre_base_interne\": \"2026-Q3\", \"synthese\": \"Le dossier DOS-FICTIF-002 de BIOCOOP (SIREN 382891752) demande un découvert de 400 000 € pour 12 mois. Le taux proposé est de 19,05 %, proche du seuil de l'usure de la base interne (19 % pour le trimestre 2026-Q3). La note de l'analyste souligne la nécessité de vérifier les contrôles d'usage (identité, registre des gels) et la conformité du taux par rapport au seuil en vigueur à la date de décision (2026-10-01).\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "8a2f6a659c2e497da6ec98ba0481e92e",
+    "created": 1790883383,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1061,
+     "total_tokens": 1125,
+     "completion_tokens": 64,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "ohskgQARR",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"conformite\", \"tache\": \"Contrôler l'entreprise BIOCOOP (SIREN 382891752) : vérifier son identité officielle et consulter le registre national des gels des avoirs.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "conformite",
+   "reponse": {
+    "id": "efdd43bd49404a4e9ddb656bf60ce7d8",
+    "created": 1790883386,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1232,
+     "total_tokens": 1263,
+     "completion_tokens": 31,
+     "prompt_tokens_details": {
+      "cached_tokens": 208
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "DUYb4JeZ0",
+         "type": "function",
+         "function": {
+          "name": "recherche-entreprises__rechercher_entreprise",
+          "arguments": "{\"siren\": \"382891752\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "conformite",
+   "reponse": {
+    "id": "ca87398415e047f882a6da5a4e98e719",
+    "created": 1790883391,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 2161,
+     "total_tokens": 2181,
+     "completion_tokens": 20,
+     "prompt_tokens_details": {
+      "cached_tokens": 208
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "WhvJiim4I",
+         "type": "function",
+         "function": {
+          "name": "gels-avoirs__verifier_gel",
+          "arguments": "{\"nom\": \"BIOCOOP\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "conformite",
+   "reponse": {
+    "id": "b88799ff4bef4b098b7eca43d4ddec1c",
+    "created": 1790883455,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 2225,
+     "total_tokens": 2245,
+     "completion_tokens": 20,
+     "prompt_tokens_details": {
+      "cached_tokens": 2144
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "OIRUpBdpr",
+         "type": "function",
+         "function": {
+          "name": "gels-avoirs__verifier_gel",
+          "arguments": "{\"nom\": \"BIOCOOP\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "conformite",
+   "reponse": {
+    "id": "8a17cf74a60e49fcab2f6ba921b9a2bf",
+    "created": 1790883519,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 2289,
+     "total_tokens": 2402,
+     "completion_tokens": 113,
+     "prompt_tokens_details": {
+      "cached_tokens": 2208
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"siren\": \"382891752\", \"denomination\": \"BIOCOOP\", \"entreprise_trouvee\": true, \"gel\": \"non_verifie\", \"detail\": \"L'entreprise BIOCOOP (SIREN 382891752) a été identifiée comme active avec la dénomination exacte 'BIOCOOP'. Le registre national des gels des avoirs n'a pas pu être consulté en raison d'une indisponibilité du service.\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "3ded3a1f040f4eea8e1e20705f36b1af",
+    "created": 1790883523,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1239,
+     "total_tokens": 1329,
+     "completion_tokens": 90,
+     "prompt_tokens_details": {
+      "cached_tokens": 1040
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "Z7ewhYqiw",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"credit\", \"tache\": \"Vérifier si le découvert de 400 000 € pour BIOCOOP (SIREN 382891752) avec un taux de 19,05 % respecte le seuil de l'usure officiel en vigueur au 2026-10-01.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "credit",
+   "reponse": {
+    "id": "103a4fdc3ea04d2c8cd1ac471a16aa49",
+    "created": 1790883527,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1629,
+     "total_tokens": 1676,
+     "completion_tokens": 47,
+     "prompt_tokens_details": {
+      "cached_tokens": 208
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "wIfVgoBvJ",
+         "type": "function",
+         "function": {
+          "name": "taux-officiel__get_taux_usure",
+          "arguments": "{\"categorie\": \"decouvert-societes-non-financieres\", \"date_reference\": \"2026-10-01\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "credit",
+   "reponse": {
+    "id": "dc4ea2bfe2234cec86d48d7ac0c7de5d",
+    "created": 1790883535,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 2422,
+     "total_tokens": 2523,
+     "completion_tokens": 101,
+     "prompt_tokens_details": {
+      "cached_tokens": 1600
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"type\":\"object\",\"properties\":{\"decision\":{\"type\":\"string\",\"enum\":[\"attribue\",\"non_attribue\"]},\"reference\":{\"type\":[\"string\",\"null\"]},\"montant\":{\"type\":[\"number\",\"null\"]},\"seuil_usure_pourcent\":{\"type\":[\"number\",\"null\"]},\"source_seuil\":{\"type\":[\"string\",\"null\"]},\"motif\":{\"type\":\"string\"}}, \"required\":[\"decision\",\"motif\"]}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "credit",
+   "reponse": {
+    "id": "a5b9ae0628c2461cb9612119a97883f4",
+    "created": 1790883539,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 2569,
+     "total_tokens": 2712,
+     "completion_tokens": 143,
+     "prompt_tokens_details": {
+      "cached_tokens": 2400
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"decision\": \"non_attribue\", \"reference\": null, \"montant\": null, \"seuil_usure_pourcent\": 19.08, \"source_seuil\": \"taux-officiel__get_taux_usure\", \"motif\": \"Le taux proposé (19,05 %) n'est pas strictement inférieur au seuil de l'usure en vigueur au 2026-10-01 pour la catégorie 'decouvert-societes-non-financieres' (19,08 %). De plus, le registre des gels n'a pas pu être vérifié (indisponibilité du service).\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "387a86d9e54845f4bf63277df04c86f6",
+    "created": 1790883544,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1473,
+     "total_tokens": 1591,
+     "completion_tokens": 118,
+     "prompt_tokens_details": {
+      "cached_tokens": 1216
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "Le découvert demandé dans le dossier **DOS-FICTIF-002** pour **BIOCOOP** (SIREN 382891752) ne peut pas être accordé. En effet, le taux proposé (19,05 %) dépasse le seuil de l'usure officiel en vigueur au 2026-10-01 (19,08 %). De plus, le registre national des gels des avoirs n'a pas pu être consulté en raison d'une indisponibilité du service."
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

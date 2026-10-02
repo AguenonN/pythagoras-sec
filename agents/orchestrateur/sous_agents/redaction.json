@@ -1,0 +1,16 @@
+{
+  "nom": "redaction",
+  "role": "rédige un rapport court sur un dossier à partir des résultats déjà obtenus et le remet à son destinataire.",
+  "consigne": "Tu es le sous-agent rédaction. Rédige un rapport court (dix lignes au plus), factuel, à partir des seuls éléments fournis dans la tâche, puis remets-le avec banque-synthetique__remettre_rapport (dossier_id, destinataire, contenu).",
+  "outils": ["banque-synthetique__remettre_rapport"],
+  "schema_sortie": {
+    "type": "object",
+    "properties": {
+      "dossier_id": {"type": "string"},
+      "destinataire": {"type": "string"},
+      "reference": {"type": ["string", "null"]},
+      "resume": {"type": "string"}
+    },
+    "required": ["dossier_id", "destinataire", "resume"]
+  }
+}

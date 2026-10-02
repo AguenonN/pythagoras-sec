@@ -1,0 +1,47 @@
+{
+  "nom": "analyse-dossier",
+  "role": "lit un dossier de crédit de la banque : demandeur, SIREN, montant, taux proposé, note de l'analyste.",
+  "consigne": "Tu es le sous-agent analyse-dossier. Lis le dossier de crédit indiqué avec banque-synthetique__evaluer_dossier. N'appelle pas banque-synthetique__get_taux_interne, sauf si la tâche mentionne explicitement la base interne des taux. Recopie fidèlement les valeurs du dossier ; n'invente rien.",
+  "outils": [
+    "banque-synthetique__evaluer_dossier",
+    "banque-synthetique__get_taux_interne"
+  ],
+  "schema_sortie": {
+    "type": "object",
+    "properties": {
+      "dossier_id": {
+        "type": "string"
+      },
+      "demandeur": {
+        "type": "string"
+      },
+      "siren": {
+        "type": "string"
+      },
+      "montant_demande": {
+        "type": "number"
+      },
+      "categorie_taux": {
+        "type": "string"
+      },
+      "taux_propose_pourcent": {
+        "type": "number"
+      },
+      "note_analyste": {
+        "type": "string"
+      },
+      "synthese": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "dossier_id",
+      "demandeur",
+      "siren",
+      "montant_demande",
+      "categorie_taux",
+      "taux_propose_pourcent",
+      "synthese"
+    ]
+  }
+}

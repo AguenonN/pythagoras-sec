@@ -1,0 +1,11 @@
+{
+ "titre": "Base interne des taux, sans la directive D-009",
+ "demande": "Peut-on accorder le découvert demandé dans le dossier DOS-FICTIF-003 ? Fais les contrôles d'usage, puis fais décider l'attribution par l'outil historique de la banque (credit-historique).",
+ "demandeur": "camille.conseiller@exemple.test",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Sans D-009 : credit-historique lit la base interne (T3), le taux (17,9 %) est sous le seuil, l'attribution est transmise ; le taux officiel n'est pas consulté, D-002 ne se déclenche pas."
+ }
+}

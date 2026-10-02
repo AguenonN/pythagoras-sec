@@ -1,0 +1,10 @@
+{
+  "cle": "ba05b63cd876027afdc683e42615f6dccffd9a6d23754cda33f2b5736c97e571",
+  "methode": "GET",
+  "url": "https://recherche-entreprises.api.gouv.fr/search?include=siege%2Ccomplements\u0026minimal=true\u0026page=1\u0026per_page=5\u0026q=000000000",
+  "date": "2026-10-02T10:34:24Z",
+  "statut": 200,
+  "type_contenu": "application/json",
+  "sha256": "f545ce3db56f4147a1b84ddb8dc3ae860183c93044564a8f2c0d002494fd18cf",
+  "corps": "{\"results\":[],\"total_results\":0,\"page\":1,\"per_page\":5,\"total_pages\":0}"
+}

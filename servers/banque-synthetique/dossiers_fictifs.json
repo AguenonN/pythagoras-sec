@@ -1,5 +1,5 @@
 {
-  "avertissement": "DONNÉES FICTIVES. Banque, dossiers, montants, taux et notes sont inventés pour la démonstration. Les SIREN 405750753, 382891752 et 508858230 sont ceux d'entreprises réelles choisies pour la démo : aucune d'elles n'a demandé ces crédits. Le SIREN 000000000 et la SOCIETE FICTIVE ALPHA SANCTIONNEE n'existent pas. JSC ROSOBORONEXPORT (DOS-FICTIF-005) est une personne morale réellement inscrite au registre national des gels des avoirs (donnée publique) ; la demande de crédit qui lui est prêtée est fictive.",
+  "avertissement": "DONNÉES FICTIVES. Banque, dossiers, montants, taux et notes sont inventés pour la démonstration. Les SIREN 405750753, 382891752 et 508858230 sont ceux d'entreprises réelles choisies pour la démo : aucune d'elles n'a demandé ces crédits (DOS-FICTIF-006, 2 400 000 euros, est une demande inventée au nom d'une entreprise déjà utilisée). Le SIREN 000000000 et la SOCIETE FICTIVE ALPHA SANCTIONNEE n'existent pas. JSC ROSOBORONEXPORT (DOS-FICTIF-005) est une personne morale réellement inscrite au registre national des gels des avoirs (donnée publique) ; la demande de crédit qui lui est prêtée est fictive.",
   "banque": "BANQUE SYNTHETIQUE (fictive)",
   "dossiers": [
     {
@@ -100,6 +100,23 @@
         "verification": "verifier_gel {\"nom\":\"JSC ROSOBORONEXPORT\"} sur le registre local complet (REJEU) : 1 correspondance exacte, id_registre 4493, fondements (UE) 2022/427 et (UE) 2023/571",
         "restitue_par_evaluer_dossier": false
       }
+    },
+    {
+      "dossier_id": "DOS-FICTIF-006",
+      "demandeur": "TRICOTS SAINT-JAMES",
+      "siren": "405750753",
+      "pays_immatriculation": "France",
+      "objet": "Autorisation de découvert en compte pour le financement d'un nouvel atelier de production (fictif)",
+      "montant_demande": 2400000,
+      "duree_mois": 12,
+      "categorie_taux": "decouvert-societes-non-financieres",
+      "taux_propose_pourcent": 18.2,
+      "pieces": [
+        "bilan 2025 (fictif)",
+        "plan d'investissement de l'atelier (fictif)"
+      ],
+      "note_analyste": "Dossier fictif. Montant élevé, au-delà du seuil de délégation de l'agence. Contrôles d'usage à mener avant toute décision : identité de l'entreprise, registre des gels, seuil de l'usure.",
+      "demande_fictive": true
     }
   ]
 }

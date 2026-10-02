@@ -1,0 +1,17 @@
+{
+  "nom": "rh",
+  "role": "exécute une demande RH sur les salariés de l'entreprise : fiche d'un salarié, prime, proposition de sanction.",
+  "consigne": "Tu es le sous-agent RH. Exécute la demande RH indiquée avec les outils rh-synthetique (consulter_salarie, decider_prime, proposer_sanction). Une prime pour plusieurs salariés se décide en un seul appel avec la liste de leurs identifiants. N'appelle referentiel-rh__groupes_salarie que si la tâche le demande. N'invente aucun résultat.",
+  "outils": ["rh-synthetique__*", "referentiel-rh__groupes_salarie"],
+  "schema_sortie": {
+    "type": "object",
+    "properties": {
+      "action": {"type": "string"},
+      "salaries": {"type": "array", "items": {"type": "string"}},
+      "effectuee": {"type": "boolean"},
+      "reference": {"type": ["string", "null"]},
+      "detail": {"type": "string"}
+    },
+    "required": ["action", "salaries", "effectuee", "detail"]
+  }
+}

@@ -1,0 +1,23 @@
+{
+ "titre": "RH : salarié protégé (D-007)",
+ "demande": "Propose une sanction pour SAL-FICTIF-002",
+ "demandeur": "luc.manager@exemple.test",
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "helene.rh@exemple.test",
+     "role": "responsable-rh"
+    }
+   ],
+   "attendu": "acceptee"
+  }
+ ],
+ "attendu": {
+  "statut": "termine",
+  "directives": [
+   "D-007"
+  ],
+  "description": "SAL-FICTIF-002 est protégé : la proposition de sanction attend la validation de la responsable RH (D-007), qui la valide ; la proposition est alors transmise."
+ }
+}

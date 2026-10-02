@@ -1,0 +1,11 @@
+{
+ "titre": "Même rapport demandé par l'analyste",
+ "demande": "Rédige et remets le rapport de crédit du dossier DOS-FICTIF-002 au comité",
+ "demandeur": "claire.analyste@exemple.test",
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Le rapport est remis."
+ },
+ "validations": []
+}
