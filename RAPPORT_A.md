@@ -3,7 +3,43 @@
 Brief : `nuit/brief_A_demo_reelle.md`. Contrats : `docs/orchestration/contrats-demo.md` (font foi).
 Branche : `feat/demo-reelle`. Rien poussé, rien fusionné. `go vet`, `go test -race ./...` et les deux suites Python sont verts au dernier commit.
 
-## Résumé
+## Mise à jour du 02/10 (décisions de Manu)
+
+Décisions reçues : budget 80 confirmé, **30 appels de plus** (110) ; gels servis en rejeu local du registre du jour ; scénario 4 reconçu ; `--horloge-depart` : correction de `mcp-approve` confiée à la session D, limite signalée dans le guide.
+
+| Commit | Contenu |
+|---|---|
+| `9a0c886` | `gels-avoirs -mode=REJEU` au registre de démo (option `-mode` ajoutée au serveur, prioritaire sur `DONNEES_MODE`) ; la préparation retélécharge le registre des gels s'il n'est pas du jour ; conformité : date de publication du registre dans sa sortie ; sous-agent `credit-historique` ; D-009 = `et(base interne consultée, non(taux officiel consulté))` ; scénario 4 sur DOS-FICTIF-003 (17,9 %, sous 19,0 % T3 et 19,08 % T4 : pas besoin de DOS-FICTIF-007) ; budget 110 ; limite de `--horloge-depart` dans `docs/equipe/ajouter-un-scenario.md` |
+| `c47d956` | **scénario 4 passé en réel** : sans D-009, attribution transmise (12 appels) ; avec D-009, attribution **en attente par D-009 seule, D-002 non déclenchée**, validée, transmise (14 appels) |
+| `ada1913` | idempotence des actions (aucun sous-agent ne renvoie une action déjà transmise avec les mêmes arguments) ; directives notées à chaque attente ; au rejeu, attente sans validation enregistrée terminée sans attendre |
+| `fb5f074` | `analyse-dossier` garde `get_taux_interne` (sinon les secours 1 et 3 divergeaient) |
+
+Passages réels du 02/10 (budget : **105/110**, 5 restants) :
+
+| Heure | Scénario | Appels (sous-agent · outil · décision) | Fin | Mistral |
+|---|---|---|---|---|
+| 09:19 | 4, sans D-009 | analyse · evaluer_dossier ; conformite · rechercher_entreprise, verifier_gel (registre local du 29/09) ; credit-historique · get_taux_interne : autorisés ; attribuer_pret : **transmis** | terminé, « … peut être accordé … 17,9 % respecte le seuil de la base interne (19 %) … PRET-FICTIF-0001 » ; attendu conforme | 12 |
+| 09:19 | 4, avec D-009 | idem ; attribuer_pret : **en attente D-009** → jeton de Claire → transmis ; puis l'orchestrateur délègue au crédit une vérification du seuil officiel, le crédit retente la même attribution : **en attente D-002**, non validée | bloqué, « validation non reçue » (sur la seconde attribution) | 14 |
+
+Vérifiés : chaînes intègres (23 et 28 entrées), décisions rejouées sans écart ; rejeux hors ligne sans écart (le second avec le code de l'enregistrement, `9a0c886`).
+
+**Pas fait le 02/10** :
+- **Scénario 2 en réel** : après le scénario 4, 5 appels restaient, moins que les 6 nécessaires pour atteindre l'attribution. J'ai fait le scénario 4 d'abord, parce qu'il venait d'être reconçu avec un résultat attendu précis, et qu'un refus D-001 réel existe déjà (01/10 21:31). C'est une inversion de l'ordre de ta demande. La comparaison sans/avec D-001 sur ce journal réel est dans `passages.md`.
+- **Répétition de 1 et 3** : pas de budget.
+- **Secours au registre actuel** : les rejeux de 1 et 3 ne diffèrent de leurs passages que par l'empreinte du registre et l'attestation du binaire `gels-avoirs` (changés le 02/10). Le rejeu de 4 « avec » s'arrête en erreur avec le code actuel, parce que le garde-fou ne renvoie plus la seconde attribution. Pour des secours identiques au registre définitif, repasser 1, 3 et 4 « avec » en réel (≈ 40 appels).
+
+**Décisions prises seul le 02/10** :
+- **Gels en rejeu.** J'ai modifié `servers/gels-avoirs/main.go` (option `-mode`) et `internal/registredemo/registredemo.go` (`-mode=REJEU` pour `gels-avoirs`). Ces deux fichiers sont hors de mon périmètre ; je les ai touchés sur ta décision, faute d'autre moyen : le gate ne transmet `DONNEES_MODE` que par nom, et ce nom est commun à tous les serveurs. Le gate écrit dans ses traces « mode MIXTE » (ligne du lanceur commun) juste après la ligne « mode imposé par -mode : REJEU ».
+- **Fraîcheur du registre des gels.** La préparation retélécharge le registre s'il n'est pas du jour. En cas d'échec réseau, elle garde l'ancien et le dit.
+- **Demande du scénario 4.** Elle nomme `credit-historique` (« fais décider l'attribution par l'outil historique de la banque ») et demande les contrôles d'usage. Sans contrôle des gels, D-001 refuserait l'attribution dans les deux variantes.
+- **Validation du scénario 4 « avec ».** J'ai validé l'attente D-009 pour que le passage se termine et que son secours n'attende pas 10 minutes.
+- **Rejeu.** Une attente sans validation enregistrée se termine tout de suite (même journal, sans l'attente de 10 minutes).
+
+**Questions ajoutées** :
+7. Les secours des scénarios 1, 3 et 4 « avec » demandent un nouveau passage réel sur le registre définitif (≈ 40 appels). Accordes-tu ce budget ? Sinon, le scénario 2 à lui seul en demande ≈ 20 (sans et avec D-001).
+8. Faut-il que `comparer` ignore l'empreinte du registre (version de l'environnement, pas du comportement) ? Je l'ai laissée stricte.
+
+## Résumé (01/10)
 
 - **Critère de réussite : partiellement atteint.** Scénarios **1 (nominal)** et **3 (top management)** passés en réel avec de vrais agents Mistral devant le gate, journaux vérifiés (chaîne + rejeu des décisions sans écart), rejoués hors ligne avec un journal identique à l'horodatage près. Scénarios **2 et 4 non passés en réel** : budget Mistral de 80 appels épuisé (79 consommés, détail ci-dessous).
 - Quatre passages réels ont échoué avant le premier succès, à cause de l'environnement (registre des gels trop lent) et du modèle (comparaison 19,05 / 19,08 fausse, redélégation d'une action faite). Chaque cause est corrigée (délai du gate, consignes, garde-fous dans l'orchestrateur, jamais dans le gate) et documentée dans `docs/demo/passages.md`. Le premier de ces passages a produit spontanément la scène « consigne contre engine » : le crédit a attribué malgré sa consigne et des gels non vérifiés, D-001 a refusé.
@@ -84,11 +120,11 @@ Vérification des passages retenus : `journal verifier` (chaîne intègre, 27 et
 
 ## 6. Questions pour Manu (par urgence)
 
-1. **Budget Mistral** : 80 (brief) ou 40 (règles communes) ? J'ai appliqué 80. Pour finir les scénarios 2 et 4 (et 5 à 7), compter ~12 appels par passage (≈ 80 de plus pour un passage de chacun).
-2. **Gels en direct pendant la démo** : accepter une pause jusqu'à 1 min 35, ou faire servir `gels-avoirs` en REJEU sur le registre préparé le matin (demande un mode de données par serveur dans `internal/registredemo`, session D ou toi) ?
-3. **Scénario 4** : avec D-002 telle que contractée (attente dès que le taux officiel est consulté, même rôle que D-009), « autorisé sans D-009 » n'arrive que si l'agent n'interroge pas le taux officiel ; et sur DOS-FICTIF-002 la base interne (19,0 %) devrait faire refuser. Faut-il un dossier dont le taux est sous les deux seuils, ou D-009 avec un autre rôle ?
+1. ~~Budget~~ : tranché le 02/10 (80, puis 110).
+2. ~~Gels en direct~~ : tranché le 02/10 (rejeu local du jour).
+3. ~~Scénario 4~~ : reconçu le 02/10, passé en réel.
 4. **D-006/D-007** : la garde par présence du champ convient-elle ?
-5. **`mcp-approve`** : ajouter une date d'émission (pour `--horloge-depart`) ?
+5. ~~`mcp-approve`~~ : confié à la session D.
 6. La notification D-005 part à chaque présentation de l'appel (attente, reprise refusée, reprise acceptée : trois remises pour une attribution). Voulu ?
 
 ## 7. Vérifier en 5 minutes

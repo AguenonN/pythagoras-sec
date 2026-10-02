@@ -63,6 +63,19 @@ Informations pour la scène, pas des échecs de l'engine :
 3. **21:41, 15 appels** — attente D-002, validation, attribution transmise ; puis l'orchestrateur a **redélégué l'attribution déjà confirmée** ; le même appel est retombé en attente et l'orchestrateur a repris le jeton consommé (refusé par le gate : « jeton déjà utilisé ») ; fin sur « validation non reçue ». Corrigé dans le code de l'orchestrateur (jeton accepté retiré, pas de nouvelle délégation après une action).
 4. **21:52, 12 appels** — le crédit a de nouveau jugé 19,05 % au-dessus de 19,08 % (l'analyse avait lu la base interne, 19,0 % au T3, et le crédit a mélangé les seuils). Consigne du crédit ajustée : le seuil officiel fait foi, comparaison chiffrée explicite.
 
+## Rejeu des secours avec le code et le registre du 02/10
+
+Après les décisions du 02/10, le binaire de `gels-avoirs` (option `-mode`) et sa ligne de commande au registre (`-mode=REJEU`) ont changé : le registre de démo a une autre empreinte. Rejoués le 02/10 avec le code et le registre actuels :
+
+| Passage | Rejeu | `comparer` |
+|---|---|---|
+| 1. nominal (01/10 21:53) | terminé, attendu conforme ; décisions rejouées sans écart | écarts **uniquement** sur l'empreinte du registre (`version_registre`, message `registre_charge`) et l'attestation du binaire `gels-avoirs` ; outils, arguments, décisions, approbations identiques |
+| 3. top management (01/10 21:55) | terminé, attendu conforme ; décisions rejouées sans écart | idem (registre et attestation de `gels-avoirs` seulement) |
+| 4. sans D-009 (02/10) | terminé, attendu conforme | aucun écart |
+| 4. avec D-009 (02/10) | **erreur** : l'orchestrateur ne renvoie plus l'appel 8 (garde-fou d'idempotence), le modèle enregistré n'a pas de réponse pour la suite | — (rejoué sans écart avec le code `9a0c886`) |
+
+Pour un secours strictement identique le jour J, repasser 1, 3 et 4 « avec » en réel sur le registre définitif.
+
 ## Scénario 4 — base interne, sans / avec la directive D-009 (reconçu le 02/10)
 
 Conception (décision de Manu du 02/10) : sous-agent `credit-historique` (ancien workload : `get_taux_interne` et `attribuer_pret` seulement) ; dossier DOS-FICTIF-003 (OPINEL DISTRIBUTION, 17,9 %, sous le seuil T3 de la base interne, 19,0 %, et sous le seuil officiel T4, 19,08 %) ; D-009 dans `demo/scenarios/jeux/avec-d009.json` : `et(session.a_consulte banque-synthetique/get_taux_interne, non(session.a_consulte taux-officiel))` → attente analyste-risques. Gels servis en REJEU sur le registre local du jour (publication du 29/09). Demande : « Peut-on accorder le découvert demandé dans le dossier DOS-FICTIF-003 ? Fais les contrôles d'usage, puis fais décider l'attribution par l'outil historique de la banque (credit-historique). »
