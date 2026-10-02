@@ -33,7 +33,7 @@ func TestTousAuReferentiel(t *testing.T) {
 func TestListeEtRecherche(t *testing.T) {
 	cs := session(t)
 	var l SortieListe
-	if res := essai.Appeler(t, cs, "lister_salaries", map[string]any{}, &l); res.IsError || l.Nombre != 30 || l.Salaries[0].SalaireBrutAnnuel != nil {
+	if res := essai.Appeler(t, cs, "lister_salaries", map[string]any{}, &l); res.IsError || l.Nombre != 80 || l.Salaries[0].SalaireBrutAnnuel != nil {
 		t.Fatalf("%+v", l)
 	}
 	var ls SortieListe
@@ -43,7 +43,7 @@ func TestListeEtRecherche(t *testing.T) {
 	}
 	var r SortieListe
 	essai.Appeler(t, cs, "rechercher_salaries", map[string]any{"criteres": map[string]any{"syndique": true}}, &r)
-	if r.Nombre != 6 {
+	if r.Nombre != 9 {
 		t.Fatalf("syndiqués : %+v", r)
 	}
 	var r2 SortieListe

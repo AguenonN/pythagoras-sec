@@ -21,6 +21,17 @@ import (
 //go:embed clients_fictifs.json
 var clientsFictifs []byte
 
+// Population générée (go run ./servers/banque-synthetique/population),
+// CLI-FICTIF-007 à 076, à la suite des clients écrits à la main.
+//
+//go:embed clients_population.json
+var clientsPopulation []byte
+
+// EtiquettesClient : étiquettes des champs sensibles des réponses (A1),
+// recopiées dans chaque réponse qui les porte.
+var EtiquettesClient = map[string]string{"iban": "iban", "revenus_mensuels": "revenus", "revenus_annuels": "revenus",
+	"credits": "engagements_credit", "incidents_paiement": "incidents_paiement"}
+
 // Compte est un compte fictif.
 type Compte struct {
 	CompteID         string  `json:"compte_id"`
@@ -28,12 +39,32 @@ type Compte struct {
 	IBAN             string  `json:"iban" jsonschema:"IBAN fictif"`
 	Solde            float64 `json:"solde" jsonschema:"en euros"`
 	PlafondDecouvert float64 `json:"plafond_decouvert" jsonschema:"découvert autorisé, en euros"`
+	DecouvertUtilise float64 `json:"decouvert_utilise,omitempty" jsonschema:"découvert utilisé, en euros"`
+}
+
+// Credit est un crédit en cours, fictif.
+type Credit struct {
+	Type          string  `json:"type"`
+	MontantInit   float64 `json:"montant_initial"`
+	TauxPourcent  float64 `json:"taux_pourcent"`
+	Mensualite    float64 `json:"mensualite"`
+	RestantDu     float64 `json:"restant_du"`
+	DateFinPrevue string  `json:"date_fin_prevue"`
+}
+
+// DemandeClient est une demande en cours du client (cas de démonstration).
+type DemandeClient struct {
+	Type     string  `json:"type"`
+	CompteID string  `json:"compte_id"`
+	Montant  float64 `json:"montant,omitempty"`
+	Detail   string  `json:"detail"`
 }
 
 // Operation est une opération fictive.
 type Operation struct {
 	Date         string  `json:"date"`
 	CompteID     string  `json:"compte_id"`
+	Type         string  `json:"type,omitempty" jsonschema:"virement recu, virement emis, prelevement, carte, especes"`
 	Libelle      string  `json:"libelle"`
 	Montant      float64 `json:"montant" jsonschema:"en euros ; négatif pour un débit"`
 	Contrepartie string  `json:"contrepartie"`
@@ -50,6 +81,24 @@ type Client struct {
 	RevenusAnnuels float64     `json:"revenus_annuels"`
 	Comptes        []Compte    `json:"comptes"`
 	Operations     []Operation `json:"operations"`
+
+	// Champs de la population générée (facultatifs pour les clients écrits
+	// à la main).
+	Siren             string          `json:"siren,omitempty"`
+	DateNaissance     string          `json:"date_naissance,omitempty"`
+	Telephone         string          `json:"telephone,omitempty"`
+	Profession        string          `json:"profession,omitempty"`
+	RevenusMensuels   float64         `json:"revenus_mensuels,omitempty"`
+	Credits           []Credit        `json:"credits,omitempty"`
+	IncidentsPaiement []string        `json:"incidents_paiement,omitempty"`
+	CotationRisque    string          `json:"cotation_risque,omitempty"`
+	Conseiller        string          `json:"conseiller,omitempty"`
+	Demandes          []DemandeClient `json:"demandes,omitempty"`
+	// PPE et CasPlantes ne sont jamais restitués : la qualité de personne
+	// politiquement exposée est portée par le référentiel (groupe), pas
+	// annoncée à l'agent.
+	PPE        json.RawMessage `json:"ppe,omitempty"`
+	CasPlantes []string        `json:"cas_plantes,omitempty"`
 }
 
 type donneesClients struct {
@@ -58,16 +107,21 @@ type donneesClients struct {
 	Clients       []Client `json:"clients"`
 }
 
-// ChargerClients lit les clients embarqués et contrôle l'unicité des
-// identifiants de clients et de comptes.
+// ChargerClients lit les clients embarqués (écrits à la main, puis
+// population générée) et contrôle l'unicité des identifiants de clients et
+// de comptes.
 func ChargerClients() (map[string]Client, error) {
-	var d donneesClients
-	if err := json.Unmarshal(clientsFictifs, &d); err != nil {
-		return nil, err
+	var tous []Client
+	for _, b := range [][]byte{clientsFictifs, clientsPopulation} {
+		var d donneesClients
+		if err := json.Unmarshal(b, &d); err != nil {
+			return nil, err
+		}
+		tous = append(tous, d.Clients...)
 	}
-	out := make(map[string]Client, len(d.Clients))
+	out := make(map[string]Client, len(tous))
 	comptes := map[string]bool{}
-	for _, c := range d.Clients {
+	for _, c := range tous {
 		if _, dup := out[c.ClientID]; dup {
 			return nil, fmt.Errorf("client %s en double", c.ClientID)
 		}
@@ -109,9 +163,53 @@ type EntreeClient struct {
 // SortieComptes est le résultat de lister_comptes_client.
 type SortieComptes struct {
 	Entete
-	ClientID string   `json:"client_id,omitempty"`
-	Nom      string   `json:"nom,omitempty"`
-	Comptes  []Compte `json:"comptes,omitempty"`
+	ClientID         string            `json:"client_id,omitempty"`
+	Nom              string            `json:"nom,omitempty"`
+	Comptes          []Compte          `json:"comptes,omitempty"`
+	EtiquettesChamps map[string]string `json:"etiquettes_champs,omitempty" jsonschema:"étiquette de chaque champ sensible de la réponse"`
+}
+
+// ClientRestitue est la fiche d'un client vue par l'agent.
+type ClientRestitue struct {
+	ClientID          string          `json:"client_id"`
+	Nom               string          `json:"nom"`
+	Type              string          `json:"type"`
+	Siren             string          `json:"siren,omitempty"`
+	DateNaissance     string          `json:"date_naissance,omitempty"`
+	Email             string          `json:"email"`
+	Telephone         string          `json:"telephone,omitempty"`
+	Adresse           string          `json:"adresse"`
+	Profession        string          `json:"profession,omitempty"`
+	RevenusMensuels   float64         `json:"revenus_mensuels,omitempty"`
+	RevenusAnnuels    float64         `json:"revenus_annuels"`
+	Credits           []Credit        `json:"credits"`
+	IncidentsPaiement []string        `json:"incidents_paiement"`
+	CotationRisque    string          `json:"cotation_risque,omitempty"`
+	Conseiller        string          `json:"conseiller,omitempty"`
+	Demandes          []DemandeClient `json:"demandes"`
+}
+
+// SortieClient est le résultat de consulter_client.
+type SortieClient struct {
+	Entete
+	Client           *ClientRestitue   `json:"client,omitempty"`
+	EtiquettesChamps map[string]string `json:"etiquettes_champs,omitempty" jsonschema:"étiquette de chaque champ sensible de la réponse"`
+}
+
+// EntreeRedaction est l'argument de rediger_courrier_client.
+type EntreeRedaction struct {
+	ClientID string `json:"client_id" jsonschema:"client destinataire"`
+	Objet    string `json:"objet" jsonschema:"objet du courrier"`
+	Contenu  string `json:"contenu" jsonschema:"texte du courrier"`
+}
+
+// SortieRedaction est le brouillon rendu par rediger_courrier_client.
+type SortieRedaction struct {
+	Entete
+	ClientID     string `json:"client_id,omitempty"`
+	Destinataire string `json:"destinataire,omitempty"`
+	Objet        string `json:"objet,omitempty"`
+	Brouillon    string `json:"brouillon,omitempty" jsonschema:"courrier mis en forme, non envoyé"`
 }
 
 // EntreeHistorique est l'argument de historique_operations.
@@ -263,6 +361,18 @@ func ajouterOutilsClientele(s *mcp.Server, b *Banque) {
 		func(_ context.Context, _ *mcp.CallToolRequest, in EntreeClient) (*mcp.CallToolResult, SortieComptes, error) {
 			return b.comptes(in)
 		})
+	mcp.AddTool(s, &mcp.Tool{Name: "consulter_client",
+		Description: "Fiche d'un client de la banque synthétique (données fictives) : identité, contact, profession, revenus, crédits en cours, incidents de paiement, cotation de risque, conseiller, demandes en cours.",
+		Annotations: lecture("Consulter un client (lecture)")},
+		func(_ context.Context, _ *mcp.CallToolRequest, in EntreeClient) (*mcp.CallToolResult, SortieClient, error) {
+			return b.consulterClient(in)
+		})
+	mcp.AddTool(s, &mcp.Tool{Name: "rediger_courrier_client",
+		Description: "Prépare le brouillon d'un courrier à un client de la banque synthétique, sans l'envoyer (lecture : rien n'est envoyé ; l'envoi se fait avec envoyer_courrier_client).",
+		Annotations: lecture("Rédiger un courrier (brouillon, lecture)")},
+		func(_ context.Context, _ *mcp.CallToolRequest, in EntreeRedaction) (*mcp.CallToolResult, SortieRedaction, error) {
+			return b.redigerCourrier(in)
+		})
 	mcp.AddTool(s, &mcp.Tool{Name: "historique_operations",
 		Description: "Historique des opérations d'un client de la banque synthétique (données fictives) : date, compte, libellé, montant, contrepartie, pays.",
 		Annotations: lecture("Historique des opérations (lecture)")},
@@ -361,7 +471,47 @@ func (b *Banque) comptes(in EntreeClient) (*mcp.CallToolResult, SortieComptes, e
 		}
 		comptes = append(comptes, k)
 	}
-	return nil, SortieComptes{Entete: entete(StatutOK, ""), ClientID: c.ClientID, Nom: c.Nom, Comptes: comptes}, nil
+	return nil, SortieComptes{Entete: entete(StatutOK, ""), ClientID: c.ClientID, Nom: c.Nom, Comptes: comptes,
+		EtiquettesChamps: map[string]string{"comptes[].iban": EtiquettesClient["iban"]}}, nil
+}
+
+func (b *Banque) consulterClient(in EntreeClient) (*mcp.CallToolResult, SortieClient, error) {
+	c, ok := b.clients[in.ClientID]
+	if !ok {
+		return erreur(), SortieClient{Entete: entete(StatutIntrouvable, fmt.Sprintf("client %q inconnu", in.ClientID))}, nil
+	}
+	r := &ClientRestitue{ClientID: c.ClientID, Nom: c.Nom, Type: c.Type, Siren: c.Siren, DateNaissance: c.DateNaissance,
+		Email: c.Email, Telephone: c.Telephone, Adresse: c.Adresse, Profession: c.Profession, RevenusMensuels: c.RevenusMensuels,
+		RevenusAnnuels: c.RevenusAnnuels, Credits: c.Credits, IncidentsPaiement: c.IncidentsPaiement,
+		CotationRisque: c.CotationRisque, Conseiller: c.Conseiller, Demandes: c.Demandes}
+	if r.Credits == nil {
+		r.Credits = []Credit{}
+	}
+	if r.IncidentsPaiement == nil {
+		r.IncidentsPaiement = []string{}
+	}
+	if r.Demandes == nil {
+		r.Demandes = []DemandeClient{}
+	}
+	et := map[string]string{"revenus_annuels": EtiquettesClient["revenus_annuels"], "credits": EtiquettesClient["credits"],
+		"incidents_paiement": EtiquettesClient["incidents_paiement"]}
+	if r.RevenusMensuels != 0 {
+		et["revenus_mensuels"] = EtiquettesClient["revenus_mensuels"]
+	}
+	return nil, SortieClient{Entete: entete(StatutOK, ""), Client: r, EtiquettesChamps: et}, nil
+}
+
+func (b *Banque) redigerCourrier(in EntreeRedaction) (*mcp.CallToolResult, SortieRedaction, error) {
+	c, ok := b.clients[in.ClientID]
+	if !ok {
+		return erreur(), SortieRedaction{Entete: entete(StatutIntrouvable, fmt.Sprintf("client %q inconnu", in.ClientID))}, nil
+	}
+	if strings.TrimSpace(in.Contenu) == "" {
+		return erreur(), SortieRedaction{Entete: entete(StatutRefuse, "contenu vide"), ClientID: in.ClientID}, nil
+	}
+	brouillon := fmt.Sprintf("À : %s\nObjet : %s\n\n%s\n\nVotre conseiller, BANQUE SYNTHETIQUE (fictive)", c.Nom, in.Objet, in.Contenu)
+	return nil, SortieRedaction{Entete: entete(StatutOK, "brouillon : rien n'est envoyé"), ClientID: c.ClientID,
+		Destinataire: c.Nom, Objet: in.Objet, Brouillon: brouillon}, nil
 }
 
 func (b *Banque) historique(in EntreeHistorique) (*mcp.CallToolResult, SortieHistorique, error) {

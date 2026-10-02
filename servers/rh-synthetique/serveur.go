@@ -48,6 +48,13 @@ func Charger() (*donnees, map[string]Salarie, error) {
 	if err := json.Unmarshal(salariesFictifs, &d); err != nil {
 		return nil, nil, err
 	}
+	var pop struct {
+		Salaries []Salarie `json:"salaries"`
+	}
+	if err := json.Unmarshal(salariesPopulation, &pop); err != nil {
+		return nil, nil, err
+	}
+	d.Salaries = append(d.Salaries, pop.Salaries...)
 	idx := make(map[string]Salarie, len(d.Salaries))
 	for _, s := range d.Salaries {
 		if _, dup := idx[s.SalarieID]; dup {

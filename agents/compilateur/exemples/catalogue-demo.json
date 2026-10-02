@@ -100,6 +100,14 @@
           ]
         },
         {
+          "nom": "consulter_client",
+          "acces": "read",
+          "description": "Fiche d'un client de la banque synthétique (données fictives) : identité, contact, profession, revenus, crédits en cours, incidents de paiement, cotation de risque, conseiller, demandes en cours.",
+          "arguments": [
+            "/client_id"
+          ]
+        },
+        {
           "nom": "declarer_soupcon",
           "acces": "action",
           "description": "Transmet une déclaration de soupçon sur un client à la cellule de renseignement financier (action fictive : rien n'est transmis).",
@@ -188,6 +196,16 @@
           ]
         },
         {
+          "nom": "rediger_courrier_client",
+          "acces": "read",
+          "description": "Prépare le brouillon d'un courrier à un client de la banque synthétique, sans l'envoyer (lecture : rien n'est envoyé ; l'envoi se fait avec envoyer_courrier_client).",
+          "arguments": [
+            "/client_id",
+            "/contenu",
+            "/objet"
+          ]
+        },
+        {
           "nom": "refuser_credit",
           "acces": "action",
           "description": "Notifie au demandeur le refus de sa demande de crédit, avec son motif (action fictive : rien n'est envoyé).",
@@ -228,6 +246,7 @@
           "arguments": [
             "/inclure_remuneration",
             "/inclure_sante",
+            "/inclure_situation_familiale",
             "/inclure_syndical",
             "/salarie_id"
           ]
@@ -323,6 +342,16 @@
             "/criteres/poste",
             "/criteres/service",
             "/criteres/syndique"
+          ]
+        },
+        {
+          "nom": "rediger_message",
+          "acces": "read",
+          "description": "Prépare le brouillon d'un message à un salarié de l'entreprise synthétique, sans l'envoyer (lecture : rien n'est envoyé ; l'envoi se fait avec envoyer_message_salarie).",
+          "arguments": [
+            "/contenu",
+            "/objet",
+            "/salarie_id"
           ]
         },
         {

@@ -1,5 +1,5 @@
 {
-  "commentaire": "Étiquettes du registre de démonstration, lues par internal/registredemo. Une étiquette de serveur vaut pour tous ses outils ; une étiquette d'outil s'y ajoute. « */outil » vaut pour l'outil de ce nom sur tout serveur. personnes_concernees : pointeur de l'argument qui désigne la personne concernée, par outil. Secteurs banque et RH (session secteurs) : donnees_client, transfert_donnees, mouvement_fonds, donnees_sante, appartenance_syndicale, salaire.",
+  "commentaire": "Étiquettes du registre de démonstration, lues par internal/registredemo. Une étiquette de serveur vaut pour tous ses outils ; une étiquette d'outil s'y ajoute. « */outil » vaut pour l'outil de ce nom sur tout serveur. personnes_concernees : pointeur de l'argument qui désigne la personne concernée, par outil. Secteurs banque et RH (session secteurs) : donnees_client, transfert_donnees, mouvement_fonds, donnees_sante, appartenance_syndicale, salaire. Personnes politiquement exposées : les clients et comptes sont résolus auprès du référentiel (referentiel-rh, groupe personne-politiquement-exposee).",
   "version": 1,
   "serveurs": {
     "recherche-entreprises": [
@@ -53,6 +53,9 @@
     "rh-synthetique/exporter_paie": [
       "salaire",
       "transfert_donnees"
+    ],
+    "banque-synthetique/consulter_client": [
+      "donnees_client"
     ]
   },
   "personnes_concernees": {
@@ -64,6 +67,13 @@
     "rh-synthetique/sanctionner": "/salarie_id",
     "rh-synthetique/licencier": "/salarie_id",
     "rh-synthetique/attribuer_prime": "/salarie_id",
-    "rh-synthetique/envoyer_message_salarie": "/salarie_id"
+    "rh-synthetique/envoyer_message_salarie": "/salarie_id",
+    "banque-synthetique/consulter_client": "/client_id",
+    "banque-synthetique/lister_comptes_client": "/client_id",
+    "banque-synthetique/historique_operations": "/client_id",
+    "banque-synthetique/effectuer_virement": "/compte_debit",
+    "banque-synthetique/modifier_plafond_decouvert": "/compte_id",
+    "banque-synthetique/cloturer_compte": "/compte_id",
+    "rh-synthetique/rediger_message": "/salarie_id"
   }
 }

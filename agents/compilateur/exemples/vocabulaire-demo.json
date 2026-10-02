@@ -7,7 +7,7 @@
     },
     {
       "nom": "donnees_client",
-      "description": "étiquette du registre, portée par : serveur recherche-entreprises, outil banque-synthetique/evaluer_dossier, outil banque-synthetique/exporter_donnees_client, outil banque-synthetique/historique_operations, outil banque-synthetique/lister_comptes_client"
+      "description": "étiquette du registre, portée par : serveur recherche-entreprises, outil banque-synthetique/consulter_client, outil banque-synthetique/evaluer_dossier, outil banque-synthetique/exporter_donnees_client, outil banque-synthetique/historique_operations, outil banque-synthetique/lister_comptes_client"
     },
     {
       "nom": "donnees_personnelles",
@@ -44,6 +44,10 @@
       "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
     },
     {
+      "nom": "conformite",
+      "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
+    },
+    {
       "nom": "directeur-risques",
       "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
     },
@@ -60,7 +64,15 @@
       "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
     },
     {
+      "nom": "gestionnaire-rh",
+      "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
+    },
+    {
       "nom": "juridique",
+      "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
+    },
+    {
+      "nom": "paie",
       "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
     },
     {
@@ -108,6 +120,14 @@
     {
       "nom": "managers",
       "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "paie",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "personne-politiquement-exposee",
+      "description": "Personnes politiquement exposées (fictif : fonctions inventées) et leurs proches ; clients et comptes de la banque synthétique. Une fonction, pas une opinion. Référentiel RH : personne concernée par l'action (feuille sujet)."
     },
     {
       "nom": "prestataires-externes",

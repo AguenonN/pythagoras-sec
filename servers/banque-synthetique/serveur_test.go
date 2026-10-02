@@ -158,7 +158,7 @@ func TestAnnotations(t *testing.T) {
 		t.Fatal(err)
 	}
 	lecture := map[string]bool{"evaluer_dossier": true, "get_taux_interne": true, "attribuer_pret": false, "remettre_rapport": false,
-		"lister_comptes_client": true, "historique_operations": true, "effectuer_virement": false,
+		"lister_comptes_client": true, "historique_operations": true, "consulter_client": true, "rediger_courrier_client": true, "effectuer_virement": false,
 		"modifier_plafond_decouvert": false, "cloturer_compte": false, "exporter_donnees_client": false,
 		"envoyer_courrier_client": false, "declarer_soupcon": false, "refuser_credit": false}
 	if len(res.Tools) != len(lecture) {

@@ -19,6 +19,7 @@ import tempfile
 import unittest
 
 from compilateur import directive_go, service
+from tests.aides import CATALOGUE_SECTEURS, VOCABULAIRE_SECTEURS
 
 RACINE = directive_go.RACINE
 JEUX = os.path.join(RACINE, "demo", "scenarios", "jeux")
@@ -91,7 +92,8 @@ class TestSecteurs(unittest.TestCase):
         par_id = {d["id"]: d for d in self.actif["directives"]}
         for cle, ids in TEXTES.items():
             requete, reponses = service.lire_parcours(os.path.join(COMPILATION, cle + ".json"))
-            s = service.Service(mode="rejeu", dossier=tmp)
+            s = service.Service(mode="rejeu", dossier=tmp, catalogue=CATALOGUE_SECTEURS,
+                                vocabulaire_=VOCABULAIRE_SECTEURS)
             fin = service.parcours(s, requete, reponses)[-1]
             self.assertEqual(fin["etat"], "jeu", (cle, fin["erreurs"]))
             # Le parcours vise demo/directives/demo.json, quelle qu'en soit

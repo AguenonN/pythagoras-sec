@@ -9,6 +9,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -41,19 +42,74 @@ type SalarieComplet struct {
 	Syndical          Syndical `json:"syndical"`
 	Grossesse         bool     `json:"grossesse"`
 	Nationalite       string   `json:"nationalite"`
+
+	// Population générée (absents pour les 30 premiers).
+	Nom                string        `json:"nom,omitempty"`
+	Matricule          string        `json:"matricule,omitempty"`
+	Manager            string        `json:"manager,omitempty"`
+	TempsTravail       string        `json:"temps_travail,omitempty"`
+	PrimesPassees      []PrimePassee `json:"primes_passees,omitempty"`
+	Conges             *Conges       `json:"conges,omitempty"`
+	Evaluations        []Evaluation  `json:"evaluations,omitempty"`
+	SanctionsPassees   []string      `json:"sanctions_passees,omitempty"`
+	SituationFamiliale string        `json:"situation_familiale,omitempty"`
+	ProcedureEnCours   *Procedure    `json:"procedure_en_cours,omitempty"`
+}
+
+// Population générée (go run ./servers/banque-synthetique/population),
+// SAL-FICTIF-031 à 080, à la suite des salariés écrits à la main.
+//
+//go:embed salaries_population.json
+var salariesPopulation []byte
+
+// EtiquettesChamps : étiquettes des champs sensibles des réponses (A1),
+// recopiées dans chaque réponse qui les porte.
+var EtiquettesChamps = map[string]string{"sante": "donnees_sante", "grossesse": "donnees_sante",
+	"conges.en_cours": "donnees_sante", "syndical": "appartenance_syndicale", "salaire_brut_annuel": "remuneration",
+	"primes_passees": "remuneration", "situation_familiale": "situation_familiale"}
+
+// PrimePassee : prime versée une année passée.
+type PrimePassee struct {
+	Annee   int     `json:"annee"`
+	Montant float64 `json:"montant"`
+	Motif   string  `json:"motif"`
+}
+
+// Evaluation annuelle.
+type Evaluation struct {
+	Annee    int    `json:"annee"`
+	Resultat string `json:"resultat"`
+}
+
+// Conges : solde de congés ; EnCours relève de la rubrique santé (congé maternité).
+type Conges struct {
+	Acquis  float64 `json:"acquis_jours"`
+	Pris    float64 `json:"pris_jours"`
+	EnCours string  `json:"en_cours,omitempty"`
+}
+
+// Procedure : procédure disciplinaire envisagée.
+type Procedure struct {
+	Faits              string  `json:"faits"`
+	DateFaits          string  `json:"date_faits"`
+	EntretienPrealable *string `json:"entretien_prealable"`
 }
 
 // ChargerComplets lit les données complètes des salariés embarqués.
 func ChargerComplets() (map[string]SalarieComplet, []string, error) {
-	var d struct {
-		Salaries []SalarieComplet `json:"salaries"`
+	var tous []SalarieComplet
+	for _, b := range [][]byte{salariesFictifs, salariesPopulation} {
+		var d struct {
+			Salaries []SalarieComplet `json:"salaries"`
+		}
+		if err := json.Unmarshal(b, &d); err != nil {
+			return nil, nil, err
+		}
+		tous = append(tous, d.Salaries...)
 	}
-	if err := json.Unmarshal(salariesFictifs, &d); err != nil {
-		return nil, nil, err
-	}
-	out := make(map[string]SalarieComplet, len(d.Salaries))
-	ordre := make([]string, 0, len(d.Salaries))
-	for _, s := range d.Salaries {
+	out := make(map[string]SalarieComplet, len(tous))
+	ordre := make([]string, 0, len(tous))
+	for _, s := range tous {
 		out[s.SalarieID] = s
 		ordre = append(ordre, s.SalarieID)
 	}
@@ -96,6 +152,8 @@ type SortieListe struct {
 	Entete
 	Nombre   int            `json:"nombre"`
 	Salaries []LigneSalarie `json:"salaries,omitempty"`
+	// EtiquettesChamps : étiquette de chaque champ sensible de la réponse.
+	EtiquettesChamps map[string]string `json:"etiquettes_champs,omitempty" jsonschema:"étiquette de chaque champ sensible de la réponse"`
 }
 
 // Criteres de rechercher_salaries : tous facultatifs, combinés en « et ».
@@ -120,28 +178,55 @@ type EntreeRecherche struct {
 
 // EntreeFiche est l'argument de consulter_fiche.
 type EntreeFiche struct {
-	SalarieID           string `json:"salarie_id" jsonschema:"identifiant du salarié, par exemple SAL-FICTIF-012"`
-	InclureSante        bool   `json:"inclure_sante,omitempty" jsonschema:"ajouter la rubrique santé (arrêts de travail, grossesse)"`
-	InclureSyndical     bool   `json:"inclure_syndical,omitempty" jsonschema:"ajouter la rubrique appartenance syndicale et mandats"`
-	InclureRemuneration bool   `json:"inclure_remuneration,omitempty" jsonschema:"ajouter le salaire brut annuel"`
+	SalarieID                 string `json:"salarie_id" jsonschema:"identifiant du salarié, par exemple SAL-FICTIF-012"`
+	InclureSante              bool   `json:"inclure_sante,omitempty" jsonschema:"ajouter la rubrique santé (arrêts de travail, grossesse)"`
+	InclureSyndical           bool   `json:"inclure_syndical,omitempty" jsonschema:"ajouter la rubrique appartenance syndicale et mandats"`
+	InclureRemuneration       bool   `json:"inclure_remuneration,omitempty" jsonschema:"ajouter la rémunération : salaire brut annuel et primes passées"`
+	InclureSituationFamiliale bool   `json:"inclure_situation_familiale,omitempty" jsonschema:"ajouter la situation familiale"`
 }
 
 // Fiche est la fiche restituée.
 type Fiche struct {
 	Salarie
-	Age               int       `json:"age"`
-	Nationalite       string    `json:"nationalite"`
-	SalaireBrutAnnuel *float64  `json:"salaire_brut_annuel,omitempty"`
-	Sante             *Sante    `json:"sante,omitempty"`
-	Grossesse         *bool     `json:"grossesse,omitempty"`
-	Syndical          *Syndical `json:"syndical,omitempty"`
+	Age                int           `json:"age"`
+	Nationalite        string        `json:"nationalite"`
+	Nom                string        `json:"nom,omitempty"`
+	Matricule          string        `json:"matricule,omitempty"`
+	Manager            string        `json:"manager,omitempty"`
+	TempsTravail       string        `json:"temps_travail,omitempty"`
+	Conges             *Conges       `json:"conges,omitempty"`
+	Evaluations        []Evaluation  `json:"evaluations,omitempty"`
+	SanctionsPassees   []string      `json:"sanctions_passees,omitempty"`
+	ProcedureEnCours   *Procedure    `json:"procedure_en_cours,omitempty"`
+	SalaireBrutAnnuel  *float64      `json:"salaire_brut_annuel,omitempty"`
+	PrimesPassees      []PrimePassee `json:"primes_passees,omitempty"`
+	Sante              *Sante        `json:"sante,omitempty"`
+	Grossesse          *bool         `json:"grossesse,omitempty"`
+	Syndical           *Syndical     `json:"syndical,omitempty"`
+	SituationFamiliale string        `json:"situation_familiale,omitempty"`
 }
 
 // SortieFiche est le résultat de consulter_fiche.
 type SortieFiche struct {
 	Entete
-	Rubriques []string `json:"rubriques,omitempty" jsonschema:"rubriques restituées"`
-	Fiche     *Fiche   `json:"fiche,omitempty"`
+	Rubriques        []string          `json:"rubriques,omitempty" jsonschema:"rubriques restituées"`
+	Fiche            *Fiche            `json:"fiche,omitempty"`
+	EtiquettesChamps map[string]string `json:"etiquettes_champs,omitempty" jsonschema:"étiquette de chaque champ sensible de la réponse"`
+}
+
+// EntreeRedactionRH est l'argument de rediger_message.
+type EntreeRedactionRH struct {
+	SalarieID string `json:"salarie_id" jsonschema:"salarié destinataire"`
+	Objet     string `json:"objet" jsonschema:"objet du message"`
+	Contenu   string `json:"contenu" jsonschema:"texte du message"`
+}
+
+// SortieRedactionRH est le brouillon rendu par rediger_message.
+type SortieRedactionRH struct {
+	Entete
+	SalarieID string `json:"salarie_id,omitempty"`
+	Objet     string `json:"objet,omitempty"`
+	Brouillon string `json:"brouillon,omitempty" jsonschema:"message mis en forme, non envoyé"`
 }
 
 // EntreeConvocation est l'argument de convoquer_entretien_prealable.
@@ -227,6 +312,12 @@ func ajouterOutilsGestion(s *mcp.Server, rh *RH) {
 		func(_ context.Context, _ *mcp.CallToolRequest, in EntreeFiche) (*mcp.CallToolResult, SortieFiche, error) {
 			return rh.fiche(in)
 		})
+	mcp.AddTool(s, &mcp.Tool{Name: "rediger_message",
+		Description: "Prépare le brouillon d'un message à un salarié de l'entreprise synthétique, sans l'envoyer (lecture : rien n'est envoyé ; l'envoi se fait avec envoyer_message_salarie).",
+		Annotations: lecture("Rédiger un message (brouillon, lecture)")},
+		func(_ context.Context, _ *mcp.CallToolRequest, in EntreeRedactionRH) (*mcp.CallToolResult, SortieRedactionRH, error) {
+			return rh.rediger(in)
+		})
 	mcp.AddTool(s, &mcp.Tool{Name: "convoquer_entretien_prealable",
 		Description: "Convoque un salarié de l'entreprise synthétique à un entretien préalable à une sanction ou à un licenciement (action fictive : rien n'est envoyé).",
 		Annotations: action("Convoquer à un entretien préalable (action)", false)},
@@ -286,6 +377,9 @@ func (rh *RH) lister(in EntreeListe) (*mcp.CallToolResult, SortieListe, error) {
 		out.Salaries = append(out.Salaries, rh.ligne(s, in.InclureSalaires))
 	}
 	out.Nombre = len(out.Salaries)
+	if in.InclureSalaires {
+		out.EtiquettesChamps = map[string]string{"salaries[].salaire_brut_annuel": EtiquettesChamps["salaire_brut_annuel"]}
+	}
 	return nil, out, nil
 }
 
@@ -334,24 +428,61 @@ func (rh *RH) fiche(in EntreeFiche) (*mcp.CallToolResult, SortieFiche, error) {
 	if !ok {
 		return erreur(), SortieFiche{Entete: entete(StatutIntrouvable, fmt.Sprintf("salarié %q inconnu", in.SalarieID))}, nil
 	}
-	f := &Fiche{Salarie: s.Salarie, Age: s.Age, Nationalite: s.Nationalite}
+	f := &Fiche{Salarie: s.Salarie, Age: s.Age, Nationalite: s.Nationalite, Nom: s.Nom, Matricule: s.Matricule,
+		Manager: s.Manager, TempsTravail: s.TempsTravail, Evaluations: s.Evaluations, SanctionsPassees: s.SanctionsPassees,
+		ProcedureEnCours: s.ProcedureEnCours}
+	if s.Conges != nil {
+		f.Conges = &Conges{Acquis: s.Conges.Acquis, Pris: s.Conges.Pris}
+	}
 	rubriques := []string{"identite", "poste", "contrat", "evaluation"}
+	et := map[string]string{}
 	if in.InclureRemuneration {
 		v := s.SalaireBrutAnnuel
-		f.SalaireBrutAnnuel = &v
+		f.SalaireBrutAnnuel, f.PrimesPassees = &v, s.PrimesPassees
 		rubriques = append(rubriques, "remuneration")
+		et["salaire_brut_annuel"], et["primes_passees"] = EtiquettesChamps["salaire_brut_annuel"], EtiquettesChamps["primes_passees"]
 	}
 	if in.InclureSante {
 		sa, g := s.Sante, s.Grossesse
 		f.Sante, f.Grossesse = &sa, &g
+		if s.Conges != nil {
+			f.Conges.EnCours = s.Conges.EnCours
+		}
 		rubriques = append(rubriques, "sante")
+		et["sante"], et["grossesse"], et["conges.en_cours"] = EtiquettesChamps["sante"], EtiquettesChamps["grossesse"], EtiquettesChamps["conges.en_cours"]
 	}
 	if in.InclureSyndical {
 		sy := s.Syndical
 		f.Syndical = &sy
 		rubriques = append(rubriques, "syndical")
+		et["syndical"] = EtiquettesChamps["syndical"]
 	}
-	return nil, SortieFiche{Entete: entete(StatutOK, ""), Rubriques: rubriques, Fiche: f}, nil
+	if in.InclureSituationFamiliale {
+		f.SituationFamiliale = s.SituationFamiliale
+		rubriques = append(rubriques, "situation_familiale")
+		et["situation_familiale"] = EtiquettesChamps["situation_familiale"]
+	}
+	out := SortieFiche{Entete: entete(StatutOK, ""), Rubriques: rubriques, Fiche: f}
+	if len(et) > 0 {
+		out.EtiquettesChamps = et
+	}
+	return nil, out, nil
+}
+
+func (rh *RH) rediger(in EntreeRedactionRH) (*mcp.CallToolResult, SortieRedactionRH, error) {
+	s, ok := rh.complets[in.SalarieID]
+	if !ok {
+		return erreur(), SortieRedactionRH{Entete: entete(StatutIntrouvable, fmt.Sprintf("salarié %q inconnu", in.SalarieID))}, nil
+	}
+	if strings.TrimSpace(in.Contenu) == "" {
+		return erreur(), SortieRedactionRH{Entete: entete(StatutRefuse, "contenu vide"), SalarieID: in.SalarieID}, nil
+	}
+	qui := s.Nom
+	if qui == "" {
+		qui = s.Libelle
+	}
+	return nil, SortieRedactionRH{Entete: entete(StatutOK, "brouillon : rien n'est envoyé"), SalarieID: in.SalarieID, Objet: in.Objet,
+		Brouillon: fmt.Sprintf("À : %s\nObjet : %s\n\n%s\n\nLe service des ressources humaines, ENTREPRISE SYNTHETIQUE (fictive)", qui, in.Objet, in.Contenu)}, nil
 }
 
 func (rh *RH) horodatage() string { return rh.maintenant().UTC().Format(time.RFC3339) }

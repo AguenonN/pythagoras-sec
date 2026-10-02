@@ -46,6 +46,8 @@ OUTILS = [
 # Outils des secteurs banque et RH (session secteurs) : exposés pour que les
 # sous-agents de la démo se chargent ; aucun n'est appelé par ces tests.
 SECTEURS_LECTURE = ["banque-synthetique__lister_comptes_client", "banque-synthetique__historique_operations",
+                    "banque-synthetique__consulter_client", "banque-synthetique__rediger_courrier_client",
+                    "rh-synthetique__rediger_message",
                     "rh-synthetique__lister_salaries", "rh-synthetique__rechercher_salaries",
                     "rh-synthetique__consulter_fiche"]
 SECTEURS_ACTION = ["banque-synthetique__effectuer_virement", "banque-synthetique__modifier_plafond_decouvert",

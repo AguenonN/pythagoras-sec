@@ -516,7 +516,7 @@ func TestDemarrage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(outils.Tools) != 32 { // 14, puis 18 outils des secteurs banque et RH (session secteurs)
+	if len(outils.Tools) != 35 { // 14, puis 21 outils des secteurs banque et RH (session secteurs)
 		t.Fatalf("%d outils exposés", len(outils.Tools))
 	}
 	entrees, _ := func() ([]journal.Entree, []journal.Entree) {

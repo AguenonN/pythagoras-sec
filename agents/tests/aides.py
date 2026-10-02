@@ -36,6 +36,12 @@ VOCABULAIRE_V2_ENREGISTRE = os.path.join(ICI, "donnees", "vocabulaire-v2-enregis
 CATALOGUE_SCENE = os.path.join(ICI, "donnees", "catalogue-scene-enregistrements.json")
 VOCABULAIRE_SCENE = os.path.join(ICI, "donnees", "vocabulaire-scene-enregistrements.json")
 
+# Catalogue et vocabulaire tels qu'ils étaient quand les douze textes des
+# secteurs (demo/scenarios/compilation/) ont été compilés le 02/10 ; gelés
+# quand la population et les outils de rédaction ont été ajoutés (a0c2917).
+CATALOGUE_SECTEURS = os.path.join(ICI, "donnees", "catalogue-secteurs-enregistrements.json")
+VOCABULAIRE_SECTEURS = os.path.join(ICI, "donnees", "vocabulaire-secteurs-enregistrements.json")
+
 
 def catalogue_demo():
     return catalogue.Catalogue.lire(CATALOGUE_DEMO)

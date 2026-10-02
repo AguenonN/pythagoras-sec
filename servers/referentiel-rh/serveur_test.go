@@ -80,34 +80,49 @@ func TestInconnuNEstPasAucunGroupe(t *testing.T) {
 	}
 }
 
-// Le référentiel couvre exactement les salariés fictifs de rh-synthetique.
+// Le référentiel couvre exactement les salariés fictifs de rh-synthetique
+// et, pour les personnes politiquement exposées (session secteurs), les
+// clients et comptes fictifs de banque-synthetique : toute personne
+// concernée que le gate peut chercher y figure.
 func TestCoherenceAvecRhSynthetique(t *testing.T) {
-	b, err := os.ReadFile("../rh-synthetique/salaries_fictifs.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	var rh struct {
-		Salaries []struct {
-			SalarieID string `json:"salarie_id"`
-		} `json:"salaries"`
-	}
-	if err := json.Unmarshal(b, &rh); err != nil {
-		t.Fatal(err)
+	var a, c []string
+	for _, f := range []struct{ chemin, liste, id string }{
+		{"../rh-synthetique/salaries_fictifs.json", "salaries", "salarie_id"},
+		{"../rh-synthetique/salaries_population.json", "salaries", "salarie_id"},
+		{"../banque-synthetique/clients_fictifs.json", "clients", "client_id"},
+		{"../banque-synthetique/clients_population.json", "clients", "client_id"},
+	} {
+		b, err := os.ReadFile(f.chemin)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var brut map[string]json.RawMessage
+		var liste []map[string]any
+		if err := json.Unmarshal(b, &brut); err != nil {
+			t.Fatal(err)
+		}
+		if err := json.Unmarshal(brut[f.liste], &liste); err != nil {
+			t.Fatal(err)
+		}
+		for _, x := range liste {
+			a = append(a, x[f.id].(string))
+			comptes, _ := x["comptes"].([]any)
+			for _, k := range comptes {
+				a = append(a, k.(map[string]any)["compte_id"].(string))
+			}
+		}
 	}
 	r, _ := Charger()
-	var a, c []string
-	for _, s := range rh.Salaries {
-		a = append(a, s.SalarieID)
-	}
 	for id := range r.Appartenances {
 		c = append(c, id)
 	}
 	sort.Strings(a)
 	sort.Strings(c)
 	if strings.Join(a, ",") != strings.Join(c, ",") {
-		t.Fatalf("rh-synthetique %v, referentiel-rh %v", a, c)
+		t.Fatalf("sources %v, referentiel-rh %v", a, c)
 	}
-	if len(r.Groupes) != 2 || r.Groupes["salaries-proteges"] == "" || r.Groupes["contentieux-en-cours"] == "" {
+	if len(r.Groupes) != 3 || r.Groupes["salaries-proteges"] == "" || r.Groupes["contentieux-en-cours"] == "" ||
+		r.Groupes["personne-politiquement-exposee"] == "" {
 		t.Fatalf("groupes: %v", r.Groupes)
 	}
 	if !strings.Contains(r.Avertissement, "FICTIVES") {

@@ -1,0 +1,2893 @@
+{
+ "avertissement": "DONNÉES FICTIVES générées par go run ./servers/banque-synthetique/population (graine fixe). Noms, matricules, salaires, primes, données de santé, appartenances syndicales et situations familiales sont inventés.",
+ "etiquettes_champs": {
+  "grossesse": "donnees_sante",
+  "primes_passees": "salaire",
+  "salaire_brut_annuel": "salaire",
+  "sante": "donnees_sante",
+  "situation_familiale": "situation_familiale",
+  "syndical": "appartenance_syndicale"
+ },
+ "filiales": [
+  {
+   "nom": "ENTREPRISE SYNTHETIQUE France (fictive)",
+   "pays": "FR"
+  },
+  {
+   "nom": "Filiale Fictive Maghreb SARL",
+   "pays": "MA"
+  },
+  {
+   "nom": "Synthetic Fictive Payroll Inc.",
+   "pays": "US"
+  }
+ ],
+ "salaries": [
+  {
+   "salarie_id": "SAL-FICTIF-031",
+   "libelle": "Salarié fictif AE",
+   "nom": "Aline Belardière (fictif)",
+   "matricule": "M-31217",
+   "poste": "Opérateur de production (fictif)",
+   "service": "Production",
+   "manager": "SAL-FICTIF-004",
+   "entree": "2018-08-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 54,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 58000,
+   "primes_passees": [
+    {
+     "annee": 2024,
+     "montant": 2300,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 600,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 1
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-032",
+   "libelle": "Salarié fictif AF",
+   "nom": "Thaïs Quelevillat (fictif)",
+   "matricule": "M-31224",
+   "poste": "Commercial sédentaire (fictif)",
+   "service": "Ventes",
+   "manager": "SAL-FICTIF-009",
+   "entree": "2019-12-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 39,
+   "nationalite": "DZ",
+   "salaire_brut_annuel": 26000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 500,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 2800,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 18
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-033",
+   "libelle": "Salarié fictif AG",
+   "nom": "Nolan Corinelle (fictif)",
+   "matricule": "M-31231",
+   "poste": "Commercial sédentaire (fictif)",
+   "service": "Ventes",
+   "manager": "SAL-FICTIF-009",
+   "entree": "2007-04-01",
+   "contrat": "CDD",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 58,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 47000,
+   "primes_passees": [
+    {
+     "annee": 2024,
+     "montant": 2900,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 400,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 9
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "dépassés"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "cas_plantes": [
+    "plus de 50 ans"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-034",
+   "libelle": "Salarié fictif AH",
+   "nom": "Loïc Belinelle (fictif)",
+   "matricule": "M-31238",
+   "poste": "Préparateur de commandes (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-045",
+   "entree": "2018-08-01",
+   "contrat": "CDI",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 61,
+   "nationalite": "MA",
+   "salaire_brut_annuel": 49000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 900,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 2000,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 2
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-035",
+   "libelle": "Salarié fictif AI",
+   "nom": "Océane Talecourt (fictif)",
+   "matricule": "M-31245",
+   "poste": "Commercial sédentaire (fictif)",
+   "service": "Ventes",
+   "manager": "SAL-FICTIF-009",
+   "entree": "2020-09-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 49,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 27000,
+   "primes_passees": [
+    {
+     "annee": 2025,
+     "montant": 2100,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 8
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "dépassés"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-036",
+   "libelle": "Salarié fictif AJ",
+   "nom": "Maëlle Daleaufort (fictif)",
+   "matricule": "M-31252",
+   "poste": "Commercial sédentaire (fictif)",
+   "service": "Ventes",
+   "manager": "SAL-FICTIF-009",
+   "entree": "2021-11-01",
+   "contrat": "CDD",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 31,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 44000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 1300,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 1300,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 1800,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 12,
+    "en_cours": "congé maternité depuis le 1er septembre 2026 (fictif)"
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": true,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "cas_plantes": [
+    "congé maternité"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-037",
+   "libelle": "Salarié fictif AK",
+   "nom": "Wassim Rosieroux (fictif)",
+   "matricule": "M-31259",
+   "poste": "Chargé de recrutement (fictif)",
+   "service": "Ressources humaines",
+   "manager": "SAL-FICTIF-011",
+   "entree": "2014-04-01",
+   "contrat": "CDI",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 48,
+   "nationalite": "BE",
+   "salaire_brut_annuel": 32000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 1400,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 1700,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 12
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-038",
+   "libelle": "Salarié fictif AL",
+   "nom": "Léonie Chalacquet (fictif)",
+   "matricule": "M-31266",
+   "poste": "Chargé de recrutement (fictif)",
+   "service": "Ressources humaines",
+   "manager": "SAL-FICTIF-011",
+   "entree": "2013-09-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 53,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 26000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 2100,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 2200,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 9
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "situation_familiale": "parent isolé, trois enfants (fictif)",
+   "cas_plantes": [
+    "plus de 50 ans"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-039",
+   "libelle": "Salarié fictif AM",
+   "nom": "Fabien Vauenval (fictif)",
+   "matricule": "M-31273",
+   "poste": "Contrôleur de gestion (fictif)",
+   "service": "Finance",
+   "manager": "SAL-FICTIF-003",
+   "entree": "2024-07-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 58,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 44000,
+   "primes_passees": [
+    {
+     "annee": 2025,
+     "montant": 800,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 3
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-040",
+   "libelle": "Salarié fictif AN",
+   "nom": "Hugo Brunardière (fictif)",
+   "matricule": "M-31280",
+   "poste": "Commercial sédentaire (fictif)",
+   "service": "Ventes",
+   "manager": "SAL-FICTIF-009",
+   "entree": "2019-06-01",
+   "contrat": "CDI",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 54,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 46000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 1900,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 1100,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 4
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-041",
+   "libelle": "Salarié fictif AO",
+   "nom": "Gaspard Savevillat (fictif)",
+   "matricule": "M-31287",
+   "poste": "Préparateur de commandes (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-045",
+   "entree": "2010-05-01",
+   "contrat": "CDI",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 43,
+   "nationalite": "IT",
+   "salaire_brut_annuel": 58000,
+   "primes_passees": [
+    {
+     "annee": 2024,
+     "montant": 3000,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 18
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": true,
+    "detail": "arrêt maladie en cours depuis le 15 septembre 2026 (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "cas_plantes": [
+    "arrêt maladie"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-042",
+   "libelle": "Salarié fictif AP",
+   "nom": "Nolan Verevillat (fictif)",
+   "matricule": "M-31294",
+   "poste": "Commercial sédentaire (fictif)",
+   "service": "Ventes",
+   "manager": "SAL-FICTIF-009",
+   "entree": "2016-07-01",
+   "contrat": "CDI",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 41,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 50000,
+   "primes_passees": [
+    {
+     "annee": 2024,
+     "montant": 1500,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 12
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "dépassés"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-043",
+   "libelle": "Salarié fictif AQ",
+   "nom": "Octave Lanoisel (fictif)",
+   "matricule": "M-31301",
+   "poste": "Développeur (fictif)",
+   "service": "Informatique",
+   "manager": "SAL-FICTIF-010",
+   "entree": "2006-03-01",
+   "contrat": "CDI",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 49,
+   "nationalite": "IT",
+   "salaire_brut_annuel": 35000,
+   "primes_passees": [
+    {
+     "annee": 2024,
+     "montant": 500,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 2300,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 18
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "dépassés"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-044",
+   "libelle": "Salarié fictif AR",
+   "nom": "Karine Verieroux (fictif)",
+   "matricule": "M-31308",
+   "poste": "Préparateur de commandes (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-045",
+   "entree": "2007-05-01",
+   "contrat": "CDI",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 25,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 31000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 2400,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 2700,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 1000,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 2
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": true,
+    "mandat": "délégué syndical (fictif)"
+   },
+   "cas_plantes": [
+    "mandat syndical"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-045",
+   "libelle": "Salarié fictif AS",
+   "nom": "Sacha Talacquet (fictif)",
+   "matricule": "M-31315",
+   "poste": "Chef d'équipe logistique (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-004",
+   "entree": "2013-08-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 32,
+   "nationalite": "PT",
+   "salaire_brut_annuel": 41000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 1300,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 2400,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 3
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "cas_plantes": [
+    "A5 : chef d'équipe logistique, salaire différent de son homologue"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-046",
+   "libelle": "Salarié fictif AT",
+   "nom": "Valentine Quelimont (fictif)",
+   "matricule": "M-31322",
+   "poste": "Chef d'équipe logistique (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-004",
+   "entree": "2007-07-01",
+   "contrat": "CDD",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 37,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 36500,
+   "primes_passees": [],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 5
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "cas_plantes": [
+    "A5 : chef d'équipe logistique, salaire différent de son homologue"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-047",
+   "libelle": "Salarié fictif AU",
+   "nom": "Erwan Talardière (fictif)",
+   "matricule": "M-31329",
+   "poste": "Préparateur de commandes (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-045",
+   "entree": "2010-05-01",
+   "contrat": "CDI",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Proposition d'évolution annuelle à préparer : poste de chef d'équipe logistique (fictif).",
+   "age": 24,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 29500,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 300,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 1500,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 15
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "cas_plantes": [
+    "A5 : proposition d'évolution vers chef d'équipe logistique"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-048",
+   "libelle": "Salarié fictif AV",
+   "nom": "Fabien Quelieroux (fictif)",
+   "matricule": "M-31336",
+   "poste": "Préparateur de commandes (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-045",
+   "entree": "2005-10-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 46,
+   "nationalite": "IT",
+   "salaire_brut_annuel": 37000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 2300,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 600,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 9
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-049",
+   "libelle": "Salarié fictif AW",
+   "nom": "Océane Vereaufort (fictif)",
+   "matricule": "M-31343",
+   "poste": "Commercial sédentaire (fictif)",
+   "service": "Ventes",
+   "manager": "SAL-FICTIF-009",
+   "entree": "2015-01-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Insulte envers un client le 25 septembre 2026, signalée par écrit (fictif).",
+   "age": 22,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 33000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 2200,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 1200,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 1700,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 10
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "procedure_en_cours": {
+    "faits": "insulte envers un client (fictif)",
+    "date_faits": "2026-09-25",
+    "entretien_prealable": null
+   },
+   "cas_plantes": [
+    "sanction envisagée, aucun entretien préalable"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-050",
+   "libelle": "Salarié fictif AX",
+   "nom": "Zoé Ferenval (fictif)",
+   "matricule": "M-31350",
+   "poste": "Développeur (fictif)",
+   "service": "Informatique",
+   "manager": "SAL-FICTIF-010",
+   "entree": "2009-05-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 59,
+   "nationalite": "MA",
+   "salaire_brut_annuel": 56000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 1200,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 1800,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 19
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-051",
+   "libelle": "Salarié fictif AY",
+   "nom": "Damien Verenval (fictif)",
+   "matricule": "M-31357",
+   "poste": "Préparateur de commandes (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-045",
+   "entree": "2020-11-01",
+   "contrat": "CDD",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 62,
+   "nationalite": "IT",
+   "salaire_brut_annuel": 49000,
+   "primes_passees": [
+    {
+     "annee": 2024,
+     "montant": 2500,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 2500,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 4
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-052",
+   "libelle": "Salarié fictif AZ",
+   "nom": "Elsa Vauardière (fictif)",
+   "matricule": "M-31364",
+   "poste": "Contrôleur de gestion (fictif)",
+   "service": "Finance",
+   "manager": "SAL-FICTIF-003",
+   "entree": "2012-10-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 57,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 40000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 1600,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 1000,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 6
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "cas_plantes": [
+    "plus de 50 ans"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-053",
+   "libelle": "Salarié fictif BA",
+   "nom": "Corentin Ferevillat (fictif)",
+   "matricule": "M-31371",
+   "poste": "Contrôleur de gestion (fictif)",
+   "service": "Finance",
+   "manager": "SAL-FICTIF-003",
+   "entree": "2014-03-01",
+   "contrat": "CDD",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 56,
+   "nationalite": "SN",
+   "salaire_brut_annuel": 32000,
+   "primes_passees": [],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 1
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-054",
+   "libelle": "Salarié fictif BB",
+   "nom": "Bastien Ferimont (fictif)",
+   "matricule": "M-31378",
+   "poste": "Préparateur de commandes (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-045",
+   "entree": "2025-02-01",
+   "contrat": "CDI",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 31,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 35000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 1400,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 400,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 17
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "dépassés"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-055",
+   "libelle": "Salarié fictif BC",
+   "nom": "Hortense Pelieroux (fictif)",
+   "matricule": "M-31385",
+   "poste": "Contrôleur de gestion (fictif)",
+   "service": "Finance",
+   "manager": "SAL-FICTIF-003",
+   "entree": "2013-04-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 47,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 31000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 2100,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 1900,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 700,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 5
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": true,
+    "mandat": "élu au CSE (fictif)"
+   },
+   "cas_plantes": [
+    "mandat syndical"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-056",
+   "libelle": "Salarié fictif BD",
+   "nom": "Damien Moroisel (fictif)",
+   "matricule": "M-31392",
+   "poste": "Commercial sédentaire (fictif)",
+   "service": "Ventes",
+   "manager": "SAL-FICTIF-009",
+   "entree": "2020-01-01",
+   "contrat": "CDD",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 38,
+   "nationalite": "SN",
+   "salaire_brut_annuel": 31000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 2600,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 6
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "dépassés"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-057",
+   "libelle": "Salarié fictif BE",
+   "nom": "Nina Lanecourt (fictif)",
+   "matricule": "M-31399",
+   "poste": "Chargé de recrutement (fictif)",
+   "service": "Ressources humaines",
+   "manager": "SAL-FICTIF-011",
+   "entree": "2010-02-01",
+   "contrat": "CDI",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 34,
+   "nationalite": "SN",
+   "salaire_brut_annuel": 34000,
+   "primes_passees": [
+    {
+     "annee": 2024,
+     "montant": 1300,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 1300,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 0
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "situation_familiale": "célibataire (fictif)"
+  },
+  {
+   "salarie_id": "SAL-FICTIF-058",
+   "libelle": "Salarié fictif BF",
+   "nom": "Jules Brunecourt (fictif)",
+   "matricule": "M-31406",
+   "poste": "Opérateur de production (fictif)",
+   "service": "Production",
+   "manager": "SAL-FICTIF-004",
+   "entree": "2010-07-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 31,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 56000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 700,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 2600,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 2500,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 1,
+    "en_cours": "congé maternité depuis le 1er septembre 2026 (fictif)"
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": true,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "cas_plantes": [
+    "congé maternité"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-059",
+   "libelle": "Salarié fictif BG",
+   "nom": "Erwan Dalinelle (fictif)",
+   "matricule": "M-31413",
+   "poste": "Préparateur de commandes (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-045",
+   "entree": "2022-11-01",
+   "contrat": "CDI",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 38,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 53000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 1100,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 500,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 4
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "dépassés"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-060",
+   "libelle": "Salarié fictif BH",
+   "nom": "Céline Galeaufort (fictif)",
+   "matricule": "M-31420",
+   "poste": "Chargé de recrutement (fictif)",
+   "service": "Ressources humaines",
+   "manager": "SAL-FICTIF-011",
+   "entree": "2021-03-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 62,
+   "nationalite": "PT",
+   "salaire_brut_annuel": 44000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 1700,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 600,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 1
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-061",
+   "libelle": "Salarié fictif BI",
+   "nom": "Jules Vaueaufort (fictif)",
+   "matricule": "M-31427",
+   "poste": "Développeur (fictif)",
+   "service": "Informatique",
+   "manager": "SAL-FICTIF-010",
+   "entree": "2022-05-01",
+   "contrat": "CDI",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 49,
+   "nationalite": "TN",
+   "salaire_brut_annuel": 58000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 3000,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 1100,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 2900,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 9
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "dépassés"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-062",
+   "libelle": "Salarié fictif BJ",
+   "nom": "Ilian Chaleaufort (fictif)",
+   "matricule": "M-31434",
+   "poste": "Commercial sédentaire (fictif)",
+   "service": "Ventes",
+   "manager": "SAL-FICTIF-009",
+   "entree": "2023-01-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 27,
+   "nationalite": "SN",
+   "salaire_brut_annuel": 44000,
+   "primes_passees": [
+    {
+     "annee": 2024,
+     "montant": 1700,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 2800,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 4
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "dépassés"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-063",
+   "libelle": "Salarié fictif BK",
+   "nom": "Gaspard Dalieroux (fictif)",
+   "matricule": "M-31441",
+   "poste": "Opérateur de production (fictif)",
+   "service": "Production",
+   "manager": "SAL-FICTIF-004",
+   "entree": "2023-10-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 41,
+   "nationalite": "PT",
+   "salaire_brut_annuel": 40000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 1000,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 2700,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 16
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-064",
+   "libelle": "Salarié fictif BL",
+   "nom": "Valentine Vauardière (fictif)",
+   "matricule": "M-31448",
+   "poste": "Développeur (fictif)",
+   "service": "Informatique",
+   "manager": "SAL-FICTIF-010",
+   "entree": "2012-06-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 27,
+   "nationalite": "IT",
+   "salaire_brut_annuel": 46000,
+   "primes_passees": [
+    {
+     "annee": 2024,
+     "montant": 2200,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 1900,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 15
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "situation_familiale": "marié, deux enfants (fictif)"
+  },
+  {
+   "salarie_id": "SAL-FICTIF-065",
+   "libelle": "Salarié fictif BM",
+   "nom": "Wassim Corinelle (fictif)",
+   "matricule": "M-31455",
+   "poste": "Commercial sédentaire (fictif)",
+   "service": "Ventes",
+   "manager": "SAL-FICTIF-009",
+   "entree": "2014-10-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 62,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 36000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 300,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 1900,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 10
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-066",
+   "libelle": "Salarié fictif BN",
+   "nom": "Octave Bruneaufort (fictif)",
+   "matricule": "M-31462",
+   "poste": "Préparateur de commandes (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-045",
+   "entree": "2009-09-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 51,
+   "nationalite": "PT",
+   "salaire_brut_annuel": 27000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 2100,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 400,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 1700,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 12
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "situation_familiale": "parent isolé, trois enfants (fictif)",
+   "cas_plantes": [
+    "plus de 50 ans"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-067",
+   "libelle": "Salarié fictif BO",
+   "nom": "Octave Vauevillat (fictif)",
+   "matricule": "M-31469",
+   "poste": "Chargé de recrutement (fictif)",
+   "service": "Ressources humaines",
+   "manager": "SAL-FICTIF-011",
+   "entree": "2016-11-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 39,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 28000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 1200,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 2
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-068",
+   "libelle": "Salarié fictif BP",
+   "nom": "Bastien Dalevillat (fictif)",
+   "matricule": "M-31476",
+   "poste": "Contrôleur de gestion (fictif)",
+   "service": "Finance",
+   "manager": "SAL-FICTIF-003",
+   "entree": "2015-09-01",
+   "contrat": "CDD",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 41,
+   "nationalite": "BE",
+   "salaire_brut_annuel": 25000,
+   "primes_passees": [
+    {
+     "annee": 2024,
+     "montant": 2700,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 2200,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 8
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-069",
+   "libelle": "Salarié fictif BQ",
+   "nom": "Anouk Quelevillat (fictif)",
+   "matricule": "M-31483",
+   "poste": "Préparateur de commandes (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-045",
+   "entree": "2005-11-01",
+   "contrat": "CDD",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 42,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 58000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 900,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 1800,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 7
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "situation_familiale": "parent isolé, trois enfants (fictif)"
+  },
+  {
+   "salarie_id": "SAL-FICTIF-070",
+   "libelle": "Salarié fictif BR",
+   "nom": "Erwan Vauaudrin (fictif)",
+   "matricule": "M-31490",
+   "poste": "Préparateur de commandes (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-045",
+   "entree": "2011-07-01",
+   "contrat": "CDD",
+   "temps_travail": "80 %",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 56,
+   "nationalite": "PL",
+   "salaire_brut_annuel": 39000,
+   "primes_passees": [],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 0
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": true,
+    "detail": "arrêt maladie en cours depuis le 15 septembre 2026 (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "cas_plantes": [
+    "arrêt maladie"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-071",
+   "libelle": "Salarié fictif BS",
+   "nom": "Ulysse Galieroux (fictif)",
+   "matricule": "M-31497",
+   "poste": "Chargé de recrutement (fictif)",
+   "service": "Ressources humaines",
+   "manager": "SAL-FICTIF-011",
+   "entree": "2020-04-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 38,
+   "nationalite": "IT",
+   "salaire_brut_annuel": 47000,
+   "primes_passees": [
+    {
+     "annee": 2024,
+     "montant": 1400,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 1800,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 9
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-072",
+   "libelle": "Salarié fictif BT",
+   "nom": "Valentine Brunecourt (fictif)",
+   "matricule": "M-31504",
+   "poste": "Chargé de recrutement (fictif)",
+   "service": "Ressources humaines",
+   "manager": "SAL-FICTIF-011",
+   "entree": "2025-01-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 57,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 54000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 600,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 900,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 3
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": true,
+    "mandat": "représentant de section syndicale (fictif)"
+   },
+   "situation_familiale": "marié, deux enfants (fictif)",
+   "cas_plantes": [
+    "mandat syndical"
+   ]
+  },
+  {
+   "salarie_id": "SAL-FICTIF-073",
+   "libelle": "Salarié fictif BU",
+   "nom": "Loïc Roseaufort (fictif)",
+   "matricule": "M-31511",
+   "poste": "Opérateur de production (fictif)",
+   "service": "Production",
+   "manager": "SAL-FICTIF-004",
+   "entree": "2006-09-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 26,
+   "nationalite": "MA",
+   "salaire_brut_annuel": 34000,
+   "primes_passees": [
+    {
+     "annee": 2024,
+     "montant": 1900,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 2900,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 10
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-074",
+   "libelle": "Salarié fictif BV",
+   "nom": "Ilian Verieroux (fictif)",
+   "matricule": "M-31518",
+   "poste": "Préparateur de commandes (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-045",
+   "entree": "2024-02-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 46,
+   "nationalite": "MA",
+   "salaire_brut_annuel": 24000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 300,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 11
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-075",
+   "libelle": "Salarié fictif BW",
+   "nom": "Anouk Roseaufort (fictif)",
+   "matricule": "M-31525",
+   "poste": "Chargé de recrutement (fictif)",
+   "service": "Ressources humaines",
+   "manager": "SAL-FICTIF-011",
+   "entree": "2008-01-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 37,
+   "nationalite": "ES",
+   "salaire_brut_annuel": 54000,
+   "primes_passees": [
+    {
+     "annee": 2024,
+     "montant": 1800,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 1700,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 2
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-076",
+   "libelle": "Salarié fictif BX",
+   "nom": "Loïc Morevillat (fictif)",
+   "matricule": "M-31532",
+   "poste": "Préparateur de commandes (fictif)",
+   "service": "Logistique",
+   "manager": "SAL-FICTIF-045",
+   "entree": "2025-04-01",
+   "contrat": "CDD",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 48,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 54000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 1600,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 1400,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 7
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-077",
+   "libelle": "Salarié fictif BY",
+   "nom": "Elsa Belacquet (fictif)",
+   "matricule": "M-31539",
+   "poste": "Chargé de recrutement (fictif)",
+   "service": "Ressources humaines",
+   "manager": "SAL-FICTIF-011",
+   "entree": "2006-07-01",
+   "contrat": "CDD",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 54,
+   "nationalite": "ES",
+   "salaire_brut_annuel": 27000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 800,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2025,
+     "montant": 2700,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 15
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-078",
+   "libelle": "Salarié fictif BZ",
+   "nom": "Bastien Pelecourt (fictif)",
+   "matricule": "M-31546",
+   "poste": "Chargé de recrutement (fictif)",
+   "service": "Ressources humaines",
+   "manager": "SAL-FICTIF-011",
+   "entree": "2015-03-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 54,
+   "nationalite": "BE",
+   "salaire_brut_annuel": 33000,
+   "primes_passees": [
+    {
+     "annee": 2025,
+     "montant": 600,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 19
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2024,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2025,
+     "resultat": "atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-079",
+   "libelle": "Salarié fictif CA",
+   "nom": "Kylian Quelimont (fictif)",
+   "matricule": "M-31553",
+   "poste": "Développeur (fictif)",
+   "service": "Informatique",
+   "manager": "SAL-FICTIF-010",
+   "entree": "2014-12-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs dépassés (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 25,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 52000,
+   "primes_passees": [
+    {
+     "annee": 2024,
+     "montant": 1500,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 5
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "partiellement atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "dépassés"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   }
+  },
+  {
+   "salarie_id": "SAL-FICTIF-080",
+   "libelle": "Salarié fictif CB",
+   "nom": "Wassim Pelottière (fictif)",
+   "matricule": "M-31560",
+   "poste": "Chargé de recrutement (fictif)",
+   "service": "Ressources humaines",
+   "manager": "SAL-FICTIF-011",
+   "entree": "2024-06-01",
+   "contrat": "CDI",
+   "temps_travail": "temps plein",
+   "evaluation_annuelle": "Objectifs partiellement atteints (fictif)",
+   "remarques": "Aucune remarque particulière (fictif).",
+   "age": 47,
+   "nationalite": "FR",
+   "salaire_brut_annuel": 26000,
+   "primes_passees": [
+    {
+     "annee": 2023,
+     "montant": 1000,
+     "motif": "prime annuelle (fictif)"
+    },
+    {
+     "annee": 2024,
+     "montant": 400,
+     "motif": "prime annuelle (fictif)"
+    }
+   ],
+   "conges": {
+    "acquis_jours": 25,
+    "pris_jours": 3
+   },
+   "evaluations": [
+    {
+     "annee": 2023,
+     "resultat": "atteints"
+    },
+    {
+     "annee": 2024,
+     "resultat": "dépassés"
+    },
+    {
+     "annee": 2025,
+     "resultat": "partiellement atteints"
+    }
+   ],
+   "sanctions_passees": [],
+   "sante": {
+    "arret_en_cours": false,
+    "detail": "aucune information (fictif)"
+   },
+   "grossesse": false,
+   "syndical": {
+    "adherent": false,
+    "mandat": ""
+   },
+   "situation_familiale": "célibataire (fictif)"
+  }
+ ]
+}
