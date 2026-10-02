@@ -210,3 +210,70 @@ class TestRH(unittest.TestCase):
         self.assertEqual([(d["declencheur"]["outil"], d["noeuds"][0]["type"]) for d in propose],
                          [("decider_prime", "existe"), ("proposer_sanction", "sujet"),
                           ("decider_prime", "existe"), ("proposer_sanction", "sujet")])
+
+
+def derouler_medium(nom):
+    """Déroule sur le catalogue et le vocabulaire courants, avec le modèle
+    retenu (mistral-medium-latest) : les enregistrements de l'étape 7."""
+    return scenarios_v2.derouler(scenarios_v2.lire(nom), mistral.Client(mode="rejeu", modele=mistral.MODELE_COMPILATEUR),
+                                 scenarios_v2.vocab_demo())
+
+
+class ScenarioMedium(Scenario):
+    @classmethod
+    def setUpClass(cls):
+        cls.r, cls.tours = derouler_medium(cls.nom)
+
+    def test_jeu_accepte_et_relecture_stable(self):
+        self.assertEqual(self.r["etat"], c2.JEU, self.r["erreurs"])
+        jeu = self.r["jeu"]
+        self.assertTrue(all(d["statut"] == "brouillon" for d in jeu["directives"]))
+        ok, erreurs, _ = directive_go.verifier(jeu)
+        self.assertTrue(ok, erreurs)
+        chemin = os.path.join(ATTENDUS, self.nom + ".txt")
+        if os.environ.get("RELECTURE_MAJ"):
+            with open(chemin, "w", encoding="utf-8") as f:
+                f.write(self.r["relecture"])
+        with open(chemin, encoding="utf-8") as f:
+            attendu = f.read()
+        self.assertEqual(self.r["relecture"], attendu)
+        for _ in range(2):
+            self.assertEqual(derouler_medium(self.nom)[0]["relecture"], attendu)
+
+
+class TestRHMedium(ScenarioMedium, unittest.TestCase):
+    """Règle RH des groupes X et Y, sur le modèle retenu : Mistral demande les
+    deux groupes en ne proposant que ceux du référentiel RH, puis rend une
+    directive par règle et par outil, acceptée du premier coup."""
+    nom = "rh"
+    sujets = [["groupe", "groupe"], ["si_indetermine"]]
+
+    def test_une_directive_par_regle_et_par_outil(self):
+        ds = self.directives()
+        self.assertEqual([(d["id"], d["declencheur"]["cible"]["outil"]) for d in ds],
+                         [("R-001", "decider_prime"), ("R-002", "proposer_sanction"),
+                          ("R-003", "decider_prime"), ("R-004", "proposer_sanction")])
+        self.assertEqual(ds[0]["condition"], {"existe": {"champ": "/salarie_ids",
+                                                         "condition": {"sujet": {"groupe": "contentieux-en-cours"}}}})
+        self.assertEqual(ds[1]["condition"], {"sujet": {"groupe": "contentieux-en-cours", "champ": "/salarie_id"}})
+        self.assertEqual(ds[3]["condition"], {"sujet": {"groupe": "salaries-proteges", "champ": "/salarie_id"}})
+        self.assertEqual([d["effets"] for d in ds], [[{"effet": "refuser"}]] * 2 + [[{"effet": "attendre_validation"}]] * 2)
+        self.assertEqual([d["fondements"][0]["article"] for d in ds], ["L1121-1", "L1121-1", "L2411-1", "L2411-1"])
+
+
+class TestTopManagementMedium(ScenarioMedium, unittest.TestCase):
+    """« Impliquant une décision avec le top management » : refus motivé (non
+    observable), puis, sur le critère du juriste, le jeu attendu, accepté du
+    premier coup."""
+    nom = "top-management"
+    sujets = [["non_observable"], ["si_indetermine", "rythme:T-001:juridique", "si_echec:T-001:juridique"]]
+
+    def test_jeu(self):
+        self.assertIn("top management", self.tours[0]["non_observables"][0]["raison"])
+        d, = self.directives()
+        self.assertEqual(d["declencheur"]["cible"], {"serveur": "banque-synthetique", "outil": "attribuer_pret"})
+        self.assertEqual(d["condition"], {"argument": {"champ": "/montant", "op": ">", "valeur": 2000000}})
+        self.assertEqual(d["effets"], [
+            {"effet": "attendre_validation", "par_role": "directeur-risques", "quatre_yeux": True},
+            {"effet": "notifier", "destinataire_role": "juridique", "rythme": "temps_reel", "si_echec": "refuser"}])
+        self.assertEqual(d["fondements"], [{"texte": "Politique de crédit", "article": "7.1"}])

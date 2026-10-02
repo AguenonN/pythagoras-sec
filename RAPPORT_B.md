@@ -3,7 +3,7 @@
 Branche `feat/compilateur-final`, worktree `~/cybercar/mcp_rogue-compilateur-final`.
 Rien n'est poussé ni fusionné ; `main` n'est pas touchée.
 
-**Compteur d'appels Mistral réels : 10 / 25** (étape 6 : 8 ; étape 8 : 2). Aucune génération interrompue.
+**Compteur d'appels Mistral réels : 14 / 25** (étape 6 : 8 ; étape 8 : 2 ; étape 7 : 4). Aucune génération interrompue.
 
 ## 1. Ce qui est fait
 
@@ -15,7 +15,23 @@ Rien n'est poussé ni fusionné ; `main` n'est pas touchée.
 | 3, 5, 4, 2 bis | `120e504` | `python -m compilateur.service` (contrat §4) ; ajout à un jeu existant (version n+1, numérotation à la suite) ; correctif demandeur **et** sujet ; `scenarios_v2 --catalogue --vocabulaire --jeu-existant --modele` ; `demo --jeu-existant` |
 | — | `d191eb0` | Un outil de lecture est désigné par ses propres mots (« base interne des taux » → `get_taux_interne`) ; une action ne l'est jamais |
 | 6, 8 | `c7f61e3` | Choix du modèle sur mesures (**`mistral-medium-latest`** par défaut du compilateur) ; parcours de scène week-end et base interne (D-009) enregistrés par le service et rejoués sans réseau ; D-010 après D-009 |
-| 2 | (ce commit) | Relecture des formes de gate-v2 : `$racine/…` sous un quantificateur, directives d'évènement ; fichier attendu `testdata/v2/gate-v2.txt`, trois fuseaux machine |
+| 2 | `dbe19ed` | Relecture des formes de gate-v2 : `$racine/…` sous un quantificateur, directives d'évènement ; fichier attendu `testdata/v2/gate-v2.txt`, trois fuseaux machine |
+| 7 | (ce commit) | RH et top management sur `mistral-medium-latest` : jeux acceptés du premier coup, relectures stables, enregistrés et rejoués (4 appels) |
+
+### Étape 7 — RH et top management, terminés
+
+`python -m compilateur.scenarios_v2 rh|top-management` (catalogue et
+vocabulaire courants, modèle retenu), rejoués par
+`tests/test_scenarios_v2.py` (`TestRHMedium`, `TestTopManagementMedium`),
+relectures attendues `tests/attendus/v2/rh.txt` et `top-management.txt` :
+
+| Scénario | Appels | Questions | Jeu |
+|---|---|---|---|
+| RH (groupes X et Y) | 2 | groupe X, groupe Y (en ne proposant que les groupes du référentiel RH) ; `si_indetermine` | **accepté du premier coup** : 4 directives, une par règle et par outil (`existe /salarie_ids` sur `decider_prime`, `sujet /salarie_id` sur `proposer_sanction`), refus pour `contentieux-en-cours`, validation pour `salaries-proteges`, articles L1121-1 et L2411-1 |
+| Top management | 2 | **refus motivé** (« décision avec le top management » non observable) et demande d'un critère ; puis `si_indetermine`, rythme et échec de la notification | **accepté du premier coup** : `attribuer_pret`, `/montant > 2000000` → validation `directeur-risques` en quatre yeux + notification `juridique` temps réel, `si_echec: refuser` |
+
+Les tests partiels de la session précédente (mistral-small, condition
+inventée puis correction jamais obtenue) restent, sur leurs copies gelées.
 
 ### Étape 2 — relecture des formes ajoutées par gate-v2
 
