@@ -309,3 +309,52 @@ func TestLigneEnCoursDEcritureIgnoree(t *testing.T) {
 		t.Fatalf("une ligne partielle n'est pas un écart : %+v", st.Verif)
 	}
 }
+
+// « Lancer les agents » : la console exécute le lanceur (ici le simulateur,
+// qui respecte les contrats §2 et §3) ; la session apparaît, la demande aussi.
+func TestLancerUneDemande(t *testing.T) {
+	b := nouveauBanc(t)
+	b.Dep.Commandes.Lanceur = []string{binSimulateur}
+	b.Dep.Commandes.Env = []string{"MCP_GATE_CLE_JOURNAL=" + hexa(cleTest), "SIMULATEUR_PAUSE=10ms"}
+	var l Lanceur
+	for _, mauvais := range []struct{ demande, demandeur string }{{"", claire}, {"-rf /", claire}, {"Un prêt ?", "inconnu@exemple.test"}, {"Un prêt ?", "x; rm -rf /"}} {
+		if _, err := b.Dep.Lancer(&l, mauvais.demande, mauvais.demandeur); err == nil {
+			t.Errorf("lancement accepté : %+v", mauvais)
+		}
+	}
+	lc, err := b.Dep.Lancer(&l, "Peut-on accorder un prêt sans gel vérifié ?", claire)
+	must(t, err)
+	limite := time.Now().Add(20 * time.Second)
+	for time.Now().Before(limite) {
+		if x := l.Liste(); len(x) == 1 && x[0].Termine {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	x := l.Liste()
+	if len(x) != 1 || !x[0].Termine || x[0].Code != 0 || x[0].Erreur != "" || x[0].ID != lc.ID {
+		t.Fatalf("lancement : %+v", x)
+	}
+	js := b.Dep.Journaux()
+	if len(js) != 1 {
+		t.Fatalf("sessions : %v", js)
+	}
+	st := b.etat(js[0].ID)
+	if st.Dossier == nil || st.Dossier.Demande != "Peut-on accorder un prêt sans gel vérifié ?" || st.Dossier.Demandeur != claire || st.Dossier.Statut != StatutTermine || !st.Verif.OK {
+		t.Fatalf("session : %+v %+v", st.Dossier, st.Verif)
+	}
+	// Un lanceur qui échoue : l'erreur est dite, sans secret.
+	b.Dep.Commandes.Lanceur = []string{"false"}
+	if _, err := b.Dep.Lancer(&l, "Un prêt ?", claire); err != nil {
+		t.Fatal(err)
+	}
+	for time.Now().Before(limite) {
+		if x := l.Liste(); x[0].Termine {
+			break
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if x := l.Liste(); !x[0].Termine || x[0].Code == 0 {
+		t.Fatalf("échec attendu : %+v", x[0])
+	}
+}

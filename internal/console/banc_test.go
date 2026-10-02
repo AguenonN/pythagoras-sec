@@ -3,6 +3,7 @@ package console
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -17,7 +18,7 @@ import (
 var (
 	cleTest = bytes.Repeat([]byte{0x42}, 32)
 	// binaires construits une fois pour tous les tests
-	binApprouver, binDirective string
+	binApprouver, binDirective, binSimulateur string
 )
 
 func TestMain(m *testing.M) {
@@ -26,14 +27,14 @@ func TestMain(m *testing.M) {
 		panic(err)
 	}
 	defer os.RemoveAll(dir)
-	for _, b := range []struct{ nom, pkg string }{{"mcp-approve", "./cmd/mcp-approve"}, {"directive", "./cmd/directive"}} {
+	for _, b := range []struct{ nom, pkg string }{{"mcp-approve", "./cmd/mcp-approve"}, {"directive", "./cmd/directive"}, {"simulateur", "./cmd/console/simulateur"}} {
 		cmd := exec.Command("go", "build", "-o", filepath.Join(dir, b.nom), b.pkg)
 		cmd.Dir = "../.."
 		if out, err := cmd.CombinedOutput(); err != nil {
 			panic(string(out))
 		}
 	}
-	binApprouver, binDirective = filepath.Join(dir, "mcp-approve"), filepath.Join(dir, "directive")
+	binApprouver, binDirective, binSimulateur = filepath.Join(dir, "mcp-approve"), filepath.Join(dir, "directive"), filepath.Join(dir, "simulateur")
 	os.Exit(m.Run())
 }
 
@@ -199,3 +200,5 @@ func (b *banc) signerCmd(args ...string) (string, error) {
 	out, err := exec.Command(binApprouver, append([]string{"valider"}, args...)...).Output()
 	return strings.TrimSpace(string(out)), err
 }
+
+func hexa(b []byte) string { return fmt.Sprintf("%x", b) }

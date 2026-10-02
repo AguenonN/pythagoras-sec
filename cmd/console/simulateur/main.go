@@ -36,7 +36,11 @@ func run() error {
 	demandeur := fs.String("demandeur", "", "identité du demandeur (annuaire)")
 	racine := fs.String("racine", ".", "racine du dépôt")
 	demo := fs.String("demo", "demo", "dossier de la démonstration, sous la racine")
-	pause := fs.Duration("pause", 800*time.Millisecond, "pause entre deux appels")
+	pauseDefaut := 800 * time.Millisecond
+	if v, err := time.ParseDuration(os.Getenv("SIMULATEUR_PAUSE")); err == nil {
+		pauseDefaut = v
+	}
+	pause := fs.Duration("pause", pauseDefaut, "pause entre deux appels (défaut : SIMULATEUR_PAUSE, sinon 800 ms)")
 	if err := fs.Parse(args[1:]); err != nil {
 		return err
 	}

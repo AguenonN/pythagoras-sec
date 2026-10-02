@@ -105,6 +105,9 @@ func scenario(texte string) []appelPrevu {
 	appels := []appelPrevu{
 		{"taux-officiel", "get_taux_usure", map[string]any{"date": "2026-10-04"}},
 	}
+	if strings.Contains(t, "base interne") {
+		appels = []appelPrevu{{"banque-synthetique", "get_taux_interne", map[string]any{"produit": "pret"}}}
+	}
 	if !strings.Contains(t, "sans gel") {
 		appels = append(appels, appelPrevu{"gels-avoirs", "verifier_gel", map[string]any{"nom": "ENTREPRISE FICTIVE SA"}})
 	}
@@ -347,6 +350,9 @@ func (s *session) appeler(a appelPrevu) (resultat, error) {
 	seq := s.seq
 	ts := s.c.maintenant()
 	srv := serveurs[a.serveur]
+	if a.outil == "get_taux_interne" {
+		srv.acces = directive.AccesLecture
+	}
 	origine := approval.Digest(a.outil, a.args)
 	if err := s.coffre.Deposer(journal.Depot{TS: ts, Empreinte: origine, Outil: a.outil, ArgumentsOrigine: a.args}); err != nil {
 		return resultat{}, err

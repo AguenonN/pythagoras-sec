@@ -143,3 +143,10 @@ func TestModeDev(t *testing.T) {
 		t.Fatalf("le disque n'est pas relu : %q %q", c1, c2)
 	}
 }
+
+func httptestServeur(t *testing.T, b *banc) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(b.Srv.Handler())
+	t.Cleanup(srv.Close)
+	return srv
+}
