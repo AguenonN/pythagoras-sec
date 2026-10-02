@@ -20,9 +20,9 @@ from compilateur import mistral
 ICI = os.path.dirname(os.path.abspath(__file__))
 ETAT = os.path.join(os.path.dirname(ICI), ".etat", "orchestrateur")
 # Budget de la session « démo réelle » (nuit/brief_A_demo_reelle.md) :
-# 80 appels réels, puis 30 de plus accordés par Manu le 02/10 (110 au total),
+# 80 appels réels, puis 30 et 15 de plus accordés par Manu le 02/10 (125 au total),
 # compteur dans agents/.etat/orchestrateur.
-MAX_APPELS = 110
+MAX_APPELS = 125
 
 
 class ErreurRejeu(Exception):
