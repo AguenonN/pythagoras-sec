@@ -34,9 +34,9 @@ Alors :
 Si la règle ne peut pas être évaluée pour un appel (information absente, illisible ou inconnue du registre), la directive ne s'applique pas à cet appel (choix validé par juriste@cabinet.fr).
 
 Directive X-002, version 1, brouillon (non appliquée tant que le juriste ne l'a pas passée en observation ou active), fondée sur Exemple.
-Applicable aux appels à partir du 01/09/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Applicable aux évènements à partir du 01/09/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
 Pour tous les appelants.
-Quand : à l'ouverture d'une session (évènement réservé, pas encore évalué par l'engine).
+Quand : à l'ouverture de chaque session.
 Condition : aucune, la directive s'applique à chaque fois.
 Alors :
   - le rôle « rssi » est notifié dans une synthèse périodique ; si la notification ne part pas, l'évènement suit son cours

@@ -14,7 +14,32 @@ Rien n'est poussé ni fusionné ; `main` n'est pas touchée.
 | 3 | `7c53da0` | `directive relire --directives D-009,…` : relecture des seules directives ajoutées, jugées dans le jeu entier |
 | 3, 5, 4, 2 bis | `120e504` | `python -m compilateur.service` (contrat §4) ; ajout à un jeu existant (version n+1, numérotation à la suite) ; correctif demandeur **et** sujet ; `scenarios_v2 --catalogue --vocabulaire --jeu-existant --modele` ; `demo --jeu-existant` |
 | — | `d191eb0` | Un outil de lecture est désigné par ses propres mots (« base interne des taux » → `get_taux_interne`) ; une action ne l'est jamais |
-| 6, 8 | (ce commit) | Choix du modèle sur mesures (**`mistral-medium-latest`** par défaut du compilateur) ; parcours de scène week-end et base interne (D-009) enregistrés par le service et rejoués sans réseau ; D-010 après D-009 |
+| 6, 8 | `c7f61e3` | Choix du modèle sur mesures (**`mistral-medium-latest`** par défaut du compilateur) ; parcours de scène week-end et base interne (D-009) enregistrés par le service et rejoués sans réseau ; D-010 après D-009 |
+| 2 | (ce commit) | Relecture des formes de gate-v2 : `$racine/…` sous un quantificateur, directives d'évènement ; fichier attendu `testdata/v2/gate-v2.txt`, trois fuseaux machine |
+
+### Étape 2 — relecture des formes ajoutées par gate-v2
+
+Nouveau jeu `internal/relecture/testdata/gate-v2.json` (attendu
+`testdata/v2/gate-v2.txt`, comparé octet pour octet, `time.Local` changé et
+sous-processus `TZ=UTC`, `Asia/Tokyo`, `America/Los_Angeles`) :
+
+- **`$racine/x`** (feuille `argument`, `champ` d'un quantificateur imbriqué,
+  `champ` d'une feuille `sujet`) est relu « l'argument /x de l'appel (lu
+  dans les arguments, et non dans l'élément courant) », et non plus « le
+  champ $racine/x de l'élément ».
+- **Évènements** : « à l'ouverture de chaque session », « à chaque
+  attestation en échec [du serveur X] (connexion ou changement) », « à
+  chaque purge du coffre » ; la mention « pas encore évalué par l'engine »
+  est retirée.
+- Corrigé en plus, trouvé en écrivant l'attendu : pour une directive
+  d'évènement, `temps` dit « l'évènement a lieu » (et non « l'appel ») ;
+  `refuser` à l'ouverture se lit « la session n'est pas ouverte » (y compris
+  après une notification `si_echec: refuser`) ; la ligne de l'indéterminé
+  suit `DecideEvenement` (ouverture : la session n'est pas ouverte ; autres
+  évènements : directive tenue pour déclenchée, l'évènement suit son cours,
+  notifications et marques appliquées) ; « Applicable aux évènements ».
+- Attendus existants modifiés : seules les trois lignes « Quand » des
+  évènements de `complet.txt` et `variantes.txt`.
 
 ### Étape 6 — choix du modèle, sur mesures
 

@@ -1,0 +1,48 @@
+Jeu gate-v2, version 1, en vigueur à partir du 01/10/2026 à 00:00 UTC, auteur juriste@exemple.test.
+Empreinte : sha256:e4d87525b06948d1f950f44b69ab702a435a267079cdbeb8e4a2fa8367eb8d0e.
+4 directives, évaluées dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
+Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.
+
+Directive G-001, version 1, active (appliquée), fondée sur l'art. 4 Politique de crédit.
+Applicable aux appels à partir du 01/10/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Pour tous les appelants.
+Quand : tout appel à l'outil attribuer_pret sur le serveur banque-synthetique.
+Si au moins un élément de la liste en argument /lignes vérifie (faux si la liste est vide) :
+  - toutes les conditions suivantes sont vraies :
+    - le champ /montant de l'élément est strictement supérieur à 100
+    - l'argument /categorie de l'appel (lu dans les arguments, et non dans l'élément courant) est égal à « sensible »
+    - chaque élément de la liste en argument /garants de l'appel (lu dans les arguments, et non dans l'élément courant) vérifie (vrai si la liste est vide) :
+      - l'élément est présent
+    - la personne désignée par l'argument /salarie_id de l'appel (lu dans les arguments, et non dans l'élément courant) n'appartient pas au groupe « salaries-proteges »
+Alors :
+  - l'appel attend une validation humaine par le rôle « analyste-risques »
+Si la règle ne peut pas être évaluée pour un appel (information absente, illisible ou inconnue du registre), l'appel est refusé.
+
+Directive G-002, version 1, active (appliquée), fondée sur l'art. 12 Règlement intérieur.
+Applicable aux évènements à partir du 01/10/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Pour tous les appelants.
+Quand : à l'ouverture de chaque session.
+Si toutes les conditions suivantes sont vraies :
+  - le demandeur (la personne pour qui l'agent travaille, selon l'annuaire) est membre du groupe « prestataires-externes »
+  - l'évènement a lieu un dimanche, en heure locale du fuseau Europe/Paris
+Alors :
+  - la session n'est pas ouverte
+  - le rôle « direction-juridique » est notifié en temps réel ; si la notification ne part pas, la session n'est pas ouverte
+Si la règle ne peut pas être évaluée pour cet évènement (information absente ou illisible), la session n'est pas ouverte ; les notifications et marques de la directive s'appliquent aussi.
+
+Directive G-003, version 1, en observation (journalisée, non appliquée), fondée sur l'art. 3 Politique de sécurité des sources de données.
+Applicable aux évènements à partir du 01/10/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Pour tous les appelants.
+Quand : à chaque attestation en échec (connexion ou changement).
+Condition : aucune, la directive s'applique à chaque fois.
+Alors :
+  - le rôle « direction-juridique » est notifié dans une synthèse périodique ; si la notification ne part pas, l'évènement suit son cours
+
+Directive G-004, version 1, active (appliquée), fondée sur l'art. 5 RGPD.
+Applicable aux évènements à partir du 01/10/2026 à 00:00 UTC, sans date de fin ; sans échéance de relecture.
+Pour tous les appelants.
+Quand : à chaque purge du coffre.
+Si l'évènement a lieu entre 22:00 (inclus) et 06:00 (exclu), à cheval sur minuit, en heure locale du fuseau Europe/Paris
+Alors :
+  - l'évènement est marqué « purge_nocturne » au journal
+Si la règle ne peut pas être évaluée pour cet évènement (information absente ou illisible), la directive est tenue pour déclenchée : l'évènement suit son cours ; les notifications et marques de la directive s'appliquent aussi.

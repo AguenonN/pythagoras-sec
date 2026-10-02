@@ -1,0 +1,44 @@
+{
+  "jeu": {"id": "gate-v2", "version": 1, "date_effet": "2026-10-01T00:00:00Z", "auteur": "juriste@exemple.test"},
+  "directives": [
+    {
+      "id": "G-001", "version": 1, "statut": "active", "date_effet": "2026-10-01T00:00:00Z",
+      "texte_fr": "Une ligne de plus de 100 euros d'une demande de catégorie sensible attend une validation.",
+      "fondements": [{"texte": "Politique de crédit", "article": "4"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"existe": {"champ": "/lignes", "condition": {"et": [
+        {"argument": {"champ": "/montant", "op": ">", "valeur": 100}},
+        {"argument": {"champ": "$racine/categorie", "op": "==", "valeur": "sensible"}},
+        {"tous": {"champ": "$racine/garants", "condition": {"argument": {"champ": "", "op": "present"}}}},
+        {"non": {"sujet": {"groupe": "salaries-proteges", "champ": "$racine/salarie_id"}}}
+      ]}}},
+      "effets": [{"effet": "attendre_validation", "par_role": "analyste-risques"}]
+    },
+    {
+      "id": "G-002", "version": 1, "statut": "active", "date_effet": "2026-10-01T00:00:00Z",
+      "texte_fr": "Un prestataire externe n'ouvre pas de session le dimanche.",
+      "fondements": [{"texte": "Règlement intérieur", "article": "12"}],
+      "declencheur": {"evenement": "ouverture_session"},
+      "condition": {"et": [
+        {"demandeur": {"groupe": "prestataires-externes"}},
+        {"temps": {"jour_semaine": ["dimanche"], "fuseau": "Europe/Paris"}}
+      ]},
+      "effets": [{"effet": "refuser"}, {"effet": "notifier", "destinataire_role": "direction-juridique", "rythme": "temps_reel", "si_echec": "refuser"}]
+    },
+    {
+      "id": "G-003", "version": 1, "statut": "observation", "date_effet": "2026-10-01T00:00:00Z",
+      "texte_fr": "Toute attestation en échec est signalée à la direction juridique.",
+      "fondements": [{"texte": "Politique de sécurité des sources de données", "article": "3"}],
+      "declencheur": {"evenement": "attestation_echouee"},
+      "effets": [{"effet": "notifier", "destinataire_role": "direction-juridique", "rythme": "synthese", "si_echec": "continuer"}]
+    },
+    {
+      "id": "G-004", "version": 1, "statut": "active", "date_effet": "2026-10-01T00:00:00Z",
+      "texte_fr": "Une purge du coffre faite la nuit est marquée.",
+      "fondements": [{"texte": "RGPD", "article": "5"}],
+      "declencheur": {"evenement": "purge"},
+      "condition": {"temps": {"heure": {"de": "22:00", "a": "06:00"}, "fuseau": "Europe/Paris"}},
+      "effets": [{"effet": "marquer", "etiquette": "purge_nocturne"}]
+    }
+  ]
+}

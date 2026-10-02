@@ -21,6 +21,9 @@ var casV2 = []struct{ nom, jeu, attendu string }{
 	{"demandeur", "../directive/testdata/v2/demandeur.json", "testdata/v2/demandeur.txt"},
 	{"complet", "../directive/testdata/v2/complet.json", "testdata/v2/complet.txt"},
 	{"variantes", "testdata/variantes-v2.json", "testdata/v2/variantes.txt"},
+	// Formes ajoutées par la session gate-v2 : $racine sous un
+	// quantificateur, directives d'évènement évaluées par l'engine.
+	{"gate-v2", "testdata/gate-v2.json", "testdata/v2/gate-v2.txt"},
 }
 
 // TestJeuV2_Attendu compare la relecture de chaque jeu v2 au fichier

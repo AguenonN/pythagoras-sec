@@ -24,22 +24,28 @@ func directiveV2(d directive.Directive) string {
 	var b strings.Builder
 	b.WriteString("Directive " + d.ID + ", version " + strconv.Itoa(d.Version) + ", " +
 		statut(d.Statut) + ", fondée sur " + fondements(d.Fondements) + ".\n")
-	b.WriteString("Applicable aux appels à partir du " + date(d.DateEffet) + ", sans date de fin ; " +
+	ev := evenementDe(d)
+	vise := "aux appels"
+	if ev != directive.EvAppelOutil {
+		vise = "aux évènements"
+	}
+	b.WriteString("Applicable " + vise + " à partir du " + date(d.DateEffet) + ", sans date de fin ; " +
 		revision(d.RevisionAvant) + ".\n")
 	b.WriteString(perimetre(d.Perimetre) + ".\n")
 	b.WriteString("Quand : " + declencheur(d.Declencheur) + ".\n")
 	if d.Arbre == nil {
 		b.WriteString("Condition : aucune, la directive s'applique à chaque fois.\n")
 	} else {
-		b.WriteString("Si " + bloc(d.Arbre, 0, false))
+		si := bloc(d.Arbre, 0, false)
+		if ev != directive.EvAppelOutil {
+			// La feuille temps date l'évènement, et non un appel.
+			si = strings.ReplaceAll(si, "l'appel a lieu ", "l'évènement a lieu ")
+		}
+		b.WriteString("Si " + si)
 	}
 	b.WriteString("Alors :\n")
-	objet := "l'appel"
-	if d.Declencheur == nil || d.Declencheur.Evenement != directive.EvAppelOutil {
-		objet = "l'évènement"
-	}
 	for _, e := range d.Effets {
-		b.WriteString(retrait + "- " + effetV2(e, objet) + "\n")
+		b.WriteString(retrait + "- " + effetV2(e, ev) + "\n")
 	}
 	if l := indetermineV2(d); l != "" {
 		b.WriteString(l + "\n")
@@ -72,15 +78,15 @@ func declencheur(dc *directive.Declencheur) string {
 	case directive.EvAppelOutil:
 		return cibleV2(dc.Cible)
 	case directive.EvOuvertureSession:
-		return "à l'ouverture d'une session (évènement réservé, pas encore évalué par l'engine)"
+		return "à l'ouverture de chaque session"
 	case directive.EvPurge:
-		return "à la purge des données (évènement réservé, pas encore évalué par l'engine)"
+		return "à chaque purge du coffre"
 	case directive.EvAttestationEchouee:
-		s := "à l'échec d'une attestation"
+		s := "à chaque attestation en échec (connexion ou changement)"
 		if dc.Cible != nil && dc.Cible.Serveur != "" && dc.Cible.Serveur != "*" {
-			s += " du serveur " + dc.Cible.Serveur
+			s = "à chaque attestation en échec du serveur " + dc.Cible.Serveur + " (connexion ou changement)"
 		}
-		return s + " (évènement réservé, pas encore évalué par l'engine)"
+		return s
 	}
 	return "à l'évènement inconnu " + strconv.Quote(string(dc.Evenement))
 }
@@ -182,7 +188,24 @@ func negation(nd *directive.Noeud, dansQuantif bool) (string, bool) {
 	return "", false
 }
 
+// prefixeRacine marque, sous un quantificateur, un pointeur lu depuis les
+// arguments de l'appel et non depuis l'élément courant.
+const prefixeRacine = "$racine"
+
+// racine rend le pointeur d'un champ « $racine/… » et vrai, ou faux.
+func racine(champ string) (string, bool) {
+	if p, ok := strings.CutPrefix(champ, prefixeRacine); ok && strings.HasPrefix(p, "/") {
+		return p, true
+	}
+	return "", false
+}
+
+const lueALaRacine = " de l'appel (lu dans les arguments, et non dans l'élément courant)"
+
 func liste(champ string, dansQuantif bool) string {
+	if p, ok := racine(champ); ok {
+		return "la liste en argument " + p + lueALaRacine
+	}
 	if champ == "" {
 		return "l'élément courant, qui est une liste,"
 	}
@@ -194,6 +217,9 @@ func liste(champ string, dansQuantif bool) string {
 
 // argument nomme le champ d'une feuille argument.
 func argument(champ string, dansQuantif bool) string {
+	if p, ok := racine(champ); ok {
+		return "l'argument " + p + lueALaRacine
+	}
 	switch {
 	case dansQuantif && champ == "":
 		return "l'élément"
@@ -380,18 +406,47 @@ func personne(f *directive.FeuilleSujet, dansQuantif bool) string {
 	if f.Champ == nil || *f.Champ == "" {
 		return "la personne désignée par l'élément"
 	}
+	if p, ok := racine(*f.Champ); ok {
+		return "la personne désignée par l'argument " + p + lueALaRacine
+	}
 	if dansQuantif {
 		return "la personne désignée par le champ " + *f.Champ + " de l'élément"
 	}
 	return "la personne désignée par l'argument " + *f.Champ
 }
 
-// effetV2 rend un effet ; objet est ce sur quoi il porte (« l'appel »
-// pour appel_outil, « l'évènement » pour un évènement réservé).
-func effetV2(e directive.EffetDirective, objet string) string {
+// evenementDe rend l'évènement du déclencheur ; appel_outil s'il manque.
+func evenementDe(d directive.Directive) directive.Evenement {
+	if d.Declencheur == nil {
+		return directive.EvAppelOutil
+	}
+	return d.Declencheur.Evenement
+}
+
+// objetDe nomme ce sur quoi portent les effets : « l'appel » pour
+// appel_outil, « l'évènement » sinon.
+func objetDe(ev directive.Evenement) string {
+	if ev == directive.EvAppelOutil {
+		return "l'appel"
+	}
+	return "l'évènement"
+}
+
+// refus dit ce que refuser veut dire pour l'évènement : l'appel n'est pas
+// transmis ; à l'ouverture d'une session, la session n'est pas ouverte.
+func refus(ev directive.Evenement) string {
+	if ev == directive.EvOuvertureSession {
+		return "la session n'est pas ouverte"
+	}
+	return objetDe(ev) + " est refusé"
+}
+
+// effetV2 rend un effet de la directive déclenchée par l'évènement ev.
+func effetV2(e directive.EffetDirective, ev directive.Evenement) string {
+	objet := objetDe(ev)
 	switch e.Effet {
 	case directive.Refuser:
-		return objet + " est refusé"
+		return refus(ev)
 	case directive.AttendreValidation:
 		s := objet + " attend une validation humaine"
 		if e.ParRole != "" {
@@ -423,7 +478,7 @@ func effetV2(e directive.EffetDirective, objet string) string {
 		}
 		switch e.SiEchec {
 		case directive.EchecRefuser:
-			s += " ; si la notification ne part pas, " + objet + " est refusé"
+			s += " ; si la notification ne part pas, " + refus(ev)
 		case directive.EchecContinuer:
 			s += " ; si la notification ne part pas, " + objet + " suit son cours"
 		}
@@ -443,6 +498,10 @@ func indetermineV2(d directive.Directive) string {
 	if d.Arbre == nil && !registre {
 		return ""
 	}
+	ev := evenementDe(d)
+	if ev != directive.EvAppelOutil {
+		return indetermineEvenement(d, ev)
+	}
 	si := "Si la règle ne peut pas être évaluée pour un appel (information absente, illisible ou inconnue du registre), "
 	if d.SiIndetermine == directive.IndetermineIgnorer {
 		return si + "la directive ne s'applique pas à cet appel (choix validé par " + d.SiIndetermineValidePar + ")."
@@ -453,6 +512,31 @@ func indetermineV2(d directive.Directive) string {
 		}
 	}
 	return si + "l'appel est refusé."
+}
+
+// indetermineEvenement suit DecideEvenement : l'indéterminé déclenche la
+// directive (effet forcé à refuser) ; seule l'ouverture d'une session peut
+// être refusée, les autres évènements ne sont pas arrêtés et seules les
+// notifications et marques s'appliquent.
+func indetermineEvenement(d directive.Directive, ev directive.Evenement) string {
+	si := "Si la règle ne peut pas être évaluée pour cet évènement (information absente ou illisible), "
+	if d.SiIndetermine == directive.IndetermineIgnorer {
+		return si + "la directive ne s'applique pas (choix validé par " + d.SiIndetermineValidePar + ")."
+	}
+	suite := ""
+	for _, e := range d.Effets {
+		if e.Effet == directive.Notifier || e.Effet == directive.Marquer {
+			suite = " ; les notifications et marques de la directive s'appliquent aussi"
+			break
+		}
+	}
+	if ev == directive.EvOuvertureSession {
+		return si + "la session n'est pas ouverte" + suite + "."
+	}
+	if suite == "" {
+		return si + "la directive est tenue pour déclenchée, sans effet sur l'évènement, qui suit son cours."
+	}
+	return si + "la directive est tenue pour déclenchée : l'évènement suit son cours" + suite + "."
 }
 
 // chaines écrit une liste de chaînes entre guillemets français.
