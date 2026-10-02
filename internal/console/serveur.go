@@ -49,6 +49,7 @@ func (s *Serveur) Handler() http.Handler {
 	mux.HandleFunc("GET /api/journal/{id}/chaine", s.chaine)
 	mux.HandleFunc("GET /api/journal/{id}/poste", s.poste)
 	mux.HandleFunc("GET /api/identites", s.identites)
+	mux.HandleFunc("GET /api/suggestions", s.suggestions)
 	mux.HandleFunc("POST /api/lancer", s.lancer)
 	mux.HandleFunc("GET /api/lancements", s.lancements)
 	mux.HandleFunc("GET /api/regles", s.regles)
@@ -293,6 +294,10 @@ func (s *Serveur) lancer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ecrire(w, l)
+}
+
+func (s *Serveur) suggestions(w http.ResponseWriter, r *http.Request) {
+	ecrire(w, map[string]any{"suggestions": s.Depot.Suggestions()})
 }
 
 func (s *Serveur) lancements(w http.ResponseWriter, r *http.Request) {

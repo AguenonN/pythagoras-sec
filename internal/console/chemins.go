@@ -22,6 +22,7 @@ type Chemins struct {
 	Propositions string // demo/execution/propositions/
 	Compilation  string // demo/execution/compilation/<id>/
 	JeuxTravail  string // demo/scenarios/jeux/ : jeux de travail des scénarios (lecture seule)
+	Scenarios    string // demo/scenarios/ : scénarios (lecture seule)
 }
 
 // Chemins rend les chemins à lire ou écrire : ceux de la démonstration,
@@ -34,7 +35,7 @@ func (d *Depot) Chemins() Chemins {
 	}
 	j := func(p string) string { return filepath.Join(r, p) }
 	return Chemins{Directives: j(c.Directives), Historique: j(c.Historique), Origines: j(c.Origines), Annuaire: j(c.Annuaire),
-		Cles: j(c.Cles), Autorite: j(c.Autorite), Approbations: j(c.Approbations), Propositions: j(c.Propositions), Compilation: j(c.Compilation), JeuxTravail: j(c.JeuxTravail)}
+		Cles: j(c.Cles), Autorite: j(c.Autorite), Approbations: j(c.Approbations), Propositions: j(c.Propositions), Compilation: j(c.Compilation), JeuxTravail: j(c.JeuxTravail), Scenarios: j(c.Scenarios)}
 }
 
 // cheminsRel calcule les chemins relatifs à la racine de la démonstration :
@@ -57,6 +58,7 @@ func (d *Depot) cheminsRel() Chemins {
 		Propositions: filepath.Join(ex, "propositions"),
 		Compilation:  filepath.Join(ex, "compilation"),
 		JeuxTravail:  filepath.Join(demo, "scenarios", "jeux"),
+		Scenarios:    filepath.Join(demo, "scenarios"),
 	}
 }
 

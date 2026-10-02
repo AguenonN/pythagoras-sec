@@ -165,3 +165,45 @@ func TestSignatureALHeureSimulee(t *testing.T) {
 	}
 	_ = fin
 }
+
+// Demandes suggérées : titre, demande et demandeur lus dans les scénarios ;
+// un scénario sans titre est ignoré ; la lecture ne lance rien.
+func TestDemandesSuggerees(t *testing.T) {
+	b := nouveauBanc(t)
+	dest := filepath.Join(b.racine, "demo", "scenarios")
+	must(t, os.MkdirAll(dest, 0o755))
+	ents, err := os.ReadDir("testdata/scenarios")
+	must(t, err)
+	for _, e := range ents {
+		brut, err := os.ReadFile(filepath.Join("testdata/scenarios", e.Name()))
+		must(t, err)
+		must(t, os.WriteFile(filepath.Join(dest, e.Name()), brut, 0o644))
+	}
+	must(t, os.WriteFile(filepath.Join(dest, "casse.json"), []byte("{pas du json"), 0o644))
+	avant := b.Dep.Journaux()
+
+	code, corps := get(t, b.Srv, "/api/suggestions")
+	if code != 200 {
+		t.Fatalf("%d %s", code, corps)
+	}
+	var rep struct{ Suggestions []Suggestion }
+	must(t, json.Unmarshal([]byte(corps), &rep))
+	if len(rep.Suggestions) != 2 {
+		t.Fatalf("deux suggestions attendues (sans-titre et fichier cassé ignorés) : %+v", rep.Suggestions)
+	}
+	if s := rep.Suggestions[0]; s.Fichier != "pret-simple" || s.Titre != "Prêt sans gel vérifié" || s.Demandeur != claire ||
+		!strings.Contains(s.Demande, "sans gel vérifié") {
+		t.Fatalf("première suggestion : %+v", s)
+	}
+	if s := rep.Suggestions[1]; s.Fichier != "rapport" || s.Demandeur != bruno {
+		t.Fatalf("seconde suggestion : %+v", s)
+	}
+	if apres := b.Dep.Journaux(); len(apres) != len(avant) {
+		t.Fatal("lire les suggestions ne lance rien")
+	}
+	// Sans dossier de scénarios : liste vide, jamais null.
+	must(t, os.RemoveAll(dest))
+	if _, corps := get(t, b.Srv, "/api/suggestions"); !strings.Contains(corps, `"suggestions":[]`) {
+		t.Fatalf("liste vide attendue : %s", corps)
+	}
+}

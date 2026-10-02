@@ -120,12 +120,25 @@
       } catch (e) { err.dire(e.message); }
       bouton.disabled = false;
     });
+    // Demandes suggérées (scénarios) : un clic remplit, ne lance rien.
+    const suggestions = (await api('/api/suggestions').catch(() => ({}))).suggestions || [];
+    if (!ctx.vivant()) return;
+    const proposer = (g) => {
+      demande.value = g.demande;
+      if (g.demandeur && [...demandeur.options].some(o => o.value === g.demandeur)) demandeur.value = g.demandeur;
+      info.textContent = 'Demande remplie : vérifiez-la puis cliquez sur « Lancer les agents ».';
+      demande.focus();
+    };
+    const exemples = suggestions.length ? h('div', { class: 'suggestions', style: 'display:flex;flex-direction:column;gap:6px' },
+      h('div', { class: 'etiq' }, 'Demandes suggérées'),
+      h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' }, suggestions.map(g =>
+        h('button', { type: 'button', class: 'btn contour petit', title: g.demande, 'data-suggestion': g.fichier, onclick: () => proposer(g) }, g.titre)))) : null;
     const formulaire = h('div', { class: 'carte' },
       h('div', { style: 'display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap' },
         h('label', { class: 'etiq', for: 'demande' }, 'Demande'),
         ch ? h('span', { class: 'moyen second' }, 'Session : ', selecteurSession('poste', ch)) : null),
       h('div', { style: 'display:flex;gap:12px;flex-wrap:wrap' }, demande, demandeur, bouton),
-      err, info);
+      exemples, err, info);
     const racine = h('div', { style: 'flex:1;display:flex;min-width:0' });
     ctx.monter(racine);
     let courante = ch, signature = null;

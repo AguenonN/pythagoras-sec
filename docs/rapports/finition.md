@@ -15,6 +15,7 @@ Branche `feat/finition`. Mis à jour après chaque commit.
   Limite : seuls un fichier de ces dossiers ou un seul retrait sont retrouvés ; `jeu.json` copié dans le dossier de session n'est pas lu (le brief demande les dossiers).
 - **Point 4 — anomalies d'affichage.** (a) Titre : l'espace avant les deux-points était aussi gardé par la copie JavaScript de `Titre` (Journal) ; corrigé (le côté Go l'était depuis `df2aef3`). (b) « validé par » : le nom du valideur venait vide (`valide_par[].nom`) ; rempli depuis l'annuaire, l'interface affiche le nom (identité à défaut). (c) Compteur de jetons d'une reprise à 0 : les jetons consommés `<valideur>.jwt.utilise` comptent désormais pour une reprise. Tests dans `TestValidationDeBoutEnBout`.
   Non traités car hors console : écarts 1, 6, 7, 8, 10, 11, 12 de la fusion. Reste côté console : « Pourquoi c'est un risque » (écran 4) toujours « non disponible » (l'Analyste n'est pas relié à cet écran ; rien à lire de fiable).
+- **Point 4 ter — demandes suggérées.** `GET /api/suggestions` (`suggestions.go`) lit `demo/scenarios/*.json` (`titre`, `demande`, `demandeur`) en lecture seule, ignore les scénarios sans titre ou sans demande et les fichiers illisibles ; liste vide `[]` sans dossier. Poste conseiller : boutons « Demandes suggérées » ; un clic remplit la demande et le demandeur (si l'identité existe dans l'annuaire), rien n'est lancé sans « Lancer les agents ». Test `TestDemandesSuggerees` sur deux fichiers d'exemple de `internal/console/testdata/scenarios/` (+ un sans titre, un cassé).
 
 ## Décisions prises seul
 
