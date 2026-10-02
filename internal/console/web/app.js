@@ -116,12 +116,11 @@ function fondementTexte(f) {
 }
 const versionTexte = (id, version) => id + ', version ' + version;
 // Le motif est celui que l'engine a journalisé ; à l'écran, la version d'une
-// directive s'écrit en toutes lettres et le nom technique du verrou est omis.
+// directive s'écrit en toutes lettres.
 function motifAffiche(m) {
   return String(m || '')
     .replace(/sha256:([0-9a-f]{8})[0-9a-f]{8,}/g, 'sha256:$1…')
-    .replace(/\b([A-Z]+-\d+) v(\d+)\b/g, '$1, version $2')
-    .replace(/\((interdiction|seuil_argument|provenance_session|approbation_humaine|champs_autorises_par_destination|source_attestee), /g, '(');
+    .replace(/\b([A-Z]+-\d+) v(\d+)\b/g, '$1, version $2');
 }
 function humanise(nom) { return String(nom || '').replace(/_/g, ' '); }
 
