@@ -4,6 +4,7 @@
     python -m analyste constats  [--sessions DIR] [--jeu F] [--seuil-montant N]
     python -m analyste proposer  [--sessions DIR] [--jeu F] [--sortie DIR] [--mode rejeu|reel] [--seuil-montant N]
     python -m analyste mesurer   <id de proposition>
+    python -m analyste calibrer  [--sessions DIR] [--mode rejeu|reel]
 
 ``constats`` : détection seule, par le code, sans modèle (JSON sur la sortie).
 ``proposer`` : détection, rédaction par Mistral de chaque constat non encore
@@ -86,6 +87,23 @@ def proposer(sessions_dir, jeu, sortie, client, seuil=None, racine=RACINE, seule
             "avertissements": avertissements}
 
 
+def calibrer(sessions_dir, jeu, plongeur, seuil=None, racine=RACINE):
+    """Pour recalibrer le seuil des sessions similaires : pour chaque
+    constat, le score de **toutes** les sessions terminées qui ne le fondent
+    pas, du plus proche au plus lointain, avec le seuil en vigueur. Ne
+    change rien : le seuil reste ``similarite.SEUIL_SESSIONS`` tant qu'on
+    ne l'édite pas."""
+    res = constats(sessions_dir, jeu, seuil, racine)
+    out = []
+    for c in res["constats"]:
+        scores = similarite.sessions_similaires(c, res["_sessions"], plongeur, redaction.NATURES, seuil=-1.0, n=10 ** 6)
+        out.append({"constat": c["id"], "sessions_fondatrices": c["sessions"],
+                    "scores": [{"session": x["session"], "score": x["score"],
+                                "au_dessus_du_seuil": x["score"] >= similarite.SEUIL_SESSIONS} for x in scores]})
+    return {"seuil_en_vigueur": similarite.SEUIL_SESSIONS, "sessions_lues": res["sessions_lues"],
+            "appels_embeddings": plongeur.appels, "constats": out}
+
+
 def principal(argv=None, sortie=sys.stdout):
     ap = argparse.ArgumentParser(prog="analyste", description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -101,6 +119,10 @@ def principal(argv=None, sortie=sys.stdout):
             p.add_argument("--constat", action="append", default=[], help="ne rédiger que ce constat (répétable)")
             p.add_argument("--sans-plongements", action="store_true",
                            help="ni sessions similaires ni fondements suggérés")
+    k = sub.add_parser("calibrer", help="scores des sessions similaires, pour fixer le seuil")
+    k.add_argument("--sessions", default=SESSIONS)
+    k.add_argument("--jeu", default=JEU)
+    k.add_argument("--mode", choices=["rejeu", "reel"], default=os.environ.get("ANALYSTE_MODE", "rejeu"))
     m = sub.add_parser("mesurer")
     m.add_argument("id")
     m.add_argument("--propositions", default=SORTIE)
@@ -116,6 +138,9 @@ def principal(argv=None, sortie=sys.stdout):
                        seulement=a.constat,
                        plongeur=None if a.sans_plongements else plongements.Plongeur(a.mode))
         code = 1 if out["erreurs"] else 0
+    elif a.commande == "calibrer":
+        out = calibrer(a.sessions, a.jeu, plongements.Plongeur(a.mode))
+        code = 0
     else:
         out = mesure.mesurer(a.id, propositions=a.propositions, sessions=a.sessions)
         if out["etat"] == "mesuree":

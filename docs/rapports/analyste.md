@@ -14,6 +14,7 @@ Branche `feat/analyste`, partie de `5b83cd5`. Rien de poussé ni fusionné.
 | `268743a` | Suite embeddings, étape 1 : corpus local des fondements (§7) |
 | `f73f68e` | Suite embeddings, étape 2 : sessions similaires et fondements suggérés (§7) |
 | `f7de4d7` | Suite, point 5 : détecteur « contournement d'un caviardage » (§7) |
+| (ce commit) | Réponses de Manu : textes affichés en français, « retiré », commande de recalibrage, propositions de démo régénérées (§8) |
 
 **Critère de réussite : atteint, enregistré, rejouable hors ligne.**
 - Le détecteur « source interne périmée » trouve DOS-FICTIF-002 (passage nominal : base interne consultée à l'entrée 2, trimestre 2026-Q3 ; taux officiel consulté à l'entrée 5, trimestre 2026-Q4 ; attribution transmise à l'entrée 7).
@@ -182,3 +183,57 @@ python3 -c "import json,glob; [print(p['id'], p['sessions_similaires'], [f['id']
 python3 -m analyste constats --sessions analyste/tests/donnees/sessions-construites   # contournement D-023
 python3 -m analyste constats --sessions ../../mcp_rogue-secteurs/demo/execution/sessions | grep -c contournement   # lecture seule
 ```
+
+## 8. Réponses de Manu (02/10, soir) et suites
+
+**Décisions de Manu :**
+1. Comparer les sessions entre elles pour trouver les sessions similaires : **accepté**.
+2. Seuil des sessions similaires : **0,95 gardé pour l'instant**. Il sera recalibré samedi sur l'historique complet, après la fusion n° 3 et le réenregistrement (procédure ci-dessous).
+3. Journaux du contournement de D-023 : ils seront copiés dans les données de test **pendant la fusion n° 3**. Rien n'a été pris dans l'autre worktree.
+4. Les 3 propositions de démo sont **régénérées** avec `sessions_similaires` et `fondements_suggeres` (voir ci-dessous).
+5. Proposition sur le contournement : **pas de compilateur**, c'est au juriste de la reprendre ou de la rejeter. Son texte et son explication sont en français et n'emploient pas « caviardage » : ils disent « retiré ».
+6. Tout ce que la console affiche est en français (vérifié, voir ci-dessous).
+
+### Recalibrer le seuil (samedi), en une commande
+
+Après la fusion n° 3 et le réenregistrement, avec les sessions dans `demo/execution/sessions/` et `MISTRAL_API_KEY` dans l'environnement :
+
+```sh
+cd agents && python3 -m analyste calibrer --sessions ../demo/execution/sessions --mode reel > ../demo/execution/analyste/calibrage.json
+```
+
+- **Ce que rend la commande :** pour chaque constat, le score de **toutes** les sessions terminées qui ne le fondent pas, de la plus proche à la plus lointaine, et pour chacune si elle passe le seuil en vigueur (`au_dessus_du_seuil`).
+- **Coût :** seuls les textes encore sans vecteur partent à `mistral-embed`, en un seul lot jusqu'à 32 textes. Ils sont enregistrés, et le même appel en `--mode rejeu` se refait ensuite sans réseau. Le nombre d'appels est rendu dans `appels_embeddings`.
+- **Fixer le nouveau seuil :** on édite `SEUIL_SESSIONS` dans `agents/analyste/similarite.py` (avec la justification chiffrée en commentaire). Le test `test_similarite.TestSessionsSimilaires` est à ajuster à ce seuil. La commande ne change rien d'elle-même.
+
+### Textes affichés par la console, en français
+
+La console affiche `constat.type`, `constat.detail`, `texte_propose` et `explication` (`internal/console/web/ecran-redaction.js`).
+- **`constat.type` est maintenant un libellé français** (« Source interne périmée », « Entreprise non retrouvée au répertoire SIRENE »…). Le type machine reste dans **`constat.code`**, nouveau champ que la console ignore. **À noter pour la fusion** : `type` n'est plus un code.
+- **Trimestres** : écrits « T3 2026 », dans le détail (par le code) comme dans l'explication. Le code normalise la forme `AAAA-Qn` du texte rédigé sans en toucher le sens.
+- **Vocabulaire** :
+  - « le gate » est normalisé en « l'engine », le mot de la console ;
+  - le mot « caviardage » est **refusé** par le contrôle du code dans le texte, le fondement et l'explication ;
+  - le détecteur s'appelle désormais « contournement d'un retrait de champs » (`contournement_retrait`, identifiant `A-contournement-retrait-…`).
+- **Vérification :** le test `test_affichage` contrôle les quatre exemples (pas de « caviard », pas de `AAAA-Qn`, pas de « le gate », pas de mots anglais courants, `type` qui est un libellé). Les noms d'outils et de sessions restent des identifiants. Les 3 propositions de démo ont été relues une à une.
+
+**Proposition de contournement, version retenue :**
+- Texte : « *Si un appel à l'outil rh-synthetique/lister_salaries a retiré des champs portant l'étiquette salaire, tout appel ultérieur à un outil du serveur rh-synthetique portant la même étiquette dans la même session doit être soumis à validation humaine par le responsable-rh.* »
+- Fondement : RGPD, article 5.1.c (à valider par le juriste).
+- Fondements suggérés : RGPD articles 22 et 5.
+- Comment on y est arrivé :
+  - la version « retiré » suivante était repassée à `analyste-risques` et citait D-023 comme fondement ;
+  - pour cette action, qu'aucun rôle n'a jamais validée, le contexte donne désormais les rôles des directives du même serveur (`responsable-rh`, fait du jeu) et les fondements de la directive contournée ;
+  - les constats de crédit ne sont pas touchés : leurs rédactions enregistrées, dont celle qui donne D-009, rejouent à l'identique.
+
+### Propositions de démo régénérées
+
+`demo/execution/propositions/` vidé (3 propositions, aucune décision), puis `python -m analyste proposer` en **rejeu**, sur les 9 sessions de démo (les mêmes que les journaux de test).
+
+| Proposition | Sessions similaires | Fondements suggérés |
+|---|---|---|
+| Source interne périmée | base-interne-avec-d009 (0,994), consigne ×2 (0,990) | Conso L314-6, CMF L313-5-1 |
+| Action sans contrôle humain | base-interne-avec-d009 (0,994), consigne ×2 (0,976) | Conso L314-6, RGPD art. 22 |
+| Entreprise non retrouvée | nominal (0,990), top-management (0,985), base-interne-avec-d009 (0,981) | CMF L313-5-1, Conso L314-6 |
+
+**Budget de la suite : 11 appels réels sur 40.** Ce lot en a coûté 4 : deux rédactions du contournement et deux lots d'embeddings pour les nouveaux textes. Les enregistrements devenus inutiles sont retirés : il reste 4 rédactions et 20 vecteurs. **68 tests** passent, sans réseau.

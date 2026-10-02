@@ -1,0 +1,85 @@
+{
+ "id": "A-contournement-retrait-rh-synthetique.consulter_fiche",
+ "date": "2026-10-02T16:01:27Z",
+ "constat": {
+  "type": "Contournement d'un retrait de champs",
+  "code": "contournement_retrait",
+  "detail": "Constat : contournement d'un retrait de champs. Dans 1 session(s), des champs ont été retirés de rh-synthetique/lister_salaries (D-023), puis rh-synthetique/consulter_fiche, qui porte la même donnée (étiquette salaire), l'a rendue sans retrait : le retrait a pu être contourné.\n- 20261002-180000-contournement-d023-construit, entrée 2 (2026-10-02) : champs retirés de rh-synthetique/lister_salaries à l'entrée 1 par D-023 (/inclure_salaires) ; puis rh-synthetique/consulter_fiche, qui porte aussi l'étiquette salaire, appelé sans retrait, données reçues, aux entrées 2, 3, 4.",
+  "occurrences": [
+   {
+    "session": "20261002-180000-contournement-d023-construit",
+    "seq_action": 2,
+    "action": "rh-synthetique/consulter_fiche",
+    "date_action": "2026-10-02T16:00:04Z",
+    "transmise": true,
+    "decision": {
+     "effet": "autoriser",
+     "directives_appliquees": [],
+     "validation_humaine": "aucune"
+    },
+    "retrait": {
+     "seq": 1,
+     "outil": "rh-synthetique/lister_salaries",
+     "directives": [
+      "D-023"
+     ],
+     "champs_retires": [
+      "/inclure_salaires"
+     ],
+     "etiquettes_propres": [
+      "salaire"
+     ]
+    },
+    "contournements": [
+     {
+      "seq": 2,
+      "outil": "rh-synthetique/consulter_fiche",
+      "etiquettes_communes": [
+       "salaire"
+      ]
+     },
+     {
+      "seq": 3,
+      "outil": "rh-synthetique/consulter_fiche",
+      "etiquettes_communes": [
+       "salaire"
+      ]
+     },
+     {
+      "seq": 4,
+      "outil": "rh-synthetique/consulter_fiche",
+      "etiquettes_communes": [
+       "salaire"
+      ]
+     }
+    ],
+    "valeurs_coffre": {}
+   }
+  ]
+ },
+ "sessions": [
+  "20261002-180000-contournement-d023-construit"
+ ],
+ "texte_propose": "Si un appel à l'outil rh-synthetique/lister_salaries a retiré des champs portant l'étiquette salaire, tout appel ultérieur à un outil du serveur rh-synthetique portant la même étiquette dans la même session doit être soumis à validation humaine par le responsable-rh.",
+ "fondement_propose": "RGPD — article 5.1.c (à valider par le juriste).",
+ "explication": "Dans la session 20261002-180000-contournement-d023-construit, l'outil rh-synthetique/lister_salaries a retiré le champ /inclure_salaires (étiqueté salaire) à l'appel 1. Les appels 2, 3 et 4 à rh-synthetique/consulter_fiche (étiqueté salaire) ont été autorisés sans validation, permettant potentiellement d'obtenir les données retirées via un autre chemin.",
+ "sessions_similaires": [],
+ "fondements_suggeres": [
+  {
+   "id": "RGPD-22",
+   "code": "Règlement (UE) 2016/679 (RGPD)",
+   "article": "22",
+   "score": 0.804,
+   "lien": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32016R0679",
+   "mention": "suggestion — à valider par le juriste"
+  },
+  {
+   "id": "RGPD-5",
+   "code": "Règlement (UE) 2016/679 (RGPD)",
+   "article": "5",
+   "score": 0.802,
+   "lien": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32016R0679",
+   "mention": "suggestion — à valider par le juriste"
+  }
+ ]
+}

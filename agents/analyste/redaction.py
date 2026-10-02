@@ -47,9 +47,9 @@ NATURES = {
         "Une action (attribution) a été présentée pour une entreprise que la session n'a pas retrouvée au "
         "répertoire officiel des entreprises (SIRENE) : recherchée sans résultat, ou jamais recherchée. Rien "
         "n'établit que l'entreprise existe."),
-    det.CONTOURNEMENT_CAVIARDAGE: (
-        "Une directive a retiré des champs d'un appel (caviardage) ; plus loin dans la même session, un autre "
-        "outil qui porte la même catégorie de donnée (même étiquette) a été appelé sans caviardage et a rendu des "
+    det.CONTOURNEMENT_RETRAIT: (
+        "Une directive a retiré des champs d'un appel ; plus loin dans la même session, un autre outil qui porte "
+        "la même catégorie de donnée (même étiquette) a été appelé sans que rien n'en soit retiré et a rendu des "
         "données : la donnée retirée a pu être obtenue par ce chemin, par exemple fiche par fiche."),
 }
 
@@ -190,6 +190,22 @@ def _formes(v):
 
 
 RE_SESSION = re.compile(r"\b\d{8}-\d{6}-[A-Za-z0-9_-]+")
+RE_TRIMESTRE = re.compile(r"\b(\d{4})-Q([1-4])\b")
+# Ce que la console affiche est en français, dans le vocabulaire de la
+# console : on dit « retiré » (pas « caviardage ») et « l'engine » (le mot
+# de la console), pas « le gate ».
+INTERDITS = ("caviard",)
+NORMALISATIONS = ((re.compile(r"\b[Ll]e gate\b"), "l'engine"), (re.compile(r"\bdu gate\b"), "de l'engine"),
+                  (re.compile(r"\bau gate\b"), "à l'engine"))
+
+
+def normaliser(texte):
+    """Trimestres en français (« T3 2026 ») et vocabulaire de la console.
+    Forme seulement : le sens du texte rédigé n'est pas touché."""
+    texte = RE_TRIMESTRE.sub(lambda m: "T%s %s" % (m.group(2), m.group(1)), texte)
+    for motif, mot in NORMALISATIONS:
+        texte = motif.sub(mot, texte)
+    return texte
 
 
 def verifier(args, constat):
@@ -199,7 +215,10 @@ def verifier(args, constat):
         v = args.get(k)
         if not isinstance(v, str) or not v.strip():
             raise RedactionInvalide("%s vide ou absent" % k)
-        out[k] = v.strip()
+        out[k] = normaliser(v.strip())
+        if any(m in out[k].lower() for m in INTERDITS):
+            raise RedactionInvalide("%s emploie un mot que la console n'affiche pas (%s) : dire « retiré »"
+                                    % (k, ", ".join(INTERDITS)))
     sessions = set(constat["sessions"])
     citees = set(args.get("sessions_citees") or []) | set(RE_SESSION.findall(out["explication"]))
     inventees = sorted(citees - sessions)

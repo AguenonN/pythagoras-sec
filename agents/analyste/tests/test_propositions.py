@@ -84,7 +84,7 @@ class TestProposer(unittest.TestCase):
             with open(os.path.join(self.sortie, p["id"] + ".json"), encoding="utf-8") as f:
                 ecrite = json.load(f)
             self.assertEqual(set(ecrite), CHAMPS_CONTRAT)
-            self.assertEqual(set(ecrite["constat"]), {"type", "detail", "occurrences"})
+            self.assertEqual(set(ecrite["constat"]), {"type", "code", "detail", "occurrences"})
             with open(os.path.join(EXEMPLES, p["id"] + ".json"), encoding="utf-8") as f:
                 exemple = json.load(f)
             for k in ("texte_propose", "fondement_propose", "explication", "sessions"):

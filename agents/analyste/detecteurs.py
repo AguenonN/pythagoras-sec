@@ -32,10 +32,10 @@ SOURCE_INTERNE_PERIMEE = "source_interne_perimee"
 ACTION_SANS_CONTROLE = "action_sans_controle_humain"
 DONNEES_PERSONNELLES_EXTERNE = "donnees_personnelles_vers_externe"
 ENTREPRISE_NON_RETROUVEE = "entreprise_non_retrouvee"
-CONTOURNEMENT_CAVIARDAGE = "contournement_caviardage"
+CONTOURNEMENT_RETRAIT = "contournement_retrait"
 
 TYPES = (SOURCE_INTERNE_PERIMEE, ACTION_SANS_CONTROLE, DONNEES_PERSONNELLES_EXTERNE, ENTREPRISE_NON_RETROUVEE,
-         CONTOURNEMENT_CAVIARDAGE)
+         CONTOURNEMENT_RETRAIT)
 
 
 def lire_catalogue(chemin=CATALOGUE):
@@ -301,7 +301,7 @@ def entreprise_non_retrouvee(sessions, catalogue, racine=RACINE, jeu_courant=Non
     return out, non_verifiables
 
 
-# -- 5. contournement d'un caviardage -----------------------------------------
+# -- 5. contournement d'un retrait de champs (caviardage) ----------------------
 
 def etiquettes_de_serveur(catalogue, racine=RACINE):
     """Étiquettes qui valent pour tout un serveur (registre) : elles ne
@@ -313,13 +313,13 @@ def etiquettes_de_serveur(catalogue, racine=RACINE):
         return {}
 
 
-def _caviarde(appel):
+def _retraits(appel):
     """Directives appliquées qui ont retiré des champs de cet appel."""
     return [(a["id"], list(a.get("champs_retires") or [])) for a in appel.applications
             if a.get("appliquee") and a.get("champs_retires")]
 
 
-def contournement_caviardage(sessions, catalogue, racine=RACINE, jeu_courant=None):
+def contournement_retrait(sessions, catalogue, racine=RACINE, jeu_courant=None):
     """Dans une session, un appel dont une directive a retiré des champs
     (caviardage), puis, plus loin, un **autre** outil qui porte une étiquette
     propre à l'outil caviardé (pas une étiquette de tout le serveur), appelé
@@ -330,7 +330,7 @@ def contournement_caviardage(sessions, catalogue, racine=RACINE, jeu_courant=Non
     out = []
     for s in sessions:
         for c1 in s.appels:
-            retraits = _caviarde(c1)
+            retraits = _retraits(c1)
             if not retraits:
                 continue
             propres = set(c1.etiquettes_cible) - de_serveur.get(c1.serveur, set())
@@ -341,7 +341,7 @@ def contournement_caviardage(sessions, catalogue, racine=RACINE, jeu_courant=Non
                 if c2.seq is None or c2.seq <= c1.seq or c2.nom == c1.nom or not c2.donnees_recues:
                     continue
                 communes = sorted(propres & set(c2.etiquettes_cible))
-                if not communes or _caviarde(c2) or c2.effet == "refuser":
+                if not communes or _retraits(c2) or c2.effet == "refuser":
                     continue
                 if couverture.couvert_pendant(s, c2, ["etiquette:" + e for e in communes] + ["outil:" + c1.nom],
                                               jeu_courant):
@@ -352,7 +352,7 @@ def contournement_caviardage(sessions, catalogue, racine=RACINE, jeu_courant=Non
                 o = _base(s, dernier)
                 o.update({
                     "seq_action": appels[0][0].seq,
-                    "caviardage": {"seq": c1.seq, "outil": c1.nom, "directives": [i for i, _ in retraits],
+                    "retrait": {"seq": c1.seq, "outil": c1.nom, "directives": [i for i, _ in retraits],
                                    "champs_retires": sorted({c for _, cs in retraits for c in cs}),
                                    "etiquettes_propres": sorted(propres)},
                     "contournements": [{"seq": c.seq, "outil": c.nom, "etiquettes_communes": e} for c, e in appels],
@@ -377,7 +377,7 @@ def detecter(sessions, catalogue=None, racine=RACINE, seuil_montant=None, jeu_co
         ACTION_SANS_CONTROLE: action_sans_controle(sessions, catalogue, seuil_montant),
         DONNEES_PERSONNELLES_EXTERNE: donnees_personnelles_externe(sessions, catalogue, jeu_courant),
         ENTREPRISE_NON_RETROUVEE: sirene,
-        CONTOURNEMENT_CAVIARDAGE: contournement_caviardage(sessions, catalogue, racine, jeu_courant),
+        CONTOURNEMENT_RETRAIT: contournement_retrait(sessions, catalogue, racine, jeu_courant),
     }
     return {t: dedoublonner(o) for t, o in occurrences.items()}, {ENTREPRISE_NON_RETROUVEE: non_verifiables}
 

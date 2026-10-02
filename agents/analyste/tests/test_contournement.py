@@ -17,7 +17,7 @@ from .test_detecteurs import JEU, SessionsEcrites, appel
 ICI = os.path.dirname(os.path.abspath(__file__))
 CONSTRUITES = os.path.join(ICI, "donnees", "sessions-construites")
 NOM = "20261002-180000-contournement-d023-construit"
-ID = "A-contournement-caviardage-rh-synthetique.consulter_fiche"
+ID = "A-contournement-retrait-rh-synthetique.consulter_fiche"
 LISTE = ["donnees_personnelles", "salaire"]
 FICHE = ["appartenance_syndicale", "donnees_personnelles", "donnees_sante", "salaire"]
 D023 = {"id": "D-023", "appliquee": True, "effet": "caviarder", "champs_retires": ["/inclure_salaires"]}
@@ -25,7 +25,7 @@ D023 = {"id": "D-023", "appliquee": True, "effet": "caviarder", "champs_retires"
 
 def detecter(sessions, jeu=None):
     occ, _ = det.detecter(sessions, jeu_courant=jeu or couverture.lire_jeu(JEU))
-    return occ[det.CONTOURNEMENT_CAVIARDAGE]
+    return occ[det.CONTOURNEMENT_RETRAIT]
 
 
 class TestSessionConstruite(unittest.TestCase):
@@ -33,7 +33,7 @@ class TestSessionConstruite(unittest.TestCase):
         (o,) = detecter(journaux.lire_sessions(CONSTRUITES))
         self.assertEqual(o["session"], NOM)
         self.assertEqual(o["action"], "rh-synthetique/consulter_fiche")
-        self.assertEqual(o["caviardage"], {"seq": 1, "outil": "rh-synthetique/lister_salaries", "directives": ["D-023"],
+        self.assertEqual(o["retrait"], {"seq": 1, "outil": "rh-synthetique/lister_salaries", "directives": ["D-023"],
                                            "champs_retires": ["/inclure_salaires"], "etiquettes_propres": ["salaire"]})
         self.assertEqual([c["seq"] for c in o["contournements"]], [2, 3, 4])
         self.assertEqual(o["contournements"][0]["etiquettes_communes"], ["salaire"])
@@ -66,7 +66,8 @@ class TestSessionConstruite(unittest.TestCase):
         (c,) = [c for c in res["constats"] if c["id"] == ID]
         (d,) = c["contexte"]["directives_contournees"]
         self.assertEqual(d["id"], "D-023")
-        self.assertEqual(d["effets"][0]["effet"], "caviarder")
+        self.assertEqual(d["effets"], ["retirer de l'appel les champs autres que /service"])
+        self.assertEqual(c["contexte"]["roles_des_directives_du_meme_serveur"], ["responsable-rh"])
 
 
 class TestCas(SessionsEcrites):

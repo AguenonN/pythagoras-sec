@@ -10,10 +10,10 @@
      "tool_calls": [
       {
        "function": {
-        "arguments": "{\"texte_propose\": \"Si un appel à l'outil rh-synthetique/lister_salaries a été fait dans la session et que l'appel suivant porte l'étiquette salaire sans caviardage, alors demander une validation humaine au rôle responsable-rh avant d'autoriser l'accès aux données.\", \"fondement_propose\": \"Principe de protection des données personnelles et salariales, nécessitant un contrôle renforcé pour les accès aux informations sensibles.\", \"explication\": \"Dans la session 20261002-180000-contournement-d023-construit, l'outil rh-synthetique/lister_salaries a été appelé en premier avec caviardage des salaires (directive D-023), puis rh-synthetique/consulter_fiche a été appelé trois fois sans caviardage ni validation, permettant d'accéder aux données salariales malgré le filtrage initial. L'engine a autorisé ces appels sans validation.\", \"sessions_citees\": [\"20261002-180000-contournement-d023-construit\"]}",
+        "arguments": "{\"texte_propose\": \"Si un appel à l'outil rh-synthetique/lister_salaries a retiré des champs portant l'étiquette salaire, tout appel ultérieur à un outil du serveur rh-synthetique portant la même étiquette dans la même session doit être soumis à validation humaine par le responsable-rh.\", \"fondement_propose\": \"RGPD — article 5.1.c (à valider par le juriste).\", \"explication\": \"Dans la session 20261002-180000-contournement-d023-construit, l'outil rh-synthetique/lister_salaries a retiré le champ /inclure_salaires (étiqueté salaire) à l'appel 1. Les appels 2, 3 et 4 à rh-synthetique/consulter_fiche (étiqueté salaire) ont été autorisés sans validation, permettant potentiellement d'obtenir les données retirées via un autre chemin.\", \"sessions_citees\": [\"20261002-180000-contournement-d023-construit\"]}",
         "name": "proposer_directive"
        },
-       "id": "Q7zCw4cEo",
+       "id": "Okfa3QndU",
        "index": 0,
        "type": "function"
       }
@@ -21,18 +21,18 @@
     }
    }
   ],
-  "created": 1790956452,
-  "id": "e77633e609cd4d3584a753917b076f6e",
+  "created": 1790956884,
+  "id": "dc96a3c0caa348278be72cfb8e5bb645",
   "model": "mistral-small-latest",
   "object": "chat.completion",
   "usage": {
-   "completion_tokens": 263,
-   "prompt_tokens": 1600,
+   "completion_tokens": 260,
+   "prompt_tokens": 1622,
    "prompt_tokens_details": {
-    "cached_tokens": 0
+    "cached_tokens": 944
    },
    "service_tier": "standard",
-   "total_tokens": 1863
+   "total_tokens": 1882
   }
  },
  "requete": {
@@ -42,7 +42,7 @@
     "role": "system"
    },
    {
-    "content": "Rôles de validation existants : analyste-risques, directeur-risques, direction-juridique, drh, emetteur-identite, juridique, responsable-rh.\n\nCONSTAT :\n{\n \"action\": \"rh-synthetique/consulter_fiche\",\n \"contexte\": {\n  \"directives_contournees\": [\n   {\n    \"cible\": {\n     \"outil\": \"lister_salaries\",\n     \"serveur\": \"rh-synthetique\"\n    },\n    \"effets\": [\n     {\n      \"champs_autorises\": [\n       \"/service\"\n      ],\n      \"effet\": \"caviarder\",\n      \"mode\": \"caviarder\"\n     }\n    ],\n    \"id\": \"D-023\",\n    \"texte\": \"Dans une liste de salariés, les salaires sont retirés.\"\n   }\n  ],\n  \"directives_qui_visent_cette_action\": [],\n  \"fait_observable_commun\": \"dans toutes les occurrences, la session a consulté rh-synthetique/lister_salaries avant l'appel à l'outil visé, qui porte l'étiquette salaire et n'a pas été caviardé\",\n  \"roles_ayant_valide_cette_action\": []\n },\n \"nature_du_risque\": \"Une directive a retiré des champs d'un appel (caviardage) ; plus loin dans la même session, un autre outil qui porte la même catégorie de donnée (même étiquette) a été appelé sans caviardage et a rendu des données : la donnée retirée a pu être obtenue par ce chemin, par exemple fiche par fiche.\",\n \"occurrences\": [\n  {\n   \"action\": \"rh-synthetique/consulter_fiche\",\n   \"caviardage\": {\n    \"champs_retires\": [\n     \"/inclure_salaires\"\n    ],\n    \"directives\": [\n     \"D-023\"\n    ],\n    \"etiquettes_propres\": [\n     \"salaire\"\n    ],\n    \"outil\": \"rh-synthetique/lister_salaries\",\n    \"seq\": 1\n   },\n   \"contournements\": [\n    {\n     \"etiquettes_communes\": [\n      \"salaire\"\n     ],\n     \"outil\": \"rh-synthetique/consulter_fiche\",\n     \"seq\": 2\n    },\n    {\n     \"etiquettes_communes\": [\n      \"salaire\"\n     ],\n     \"outil\": \"rh-synthetique/consulter_fiche\",\n     \"seq\": 3\n    },\n    {\n     \"etiquettes_communes\": [\n      \"salaire\"\n     ],\n     \"outil\": \"rh-synthetique/consulter_fiche\",\n     \"seq\": 4\n    }\n   ],\n   \"date_action\": \"2026-10-02T16:00:04Z\",\n   \"decision\": {\n    \"directives_appliquees\": [],\n    \"effet\": \"autoriser\",\n    \"validation_humaine\": \"aucune\"\n   },\n   \"seq_action\": 2,\n   \"session\": \"20261002-180000-contournement-d023-construit\",\n   \"transmise\": true\n  }\n ],\n \"sessions\": [\n  \"20261002-180000-contournement-d023-construit\"\n ],\n \"type\": \"contournement_caviardage\"\n}",
+    "content": "Rôles de validation existants : analyste-risques, directeur-risques, direction-juridique, drh, emetteur-identite, juridique, responsable-rh.\n\nCONSTAT :\n{\n \"action\": \"rh-synthetique/consulter_fiche\",\n \"contexte\": {\n  \"directives_contournees\": [\n   {\n    \"cible\": {\n     \"outil\": \"lister_salaries\",\n     \"serveur\": \"rh-synthetique\"\n    },\n    \"effets\": [\n     \"retirer de l'appel les champs autres que /service\"\n    ],\n    \"fondements\": [\n     \"RGPD — à valider par le juriste, article 5.1.c\"\n    ],\n    \"id\": \"D-023\",\n    \"texte\": \"Dans une liste de salariés, les salaires sont retirés.\"\n   }\n  ],\n  \"directives_qui_visent_cette_action\": [],\n  \"fait_observable_commun\": \"dans toutes les occurrences, la session a consulté rh-synthetique/lister_salaries avant l'appel à l'outil visé, qui porte l'étiquette salaire et dont rien n'a été retiré\",\n  \"roles_ayant_valide_cette_action\": [],\n  \"roles_des_directives_du_meme_serveur\": [\n   \"responsable-rh\"\n  ]\n },\n \"nature_du_risque\": \"Une directive a retiré des champs d'un appel ; plus loin dans la même session, un autre outil qui porte la même catégorie de donnée (même étiquette) a été appelé sans que rien n'en soit retiré et a rendu des données : la donnée retirée a pu être obtenue par ce chemin, par exemple fiche par fiche.\",\n \"occurrences\": [\n  {\n   \"action\": \"rh-synthetique/consulter_fiche\",\n   \"contournements\": [\n    {\n     \"etiquettes_communes\": [\n      \"salaire\"\n     ],\n     \"outil\": \"rh-synthetique/consulter_fiche\",\n     \"seq\": 2\n    },\n    {\n     \"etiquettes_communes\": [\n      \"salaire\"\n     ],\n     \"outil\": \"rh-synthetique/consulter_fiche\",\n     \"seq\": 3\n    },\n    {\n     \"etiquettes_communes\": [\n      \"salaire\"\n     ],\n     \"outil\": \"rh-synthetique/consulter_fiche\",\n     \"seq\": 4\n    }\n   ],\n   \"date_action\": \"2026-10-02T16:00:04Z\",\n   \"decision\": {\n    \"directives_appliquees\": [],\n    \"effet\": \"autoriser\",\n    \"validation_humaine\": \"aucune\"\n   },\n   \"retrait\": {\n    \"champs_retires\": [\n     \"/inclure_salaires\"\n    ],\n    \"directives\": [\n     \"D-023\"\n    ],\n    \"etiquettes_propres\": [\n     \"salaire\"\n    ],\n    \"outil\": \"rh-synthetique/lister_salaries\",\n    \"seq\": 1\n   },\n   \"seq_action\": 2,\n   \"session\": \"20261002-180000-contournement-d023-construit\",\n   \"transmise\": true\n  }\n ],\n \"sessions\": [\n  \"20261002-180000-contournement-d023-construit\"\n ],\n \"type\": \"contournement_retrait\"\n}",
     "role": "user"
    }
   ],
