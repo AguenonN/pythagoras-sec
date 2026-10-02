@@ -52,7 +52,7 @@
         const sel = new Set(v.sessions.filter(x => x.choisie).map(cle));
         if (sel.has(cle(s))) sel.delete(cle(s)); else sel.add(cle(s));
         aller(c ? c.id : '', [...sel]);
-      } }), nomSession(s.session) + ' · ' + heureMin(s.ouverte) + (s.demande ? ' · ' + s.demande.slice(0, 40) : ''))));
+      } }), nomSession(s.session) + ' · ' + heureMin(s.ouverte) + (s.demande ? ' · ' + s.demande.slice(0, 40) : '') + (s.regles ? ' · sous : ' + s.regles : ''))));
     ctx.monter(h('div', { class: 'corps' }, h('main', { class: 'principal ample' },
       h('div', { style: 'display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap' },
         h('div', { style: 'display:flex;flex-direction:column;gap:6px' },

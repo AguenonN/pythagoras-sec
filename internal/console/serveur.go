@@ -377,7 +377,8 @@ func (s *Serveur) rejeter(w http.ResponseWriter, r *http.Request) {
 
 func (s *Serveur) notifications(w http.ResponseWriter, r *http.Request) {
 	jeux, _ := s.Depot.ChargerJeux()
-	ecrire(w, map[string]any{"notifications": Notifications(s.tousEtats(), jeux)})
+	etats := s.tousEtats()
+	ecrire(w, map[string]any{"notifications": Notifications(etats, s.Depot.AvecTravail(jeux, etats))})
 }
 
 func (s *Serveur) redaction(w http.ResponseWriter, r *http.Request) {

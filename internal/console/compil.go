@@ -339,6 +339,7 @@ func (d *Depot) EssaiSurJournaux(conversation string, etats []*Etat, tous []JeuC
 	if len(ajout) == 0 {
 		return nil, refus(409, "Le résultat de la compilation n'ajoute aucune directive.")
 	}
+	tous = d.AvecTravail(tous, etats)
 	e := &Essai{Directives: []string{}}
 	for _, a := range ajout {
 		e.Directives = append(e.Directives, a.ID)

@@ -56,6 +56,7 @@ func badgeEtape(e journal.Entree, transmis bool) (string, string) {
 
 // Chaine construit l'écran 1 pour une session.
 func (d *Depot) Chaine(st *Etat, jeux []JeuCharge, session string) (*VueChaine, bool) {
+	jeux = d.AvecTravail(jeux, []*Etat{st})
 	v, ok := Chaine(st, jeux, session)
 	if !ok {
 		return nil, false

@@ -107,6 +107,7 @@ func dossierApprobations(ch Chemins, empreinte string) string {
 // journalisés.
 func (d *Depot) File(etats []*Etat, tous []JeuCharge, maintenant time.Time) FileVue {
 	out := FileVue{Attentes: []AttenteVue{}, Reprises: []AttenteVue{}, Verifs: map[string]Verification{}}
+	tous = d.AvecTravail(tous, etats)
 	if _, _, err := d.Annuaire(); err != nil {
 		out.Erreur = err.Error()
 	}
