@@ -351,7 +351,15 @@ class TestSousAgents(unittest.TestCase):
 
     def test_les_sous_agents_de_la_demo_se_chargent_devant_le_catalogue(self):
         agents = sous_agents.charger(sous_agents.outils_du_catalogue(cli.CATALOGUE))
-        self.assertEqual(sorted(agents), ["analyse-dossier", "conformite", "credit", "credit-historique", "redaction", "rh"])
+        self.assertEqual(sorted(agents), ["analyse-dossier", "conformite", "credit", "credit-historique", "lcb-ft",
+                                          "operations", "redaction", "rh", "rh-disciplinaire", "rh-gestion"])
+        # Secteurs : consignes neutres, aucune règle (c'est l'engine qui
+        # applique le droit, docs/demo/secteurs.md).
+        interdits = ("règle", "interdit", "jamais", "valid", "gel", "soupçon", "article", "rgpd", "code du", "directive",
+                     "entretien préalable", "protégé", "syndic", "santé", "externe", "plafond")
+        for nom in ("operations", "lcb-ft", "rh-gestion", "rh-disciplinaire"):
+            consigne = agents[nom].consigne.lower()
+            self.assertEqual([m for m in interdits if m in consigne], [], nom)
         self.assertEqual(agents["credit-historique"].outils,
                          ["banque-synthetique__attribuer_pret", "banque-synthetique__get_taux_interne"])
         self.assertEqual(agents["analyse-dossier"].outils,

@@ -8,7 +8,9 @@ Brief : `nuit/brief_G_secteurs.md`. Branche `feat/secteurs`. Règles : `docs/orc
 
 | Commit | Contenu |
 |---|---|
-| (étape 1) | Catalogue d'outils banque (9 outils) et RH (9 outils), données fictives (6 clients, 30 salariés), référentiel RH complété, étiquettes, identités fictives des postes, catalogue et vocabulaire du compilateur régénérés |
+| `167ca1a` | Catalogue d'outils banque (9 outils) et RH (9 outils), données fictives (6 clients, 30 salariés), référentiel RH complété, étiquettes, identités fictives des postes, catalogue et vocabulaire du compilateur régénérés |
+
+| (étape 2) | Sous-agents `operations`, `lcb-ft`, `rh-gestion`, `rh-disciplinaire` (consignes neutres, testées sans vocabulaire juridique) ; consigne de l'orchestrateur : deux secteurs, routage, réponse polie hors périmètre |
 
 ### Étape 1 — catalogue
 
@@ -32,7 +34,8 @@ Brief : `nuit/brief_G_secteurs.md`. Branche `feat/secteurs`. Règles : `docs/orc
 4. Sous-agent existant `rh` : `rh-synthetique__*` remplacé par la liste de ses trois outils d'origine, pour qu'il garde exactement son périmètre (il aurait sinon reçu les neuf nouveaux).
 5. `test/integration/integration_test.go` : nombre d'outils exposés 14 → 32.
 6. Clé du journal de mes passages : générée pour la session, gardée hors du dépôt (bloc-notes de la session), jamais affichée.
-7. Réseau : aucun appel aux API officielles ; les passages réels se font avec `DEMO_DONNEES_MODE=REJEU` (Mistral réel, données rejouées) et le registre local des gels copié du dépôt principal.
+7. `refuser_credit` est confié au sous-agent `operations` (le brief ne le place dans aucun sous-agent ; le sous-agent `credit` existant n'est pas modifié). `operations` reçoit aussi `lister_comptes_client` (lecture) pour retrouver un compte ; `rh-gestion` et `rh-disciplinaire` ont exactement les outils du brief.
+8. Réseau : aucun appel aux API officielles ; les passages réels se font avec `DEMO_DONNEES_MODE=REJEU` (Mistral réel, données rejouées) et le registre local des gels copié du dépôt principal.
 
 ## 4. Blocages
 
