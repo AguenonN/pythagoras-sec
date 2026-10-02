@@ -5,8 +5,8 @@
 - le jeu de travail demo/scenarios/jeux/secteurs.json (D-011 à D-023
   actives) et son double en brouillon passent le chargeur strict ; ils
   reprennent demo.json tel quel ;
-- demo/directives/demo.json n'est pas modifié (numérotation réservée à la
-  scène, voir le rapport) ;
+- demo/directives/demo.json v2 est ce jeu en brouillon (v1 archivée dans
+  demo/directives/historique/) ;
 - chaque scénario des secteurs a un titre, un demandeur de l'annuaire et un
   jeu de travail qui existe."""
 
@@ -55,7 +55,7 @@ def sans_marque(d):
 class TestSecteurs(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        cls.demo = lire(os.path.join(RACINE, "demo", "directives", "demo.json"))
+        cls.demo = lire(os.path.join(RACINE, "demo", "directives", "historique", "demo.v1.json"))
         cls.actif = lire(os.path.join(JEUX, "secteurs.json"))
         cls.brouillon = lire(os.path.join(JEUX, "secteurs-brouillon.json"))
 
@@ -74,8 +74,9 @@ class TestSecteurs(unittest.TestCase):
         self.assertEqual([sans_marque(d) for d in self.actif["directives"][n:]],
                          [sans_marque(d) for d in self.brouillon["directives"][n:]])
 
-    def test_demo_inchange(self):
-        self.assertEqual([d["id"] for d in self.demo["directives"]], ["D-00%d" % i for i in range(1, 9)])
+    def test_demo_installe(self):
+        """demo.json v2 = le jeu en brouillon (décision de Manu, 02/10)."""
+        self.assertEqual(lire(os.path.join(RACINE, "demo", "directives", "demo.json")), self.brouillon)
 
     def test_origines(self):
         o = lire(os.path.join(RACINE, "demo", "directives", "origines.json"))
@@ -93,8 +94,12 @@ class TestSecteurs(unittest.TestCase):
             s = service.Service(mode="rejeu", dossier=tmp)
             fin = service.parcours(s, requete, reponses)[-1]
             self.assertEqual(fin["etat"], "jeu", (cle, fin["erreurs"]))
-            ajout = lire(service.chemin_absolu(fin["jeu_candidat"]))["directives"][len(self.demo["directives"]):]
-            self.assertEqual(len(ajout), len(ids), cle)
+            # Le parcours vise demo/directives/demo.json, quelle qu'en soit
+            # la version : les ajoutées sont les dernières.
+            courant = lire(os.path.join(RACINE, "demo", "directives", "demo.json"))
+            tout = lire(service.chemin_absolu(fin["jeu_candidat"]))["directives"]
+            self.assertEqual(len(tout), len(courant["directives"]) + len(ids), cle)
+            ajout = tout[len(courant["directives"]):]
             for compilee, i in zip(ajout, ids):
                 attendue = sans_marque(par_id[i])
                 if i in RETABLIES:
@@ -146,3 +151,30 @@ class TestSecteurs(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestNumerotationScene(unittest.TestCase):
+    """Sur un jeu D-001 à D-008 + D-011 à D-023, les textes de la scène
+    reçoivent D-009 (« base interne ») puis D-010 (« week-end »), parcours du
+    service rejoués (enregistrements de la scène, catalogue gelé)."""
+
+    def test_d009_puis_d010(self):
+        from tests.aides import CATALOGUE_SCENE, VOCABULAIRE_SCENE
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        exemples = os.path.join(RACINE, "agents", "compilateur", "exemples", "service")
+
+        def derouler(nom, jeu):
+            requete, reponses = service.lire_parcours(os.path.join(exemples, nom + ".json"))
+            s = service.Service(mode="rejeu", dossier=tmp, catalogue=CATALOGUE_SCENE, vocabulaire_=VOCABULAIRE_SCENE)
+            fin = service.parcours(s, dict(requete, jeu_existant=jeu), reponses)[-1]
+            self.assertEqual(fin["etat"], "jeu", fin["erreurs"])
+            return lire(service.chemin_absolu(fin["jeu_candidat"]))
+
+        cand = derouler("base-interne", os.path.join(JEUX, "secteurs-brouillon.json"))
+        self.assertEqual(cand["directives"][-1]["id"], "D-009")
+        cand["directives"][-1]["statut"] = "active"
+        chemin = os.path.join(tmp, "avec-d009.json")
+        with open(chemin, "w", encoding="utf-8") as f:
+            json.dump(cand, f, ensure_ascii=False)
+        self.assertEqual(derouler("weekend", chemin)["directives"][-1]["id"], "D-010")

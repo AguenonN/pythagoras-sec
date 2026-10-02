@@ -312,17 +312,19 @@ _ID_NUMERO = re.compile(r"^(.*?)(\d+)$")
 
 
 def numeros_suivants(existant, prefixe_id, n):
-    """Les ``n`` identifiants qui suivent ceux du jeu existant : D-009,
-    D-010… après D-008. Le préfixe et la largeur sont ceux des directives
-    existantes qui portent ``prefixe_id`` ; un identifiant déjà pris est sauté."""
+    """Les ``n`` premiers identifiants libres du jeu existant, à partir de
+    D-001 : D-009 et D-010 après D-001 à D-008, et encore D-009 et D-010
+    quand le jeu contient aussi D-011 à D-023 (décision de Manu du 02/10 :
+    les numéros laissés libres, réservés à la scène, sont pris d'abord). Le
+    préfixe et la largeur sont ceux des directives existantes qui portent
+    ``prefixe_id``."""
     pris = {d.get("id") for d in existant.get("directives", [])}
-    dernier, largeur = 0, 3
+    largeur = 3
     for i in pris:
         m = _ID_NUMERO.match(i or "")
         if m and m.group(1) == prefixe_id + "-":
-            dernier = max(dernier, int(m.group(2)))
             largeur = max(largeur, len(m.group(2)))
-    out, k = [], dernier
+    out, k = [], 0
     while len(out) < n:
         k += 1
         i = "%s-%0*d" % (prefixe_id, largeur, k)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"slices"
 	"sort"
@@ -123,6 +124,7 @@ func TestV2_RelireDirectivesAjoutees(t *testing.T) {
 	}
 	d := w["directives"].([]any)[0].(map[string]any)
 	d["id"], d["statut"] = "D-009", "brouillon"
+	existantes := len(jeu["directives"].([]any))
 	jeu["directives"] = append(jeu["directives"].([]any), d)
 	jeu["jeu"].(map[string]any)["version"] = 2
 	b, _ := json.Marshal(jeu)
@@ -131,7 +133,7 @@ func TestV2_RelireDirectivesAjoutees(t *testing.T) {
 	if rc != 0 {
 		t.Fatalf("rc=%d %s", rc, errOut)
 	}
-	if !strings.HasPrefix(out, "Ajout au jeu demo, version 2 : 1 directive ajoutée (D-009), évaluée après 8 directives existantes") ||
+	if !strings.HasPrefix(out, fmt.Sprintf("Ajout au jeu demo, version 2 : 1 directive ajoutée (D-009), évaluée après %d directives existantes", existantes)) ||
 		strings.Contains(out, "D-001") || !strings.Contains(out, "Directive D-009, version 1, brouillon") {
 		t.Fatalf("relecture :\n%s", out)
 	}

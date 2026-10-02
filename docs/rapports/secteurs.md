@@ -6,6 +6,16 @@ Brief : `nuit/brief_G_secteurs.md`. Branche `feat/secteurs`. Règles : `docs/orc
 
 **Résumé** : 18 outils, 4 sous-agents neutres, 13 directives (D-011 à D-023) compilées ; **chaque directive a un scénario piège passé en réel où l'agent tente l'action et l'engine la refuse (7), la met en attente (4, rejetées par le valideur) ou la caviarde (3)** ; 6 scénarios propres passés en réel ; 18 passages vérifiés et rejoués hors ligne sans écart ; scénarios existants rejoués sans écart de décision ; `go vet`, `go test -race`, suites Python vertes. **Non fait** : les directives ne sont pas dans `demo/directives/demo.json` (arrêt demandé par le brief : le compilateur numérote après D-023, voir question 0).
 
+## 0. Décisions de Manu (02/10, soir) — suivi
+
+Budget relevé à **300** appels au total. **Compteur : 120 / 300** (compilateur 29, orchestrateur 91).
+
+| Point | État | Commit |
+|---|---|---|
+| 1. Numérotation au premier numéro libre ; `secteurs-brouillon.json` installé dans `demo.json` | **fait** | (point 1) |
+
+**Point 1.** `numeros_suivants` (`agents/compilateur/compilateur_v2.py`, seule fonction modifiée) prend le premier numéro libre à partir de `D-001`. Tests : `test_service.test_numerotation_premier_numero_libre` ; `test_secteurs.TestNumerotationScene` (sur D-001…D-008 + D-011…D-023, « base interne » → D-009, puis « week-end » → D-010, parcours du service rejoués) ; `test_service_scene` rejoue maintenant la scène sur le `demo.json` installé (D-009 puis D-010). `demo/directives/demo.json` = version 2 (D-001 à D-008 actives inchangées, D-011 à D-023 en brouillon) ; la version 1 est archivée dans `demo/directives/historique/demo.v1.json`, comme le fait la console. Tests qui figeaient l'ancien `demo.json` adaptés (version et nombre de directives lus dans le fichier) : `agents/tests/test_service.py`, `test_compilateur_v2.py`, `test_service_scene.py` (relectures attendues : seule la première ligne change, « version 3 … après 21 directives »), `agents/orchestrateur/tests/test_jeux.py`, `cmd/directive/main_v2_test.go`. Scénarios existants rejoués sur le nouveau `demo.json` : attendu conforme, aucun écart de décision.
+
 ## 1. Fait
 
 | Commit | Contenu |

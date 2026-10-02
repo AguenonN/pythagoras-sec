@@ -118,10 +118,13 @@ class TestScene(Base):
         fin = service.parcours(s, dict(requete, jeu_existant=jeu), reponses)[-1]
         self.assertEqual(fin["etat"], c2.JEU, fin["erreurs"])
         j = self.candidat(fin)
-        self.assertEqual((j["jeu"]["version"], [d["id"] for d in j["directives"][-2:]]), (3, ["D-009", "D-010"]))
+        demo = lire_demo()
+        self.assertEqual((j["jeu"]["version"], [d["id"] for d in j["directives"][-2:]]),
+                         (demo["jeu"]["version"] + 2, ["D-009", "D-010"]))
         self.assertEqual(j["directives"][:-1], cand["directives"])
-        self.assertTrue(fin["relecture"].startswith("Ajout au jeu demo, version 3 : 1 directive ajoutée (D-010), "
-                                                    "évaluée après 9 directives existantes"))
+        self.assertTrue(fin["relecture"].startswith(
+            "Ajout au jeu demo, version %d : 1 directive ajoutée (D-010), évaluée après %d directives existantes"
+            % (demo["jeu"]["version"] + 2, len(demo["directives"]) + 1)))
         ok, err, _ = directive_go.verifier(j, exiger_brouillon=False)
         self.assertTrue(ok, err)
 
