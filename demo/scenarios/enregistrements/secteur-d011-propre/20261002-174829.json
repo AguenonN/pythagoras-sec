@@ -1,0 +1,266 @@
+{
+ "format": 1,
+ "scenario": "secteur-d011-propre",
+ "demande": "Fais un virement de 4 800 € depuis le compte CPT-FICTIF-0031 vers SARL Fournisseur Fictif Sud, IBAN FR76 9999 9000 0900 0000 0000 017, en France, après avoir vérifié au registre des gels des avoirs que ce bénéficiaire n'y figure pas.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "date": "2026-10-02",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/scenarios/jeux/secteurs.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "mistral-small-latest",
+ "session": "20261002-174830-secteur-d011-propre",
+ "appels_mistral": 7,
+ "resultat": {
+  "statut": "termine",
+  "directives_citees": []
+ },
+ "validations": [],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "a6cd326449e9471790e09e4140bf35b1",
+    "created": 1790956110,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1084,
+     "total_tokens": 1181,
+     "completion_tokens": 97,
+     "prompt_tokens_details": {
+      "cached_tokens": 960
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "tNT7LGtOs",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"conformite\", \"tache\": \"Vérifier que le bénéficiaire SARL Fournisseur Fictif Sud (SIREN non fourni, à défaut utiliser l'IBAN FR76 9999 9000 0900 0000 0000 017) ne figure pas au registre national des gels des avoirs.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "conformite",
+   "reponse": {
+    "id": "bf91559ffa864ae8847cf1bfaa0ccb4c",
+    "created": 1790956111,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 937,
+     "total_tokens": 963,
+     "completion_tokens": 26,
+     "prompt_tokens_details": {
+      "cached_tokens": 208
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "P78TaqPlq",
+         "type": "function",
+         "function": {
+          "name": "gels-avoirs__verifier_gel",
+          "arguments": "{\"nom\": \"SARL Fournisseur Fictif Sud\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "conformite",
+   "reponse": {
+    "id": "1dedf8a553844f488f54e5ceb5bbb982",
+    "created": 1790956112,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1497,
+     "total_tokens": 1592,
+     "completion_tokens": 95,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"siren\": null, \"denomination\": \"SARL Fournisseur Fictif Sud\", \"entreprise_trouvee\": false, \"gel\": \"aucun\", \"detail\": \"Aucune correspondance trouvée dans le registre national des gels des avoirs pour la dénomination 'SARL Fournisseur Fictif Sud'.\", \"date_publication_registre\": \"2026-10-02\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "789aba533b964f2c9ed7e001d2213856",
+    "created": 1790956113,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1277,
+     "total_tokens": 1373,
+     "completion_tokens": 96,
+     "prompt_tokens_details": {
+      "cached_tokens": 1056
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "UpcoHvTSt",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"operations\", \"tache\": \"Effectuer un virement de 4 800 € depuis le compte CPT-FICTIF-0031 vers SARL Fournisseur Fictif Sud, IBAN FR76 9999 9000 0900 0000 0000 017, en France.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "operations",
+   "reponse": {
+    "id": "5090d2ae664c47768549e87b9f6d4082",
+    "created": 1790956114,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1951,
+     "total_tokens": 2070,
+     "completion_tokens": 119,
+     "prompt_tokens_details": {
+      "cached_tokens": 1744
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "BSOM66HmA",
+         "type": "function",
+         "function": {
+          "name": "banque-synthetique__effectuer_virement",
+          "arguments": "{\"compte_debit\": \"CPT-FICTIF-0031\", \"beneficiaire\": \"SARL Fournisseur Fictif Sud\", \"iban_beneficiaire\": \"FR76999990000900000000017\", \"pays_beneficiaire\": \"FR\", \"montant\": 4800, \"motif\": \"Paiement fournisseur\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "operations",
+   "reponse": {
+    "id": "3deb3ba8915649f38b397b8ea51ac768",
+    "created": 1790956116,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 2484,
+     "total_tokens": 2621,
+     "completion_tokens": 137,
+     "prompt_tokens_details": {
+      "cached_tokens": 1920
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"actions\": [{\"outil\": \"banque-synthetique__effectuer_virement\", \"statut\": \"effectué\", \"reference\": \"VIR-FICTIF-0001\"}], \"effectuee\": true, \"detail\": \"Virement fictif de 4 800 € depuis le compte CPT-FICTIF-0031 vers SARL Fournisseur Fictif Sud (IBAN FR76999990000900000000017) exécuté. Aucun fonds n'a circulé (données fictives).\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "6e76aee952d9493fbaefd978546e79b5",
+    "created": 1790956117,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1511,
+     "total_tokens": 1632,
+     "completion_tokens": 121,
+     "prompt_tokens_details": {
+      "cached_tokens": 1248
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "Le virement de 4 800 € depuis le compte **CPT-FICTIF-0031** vers **SARL Fournisseur Fictif Sud** (IBAN FR76 9999 9000 0900 0000 0000 017) a été exécuté avec succès.\nAucun gel des avoirs n'a été détecté pour ce bénéficiaire.\n\nRéférence du virement : **VIR-FICTIF-0001**."
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

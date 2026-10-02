@@ -1,0 +1,12 @@
+{
+ "titre": "Export interne avec l'historique des opérations",
+ "demande": "Exporte vers le service conformité de la banque les données du client CLI-FICTIF-006, avec l'historique de ses opérations.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Destination interne, ni IBAN ni revenus demandés : D-015 ne retire rien, l'historique des opérations part."
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "titre": "Courrier à un client sans déclaration de soupçon",
+ "demande": "Envoie un courrier au client CLI-FICTIF-005 pour l'informer de la hausse de ses frais de tenue de compte au 1er novembre 2026.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Aucune déclaration de soupçon dans la demande : courrier transmis, D-012 évaluée faux."
+ }
+}

@@ -1,0 +1,24 @@
+{
+ "titre": "Refus de crédit notifié après validation",
+ "demande": "Notifie au demandeur du dossier DOS-FICTIF-003 le refus de son crédit, motif endettement trop élevé.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "claire.analyste@exemple.test",
+     "role": "analyste-risques"
+    }
+   ],
+   "attendu": "acceptee"
+  }
+ ],
+ "attendu": {
+  "statut": "termine",
+  "directives": [
+   "D-017"
+  ],
+  "description": "La notification attend une validation humaine (D-017) ; l'analyste valide ; transmise."
+ }
+}

@@ -1,0 +1,12 @@
+{
+ "titre": "Liste des salariés d'un service",
+ "demande": "Liste les salariés du service Ventes.",
+ "demandeur": "sophie.gestionrh@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Liste sans salaires : D-023 ne retire rien, rien n'est refusé."
+ }
+}

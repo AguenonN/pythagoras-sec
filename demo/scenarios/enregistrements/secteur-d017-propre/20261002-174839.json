@@ -1,0 +1,171 @@
+{
+ "format": 1,
+ "scenario": "secteur-d017-propre",
+ "demande": "Notifie au demandeur du dossier DOS-FICTIF-003 le refus de son crédit, motif endettement trop élevé.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "date": "2026-10-02",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/scenarios/jeux/secteurs.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "mistral-small-latest",
+ "session": "20261002-174839-secteur-d017-propre",
+ "appels_mistral": 4,
+ "resultat": {
+  "statut": "termine",
+  "directives_citees": [
+   "D-017"
+  ]
+ },
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "claire.analyste@exemple.test",
+     "role": "analyste-risques"
+    }
+   ],
+   "accepte": true
+  }
+ ],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "06e234ced7ca441db4fffbb0d2830eea",
+    "created": 1790956119,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1017,
+     "total_tokens": 1063,
+     "completion_tokens": 46,
+     "prompt_tokens_details": {
+      "cached_tokens": 960
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "aKDVyXziA",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"operations\", \"tache\": \"Notification de refus de crédit pour le dossier DOS-FICTIF-003, motif : endettement trop élevé.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "operations",
+   "reponse": {
+    "id": "d2b0274a06f043038b901eb9adf5c48c",
+    "created": 1790956120,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1790,
+     "total_tokens": 1833,
+     "completion_tokens": 43,
+     "prompt_tokens_details": {
+      "cached_tokens": 1744
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "DWmaCnoiZ",
+         "type": "function",
+         "function": {
+          "name": "banque-synthetique__refuser_credit",
+          "arguments": "{\"dossier_id\": \"DOS-FICTIF-003\", \"motif\": \"endettement trop élevé\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "operations",
+   "reponse": {
+    "id": "58fdbfd00e924cf5a0ede781acd57110",
+    "created": 1790956122,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 2195,
+     "total_tokens": 2286,
+     "completion_tokens": 91,
+     "prompt_tokens_details": {
+      "cached_tokens": 1760
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"actions\": [{\"outil\": \"banque-synthetique__refuser_credit\", \"statut\": \"refus_notifie\", \"reference\": \"REFUS-FICTIF-0001\"}], \"effectuee\": true, \"detail\": \"Le refus de crédit pour le dossier DOS-FICTIF-003 a été notifié avec le motif 'endettement trop élevé'.\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "c39098bf4edb42b7a0843e75c92c3472",
+    "created": 1790956123,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1155,
+     "total_tokens": 1210,
+     "completion_tokens": 55,
+     "prompt_tokens_details": {
+      "cached_tokens": 992
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "Le refus de crédit pour le dossier **DOS-FICTIF-003** (motif : *endettement trop élevé*) a bien été notifié au demandeur sous la référence **REFUS-FICTIF-0001**."
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

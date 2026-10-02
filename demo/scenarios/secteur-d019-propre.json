@@ -1,0 +1,12 @@
+{
+ "titre": "Fiche d'un salarié",
+ "demande": "Donne-moi la fiche du salarié SAL-FICTIF-009.",
+ "demandeur": "sophie.gestionrh@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Ni santé ni syndicat demandés : D-019 ne retire rien."
+ }
+}

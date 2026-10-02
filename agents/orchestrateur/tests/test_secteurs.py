@@ -34,7 +34,7 @@ TEXTES = {"B1": ["D-011"], "B2": ["D-012"], "B3": ["D-013"], "B4": ["D-014", "D-
           "R6": ["D-023"]}
 RETABLIES = {"D-012", "D-014", "D-015"}
 # Scénarios écrits mais pas passés en réel (budget Mistral épuisé).
-NON_ENREGISTRES = {"secteur-d011-propre"}
+NON_ENREGISTRES = set()
 
 
 def lire(chemin):
@@ -117,7 +117,7 @@ class TestSecteurs(unittest.TestCase):
             self.assertIn(s["demandeur"], annuaire, chemin)
             self.assertTrue(os.path.exists(os.path.join(RACINE, s["jeu"])), chemin)
             self.assertIn(s["attendu"]["statut"], ("termine", "bloque", "en_attente", "erreur"), chemin)
-        self.assertEqual(vus, 19)
+        self.assertEqual(vus, 27)
 
     def test_chaque_directive_a_son_piege_enregistre(self):
         """Pour chaque directive D-011 à D-023, un scénario piège enregistré en
