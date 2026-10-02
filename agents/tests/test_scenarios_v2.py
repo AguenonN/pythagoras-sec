@@ -277,3 +277,20 @@ class TestTopManagementMedium(ScenarioMedium, unittest.TestCase):
             {"effet": "attendre_validation", "par_role": "directeur-risques", "quatre_yeux": True},
             {"effet": "notifier", "destinataire_role": "juridique", "rythme": "temps_reel", "si_echec": "refuser"}])
         self.assertEqual(d["fondements"], [{"texte": "Politique de crédit", "article": "7.1"}])
+
+
+class TestDiscrimination(unittest.TestCase):
+    """« Les agents ne doivent pas discriminer les demandeurs de crédit » :
+    refus motivé enregistré (modèle retenu). Rien n'est proposé ; la raison
+    dit pourquoi ce n'est pas observable, et la question demande un critère."""
+
+    def test_refus_motive(self):
+        r, tours = derouler_medium("discrimination")
+        self.assertEqual(r["etat"], c2.NON_OBSERVABLE)
+        self.assertIsNone(r["jeu"])
+        n, = r["non_observables"]
+        self.assertIn("discrimin", n["extrait"])
+        self.assertIn("ne peut pas être observée", n["raison"])
+        q, = r["questions"]
+        self.assertEqual(q["sujet"], "non_observable")
+        self.assertIn("critère observable", q["question"])

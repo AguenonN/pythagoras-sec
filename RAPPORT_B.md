@@ -3,7 +3,7 @@
 Branche `feat/compilateur-final`, worktree `~/cybercar/mcp_rogue-compilateur-final`.
 Rien n'est poussé ni fusionné ; `main` n'est pas touchée.
 
-**Compteur d'appels Mistral réels : 14 / 25** (étape 6 : 8 ; étape 8 : 2 ; étape 7 : 4). Aucune génération interrompue.
+**Compteur d'appels Mistral réels : 15 / 25** (étape 6 : 8 ; étape 8 : 2 ; étape 7 : 4 ; étape 9 : 1). Aucune génération interrompue.
 
 ## 1. Ce qui est fait
 
@@ -16,7 +16,16 @@ Rien n'est poussé ni fusionné ; `main` n'est pas touchée.
 | — | `d191eb0` | Un outil de lecture est désigné par ses propres mots (« base interne des taux » → `get_taux_interne`) ; une action ne l'est jamais |
 | 6, 8 | `c7f61e3` | Choix du modèle sur mesures (**`mistral-medium-latest`** par défaut du compilateur) ; parcours de scène week-end et base interne (D-009) enregistrés par le service et rejoués sans réseau ; D-010 après D-009 |
 | 2 | `dbe19ed` | Relecture des formes de gate-v2 : `$racine/…` sous un quantificateur, directives d'évènement ; fichier attendu `testdata/v2/gate-v2.txt`, trois fuseaux machine |
-| 7 | (ce commit) | RH et top management sur `mistral-medium-latest` : jeux acceptés du premier coup, relectures stables, enregistrés et rejoués (4 appels) |
+| 7 | `49ea878` | RH et top management sur `mistral-medium-latest` : jeux acceptés du premier coup, relectures stables, enregistrés et rejoués (4 appels) |
+| 9 | (ce commit) | « Ne pas discriminer » : refus motivé enregistré (1 appel) et rejoué |
+
+### Étape 9 — « ne pas discriminer »
+
+Un appel, sur le modèle retenu : `signaler_non_observable` (« la notion de
+discrimination repose sur une intention ou un effet subjectif […] qui ne
+peut pas être observée directement dans un appel d'outil ») et la question
+« par quel critère observable remplacer cette règle ? ». Rejoué par
+`TestDiscrimination` ; le test scripté du refus motivé reste.
 
 ### Étape 7 — RH et top management, terminés
 
