@@ -6,7 +6,7 @@
 #
 #	export MCP_GATE_CLE_JOURNAL=...      # hexadécimal, 32 octets ; jamais sur disque
 #	scripts/lancer-demo.sh                                  # prépare tout
-#	scripts/lancer-demo.sh demande "<texte>" --demandeur <id> [options]
+#	scripts/lancer-demo.sh demande "<texte>" --demandeur <id> [options]   (texte avant ou après les options)
 #	scripts/lancer-demo.sh scenario <nom> [--mode reel|rejeu] [--enregistrement F] [--horloge-depart T]
 #	scripts/lancer-demo.sh valider <empreinte> --valideur <id> --role <role>
 #	scripts/lancer-demo.sh verifier <dossier de session>
@@ -210,7 +210,9 @@ EOF
 demande() {
 	local texte="" demandeur="" depart="" sans="" jeu="$jeu_demo" registre="normal" mode="reel" enr="" scenario=""
 	(( $# > 0 )) || usage
-	texte="$1"; shift
+	# Le texte est le seul argument qui n'est pas une option, avant ou après
+	# elles : la console lance « demande --demandeur <id> <texte> ».
+	local texte_vu=""
 	while (( $# > 0 )); do
 		case "$1" in
 			--demandeur) demandeur="$2"; shift 2 ;;
@@ -221,7 +223,8 @@ demande() {
 			--mode) mode="$2"; shift 2 ;;
 			--enregistrement) enr="$(realpath -m "$2")"; shift 2 ;;
 			--scenario) scenario="$2"; shift 2 ;;
-			*) die "demande : option inconnue $1" ;;
+			-*) die "demande : option inconnue $1" ;;
+			*) [[ -z "$texte_vu" ]] || die "demande : un seul texte de demande"; texte="$1"; texte_vu=1; shift ;;
 		esac
 	done
 	exiger_cle
