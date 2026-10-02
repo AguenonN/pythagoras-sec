@@ -117,7 +117,7 @@ class TestSecteurs(unittest.TestCase):
             self.assertIn(s["demandeur"], annuaire, chemin)
             self.assertTrue(os.path.exists(os.path.join(RACINE, s["jeu"])), chemin)
             self.assertIn(s["attendu"]["statut"], ("termine", "bloque", "en_attente", "erreur"), chemin)
-        self.assertEqual(vus, 27)
+        self.assertEqual(vus, 26)  # 13 pièges, 13 propres (un par directive)
 
     def test_chaque_directive_a_son_piege_enregistre(self):
         """Pour chaque directive D-011 à D-023, un scénario piège enregistré en
