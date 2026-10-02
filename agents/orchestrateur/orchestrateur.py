@@ -118,6 +118,7 @@ class Orchestrateur:
         self.actions = {o["name"] for o in self.outils_mcp
                         if not (o.get("annotations") or {}).get("readOnlyHint")}
         self.actions_faites = {}
+        self.transmises = {}  # (outil, arguments canoniques) d'action transmise → sous-agent
 
     # -- consignes ----------------------------------------------------------
 
@@ -197,7 +198,7 @@ class Orchestrateur:
         self.trace["delegations"].append(d)
         b = bcl.Boucle(self.serveur, self.modele.pour(nom), nom, tours_max=TOURS_SOUS_AGENT,
                        consigne=self.consigne_sous_agent(agent), outils=agent.outils, outils_mcp=self.outils_mcp,
-                       arret_sur_refus=True)
+                       arret_sur_refus=True, avant_appel=self._avant_appel)
         r = b.executer(self.tache_complete(tache))
         relance = False
         while True:
@@ -236,6 +237,17 @@ class Orchestrateur:
             r = b.relancer(r, "Ta réponse finale n'est pas conforme au schéma demandé (%s). Réponds uniquement "
                               "par l'objet JSON conforme, sans appel d'outil." % "; ".join(ecarts))
 
+    def _avant_appel(self, nom, arguments):
+        """Idempotence des actions dans une demande : une action déjà
+        transmise avec les mêmes arguments n'est renvoyée par aucun
+        sous-agent (passage réel du 02/10 : le crédit retentait
+        l'attribution que credit-historique venait d'obtenir)."""
+        qui = self.transmises.get((nom, json.dumps(arguments, sort_keys=True, ensure_ascii=False)))
+        if qui:
+            return ("Non envoyé par l'orchestrateur : cette action (%s, mêmes arguments) a déjà été effectuée dans "
+                    "cette demande par %s et confirmée par l'engine ; elle n'est pas refaite." % (nom, qui))
+        return None
+
     def _noter(self, d, r):
         vus = len(d["appels"])
         for j in r.get("journal", [])[vus:]:
@@ -243,11 +255,15 @@ class Orchestrateur:
             for k in ("directive", "motif", "empreinte"):
                 if j.get(k):
                     e[k] = j[k]
+            if j.get("directives_attente"):
+                e["directives_attente"] = j["directives_attente"]
             if (j.get("attente") or {}).get("motif_jeton"):
                 e["motif_jeton"] = j["attente"]["motif_jeton"]
             d["appels"].append(e)
             self.decisions.append(dict(e, sous_agent=d["sous_agent"]))
             if e["nature"] == "ok" and e["outil"] in self.actions:
+                cle = (e["outil"], json.dumps(j.get("arguments") or {}, sort_keys=True, ensure_ascii=False))
+                self.transmises.setdefault(cle, d["sous_agent"])
                 faites = self.actions_faites.setdefault(d["sous_agent"], [])
                 if e["outil"] not in faites:
                     faites.append(e["outil"])
@@ -268,6 +284,10 @@ class Orchestrateur:
                 self.cites.append(i)
         if empreinte:
             self.par_empreinte[empreinte] = directives
+        if r.get("journal"):
+            # Celles de cette attente-ci : un même appel peut retomber en
+            # attente plus tard pour d'autres directives (même empreinte).
+            r["journal"][-1]["directives_attente"] = directives
         attente = {"empreinte_transmise": empreinte, "roles": a.get("roles") or [],
                    "quatre_yeux": bool(a.get("quatre_yeux")), "directives": directives}
         if a.get("motif_jeton"):
@@ -289,6 +309,8 @@ class Orchestrateur:
         fichiers = self.approbations.attendre(
             attente["empreinte_transmise"], len(attente["roles"]),
             pendant_attente=(lambda: self.pendant_attente(attente)) if self.pendant_attente else None)
+        # (rejeu : pendant_attente rend session.ABANDON quand le passage
+        # enregistré n'avait plus de validation : fin immédiate, même journal)
         if fichiers is None:
             texte = ("Validation non reçue dans le délai : l'appel %s reste en attente de validation humaine "
                      "(%s), aucune action effectuée.\n%s" % (r["outil"], ", ".join(attente["directives"]) or "engine",
@@ -313,10 +335,12 @@ class Orchestrateur:
     def releve(self):
         lignes = []
         for e in self.decisions:
-            retenu = ", ".join(self.par_empreinte.get(e.get("empreinte")) or []) or e.get("directive", "")
+            retenu = ", ".join(e.get("directives_attente") or self.par_empreinte.get(e.get("empreinte")) or []) \
+                or e.get("directive", "")
             nature = {"ok": "transmis, données reçues", "refus": "refusé par %s" % e.get("directive", ""),
                       "attente": "mis en attente de validation (%s)" % retenu,
-                      "indisponible": "source indisponible", "erreur": "erreur ou refus de l'outil"
+                      "indisponible": "source indisponible", "erreur": "erreur ou refus de l'outil",
+                      "retenu": "non envoyé par l'orchestrateur (action déjà effectuée)"
                       }.get(e["nature"], e["nature"])
             if e.get("avec_jeton") and e["nature"] == "ok":
                 nature = "validé, puis transmis"

@@ -19,6 +19,7 @@ STATUTS = ("en_cours", "en_attente", "termine", "bloque", "erreur")
 DELAI_VALIDATION = 600  # secondes : 10 minutes au plus (§3)
 INTERVALLE = 1.0
 MAX_JETONS = 8  # au plus 8 jetons par reprise (contrat de l'engine §6)
+ABANDON = "abandon"  # rendu par pendant_attente : aucune validation ne viendra (rejeu)
 
 
 def ecrire_atomique(chemin, donnees):
@@ -113,8 +114,8 @@ class Approbations:
             fichiers = self.deposes(empreinte)
             if len(fichiers) >= max(requis, 1):
                 return fichiers[:MAX_JETONS]
-            if premier and pendant_attente:
-                pendant_attente()
+            if premier and pendant_attente and pendant_attente() == ABANDON:
+                return None
             premier = False
             if self.horloge() >= fin:
                 return None

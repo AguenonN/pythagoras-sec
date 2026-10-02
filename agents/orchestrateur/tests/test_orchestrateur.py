@@ -269,6 +269,25 @@ class TestOrchestrateur(Banc):
         dernier = self._messages_orch_fin
         self.assertIn("Refusé par l'orchestrateur : le sous-agent credit a déjà effectué une action", dernier)
 
+    def test_action_deja_transmise_non_renvoyee_par_un_autre_sous_agent(self):
+        # Passage réel du 02/10 : credit retentait l'attribution obtenue par
+        # credit-historique ; le même appel retombait en attente (D-002).
+        args = {"dossier_id": "DOS-1", "siren": "382891752", "montant": 150000}
+        o = self.orch([
+            ("orchestrateur", deleguer("credit-historique", "Décide")),
+            ("credit-historique", appel("banque-synthetique__attribuer_pret", args)),
+            ("credit-historique", texte(json.dumps(CREDIT_OK))),
+            ("orchestrateur", deleguer("credit", "Vérifie et attribue", "o2")),
+            ("credit", appel("banque-synthetique__attribuer_pret", args, "c2")),
+            ("credit", texte(json.dumps({"decision": "non_attribue", "motif": "déjà fait"}))),
+            ("orchestrateur", texte("Attribué.")),
+        ])
+        self.depots = [[("claire.jwt", "jeton-ok")]]
+        r = o.executer("demande")
+        self.assertEqual(r["statut"], "termine")
+        self.assertEqual(len(self.appels()), 2)  # attente puis reprise, rien de plus
+        self.assertIn("credit · banque-synthetique__attribuer_pret : non envoyé par l'orchestrateur", r["texte"])
+
     def test_sous_agent_ajoute_par_un_fichier(self):
         d = os.path.join(self.tmp, "agents")
         shutil.copytree(sous_agents.DOSSIER, d)
@@ -394,6 +413,16 @@ class TestCLI(unittest.TestCase):
         self.assertNotIn("secret-de-test", json.dumps(enr))
         code2, sortie2, _, appels2 = self.lancer("rejeu", nom="s2")
         self.assertEqual((code2, sortie2, appels2), (code, sortie, appels))
+
+    def test_rejeu_sans_validation_enregistree_n_attend_pas(self):
+        with open(os.path.join(self.tmp, "enr.json"), "w") as f:
+            json.dump({"demande": "d", "demandeur": "c", "date": "2026-10-04", "validations": [],
+                       "reponses": [{"agent": "orchestrateur", "reponse": deleguer("credit", "Attribue")},
+                                    {"agent": "credit", "reponse": appel("banque-synthetique__attribuer_pret",
+                                                                         {"dossier_id": "DOS-1"})}]}, f)
+        code, sortie, _, _ = self.lancer("rejeu")
+        self.assertEqual(code, 2)
+        self.assertIn("Validation non reçue dans le délai", sortie)
 
     def test_rejeu_qui_diverge_s_arrete(self):
         with open(os.path.join(self.tmp, "enr.json"), "w") as f:

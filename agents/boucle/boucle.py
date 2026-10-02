@@ -151,10 +151,11 @@ class Boucle:
     au modèle à ces noms exposés, qui doivent tous l'être ; ``outils_mcp``
     évite de relister les outils d'une session déjà ouverte ;
     ``arret_sur_refus`` termine la boucle au premier refus, sans rendre la
-    main au modèle."""
+    main au modèle ; ``avant_appel(nom, arguments)``, s'il rend un texte,
+    retient l'appel (rien n'est envoyé) et ce texte est rendu au modèle."""
 
     def __init__(self, serveur, modele, sous_agent, tours_max=TOURS_MAX, consigne=None, outils=None,
-                 outils_mcp=None, arret_sur_refus=False):
+                 outils_mcp=None, arret_sur_refus=False, avant_appel=None):
         if not sous_agent:
             raise ValueError("sous_agent obligatoire : il est porté par chaque appel")
         self.serveur = serveur
@@ -163,6 +164,7 @@ class Boucle:
         self.tours_max = tours_max
         self.consigne = CONSIGNE + ("\n\n" + consigne if consigne else "")
         self.arret_sur_refus = arret_sur_refus
+        self.avant_appel = avant_appel
         if outils_mcp is None:
             outils_mcp = serveur.lister_outils()
         if outils is not None:
@@ -240,7 +242,13 @@ class Boucle:
             elif nom not in self.noms:
                 issue = {"nature": "erreur", "contenu": "Outil inconnu : %s" % nom}
             else:
-                issue = self._appeler(etat, nom, arguments, None)
+                retenu = self.avant_appel(nom, arguments) if self.avant_appel else None
+                if retenu:
+                    issue = {"nature": "erreur", "contenu": retenu}
+                    etat["journal"].append({"outil": nom, "arguments": arguments, "nature": "retenu",
+                                            "avec_jeton": False, "motif": retenu})
+                else:
+                    issue = self._appeler(etat, nom, arguments, None)
             resultat = self._apres_appel(etat, premier["id"], nom, arguments, issue, reste)
             if resultat is not None:
                 return resultat

@@ -54,7 +54,9 @@ def valideur_rejeu(validations, approbations, mcp_approve, cles):
 
     def deposer(attente):
         if not restantes:
-            return
+            # Le passage enregistré s'est terminé sur « validation non
+            # reçue » : inutile d'attendre dix minutes.
+            return session.ABANDON
         v = restantes.pop(0)
         dossier = approbations.dossier(attente["empreinte_transmise"])
         os.makedirs(dossier, exist_ok=True)
@@ -84,10 +86,11 @@ def executer(a, sortie):
     dossier = session.DossierSession(a.session, demande, demandeur, maintenant())
     approbations = session.Approbations(a.approbations)
     pendant = None
-    if enr is not None and enr.get("validations"):
-        if not a.mcp_approve or not a.cles:
+    if enr is not None:
+        validations = enr.get("validations") or []
+        if any(v.get("valideurs") for v in validations) and (not a.mcp_approve or not a.cles):
             raise SystemExit("rejeu avec validations : --mcp-approve et --cles obligatoires")
-        pendant = valideur_rejeu(enr["validations"], approbations, a.mcp_approve, a.cles)
+        pendant = valideur_rejeu(validations, approbations, a.mcp_approve, a.cles)
     trace_chemin = dossier.fichier("orchestrateur.json")
     resultat = None
     try:
