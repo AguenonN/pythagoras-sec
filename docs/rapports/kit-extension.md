@@ -1,4 +1,4 @@
-# RAPPORT_F — session F « kit d'extension »
+# Kit d'extension — session F
 
 Branche `feat/kit-extension`. Aucun appel Mistral, aucun réseau hors modules Go. Aucun fichier de l'engine modifié (`internal/directive`, `journal`, `rejeu`, `session`, `gate`).
 
@@ -17,6 +17,22 @@ Critère de réussite : `go test ./test/extension/` (environ 1 min, sans réseau
 
 Vérifié : `go vet ./...`, `go test -race ./...`, tests Python des agents (191, OK), tous verts.
 
+## Modifications hors périmètre, pour la fusion (acceptées par Manu)
+
+Aucun fichier de l'engine (`internal/directive`, `journal`, `rejeu`, `session`, `gate`) n'a changé (vérifié : `git diff 5b83cd5 -- internal/directive internal/journal internal/rejeu internal/session internal/gate` est vide). Sans `demo/serveurs-supplementaires.json`, tout se comporte comme avant.
+
+1. `internal/registredemo/registredemo.go` : lecture de `demo/serveurs-supplementaires.json` (`LireSupplementaires`), option `Options.Supplementaires`, serveurs et étiquettes supplémentaires appliqués après ceux de la démo. *Raison* : sans cela `Generer` rejette tout serveur au-delà des huit (« serveur inattendu au manifeste »), donc aucun serveur créé par le kit ne pourrait entrer au registre ni passer devant le gate.
+2. `cmd/registre-demo/main.go` : lit ce fichier et le transmet à `Generer` ; option `-etendu` ; crée le dossier de sortie du catalogue et du vocabulaire. *Raison* : produire le registre étendu et, dans `demo/execution/extension/`, le catalogue et le vocabulaire étendus du compilateur.
+3. `cmd/registre-demo/vocabulaire.go` : `GenererVocabulaireEtendu` (fusionne les étiquettes supplémentaires). *Raison* : le compilateur doit connaître les étiquettes des nouveaux serveurs (`donnees_sante`…) ; la version non étendue, versionnée, est inchangée.
+4. `agents/compilateur/service.py` : les chemins par défaut du catalogue et du vocabulaire lisent `COMPILATEUR_CATALOGUE` / `COMPILATEUR_VOCABULAIRE` s'ils sont définis. *Raison* : le service lancé par la console n'a pas d'autre moyen de lire le catalogue étendu ; non définies, rien ne change. (Brief du vendredi 17 h 40 : plus aucune modification de `agents/compilateur/` ensuite.)
+5. `internal/registredemo/catalogue_test.go` : la comparaison au `demo/registre.json` généré ne retient que les serveurs de la démo. *Raison* : sinon le test échoue sur toute machine où un serveur a été ajouté.
+
+Aussi hors périmètre : `docs/equipe/ajouter-un-serveur.md` (remplacé par un renvoi vers `etendre.md`), `ajouter-un-scenario.md` et `ajouter-un-agent.md` (renvoi et précisions) ; `modifier-la-console.md` ne décrit aucune procédure devenue fausse.
+
+## Outils gouvernables (ajout du vendredi 17 h)
+
+Section « Concevoir des outils gouvernables » en tête de la recette 1 de `etendre.md` : six règles, chacune avec un exemple mauvais et un bon. `nouveau-serveur.sh` refuse un outil sans `readOnlyHint` explicite ou incohérent avec son genre, et avertit (sans bloquer) d'un argument `instructions`, `texte` ou `commande` sur un outil d'action (`modele.Avertissements`, affiché par `valider`). Tests : `test/extension/gouvernables_test.go`, `modele_test.go`.
+
 ## Pas fait / limites
 
 - **Compilateur réel non testé** (Mistral interdit en test) : l'étape « Compiler » de la recette 3 est remplacée par un bouchon (`test/extension/testdata/compilateur_bouchon.py`) ; la console (`Depot.Compiler`, `MettreEnVigueur`), le chargeur et l'écriture des règles sont les vrais. À essayer à la main avec Mistral : texte de l'exemple, sur un serveur créé.
@@ -29,12 +45,12 @@ Vérifié : `go vet ./...`, `go test -race ./...`, tests Python des agents (191,
 
 1. **Étiquettes et serveurs ajoutés : dans `demo/serveurs-supplementaires.json`, pas dans `demo/etiquettes.json`** (le brief disait `etiquettes.json`). Raison : des tests versionnés (registre de démo, vocabulaire Go et Python, intégration) appliquent `etiquettes.json` aux huit serveurs de la démo et rejettent un serveur inconnu ; et le vocabulaire du compilateur en dérive, or les enregistrements de rejeu du compilateur dépendent du texte exact de ce vocabulaire (essayé : 16 tests Python rouges). Ainsi la démo figée et ses secours hors ligne restent intacts.
 2. **Catalogue et vocabulaire étendus écrits dans `demo/execution/extension/`** (hors Git) et lus par le compilateur via `COMPILATEUR_CATALOGUE` / `COMPILATEUR_VOCABULAIRE` (le script affiche les `export`). Raison idem. Sans ces variables, le compilateur ne connaît pas le nouveau serveur.
-3. **Édition hors périmètre, minimale et rétrocompatible** (nécessaire au critère « passent devant le gate ») : `internal/registredemo/registredemo.go` (lecture de `demo/serveurs-supplementaires.json`, option `Supplementaires`, appliquée seulement si le fichier existe), `cmd/registre-demo/{main,vocabulaire}.go` (lecture du fichier ; option `-etendu` ; création du dossier de sortie), `agents/compilateur/service.py` (deux variables d'environnement pour les chemins par défaut), `internal/registredemo/catalogue_test.go` (le test compare aux seuls serveurs de la démo). Sans le fichier, comportement strictement inchangé. Si Manu préfère, ces quatre éditions se rejouent à part ; elles ne touchent ni l'engine ni le gate.
+3. **Édition hors périmètre, minimale et rétrocompatible (acceptée, liste ci-dessous)** (nécessaire au critère « passent devant le gate ») : `internal/registredemo/registredemo.go` (lecture de `demo/serveurs-supplementaires.json`, option `Supplementaires`, appliquée seulement si le fichier existe), `cmd/registre-demo/{main,vocabulaire}.go` (lecture du fichier ; option `-etendu` ; création du dossier de sortie), `agents/compilateur/service.py` (deux variables d'environnement pour les chemins par défaut), `internal/registredemo/catalogue_test.go` (le test compare aux seuls serveurs de la démo). Sans le fichier, comportement strictement inchangé. Si Manu préfère, ces quatre éditions se rejouent à part ; elles ne touchent ni l'engine ni le gate.
 4. **Moteur commun plutôt que génération de code** : le serveur créé n'a aucun Go propre (il embarque `outils.json` et `donnees.json`), pour qu'un défaut se corrige une fois. Conséquence : seuls trois genres d'outils (`lire`, `lister`, `action`). Un besoin hors de ces genres demande du code (à signaler).
 5. **Fermé par défaut** : `readOnlyHint` obligatoire et cohérent avec le genre ; l'avertissement « fictif » obligatoire dans les données ; arguments inconnus refusés ; une action est en mémoire (rien ne survit au processus).
 6. `nouveau-scenario.sh` ajoute à `attendu` les clés `sous_agents` et `decisions` (par `serveur/outil`) ; `lancer-demo.sh` les ignore, seul le test généré les lit. Un refus de l'engine **bloque** la demande (statut `bloque`, code de sortie 2) : le gabarit et la recette le prévoient.
 7. Le test généré lit `MCP_GATE_CLE_JOURNAL` dans l'environnement (jamais de clé inventée) : le gate relit les journaux des passages précédents et refuse de démarrer si l'un a été signé par une autre clé. Sans clé, le test est ignoré avec un message.
-8. `docs/equipe/ajouter-un-serveur.md` (session A, hors périmètre) décrit l'ancien `nouveau-serveur.sh <nom>` (squelette Go avec `lire_fiche`) et l'ajout manuel à `registredemo.go` : **devenu faux**. Non modifié (hors périmètre) ; `etendre.md` fait foi.
+8. `docs/equipe/ajouter-un-serveur.md` décrivait l'ancien `nouveau-serveur.sh <nom>` : remplacé par un renvoi vers `etendre.md`, seule référence (décision de Manu).
 9. Le fichier `nuit/brief_F_kit_extension.md` n'est pas commité (consigne de la session).
 
 ## Blocages
@@ -43,10 +59,8 @@ Aucun bloquant. Le test du kit prend environ 35 s (copie du dépôt, 10 binaires
 
 ## Questions pour Manu
 
-1. (Avant samedi) Acceptez-vous les quatre éditions hors périmètre de la décision 3 ? Alternative : les retirer, et le kit n'ajoute plus de serveur au registre.
-2. (Avant samedi) Mettre à jour ou retirer `docs/equipe/ajouter-un-serveur.md` (décision 8).
-3. Genre d'outil manquant pour dimanche (par exemple une action qui échoue sur condition de données, ou une lecture avec jointure) ?
-4. Essayer le compilateur réel (Mistral) sur le texte de la recette 3 avec le serveur créé : 1 à 3 appels, à faire par vous.
+1. Genre d'outil manquant pour dimanche (par exemple une action qui échoue sur condition de données, ou une lecture avec jointure) ?
+2. Essayer le compilateur réel (Mistral) sur le texte de la recette 3 avec le serveur créé : 1 à 3 appels, à faire par vous.
 
 ## Vérifier en 5 minutes
 

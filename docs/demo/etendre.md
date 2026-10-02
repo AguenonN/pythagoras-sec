@@ -14,6 +14,22 @@ Ordre conseillé : **1. serveur → 2. sous-agent → 3. directive → 4. scéna
 
 ## Recette 1 — Un serveur de données synthétiques (5 minutes)
 
+### Concevoir des outils gouvernables
+
+Une directive ne juge que ce que l'engine observe : le nom de l'outil, ses arguments, ses étiquettes, son accès. **Un outil mal découpé ne peut pas être gouverné, quelle que soit la règle.** Six règles, avec le mauvais et le bon exemple :
+
+1. **Séparer préparer et agir.** On peut laisser un agent préparer librement ; on gouverne l'acte.
+   Mauvais : `gerer_indemnisation(sinistre_id, ...)`, qui calcule et paie. Bon : `simuler_indemnisation` (lecture) puis `valider_indemnisation` (action) ; de même `rediger_conclusions` / `deposer_conclusions`.
+2. **Un outil par effet irréversible.** Jamais d'outil « exécuter » générique.
+   Mauvais : `executer(operation, parametres)`. Bon : `valider_indemnisation`, `deposer_conclusions`, chacun avec sa directive possible.
+3. **Arguments explicites** (qui, combien, vers où), jamais d'instructions en texte libre sur un outil d'action.
+   Mauvais : `deposer(instructions: "dépose les conclusions du dossier 4 chez le greffe de Lyon")`. Bon : `deposer_conclusions(dossier_id, titre, pieces_jointes)`. Une règle peut comparer `/montant > 100000` ; elle ne peut pas lire une phrase. `nouveau-serveur.sh` **avertit** d'un argument nommé `instructions`, `texte` ou `commande` sur un outil d'action.
+4. **Étiqueter les champs sensibles des réponses.** Ce qui n'est pas étiqueté ne peut être ni caviardé ni tracé (« a consulté des données de santé »).
+   Mauvais : `lire_piece` sans étiquette. Bon : `{"outils": {"lire_piece": ["donnees_sante"]}}` dans `etiquettes.json`.
+5. **Qualifier la destination : `interne` ou `externe`.** Une directive peut viser « tout ce qui sort ».
+   Mauvais : un dépôt auprès d'une juridiction sans étiquette. Bon : `deposer_conclusions` étiqueté `externe`, les lectures de la base du cabinet non.
+6. **`readOnlyHint` juste.** `true` seulement si l'outil ne change rien nulle part ; `false` pour toute action. Un outil sans l'annotation est classé « action » (fermé par défaut), et un `true` à tort soustrait l'action aux règles qui visent l'accès `action`. Mauvais : `valider_indemnisation` avec `readOnlyHint: true` « parce qu'elle ne supprime rien ». Bon : `false` ; `true` seulement pour `lire_sinistre`. `nouveau-serveur.sh` **refuse** un outil sans `readOnlyHint` explicite, ou incohérent avec son genre.
+
 Un serveur = deux fichiers JSON (les outils, les données **fictives**). Deux domaines sont prêts dans `servers/modele-synthetique/domaines/` : `assurance` et `contentieux`. Pour le vôtre, copiez-en un et modifiez-le (formats ci-dessous).
 
 ```sh recette-serveur

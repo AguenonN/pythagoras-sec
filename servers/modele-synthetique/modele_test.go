@@ -133,3 +133,32 @@ func TestDeclarationsInvalides(t *testing.T) {
 		t.Error("nom de serveur invalide accepté")
 	}
 }
+
+func TestAvertissements(t *testing.T) {
+	_, donnees := domaine(t, "assurance")
+	o := `{"outils":[
+	 {"nom":"envoyer","description":"d","genre":"action","readOnlyHint":false,"reference_prefixe":"X-FICTIF","arguments":[{"nom":"texte","type":"string","description":"d"},{"nom":"destinataire","type":"string","description":"d"}]},
+	 {"nom":"chercher","description":"d","genre":"lister","readOnlyHint":true,"collection":"sinistres","arguments":[{"nom":"statut","type":"string","description":"d"}]}]}`
+	d, err := LireDonnees(donnees)
+	if err != nil {
+		t.Fatal(err)
+	}
+	outils, err := LireOutils([]byte(o))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Verifier(outils, d); err != nil {
+		t.Fatal(err)
+	}
+	if av := Avertissements(outils); len(av) != 1 || !strings.Contains(av[0], `"texte"`) {
+		t.Fatalf("%v", av)
+	}
+	// Un argument nommé « texte » sur une lecture n'avertit pas.
+	for _, f := range []string{"assurance", "contentieux"} {
+		ob, _ := domaine(t, f)
+		x, _ := LireOutils(ob)
+		if av := Avertissements(x); len(av) != 0 {
+			t.Errorf("%s : %v", f, av)
+		}
+	}
+}

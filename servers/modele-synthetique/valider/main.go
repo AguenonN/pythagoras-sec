@@ -21,6 +21,9 @@ func main() {
 		fmt.Fprintln(os.Stderr, "valider :", err)
 		os.Exit(1)
 	}
+	for _, a := range modele.Avertissements(o) {
+		fmt.Fprintln(os.Stderr, "AVERTISSEMENT :", a)
+	}
 	n := 0
 	for _, l := range d.Collections {
 		n += len(l)

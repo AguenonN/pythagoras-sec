@@ -220,6 +220,29 @@ func (t *Outil) valider() error {
 	return errors.Join(errs...)
 }
 
+// ArgumentsAFaible : noms d'arguments qui invitent à passer des instructions en
+// texte libre à un outil d'action, que ni une directive ni le gate ne peuvent
+// juger.
+var argumentsAFaible = map[string]bool{"instructions": true, "texte": true, "commande": true}
+
+// Avertissements rend les avertissements (non bloquants) sur la gouvernabilité
+// des outils : un argument « instructions », « texte » ou « commande » sur un
+// outil d'action.
+func Avertissements(o *Outils) []string {
+	var l []string
+	for _, t := range o.Outils {
+		if t.Genre != GenreAction {
+			continue
+		}
+		for _, a := range t.Arguments {
+			if argumentsAFaible[a.Nom] {
+				l = append(l, fmt.Sprintf("outil d'action %q : l'argument %q est un texte libre que les directives ne peuvent pas juger ; préférer des arguments explicites (qui, combien, vers où) — voir « Concevoir des outils gouvernables » dans docs/demo/etendre.md", t.Nom, a.Nom))
+			}
+		}
+	}
+	return l
+}
+
 // LireDonnees décode et valide donnees.json. L'avertissement « fictif » est
 // obligatoire : il est répété dans chaque résultat.
 func LireDonnees(b []byte) (*Donnees, error) {
