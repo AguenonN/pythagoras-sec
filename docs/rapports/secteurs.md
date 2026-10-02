@@ -14,7 +14,7 @@ Brief : `nuit/brief_G_secteurs.md`. Branche `feat/secteurs`. Règles : `docs/orc
 | `7794fb3` | Sous-agents `operations`, `lcb-ft`, `rh-gestion`, `rh-disciplinaire` (consignes neutres, testées sans vocabulaire juridique) ; consigne de l'orchestrateur : deux secteurs, routage, réponse polie hors périmètre |
 | `9ba69b8` | 12 textes compilés (13 directives D-011 à D-023), jeu de travail actif et jeu en brouillon, `origines.json`, parcours de compilation rejouables, test |
 | `18f3928` | 13 scénarios pièges et 6 propres passés en réel, enregistrements, vérifiés et rejoués ; rôles de routage précisés |
-| (ce commit) | `docs/demo/secteurs.md`, ce rapport |
+| `d80da52` | `docs/demo/secteurs.md`, ce rapport |
 
 ### Étape 4 — scénarios et preuve
 
