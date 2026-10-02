@@ -215,6 +215,9 @@ type lancement struct {
 	ecran bool
 	// precedents est le motif des journaux de processus précédents.
 	precedents string
+	// dossier, s'il est posé, reçoit journal, coffre et notifications (un
+	// dossier par demande, comme l'orchestrateur) ; défaut : t.TempDir().
+	dossier string
 }
 
 // demarrer lance cmd/mcp-gate comme un hôte MCP le lancerait, avec un
@@ -229,7 +232,10 @@ func demarrer(t *testing.T, cheminReg string) *banc {
 // racine du dépôt, horloge, annuaire, écran de notifications).
 func demarrerAvec(t *testing.T, l lancement) *banc {
 	t.Helper()
-	dir := t.TempDir()
+	dir := l.dossier
+	if dir == "" {
+		dir = t.TempDir()
+	}
 	if l.jeu == "" {
 		l.jeu = cheminDirectives
 	}

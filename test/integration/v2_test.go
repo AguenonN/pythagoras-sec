@@ -517,3 +517,39 @@ func TestJetonConsommeParUnProcessusPrecedent(t *testing.T) {
 		t.Fatalf("démarrage sur journal rompu : %v\n%s", err, out)
 	}
 }
+
+// Un gate par demande (contrats de la démo, §2) : chaque demande a son
+// dossier sessions/<id>/ et son journal ; le motif sessions/*/journal.jsonl
+// désigne tous les journaux, y compris celui de la demande qui démarre
+// (absent à ce moment). Le jeton consommé dans la première demande est
+// refusé dans la deuxième, et la troisième relit les deux chaînes.
+func TestJetonConsommeUnGateParDemande(t *testing.T) {
+	sessions := t.TempDir()
+	motif := filepath.Join(sessions, "*", "journal.jsonl")
+	demande := func(id string) *banc {
+		d := filepath.Join(sessions, id)
+		if err := os.MkdirAll(d, 0o700); err != nil {
+			t.Fatal(err)
+		}
+		return demarrerAvec(t, lancement{registre: cheminRegistre, jeu: jeuTopManagement, demandeur: claire, ecran: true,
+			dossier: d, precedents: motif})
+	}
+	b1 := demande("20261004-100000-a")
+	sc := attente(t, b1.appeler(t, "banque-synthetique__attribuer_pret", grosPret))
+	jeton := jetonApprobation(t, diane, "directeur-risques", sc["empreinte_transmise"].(string))
+	if r := b1.appelerMeta(t, "banque-synthetique__attribuer_pret", grosPret, mcp.Meta{"approvalToken": jeton}); r.StructuredContent != nil {
+		t.Fatalf("première demande : %v", r.StructuredContent)
+	}
+	b1.verifier(t)
+
+	for _, id := range []string{"20261004-100100-b", "20261004-100200-c"} {
+		b := demande(id)
+		sc = attente(t, b.appelerMeta(t, "banque-synthetique__attribuer_pret", grosPret, mcp.Meta{"approvalToken": jeton}))
+		if m, _ := sc["motif_jeton"].(string); !strings.Contains(m, "déjà utilisé") {
+			t.Fatalf("demande %s : %v", id, sc)
+		}
+		if entrees, _ := b.verifier(t); len(transmissions(entrees)) != 0 {
+			t.Fatalf("demande %s : transmission", id)
+		}
+	}
+}
