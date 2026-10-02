@@ -1,0 +1,9 @@
+{
+  "id": "P-2026-10-02-1",
+  "date": "2026-10-02T09:30:00Z",
+  "constat": {"type": "provenance", "detail": "Des prêts ont été attribués après consultation de la base interne des taux, sans validation humaine."},
+  "sessions": ["20261002-093000-demo01"],
+  "texte_propose": "Un prêt dont la session a consulté la base interne des taux attend la validation d'un analyste des risques.",
+  "fondement_propose": "Politique de crédit, art. 7 (à valider par le juriste)",
+  "explication": "La base interne des taux n'est pas une source officielle : sa lecture avant une attribution mérite une validation."
+}

@@ -3,7 +3,8 @@
 // session, état, jetons d'approbation relus toutes les secondes), pour mettre
 // au point la console sans la démo réelle.
 //
-//	MCP_GATE_CLE_JOURNAL=<hex> simulateur demande --demandeur claire.analyste@exemple.test "Peut-on accorder le prêt demandé ?"
+//	simulateur preparer -racine /tmp/essai        # règles, annuaire signé et clés fictifs
+//	MCP_GATE_CLE_JOURNAL=<hex> simulateur demande -racine /tmp/essai --demandeur claire.analyste@exemple.test "Peut-on accorder le prêt demandé ?"
 //
 // La console le lance comme elle lancerait scripts/lancer-demo.sh :
 //
@@ -29,8 +30,17 @@ func main() {
 
 func run() error {
 	args := os.Args[1:]
+	if len(args) > 0 && args[0] == "preparer" {
+		fs := flag.NewFlagSet("preparer", flag.ContinueOnError)
+		racine := fs.String("racine", ".", "racine du dépôt (ou d'un dossier de mise au point)")
+		demo := fs.String("demo", "demo", "dossier de la démonstration, sous la racine")
+		if err := fs.Parse(args[1:]); err != nil {
+			return err
+		}
+		return simulateur.PreparerDemo(*racine, *demo)
+	}
 	if len(args) == 0 || args[0] != "demande" {
-		return fmt.Errorf("usage : simulateur demande --demandeur <identité> [-pause 800ms] <texte>")
+		return fmt.Errorf("usage : simulateur preparer [-racine DIR] | demande --demandeur <identité> [-pause 800ms] <texte>")
 	}
 	fs := flag.NewFlagSet("demande", flag.ContinueOnError)
 	demandeur := fs.String("demandeur", "", "identité du demandeur (annuaire)")

@@ -601,3 +601,9 @@ func (s *session) verifier(dec directive.Decision, jetons []string, ts time.Time
 	a.Statut, a.Motif = journal.ApprobationAcceptee, ""
 	return a
 }
+
+func jsonStrict(b []byte, v any) error {
+	dec := json.NewDecoder(strings.NewReader(string(b)))
+	dec.DisallowUnknownFields()
+	return dec.Decode(v)
+}

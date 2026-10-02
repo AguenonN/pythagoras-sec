@@ -65,6 +65,9 @@ func TestAvantApresAvecEtSansLaDirective(t *testing.T) {
 		if x.Change {
 			l = x
 		}
+		if x.Differences == nil { // null en JSON : l'interface plante
+			t.Fatalf("differences nil : %+v", x)
+		}
 	}
 	// Sans D-001, le prêt attend la validation de l'analyste (D-002) ; avec, il est refusé.
 	if l.Outil != "attribuer_pret" || l.Avant.Effet != "attendre_validation" || l.Apres.Effet != "refuser" ||
@@ -309,7 +312,7 @@ const propositionTest = `{
 // reprise en modifiant ; l'origine suit la directive jusqu'à la vitrine.
 func TestPropositionsDeLAnalyste(t *testing.T) {
 	b := nouveauBanc(t)
-	must(t, os.WriteFile(filepath.Join(b.racine, "demo", "execution", "propositions", "P-2026-10-02-1.json"), []byte(propositionTest), 0o644))
+	must(t, os.WriteFile(filepath.Join(b.racine, "demo", "execution", "propositions", "P-2026-10-02-1.json"), []byte(propositionTest), 0o644)) // remplace celle de PreparerDemo
 	// Une proposition illisible ou hors liste est ignorée.
 	must(t, os.WriteFile(filepath.Join(b.racine, "demo", "execution", "propositions", "casse.json"), []byte("{"), 0o644))
 	if l := b.Dep.ListerPropositions(); len(l) != 1 || l[0].Decision != nil || l[0].ID != "P-2026-10-02-1" {

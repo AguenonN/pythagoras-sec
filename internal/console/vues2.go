@@ -312,7 +312,7 @@ func rythmeFR(r string) string {
 func memes(a, b []string) bool { return strings.Join(a, "\x00") == strings.Join(b, "\x00") }
 
 func differences(a, b CoteAA) []string {
-	var out []string
+	out := []string{}
 	if a.Effet != b.Effet {
 		out = append(out, "effet")
 	}

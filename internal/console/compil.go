@@ -108,7 +108,7 @@ func (d *Depot) cheminCandidat(chemin string) (string, error) {
 		return "", err
 	}
 	if !strings.HasPrefix(abs, comp+string(filepath.Separator)) {
-		return "", fmt.Errorf("le jeu candidat est hors de %s", d.cheminsRel().Compilation)
+		return "", fmt.Errorf("le résultat de la compilation est hors de %s", d.cheminsRel().Compilation)
 	}
 	return abs, nil
 }
@@ -171,7 +171,7 @@ func (d *Depot) Compiler(texte, fondement, conversation string, reponses []Repon
 	if rep.Etat == "jeu" && rep.JeuCandidat != nil {
 		cand, _, err := d.candidat(rep.Conversation)
 		if err != nil {
-			return nil, refus(502, "Le jeu candidat est refusé : %v", err)
+			return nil, refus(502, "Les règles produites par le compilateur sont refusées : %v", err)
 		}
 		cour, _ := d.courant()
 		if cour != nil {
@@ -223,7 +223,7 @@ func (d *Depot) candidat(conversation string) (*directive.Jeu, string, error) {
 	dir := filepath.Join(d.Chemins().Compilation, conversation)
 	ents, err := os.ReadDir(dir)
 	if err != nil {
-		return nil, "", errors.New("aucun jeu candidat pour cette conversation")
+		return nil, "", errors.New("aucun résultat de compilation pour cette conversation")
 	}
 	best, bestN := "", 0
 	for _, e := range ents {
@@ -234,7 +234,7 @@ func (d *Depot) candidat(conversation string) (*directive.Jeu, string, error) {
 		}
 	}
 	if best == "" {
-		return nil, "", errors.New("aucun jeu candidat pour cette conversation")
+		return nil, "", errors.New("aucun résultat de compilation pour cette conversation")
 	}
 	chemin, err := d.cheminCandidat(filepath.Join(dir, best))
 	if err != nil {
@@ -327,7 +327,7 @@ func (d *Depot) EssaiSurJournaux(conversation string, etats []*Etat, tous []JeuC
 	}
 	hyp, ajout := activees(base.Jeu, *cand)
 	if len(ajout) == 0 {
-		return nil, refus(409, "Le jeu candidat n'ajoute aucune directive.")
+		return nil, refus(409, "Le résultat de la compilation n'ajoute aucune directive.")
 	}
 	e := &Essai{Directives: []string{}}
 	for _, a := range ajout {
@@ -393,7 +393,7 @@ func (d *Depot) ecrireRegles(nouveau directive.Jeu, ancien []byte, ancienVersion
 		return nil, refus(422, "Les règles ainsi modifiées sont refusées par le vérificateur : %v", err)
 	}
 	if verif.Meta.Version != ancienVersion+1 || verif.Meta.ID != "demo" {
-		return nil, refus(422, "Les règles doivent rester l'ensemble « demo » en version %d.", ancienVersion+1)
+		return nil, refus(422, "Les règles modifiées doivent garder l'identifiant demo et passer à la version %d.", ancienVersion+1)
 	}
 	ch := d.Chemins()
 	arch := filepath.Join(ch.Historique, fmt.Sprintf("demo.v%d.json", ancienVersion))
@@ -441,7 +441,7 @@ func (d *Depot) MettreEnVigueur(conversation, statut string) (*ResultatRegles, e
 	}
 	hyp, ajout := activees(*cour, *cand)
 	if len(ajout) == 0 {
-		return nil, refus(409, "Le jeu candidat n'ajoute aucune directive (déjà mise en vigueur ?).")
+		return nil, refus(409, "Le résultat de la compilation n'ajoute aucune directive (déjà mise en vigueur ?).")
 	}
 	maintenant := time.Now().UTC().Truncate(time.Second)
 	nouveau := *cour

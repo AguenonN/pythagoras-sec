@@ -2,6 +2,10 @@
 // Écran 1 · Journal et graphe de chaîne.
 
 (function () {
+  const STATUT_SESSION = { en_cours: 'en cours', en_attente: 'en attente de validation', termine: 'terminée', bloque: 'bloquée', erreur: 'en erreur' };
+  const RYTHME = { temps_reel: 'en temps réel', synthese: 'en synthèse' };
+  const REMISE = { remise: 'remise', echec: 'non remise', planifiee: 'planifiée' };
+
   function ligneChaineSession(j) {
     const v = j.verification;
     if (v.ok) return h('span', { class: 'petit ok-txt' }, 'Chaîne vérifiée · ' + j.entrees + ' entrées');
@@ -18,7 +22,8 @@
       toutes.map(x => h('button', { type: 'button', class: 'session-carte' + (x.j.id === courante.j.id && x.s.id === courante.s.id ? ' choisie' : '') + (x.j.verification.ok ? '' : ' rompue'),
         onclick: () => allerA('journal', { j: x.j.id, s: x.s.id }) },
         h('span', { class: 'gras' }, nomSession(x.s.id) + ' · ' + heureMin(x.s.ouverte)),
-        h('span', { class: 'moyen second' }, x.j.id + ' · ' + x.s.appels + ' appel(s)'),
+        h('span', { class: 'moyen second' }, x.j.demande ? x.j.demande.slice(0, 70) + (x.j.demande.length > 70 ? '…' : '') : x.j.id),
+        h('span', { class: 'petit second' }, x.s.appels + ' appel(s)' + (x.j.statut ? ' · ' + STATUT_SESSION[x.j.statut] : '')),
         ligneChaineSession(x.j))));
   }
 
@@ -32,21 +37,24 @@
   function decisionCellule(e, fonde) {
     const ids = [...new Set(e.applications.filter(a => a.appliquee).map(a => a.id))];
     return h('span', { style: 'display:flex;gap:6px;align-items:center;flex-wrap:wrap' },
-      badge(e.badge),
+      badge(e.badge, e.libelle),
       fonde && fonde.length ? h('span', { class: 'lien-fonde' }, 'fonde ' + fonde.map(s => '#' + s).join(' ')) : null,
       !fonde && ids.length ? h('span', { class: 'second' }, ids.join(' · ')) : null,
+      e.valide_au_seq ? h('span', { class: 'petit second' }, 'validé ensuite (appel n° ' + e.valide_au_seq + ')') : null,
+      e.valide_par && e.valide_par.length ? h('span', { class: 'petit ok-txt' }, 'validé par ' + e.valide_par.map(v => v.identite).join(', ')) : null,
       e.suspect ? h('span', { class: 'non-txt', style: 'color:var(--ref)' }, 'non fiable') : null);
   }
 
   function rang(e, choisi, fonde, onclick) {
     const cls = ['rang', 'grille-appels'];
+    if (!e.sous_agent) cls.push('');
     if (e.seq === choisi) cls.push('choisi', e.badge === 'en_attente' ? 'attente' : '');
     if (fonde && fonde.length) cls.push('fonde');
     if (e.suspect) cls.push('suspect');
     return h('div', { class: cls.join(' '), role: 'button', tabindex: '0', onclick,
       onkeydown: ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onclick(); } } },
       h('span', { class: 'num' }, e.seq),
-      h('span', {}, e.sous_agent || nd('—')),
+      h('span', e.sous_agent ? { class: 'tiret', style: 'border-radius:12px;padding:2px 8px;display:inline-block' } : {}, e.sous_agent || nd('—')),
       h('span', { class: 'mono moyen' }, e.outil),
       serveurCellule(e),
       decisionCellule(e, fonde));
@@ -82,25 +90,40 @@
     if (!e) return h('aside', { class: 'volet' }, h('div', { class: 'etiq' }, 'Décision'), nd('Aucun appel dans cette session.'));
     const appliquees = e.applications.filter(a => a.appliquee || a.declenchee);
     const liens = e.provenance || [];
-    const roles = e.validation && e.validation.roles && e.validation.roles.length ? e.validation.roles.join(', ') : null;
+    const roles = e.validation && e.validation.roles && e.validation.roles.length ? e.validation.roles.join(', ') + (e.validation.quatre_yeux ? ' · quatre yeux' : '') : null;
     let transmission = e.transmis ? 'transmis au serveur' : (e.badge === 'en_attente' ? 'aucune (en attente)' : 'aucune (non transmis)');
+    const notifs = e.notifications || [], appros = e.approbations || [];
     return h('aside', { class: 'volet' },
       h('div', { class: 'etiq' }, 'Décision de l\'appel #' + e.seq),
-      h('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap' }, badge(e.badge, e.badge === 'en_attente' ? 'En attente de validation' : null, 'grand'),
+      h('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap' }, badge(e.badge, e.libelle, 'grand'),
         h('span', { class: 'moyen second' }, heureSec(e.ts) + ' · Europe/Paris')),
+      e.origine_libelle ? h('p', { class: 'moyen gras', style: 'color:var(--non)' }, e.origine_libelle) : null,
+      e.valide_par && e.valide_par.length ? h('p', { class: 'moyen ok-txt gras' }, 'Validé par ' + e.valide_par.map(v => v.identite + ' (' + v.role + ')').join(', ')) : null,
       appliquees.length ? appliquees.map(a => carteDirective(a, liens)) :
         h('div', { class: 'carte compacte' }, h('div', { class: 'moyen' }, motifAffiche(e.motif)), h('div', { class: 'moyen second' }, 'Aucune directive appliquée à cet appel.')),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
         h('div', { class: 'kv' }, h('span', {}, 'Rôle requis'), roles ? h('span', {}, roles) : nd()),
         h('div', { class: 'kv' }, h('span', {}, 'Directives évaluées'), h('span', {},
           e.evaluees + ' · ' + e.appliquees + ' appliquée(s) · ' + e.indeterminees + ' indéterminée(s)')),
-        h('div', { class: 'kv' }, h('span', {}, 'Empreinte transmise'), h('span', { class: 'mono' }, court(e.empreinte_transmise) || ND)),
-        h('div', { class: 'kv' }, h('span', {}, 'Entrée du journal'), h('span', { class: 'mono' }, '#' + e.numero + (e.prev ? ' · prev ' + court(e.prev) : ''))),
-        h('div', { class: 'kv' }, h('span', {}, 'Transmission'), h('span', {}, transmission))),
+        h('div', { class: 'kv' }, h('span', {}, 'Accès · étiquettes de la cible'), h('span', {}, (e.acces || ND) + ' · ' + ((e.etiquettes || []).join(', ') || 'aucune'))),
+        h('div', { class: 'kv' }, h('span', {}, 'Signature numérique de l\'appel (empreinte)'), h('span', { class: 'mono' }, court(e.empreinte_transmise) || ND)),
+        h('div', { class: 'kv' }, h('span', {}, 'Entrée du journal'), h('span', { class: 'mono' }, '#' + e.numero + (e.prev ? ' · précédente ' + court(e.prev) : ''))),
+        h('div', { class: 'kv' }, h('span', {}, 'Transmission'), h('span', {}, transmission)),
+        h('div', { class: 'kv' }, h('span', {}, 'Temps ajouté par l\'engine'), e.duree_us ? h('span', {}, ms(e.duree_us / 1000)) : nd('non mesuré'))),
+      h('div', { class: 'etiq' }, 'Notifications'),
+      notifs.length ? notifs.map(n => h('div', { class: 'carte compacte' },
+        h('div', { class: 'gras' }, n.destinataire_role + ' · ' + (RYTHME[n.rythme] || n.rythme)),
+        h('div', { class: 'moyen second' }, 'Directive ' + n.directive + ', version ' + n.version + (n.si_echec === 'refuser' ? ' · si la remise échoue, l\'appel est refusé' : '')),
+        h('div', { class: 'moyen ' + (n.statut === 'echec' ? 'erreur gras' : 'ok-txt') }, n.statut ? 'Remise : ' + (REMISE[n.statut] || n.statut) + (n.remis ? ' (' + n.remis + ' destinataire(s))' : '') : 'Remise : ' + ND))) : h('span', { class: 'moyen second' }, 'Aucune notification demandée.'),
+      h('div', { class: 'etiq' }, 'Approbations'),
+      appros.length ? appros.map(a => h('div', { class: 'carte compacte' },
+        h('div', { class: 'gras ' + (a.statut === 'acceptee' ? 'ok-txt' : 'erreur') }, (a.statut === 'acceptee' ? 'Acceptée' : 'Refusée') + ' · ' + heureSec(a.ts)),
+        (a.valideurs || []).map(v => h('div', { class: 'moyen' }, v.identite + ' — rôle « ' + v.role + ' » au ' + jourMoisHeure(v.date))),
+        a.motif ? h('div', { class: 'moyen erreur' }, 'Motif : ' + a.motif) : null)) : h('span', { class: 'moyen second' }, 'Aucune approbation.'),
       (e.alertes || []).map(a => h('p', { class: 'erreur moyen' }, '⚠ ' + a)),
       h('div', { style: 'margin-top:auto;display:flex;gap:10px' },
-        h('a', { class: 'btn contour', style: 'flex:1', href: '#avant-apres?' + new URLSearchParams({ j: v.journal, s: v.session }) }, 'Rejouer cet appel'),
-        e.badge === 'en_attente' ? h('a', { class: 'btn', style: 'flex:1', href: '#validation?' + new URLSearchParams({ j: v.journal, s: v.session, a: e.seq }) }, 'Ouvrir la validation') : null));
+        h('a', { class: 'btn contour', style: 'flex:1', href: '#avant-apres?' + new URLSearchParams({ s: v.journal + '|' + v.session }) }, 'Rejouer cet appel'),
+        e.badge === 'en_attente' && !e.valide_au_seq ? h('a', { class: 'btn', style: 'flex:1', href: '#validation?' + new URLSearchParams({ a: v.journal }) }, 'Ouvrir la validation') : null));
   }
 
   ECRANS.journal = async (ctx) => {
@@ -131,12 +154,14 @@
           h('div', { style: 'display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap' },
             h('div', { style: 'display:flex;flex-direction:column;gap:4px' },
               h('h1', {}, 'Session ' + nomSession(v.session)),
-              h('div', { class: 'second' }, 'Demande : ', nd('non disponible dans le journal'))),
+              h('div', { class: 'second' }, 'Demande : ', v.demande ? '« ' + v.demande + ' »' : nd('non disponible'))),
             pastilleChaine(v.verification)),
           h('div', { class: 'chemin' },
             h('div', { class: 'col' }, h('span', { class: 'petit second' }, 'Demandeur'),
-              dem ? h('span', { class: 'gras' }, dem.identite) : h('span', { class: 'gras' }, nd()),
-              h('span', { class: 'petit second' }, dem && dem.groupes && dem.groupes.length ? 'groupe(s) ' + dem.groupes.join(', ') : 'rôle et groupe : ' + ND)),
+              dem ? h('span', { class: 'gras' }, (v.demandeur_fiche && v.demandeur_fiche.nom) || dem.identite) : h('span', { class: 'gras' }, nd()),
+              dem ? h('span', { class: 'petit second' }, dem.identite) : null,
+              h('span', { class: 'petit second' }, dem ? 'groupe(s) : ' + ((dem.groupes || []).join(', ') || 'aucun') + ' · rôle(s) : ' + ((v.demandeur_fiche && v.demandeur_fiche.roles || []).join(', ') || 'aucun') : 'rôle et groupe : ' + ND),
+              h('span', { class: 'petit second' }, 'identité prouvée par : ' + (v.source_identite || ND))),
             h('span', { class: 'fl' }, '→'),
             h('div', { class: 'col' }, h('span', { class: 'petit second' }, 'Orchestrateur'),
               h('span', { class: 'gras' }, v.appelant || ND),
@@ -144,7 +169,7 @@
             h('span', { class: 'fl' }, '→'),
             h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' },
               v.sous_agents.length ? v.sous_agents.map(s => h('span', { class: 'pastille' }, s)) : h('span', { class: 'petit second' }, 'aucun sous-agent déclaré')),
-            h('span', { class: 'petit second' }, 'sous-agents déclarés (non prouvés)')),
+            h('span', { class: 'petit second' }, 'sous-agents : déclaré, non prouvé')),
           h('div', { class: 'grille-appels entete-colonnes' },
             ['#', 'Sous-agent', 'Appel', 'Serveur · attestation', 'Décision'].map(t => h('span', {}, t))),
           h('div', { style: 'display:flex;flex-direction:column;gap:8px' },

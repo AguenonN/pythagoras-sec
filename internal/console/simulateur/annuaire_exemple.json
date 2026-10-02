@@ -1,0 +1,14 @@
+{
+  "id": "annuaire-test", "version": 1, "avertissement": "FICTIF",
+  "identites": [
+    {"identite": "claire.analyste@exemple.test", "nom": "Claire Analyste (fictive)", "groupes": ["analystes-credit"]},
+    {"identite": "bruno.prestataire@exemple.test", "nom": "Bruno Prestataire (fictif)", "groupes": ["prestataires-externes"]},
+    {"identite": "anna.risques@exemple.test", "nom": "Anna Risques (fictive)", "groupes": ["risques"],
+     "roles": [{"role": "analyste-risques", "depuis": "2020-01-01T00:00:00Z"}]},
+    {"identite": "diane.risques@exemple.test", "nom": "Diane Risques (fictive)", "groupes": ["direction-risques"],
+     "roles": [{"role": "directeur-risques", "depuis": "2020-01-01T00:00:00Z"}]},
+    {"identite": "marc.ancien@exemple.test", "nom": "Marc Ancien (fictif)", "groupes": ["direction-risques"],
+     "roles": [{"role": "directeur-risques", "depuis": "2019-01-01T00:00:00Z", "jusqu_a": "2020-06-30T00:00:00Z"}]},
+    {"identite": "julie.juridique@exemple.test", "nom": "Julie Juridique (fictive)", "groupes": ["juridique"],
+     "roles": [{"role": "direction-juridique", "depuis": "2020-01-01T00:00:00Z"}]}
+  ]}

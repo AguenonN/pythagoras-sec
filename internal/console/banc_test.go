@@ -2,7 +2,6 @@ package console
 
 import (
 	"bytes"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -11,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"mcprogue/internal/annuaire"
 	"mcprogue/internal/console/simulateur"
 )
 
@@ -38,22 +36,6 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-// annuaireTest : identités fictives, avec les rôles de la démonstration.
-const annuaireTest = `{
-  "id": "annuaire-test", "version": 1, "avertissement": "FICTIF",
-  "identites": [
-    {"identite": "claire.analyste@exemple.test", "nom": "Claire Analyste (fictive)", "groupes": ["analystes-credit"]},
-    {"identite": "bruno.prestataire@exemple.test", "nom": "Bruno Prestataire (fictif)", "groupes": ["prestataires-externes"]},
-    {"identite": "anna.risques@exemple.test", "nom": "Anna Risques (fictive)", "groupes": ["risques"],
-     "roles": [{"role": "analyste-risques", "depuis": "2020-01-01T00:00:00Z"}]},
-    {"identite": "diane.risques@exemple.test", "nom": "Diane Risques (fictive)", "groupes": ["direction-risques"],
-     "roles": [{"role": "directeur-risques", "depuis": "2020-01-01T00:00:00Z"}]},
-    {"identite": "marc.ancien@exemple.test", "nom": "Marc Ancien (fictif)", "groupes": ["direction-risques"],
-     "roles": [{"role": "directeur-risques", "depuis": "2019-01-01T00:00:00Z", "jusqu_a": "2020-06-30T00:00:00Z"}]},
-    {"identite": "julie.juridique@exemple.test", "nom": "Julie Juridique (fictive)", "groupes": ["juridique"],
-     "roles": [{"role": "direction-juridique", "depuis": "2020-01-01T00:00:00Z"}]}
-  ]}`
-
 // banc est une démonstration complète dans un répertoire temporaire : règles,
 // annuaire signé et clés, simulateur d'orchestrateur, simulateur de
 // compilateur.
@@ -69,24 +51,7 @@ func nouveauBanc(t *testing.T) *banc {
 	t.Helper()
 	racine := t.TempDir()
 	demo := filepath.Join(racine, "demo")
-	for _, d := range []string{"directives", "execution/sessions", "execution/propositions"} {
-		if err := os.MkdirAll(filepath.Join(demo, d), 0o755); err != nil {
-			t.Fatal(err)
-		}
-	}
-	regles, err := os.ReadFile("testdata/demo.json")
-	if err != nil {
-		t.Fatal(err)
-	}
-	must(t, os.WriteFile(filepath.Join(demo, "directives", "demo.json"), regles, 0o644))
-	var src annuaire.SourceDemo
-	must(t, json.Unmarshal([]byte(annuaireTest), &src))
-	doc, cles, err := annuaire.Generer(src, time.Now(), nil)
-	must(t, err)
-	b, err := annuaire.Encoder(doc)
-	must(t, err)
-	must(t, os.WriteFile(filepath.Join(demo, "annuaire.json"), b, 0o644))
-	must(t, annuaire.EcrireCles(filepath.Join(demo, "execution", "cles"), cles))
+	must(t, simulateur.PreparerDemo(racine, "demo"))
 	py, _ := filepath.Abs("testdata/compilateur_simule.py")
 	dep := &Depot{Donnees: filepath.Join(demo, "execution", "sessions"), Demo: "demo", Cle: cleTest, Juriste: "juriste@exemple.test",
 		Commandes: Commandes{Racine: racine, Approuver: []string{binApprouver}, Compilateur: []string{"python3", py}}}
