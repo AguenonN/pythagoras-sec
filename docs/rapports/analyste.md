@@ -14,7 +14,7 @@ Branche `feat/analyste`, partie de `5b83cd5`. Rien de poussé ni fusionné.
 | `268743a` | Suite embeddings, étape 1 : corpus local des fondements (§7) |
 | `f73f68e` | Suite embeddings, étape 2 : sessions similaires et fondements suggérés (§7) |
 | `f7de4d7` | Suite, point 5 : détecteur « contournement d'un caviardage » (§7) |
-| (ce commit) | Réponses de Manu : textes affichés en français, « retiré », commande de recalibrage, propositions de démo régénérées (§8) |
+| `568a9c3` | Réponses de Manu : textes affichés en français, « retiré », commande de recalibrage, propositions de démo régénérées (§8) |
 
 **Critère de réussite : atteint, enregistré, rejouable hors ligne.**
 - Le détecteur « source interne périmée » trouve DOS-FICTIF-002 (passage nominal : base interne consultée à l'entrée 2, trimestre 2026-Q3 ; taux officiel consulté à l'entrée 5, trimestre 2026-Q4 ; attribution transmise à l'entrée 7).
