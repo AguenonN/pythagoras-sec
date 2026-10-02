@@ -434,5 +434,46 @@ class TestCLI(unittest.TestCase):
         self.assertIn("rejeu : réponse 1 enregistrée pour credit, demandée par orchestrateur", sortie)
 
 
+class TestHorlogeSimulee(unittest.TestCase):
+    """--horloge-depart : les jetons redéposés en rejeu sont signés à
+    l'heure du gate (mcp-approve valider -horloge), pas à l'heure réelle."""
+
+    def test_sans_depart_horloge_reelle(self):
+        self.assertIsNone(cli.horloge_simulee(None))
+        self.assertIsNone(cli.horloge_simulee(""))
+
+    def test_depart_plus_temps_ecoule(self):
+        t = [100.0]
+        h = cli.horloge_simulee("2026-10-04T09:00:00+02:00", maintenant=lambda: t[0])
+        self.assertEqual(h(), "2026-10-04T07:00:00Z")
+        t[0] += 90.4
+        self.assertEqual(h(), "2026-10-04T07:01:30Z")
+        with self.assertRaises(ValueError):
+            cli.horloge_simulee("2026-10-04T09:00:00")
+
+    def test_jetons_rejoues_signes_a_l_heure_simulee(self):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        argv = os.path.join(tmp, "argv.json")
+        faux = os.path.join(tmp, "mcp-approve")
+        with open(faux, "w") as f:
+            f.write("#!%s\nimport json, sys\njson.dump(sys.argv[1:], open(%r, 'w'))\nprint('a.b.c')\n" % (sys.executable, argv))
+        os.chmod(faux, 0o755)
+        appro = session.Approbations(os.path.join(tmp, "appro"))
+        validations = [{"valideurs": [{"identite": "claire", "role": "analyste-risques"}]}]
+        t = [0.0]
+        h = cli.horloge_simulee("2026-10-04T11:05:00+02:00", maintenant=lambda: t[0])
+        t[0] = 30
+        cli.valideur_rejeu(validations, appro, faux, os.path.join(tmp, "cles"), h)({"empreinte_transmise": EMPREINTE})
+        with open(argv) as f:
+            args = json.load(f)
+        self.assertEqual(args[args.index("-horloge") + 1], "2026-10-04T09:05:30Z")
+        self.assertEqual(args[args.index("-empreinte") + 1], EMPREINTE)
+        # Sans horloge simulée : pas d'option, l'heure réelle.
+        cli.valideur_rejeu(validations, appro, faux, os.path.join(tmp, "cles"))({"empreinte_transmise": EMPREINTE})
+        with open(argv) as f:
+            self.assertNotIn("-horloge", json.load(f))
+
+
 if __name__ == "__main__":
     unittest.main()

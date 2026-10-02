@@ -16,6 +16,9 @@
 # Options de « demande » (et de « scenario », qui les lit dans le fichier) :
 #	--horloge-depart T    horloge simulée du gate (RFC 3339), pour les répétitions ;
 #	                      la date de la demande transmise aux sous-agents en découle.
+#	                      Le jeton du demandeur et les jetons de validation (valider,
+#	                      rejeu) sont signés à cette horloge (mcp-approve -horloge),
+#	                      notée dans horloge.json du dossier de session.
 #	                      Le 04/10 lui-même : horloge réelle (option absente).
 #	--sans-directive D-00n  même jeu, sans cette directive (« sans la directive D-00n »)
 #	--jeu F               autre jeu de travail (défaut : demo/directives/demo.json)
@@ -269,8 +272,16 @@ PY
 	else
 		date="$(TZ=Europe/Paris date +%Y-%m-%d)"
 	fi
+	# Horloge simulée : le gate part de $depart à peu près maintenant ;
+	# « valider » en déduit l'heure simulée de la signature.
+	local horloge_approve=()
+	if [[ -n "$depart" ]]; then
+		python3 -c 'import json,sys,datetime; json.dump({"depart": sys.argv[1], "reel": datetime.datetime.now(datetime.timezone.utc).isoformat()}, open(sys.argv[2], "w"))' \
+			"$depart" "$session/horloge.json"
+		horloge_approve=(-horloge "$depart")
+	fi
 	local jeton
-	jeton="$("$racine/bin/mcp-approve" identite -cles "$cles" -signataire "$demandeur")"
+	jeton="$("$racine/bin/mcp-approve" identite -cles "$cles" -signataire "$demandeur" "${horloge_approve[@]}")"
 	local meta
 	meta="$(python3 -c 'import json,sys; print(json.dumps({"sans_directive": sys.argv[1] or None, "jeu": sys.argv[2], "registre": sys.argv[3], "horloge_depart": sys.argv[4] or None}))' \
 		"$sans" "${jeu#"$racine"/}" "$registre" "$depart")"
@@ -280,6 +291,7 @@ PY
 		--mode "$mode" --meta "$meta" --demande "$texte" --demandeur "$demandeur" --date "$date")
 	[[ -n "$enr" ]] && orch+=(--enregistrement "$enr")
 	[[ -n "$scenario" ]] && orch+=(--scenario "$scenario")
+	[[ -n "$depart" ]] && orch+=(--horloge-depart "$depart")
 	if [[ "$mode" == rejeu ]]; then
 		orch+=(--mcp-approve "$racine/bin/mcp-approve" --cles "$cles")
 		export DEMO_DONNEES_MODE="${DEMO_DONNEES_MODE:-REJEU}"
@@ -380,8 +392,34 @@ valider() {
 	[[ -n "$valideur" && -n "$role" ]] || die "valider : --valideur et --role obligatoires"
 	local dossier="$approbations/$empreinte"
 	mkdir -p "$dossier"
+	# Session en attente de cette empreinte lancée avec --horloge-depart :
+	# signer à son heure simulée (départ + temps écoulé), sinon le gate
+	# refuse le jeton.
+	local horloge
+	horloge="$(python3 - "$sessions" "$empreinte" <<'PY'
+import datetime, glob, json, os, sys
+sessions, empreinte = sys.argv[1:]
+for etat in sorted(glob.glob(os.path.join(sessions, "*", "etat.json")), reverse=True):
+    try:
+        e = json.load(open(etat, encoding="utf-8"))
+    except (OSError, ValueError):
+        continue
+    if e.get("statut") != "en_attente" or (e.get("attente") or {}).get("empreinte_transmise") != empreinte:
+        continue
+    h = os.path.join(os.path.dirname(etat), "horloge.json")
+    if os.path.exists(h):
+        h = json.load(open(h, encoding="utf-8"))
+        depart = datetime.datetime.fromisoformat(h["depart"].replace("Z", "+00:00"))
+        reel = datetime.datetime.fromisoformat(h["reel"])
+        t = depart + (datetime.datetime.now(datetime.timezone.utc) - reel)
+        print(t.astimezone(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z"))
+    break
+PY
+)"
+	local opt_horloge=()
+	[[ -n "$horloge" ]] && opt_horloge=(-horloge "$horloge")
 	local tmp="$dossier/.$valideur.tmp"
-	"$racine/bin/mcp-approve" valider -cles "$cles" -valideur "$valideur" -role "$role" -empreinte "$empreinte" >"$tmp"
+	"$racine/bin/mcp-approve" valider -cles "$cles" -valideur "$valideur" -role "$role" -empreinte "$empreinte" "${opt_horloge[@]}" >"$tmp"
 	mv "$tmp" "$dossier/$valideur.jwt"
 	echo "lancer-demo: jeton de $valideur ($role) déposé pour $empreinte" >&2
 }

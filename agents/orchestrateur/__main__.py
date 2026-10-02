@@ -2,7 +2,8 @@
 
     python -m orchestrateur executer --demande "…" --demandeur ID --session DIR \\
         --approbations DIR --date AAAA-MM-JJ [--mode reel|rejeu] [--enregistrement F] \\
-        [--scenario NOM] [--meta JSON] [--mcp-approve BIN --cles DIR] -- <commande du gate>
+        [--scenario NOM] [--meta JSON] [--mcp-approve BIN --cles DIR] [--horloge-depart T] \
+        -- <commande du gate>
     python -m orchestrateur sous-agents [--registre F | --catalogue F] [--dossier D]
     python -m orchestrateur comparer <journal1.jsonl> <journal2.jsonl>
 
@@ -16,7 +17,9 @@ orchestrateur.json (trace) dans le dossier de session.
   (avec les validations constatées), à rejouer hors ligne ;
 - ``--mode rejeu`` : les réponses de ``--enregistrement``, dans l'ordre,
   sans réseau ; les validations enregistrées sont redéposées en signant de
-  nouveaux jetons avec ``--mcp-approve`` (mêmes valideurs, mêmes rôles).
+  nouveaux jetons avec ``--mcp-approve`` (mêmes valideurs, mêmes rôles) ;
+  avec ``--horloge-depart`` (celle du gate), ils sont signés à l'heure
+  simulée (``mcp-approve valider -horloge``), sinon le gate les refuse.
 
 Codes de sortie : 0 terminé, 2 bloqué, 1 erreur.
 """
@@ -27,6 +30,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 
 from boucle import mcp
 from compilateur import mistral
@@ -47,9 +51,29 @@ def env_gate():
     return {k: v for k, v in os.environ.items() if k not in SECRETS_HORS_GATE}
 
 
-def valideur_rejeu(validations, approbations, mcp_approve, cles):
+def horloge_simulee(depart, debut=None, maintenant=time.time):
+    """Heure simulée du gate lancé avec ``-horloge-depart depart`` : depart
+    plus le temps réel écoulé depuis ``debut`` (lancement du gate, à
+    quelques secondes près ; le gate tolère une minute d'avance d'un
+    jeton). Rend une fonction sans argument → RFC 3339, ou None sans
+    départ (horloge réelle)."""
+    if not depart:
+        return None
+    d = datetime.datetime.fromisoformat(depart.replace("Z", "+00:00"))
+    if d.tzinfo is None:
+        raise ValueError("--horloge-depart sans fuseau : %s" % depart)
+    t0 = maintenant() if debut is None else debut
+
+    def instant():
+        t = d + datetime.timedelta(seconds=maintenant() - t0)
+        return t.astimezone(datetime.timezone.utc).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    return instant
+
+
+def valideur_rejeu(validations, approbations, mcp_approve, cles, horloge=None):
     """Rejeu : à chaque attente, dépose les jetons des valideurs enregistrés
-    pour cette attente, dans l'ordre, signés à nouveau."""
+    pour cette attente, dans l'ordre, signés à nouveau (à l'heure simulée
+    ``horloge()`` si le gate a une horloge simulée)."""
     restantes = list(validations)
 
     def deposer(attente):
@@ -61,8 +85,11 @@ def valideur_rejeu(validations, approbations, mcp_approve, cles):
         dossier = approbations.dossier(attente["empreinte_transmise"])
         os.makedirs(dossier, exist_ok=True)
         for i, x in enumerate(v.get("valideurs") or []):
-            r = subprocess.run([mcp_approve, "valider", "-cles", cles, "-valideur", x["identite"], "-role", x["role"],
-                                "-empreinte", attente["empreinte_transmise"]], capture_output=True, text=True)
+            cmd = [mcp_approve, "valider", "-cles", cles, "-valideur", x["identite"], "-role", x["role"],
+                   "-empreinte", attente["empreinte_transmise"]]
+            if horloge is not None:
+                cmd += ["-horloge", horloge()]
+            r = subprocess.run(cmd, capture_output=True, text=True)
             if r.returncode != 0:
                 raise orchestrateur.ErreurOrchestrateur("mcp-approve valider : " + r.stderr.strip())
             tmp = os.path.join(dossier, ".%d.tmp" % i)
@@ -90,7 +117,8 @@ def executer(a, sortie):
         validations = enr.get("validations") or []
         if any(v.get("valideurs") for v in validations) and (not a.mcp_approve or not a.cles):
             raise SystemExit("rejeu avec validations : --mcp-approve et --cles obligatoires")
-        pendant = valideur_rejeu(validations, approbations, a.mcp_approve, a.cles)
+        pendant = valideur_rejeu(validations, approbations, a.mcp_approve, a.cles,
+                                 horloge_simulee(a.horloge_depart))
     trace_chemin = dossier.fichier("orchestrateur.json")
     resultat = None
     try:
@@ -144,6 +172,7 @@ def principal(argv=None, sortie=sys.stdout):
     e.add_argument("--meta", help="options du passage (JSON), recopiées dans l'enregistrement")
     e.add_argument("--mcp-approve")
     e.add_argument("--cles")
+    e.add_argument("--horloge-depart", help="horloge simulée du gate (RFC 3339) : les jetons redéposés en rejeu y sont signés")
     e.add_argument("--dossier-sous-agents", default=sous_agents.DOSSIER)
     e.add_argument("gate", nargs="+", help="commande du gate (stdio)")
     s = sous.add_parser("sous-agents")
