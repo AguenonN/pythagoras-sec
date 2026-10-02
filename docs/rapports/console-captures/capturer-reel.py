@@ -23,6 +23,8 @@ ecrans = [
     ('1-journal-top-management', '#journal?j=' + dossier('top-management')),
     ('1-journal-consigne-sans-d001', '#journal?j=' + dossier('consigne-sans-d001')),
     ('1-journal-demande-sans-outil', '#journal?j=' + dossier('sans-outil')),
+    ('1-journal-demande-decide-nominal', '#journal?onglet=demande&j=' + dossier('nominal')),
+    ('1-journal-demande-decide-top-management', '#journal?onglet=demande&j=' + dossier('top-management')),
     ('2-poste-nominal', '#poste?j=' + dossier('nominal')),
     ('2-poste-demande-sans-outil', '#poste?j=' + dossier('sans-outil')),
     ('3-regles', '#regles'),

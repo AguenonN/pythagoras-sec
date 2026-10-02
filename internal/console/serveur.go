@@ -48,6 +48,8 @@ func (s *Serveur) Handler() http.Handler {
 	mux.HandleFunc("GET /api/journal/{id}/session/{sid}/poste", s.poste)
 	mux.HandleFunc("GET /api/journal/{id}/chaine", s.chaine)
 	mux.HandleFunc("GET /api/journal/{id}/poste", s.poste)
+	mux.HandleFunc("GET /api/journal/{id}/session/{sid}/demande", s.demande)
+	mux.HandleFunc("GET /api/journal/{id}/demande", s.demande)
 	mux.HandleFunc("GET /api/identites", s.identites)
 	mux.HandleFunc("GET /api/suggestions", s.suggestions)
 	mux.HandleFunc("POST /api/lancer", s.lancer)
@@ -230,6 +232,20 @@ func (s *Serveur) chaine(w http.ResponseWriter, r *http.Request) {
 	}
 	jeux, _ := s.Depot.ChargerJeux()
 	v, ok := s.Depot.Chaine(st, jeux, r.PathValue("sid"))
+	if !ok {
+		erreur(w, http.StatusNotFound, "session inconnue")
+		return
+	}
+	ecrire(w, v)
+}
+
+func (s *Serveur) demande(w http.ResponseWriter, r *http.Request) {
+	st, ok := s.ouvrir(w, r.PathValue("id"))
+	if !ok {
+		return
+	}
+	jeux, _ := s.Depot.ChargerJeux()
+	v, ok := s.Depot.Demande(st, jeux, r.PathValue("sid"))
 	if !ok {
 		erreur(w, http.StatusNotFound, "session inconnue")
 		return

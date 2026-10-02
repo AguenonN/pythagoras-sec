@@ -181,6 +181,7 @@ func Chaine(st *Etat, jeux []JeuCharge, session string) (*VueChaine, bool) {
 			if e.Appel != nil {
 				et.Champs = e.Appel.ChampsRetires
 				et.Empreinte = e.Appel.EmpreinteTransmise
+				et.EmpreinteOrigine = e.Appel.EmpreinteOrigine
 			}
 			for _, a := range e.Decision.Applications {
 				et.Evaluees++
