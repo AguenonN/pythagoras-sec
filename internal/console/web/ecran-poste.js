@@ -78,7 +78,7 @@
           h('h2', {}, h('span', { class: 'vif', title: 'suivi en continu' }), 'Déroulé en direct'),
           h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' }, ['autorise', 'caviarde', 'en_attente', 'refuse', 'indisponible', 'source_non_attestee'].map(k => badge(k)))),
         v.statut_session ? h('p', { class: 'moyen second' }, 'Demande : ' + (v.demande ? '« ' + v.demande + ' » · ' : '') + STATUT[v.statut_session]) : null,
-        v.etapes.length ? h('ol', { class: 'deroule' }, v.etapes.map(ligne)) : h('p', { class: 'second' }, 'Aucun appel pour l\'instant.'),
+        v.etapes.length ? h('ol', { class: 'deroule' }, v.etapes.map(ligne)) : h('p', { class: 'second' }, v.session ? 'Aucun appel pour l\'instant.' : 'Aucun appel d\'outil : l\'orchestrateur a répondu sans consulter de serveur.'),
         cout(v.cout)),
       h('aside', { class: 'volet', style: 'width:auto;padding:28px;gap:18px' },
         h('div', { class: 'etiq' }, 'Réponse au conseiller'),
@@ -91,7 +91,7 @@
           h('p', { class: 'gras' }, r.titre),
           r.paragraphes.map(p => h('p', { class: 'second moyen' }, motifAffiche(p)))),
         h('div', { style: 'border-top:1px solid var(--trait);padding-top:14px;display:flex;flex-direction:column;gap:6px' },
-          h('div', { class: 'kv' }, h('span', {}, 'Session'), lienSession(v.journal, v.session, nomSession(v.session) + ' · voir la preuve')),
+          h('div', { class: 'kv' }, h('span', {}, 'Session'), lienSession(v.journal, v.session, nomSession(v.session || v.journal) + ' · voir la preuve')),
           h('div', { class: 'kv' }, h('span', {}, 'Règles appliquées'), v.regles ? h('span', {}, 'en vigueur depuis le ' + jourMoisHeure(v.regles.depuis)) : nd()),
           h('div', { class: 'kv' }, h('span', {}, 'Chaîne du journal'), ligneChaine),
           h('div', { class: 'kv' }, h('span', {}, 'Demandeur'), dem ? h('span', {}, dem.identite) : nd())),
@@ -135,12 +135,12 @@
       if (lancement) {
         etat = await api('/api/etat');
         const nouvelle = toutesSessions().find(x => !avant.has(x.j.id));
-        if (nouvelle) { lancement = null; allerA('poste', { j: nouvelle.j.id, s: nouvelle.s.id }); return; }
+        if (nouvelle) { lancement = null; allerA('poste', { j: nouvelle.j.id, s: nouvelle.s ? nouvelle.s.id : '' }); return; }
         const l = (await api('/api/lancements')).lancements.find(x => x.id === lancement.id);
         if (l && l.termine && l.code !== 0) { info.textContent = ''; err.dire('Le lanceur s\'est arrêté (code ' + l.code + ') : ' + (l.erreur || 'sans message')); lancement = null; }
       }
       if (!courante) { racine.textContent = ''; racine.append(h('div', { class: 'principal ample' }, formulaire, h('p', { class: 'second' }, 'Aucune session pour l\'instant.'))); return; }
-      const v = await api('/api/journal/' + encodeURIComponent(courante.j.id) + '/session/' + encodeURIComponent(courante.s.id) + '/poste');
+      const v = await api(cheminJournal(courante, 'poste'));
       if (!ctx.vivant()) return;
       ctx.droite(v.demandeur ? ['Connecté : ', h('b', {}, (v.demandeur_fiche && v.demandeur_fiche.nom) || v.demandeur.identite)] : ['Connecté : ', nd()]);
       const sig = v.signature + '|' + v.verification.ok + '|' + v.verification.erreur;

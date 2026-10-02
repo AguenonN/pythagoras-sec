@@ -494,6 +494,9 @@ func (d *Depot) AvantApres(etats []*Etat, tous []JeuCharge, choix string, choisi
 	v.LibelleAvant, v.LibelleApres = "Sans la directive "+dir.ID, "Avec la directive "+dir.ID
 	cmp := Comparaison{Avec: base.Jeu, Sans: sansDirective(base.Jeu, dir.ID), Dir: *dir, Tous: tous}
 	v.Lignes, v.Compteurs, v.Verifiees = cmp.Rejouer(etats, choisies)
+	if v.Lignes == nil {
+		v.Lignes = []LigneAA{}
+	}
 	v.Explication = explication(v.Lignes, dir.ID)
 	return v
 }

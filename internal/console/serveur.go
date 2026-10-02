@@ -46,6 +46,8 @@ func (s *Serveur) Handler() http.Handler {
 	mux.HandleFunc("GET /api/etat", s.etat)
 	mux.HandleFunc("GET /api/journal/{id}/session/{sid}/chaine", s.chaine)
 	mux.HandleFunc("GET /api/journal/{id}/session/{sid}/poste", s.poste)
+	mux.HandleFunc("GET /api/journal/{id}/chaine", s.chaine)
+	mux.HandleFunc("GET /api/journal/{id}/poste", s.poste)
 	mux.HandleFunc("GET /api/identites", s.identites)
 	mux.HandleFunc("POST /api/lancer", s.lancer)
 	mux.HandleFunc("GET /api/lancements", s.lancements)
@@ -152,6 +154,7 @@ type journalListe struct {
 	Entrees  int             `json:"entrees"`
 	Ecart    int             `json:"premier_ecart"`
 	Sessions []SessionResume `json:"sessions"`
+	Debut    *time.Time      `json:"debut,omitempty"`  // etat.json, sinon première session
 	Statut   string          `json:"statut,omitempty"` // etat.json
 	Demande  string          `json:"demande,omitempty"`
 }
@@ -171,7 +174,14 @@ func (s *Serveur) etat(w http.ResponseWriter, r *http.Request) {
 	}{Journaux: []journalListe{}, Jeux: []jeuListe{}, Cle: len(s.Depot.Cle) > 0}
 	for _, st := range s.tousEtats() {
 		jl := journalListe{ID: st.Journal.ID, Verif: st.Verif, Entrees: len(st.Entrees), Ecart: st.Verif.PremierEcart(), Sessions: Sessions(st)}
+		if len(jl.Sessions) > 0 {
+			t := jl.Sessions[0].Ouverte
+			jl.Debut = &t
+		}
 		if st.Dossier != nil {
+			if st.Dossier.Debut != nil {
+				jl.Debut = st.Dossier.Debut
+			}
 			jl.Statut, jl.Demande = st.Dossier.Statut, st.Dossier.Demande
 			if st.Dossier.Statut == StatutEnAttente {
 				out.Attentes++

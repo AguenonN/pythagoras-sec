@@ -197,7 +197,7 @@ func Titre(texte string) string {
 
 // Sessions liste les sessions ouvertes d'un journal.
 func Sessions(st *Etat) []SessionResume {
-	var out []SessionResume
+	out := []SessionResume{}
 	idx := map[string]int{}
 	for _, e := range st.Entrees {
 		switch e.Type {

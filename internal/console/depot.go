@@ -8,6 +8,8 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -101,8 +103,10 @@ func (d *Depot) Journaux() []Journal {
 		p := filepath.Join(d.Donnees, e.Name())
 		switch {
 		case e.IsDir():
+			// Une demande sans appel d'outil peut n'avoir que etat.json et
+			// reponse.json : c'est tout de même une demande à afficher.
 			j := filepath.Join(p, "journal.jsonl")
-			if _, err := os.Stat(j); err == nil {
+			if existe(j) || existe(filepath.Join(p, "etat.json")) || existe(filepath.Join(p, "reponse.json")) {
 				out = append(out, Journal{ID: e.Name(), Chemin: j, Coffre: filepath.Join(p, "coffre.jsonl")})
 			}
 		case strings.HasSuffix(e.Name(), ".jsonl") && !strings.HasPrefix(e.Name(), "coffre") && e.Name() != "journal.jsonl":
@@ -111,6 +115,11 @@ func (d *Depot) Journaux() []Journal {
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
 	return out
+}
+
+func existe(chemin string) bool {
+	_, err := os.Stat(chemin)
+	return err == nil
 }
 
 func coffreVoisin(chemin string) string {
@@ -140,7 +149,12 @@ func (d *Depot) Lire(j Journal) (*Etat, error) {
 	etat, rep, notifs := lireDossier(j.Dossier())
 	brut, err := os.ReadFile(j.Chemin)
 	if err != nil {
-		return nil, err
+		// Pas de journal, mais un dossier de demande (refus ou question sans
+		// appel d'outil) : on affiche la demande, journal vide.
+		if !errors.Is(err, fs.ErrNotExist) || (etat == nil && rep == nil) {
+			return nil, err
+		}
+		brut = nil
 	}
 	if i := bytes.LastIndexByte(brut, '\n'); i >= 0 {
 		brut = brut[:i+1]

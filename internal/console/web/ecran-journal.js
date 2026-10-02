@@ -14,17 +14,24 @@
   }
 
   function liste(courante) {
-    const toutes = toutesSessions();
-    const jours = new Set(toutes.map(x => jourComplet(x.s.ouverte)));
-    const titre = jours.size === 1 ? 'Sessions du ' + [...jours][0] : 'Sessions';
+    const demandes = toutesDemandes();
+    const jours = new Set(demandes.map(j => jourComplet(dateDemande(j))));
+    const titre = jours.size === 1 ? 'Demandes du ' + [...jours][0] : 'Demandes';
     return h('aside', { class: 'laterale' },
       h('div', { class: 'etiq' }, titre),
-      toutes.map(x => h('button', { type: 'button', class: 'session-carte' + (x.j.id === courante.j.id && x.s.id === courante.s.id ? ' choisie' : '') + (x.j.verification.ok ? '' : ' rompue'),
-        onclick: () => allerA('journal', { j: x.j.id, s: x.s.id }) },
-        h('span', { class: 'gras' }, nomSession(x.s.id) + ' · ' + heureMin(x.s.ouverte)),
-        h('span', { class: 'moyen second' }, x.j.demande ? x.j.demande.slice(0, 70) + (x.j.demande.length > 70 ? '…' : '') : x.j.id),
-        h('span', { class: 'petit second' }, x.s.appels + ' appel(s)' + (x.j.statut ? ' · ' + STATUT_SESSION[x.j.statut] : '')),
-        ligneChaineSession(x.j))));
+      demandes.map(j => {
+        const ch = choixDe(j);
+        const resume = j.sessions.reduce((n, s) => n + s.appels, 0);
+        return h('div', { class: 'demande' },
+          h('button', { type: 'button', class: 'session-carte' + (j.id === courante.j.id ? ' choisie' : '') + (j.verification.ok ? '' : ' rompue'),
+            onclick: () => allerA('journal', { j: j.id, s: ch.s ? ch.s.id : '' }) },
+            h('span', { class: 'gras' }, nomChoix(ch) + ' · ' + heureMin(dateDemande(j))),
+            h('span', { class: 'moyen second' }, j.demande ? j.demande.slice(0, 70) + (j.demande.length > 70 ? '…' : '') : j.id),
+            h('span', { class: 'petit second' }, (j.sessions.length ? resume + ' appel(s)' : 'aucun appel d\'outil') + (j.statut ? ' · ' + STATUT_SESSION[j.statut] : '')),
+            ligneChaineSession(j)),
+          j.sessions.length > 1 ? j.sessions.map(s => h('button', { type: 'button', class: 'petit second' + (j.id === courante.j.id && courante.s && s.id === courante.s.id ? ' gras' : ''),
+            onclick: () => allerA('journal', { j: j.id, s: s.id }) }, '↳ session ' + nomSession(s.id) + ' · ' + s.appels + ' appel(s)')) : null);
+      }));
   }
 
   function serveurCellule(e) {
@@ -87,7 +94,7 @@
   window.TitreDirective = Titre;
 
   function volet(v, e) {
-    if (!e) return h('aside', { class: 'volet' }, h('div', { class: 'etiq' }, 'Décision'), nd('Aucun appel dans cette session.'));
+    if (!e) return h('aside', { class: 'volet' }, h('div', { class: 'etiq' }, 'Décision'), nd('Aucun appel d\'outil pour cette demande.'));
     const appliquees = e.applications.filter(a => a.appliquee || a.declenchee);
     const liens = e.provenance || [];
     const roles = e.validation && e.validation.roles && e.validation.roles.length ? e.validation.roles.join(', ') + (e.validation.quatre_yeux ? ' · quatre yeux' : '') : null;
@@ -133,7 +140,7 @@
     let signature = null, derniere = null;
     const racine = h('div', { class: 'corps' });
     ctx.monter(racine);
-    const chemin = '/api/journal/' + encodeURIComponent(ch.j.id) + '/session/' + encodeURIComponent(ch.s.id) + '/chaine';
+    const chemin = cheminJournal(ch, 'chaine');
 
     function dessiner(v) {
       const fonde = {};
@@ -153,7 +160,7 @@
         h('main', { class: 'principal' },
           h('div', { style: 'display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap' },
             h('div', { style: 'display:flex;flex-direction:column;gap:4px' },
-              h('h1', {}, 'Session ' + nomSession(v.session)),
+              h('h1', {}, 'Demande ' + nomSession(v.session || v.journal)),
               h('div', { class: 'second' }, 'Demande : ', v.demande ? '« ' + v.demande + ' »' : nd('non disponible'))),
             pastilleChaine(v.verification)),
           h('div', { class: 'chemin' },
@@ -174,7 +181,7 @@
             ['#', 'Sous-agent', 'Appel', 'Serveur · attestation', 'Décision'].map(t => h('span', {}, t))),
           h('div', { style: 'display:flex;flex-direction:column;gap:8px' },
             v.etapes.length ? v.etapes.map(x => rang(x, choisi, fonde[x.seq], () => { choisi = x.seq; dessiner(derniere); })) :
-              h('p', { class: 'second' }, 'Aucun appel dans cette session.')),
+              h('p', { class: 'second' }, 'Aucun appel d\'outil pour cette demande.')),
           h('div', { class: 'petit second', style: 'display:flex;gap:20px;flex-wrap:wrap;margin-top:4px' },
             h('span', {}, 'Cadre bleu : consultation qui a fondé une décision de provenance.'),
             h('span', {}, 'Pointillés : déclaré par le code d\'orchestration, consigné, non prouvé.'),

@@ -216,24 +216,36 @@ async function router() {
 
 // ------------------------------------------------------------------ sélection de session (écrans 1, 2, 4)
 
-// Toutes les sessions de tous les journaux, de la plus récente à la plus ancienne.
+// Une ligne par demande (dossier de session), de la plus récente à la plus
+// ancienne ; ses sessions d'outils en dessous, éventuellement aucune (refus,
+// question de clarification, demande hors périmètre).
+const dateDemande = (j) => new Date(j.debut || (j.sessions[0] && j.sessions[0].ouverte) || 0);
+function toutesDemandes() {
+  return [...(etat.journaux || [])].sort((a, b) => dateDemande(b) - dateDemande(a) || (a.id < b.id ? 1 : -1));
+}
+// Un choix : { j: la demande, s: sa session d'outils ou null }.
+function choixDe(j, sid) {
+  return { j, s: j.sessions.find(x => x.id === sid) || j.sessions[0] || null };
+}
 function toutesSessions() {
-  const out = [];
-  for (const j of etat.journaux) for (const s of j.sessions) out.push({ j, s });
-  out.sort((a, b) => new Date(b.s.ouverte) - new Date(a.s.ouverte));
-  return out;
+  return toutesDemandes().map(j => choixDe(j));
 }
 function sessionChoisie(q) {
-  const toutes = toutesSessions();
-  if (!toutes.length) return null;
-  return toutes.find(x => x.j.id === q.get('j') && x.s.id === q.get('s')) || toutes[0];
+  const demandes = toutesDemandes();
+  if (!demandes.length) return null;
+  const j = demandes.find(x => x.id === q.get('j')) || demandes[0];
+  return choixDe(j, q.get('s'));
 }
+const nomChoix = (x) => nomSession(x.s ? x.s.id : x.j.id);
+// Adresse de l'API pour une demande et, si elle en a une, sa session d'outils.
+const cheminJournal = (x, ecran) => '/api/journal/' + encodeURIComponent(x.j.id) +
+  (x.s ? '/session/' + encodeURIComponent(x.s.id) : '') + '/' + ecran;
 function selecteurSession(ecran, courante, extra) {
-  return h('select', { class: 'champ', 'aria-label': 'Session', onchange: e => {
+  return h('select', { class: 'champ', 'aria-label': 'Demande', onchange: e => {
     const [j, s] = e.target.value.split('|');
     allerA(ecran, Object.assign({ j, s }, extra || {}));
-  } }, toutesSessions().map(x => h('option', { value: x.j.id + '|' + x.s.id, selected: x.j.id === courante.j.id && x.s.id === courante.s.id },
-    nomSession(x.s.id) + ' · ' + heureMin(x.s.ouverte) + ' · ' + x.j.id)));
+  } }, toutesSessions().map(x => h('option', { value: x.j.id + '|' + (x.s ? x.s.id : ''), selected: x.j.id === courante.j.id },
+    nomChoix(x) + ' · ' + heureMin(dateDemande(x.j)) + ' · ' + x.j.id)));
 }
 function aucunJournal() {
   return h('div', { class: 'principal ample' }, h('div', { class: 'carte' },
