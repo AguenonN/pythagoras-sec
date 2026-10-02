@@ -9,6 +9,7 @@ const ECRANS = {};
 const NAV = [
   ['journal', 'Journal'], ['poste', 'Poste conseiller'], ['regles', 'Règles'],
   ['avant-apres', 'Avant / après'], ['validation', 'Validation'], ['redaction', 'Rédaction'],
+  ['notifications', 'Notifications'],
 ];
 const LIBELLE_BADGE = {
   autorise: 'Autorisé', caviarde: 'Caviardé', en_attente: 'En attente', refuse: 'Refusé',
@@ -42,6 +43,7 @@ function h(tag, attrs, ...enfants) {
   }
   return e;
 }
+const NOMBRE_ONGLET = { validation: 'attentes', redaction: 'propositions' };
 const nd = (texte) => h('span', { class: 'nd' }, texte || ND);
 
 async function api(chemin, options) {
@@ -49,6 +51,20 @@ async function api(chemin, options) {
   const corps = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(corps.erreur || ('erreur ' + r.status));
   return corps;
+}
+
+// Écriture : corps JSON ; une erreur 4xx rend le message de la console.
+function post(chemin, corps) {
+  return api(chemin, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(corps || {}) });
+}
+// Zone de message d'erreur d'action, affichée en clair dans l'écran.
+function zoneErreur() {
+  const z = h('p', { class: 'erreur gras', role: 'alert', hidden: true });
+  z.dire = (m) => { z.hidden = !m; z.textContent = m || ''; };
+  return z;
+}
+function lienSession(j, s, texte) {
+  return h('a', { href: '#journal?' + new URLSearchParams({ j, s }) }, texte);
 }
 
 // ------------------------------------------------------------------ formats
@@ -75,7 +91,12 @@ function court(hex) {
   const s = String(hex).replace(/^sha256:/, '');
   return s.length > 10 ? s.slice(0, 4) + '…' + s.slice(-4) : s;
 }
-const nomSession = (id) => 'S-' + String(id).slice(0, 4);
+// Le nom court d'une session : la fin de son identifiant quand celui-ci porte
+// une date (AAAAMMJJ-HHMMSS-court), sinon ses quatre premiers caractères.
+const nomSession = (id) => {
+  const m = /^\d{8}-\d{6}-([0-9a-z]+)$/i.exec(String(id));
+  return 'S-' + (m ? m[1].slice(0, 4) : String(id).slice(0, 4));
+};
 function ilYa(ts) {
   const s = Math.max(0, (Date.now() - new Date(ts).getTime()) / 1000);
   if (s < 90) return 'il y a un instant';
@@ -181,6 +202,10 @@ async function router() {
     etat = await api('/api/etat');
     if (gen !== generation) return;
     c.produit.textContent = etat.produit || 'Console de gouvernance';
+    for (const a of c.nav.querySelectorAll('a')) {
+      const k = NOMBRE_ONGLET[a.dataset.ecran], n = k ? etat[k] : 0;
+      a.textContent = NAV.find(x => x[0] === a.dataset.ecran)[1] + (n ? ' · ' + n : '');
+    }
     document.title = c.produit.textContent;
     alerteChaines();
     ctx.droite('');

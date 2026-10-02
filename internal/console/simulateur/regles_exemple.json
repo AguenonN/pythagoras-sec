@@ -1,0 +1,77 @@
+{
+  "jeu": {"id": "demo", "version": 1, "date_effet": "2025-01-01T00:00:00Z", "auteur": "juriste@exemple.test"},
+  "directives": [
+    {
+      "id": "D-001", "version": 1, "statut": "active", "date_effet": "2025-01-01T00:00:00Z",
+      "texte_fr": "Aucun prêt ne peut être attribué sans que les gels d'avoirs aient été vérifiés. (Démonstration : fondement à valider par le juriste.)",
+      "fondements": [{"texte": "Gel des avoirs — à valider par le juriste", "article": "L562-2"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"non": {"session.a_consulte": {"outil": "gels-avoirs/verifier_gel", "critere": "donnees_recues"}}},
+      "effets": [{"effet": "refuser"}]
+    },
+    {
+      "id": "D-002", "version": 1, "statut": "active", "date_effet": "2025-01-01T00:00:00Z",
+      "texte_fr": "Si le taux officiel a été consulté, l'attribution du prêt attend la validation d'un analyste des risques. (Démonstration : fondement à valider par le juriste.)",
+      "fondements": [{"texte": "RGPD — à valider par le juriste", "article": "22"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"session.a_consulte": {"serveur": "taux-officiel", "critere": "donnees_recues"}},
+      "effets": [{"effet": "attendre_validation", "par_role": "analyste-risques"}]
+    },
+    {
+      "id": "D-003", "version": 1, "statut": "active", "date_effet": "2025-01-01T00:00:00Z",
+      "texte_fr": "Une source de taux dont l'attestation ne se vérifie pas est refusée. (Démonstration : fondement à valider par le juriste.)",
+      "fondements": [{"texte": "RGPD — à valider par le juriste", "article": "5"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "taux-officiel", "outil": "*"}},
+      "condition": {"attestation": {"verifiee": false}},
+      "effets": [{"effet": "refuser"}]
+    },
+    {
+      "id": "D-004", "version": 1, "statut": "active", "date_effet": "2025-01-01T00:00:00Z",
+      "texte_fr": "Le serveur de vérification d'entreprise ne reçoit que le SIREN. (Démonstration : fondement à valider par le juriste.)",
+      "fondements": [{"texte": "RGPD — à valider par le juriste", "article": "5"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "recherche-entreprises", "outil": "*"}},
+      "effets": [{"effet": "caviarder", "champs_autorises": ["/siren"], "mode": "caviarder"}]
+    },
+    {
+      "id": "D-005", "version": 1, "statut": "active", "date_effet": "2025-01-01T00:00:00Z",
+      "texte_fr": "Au-delà de 2 000 000 euros, l'attribution est réservée au directeur des risques, quatre yeux, avec notification à la direction juridique. (Démonstration : fondement à valider par le juriste.)",
+      "fondements": [{"texte": "Politique de crédit — à valider par le juriste", "article": "7.1"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+      "condition": {"argument": {"champ": "/montant", "op": ">", "valeur": 2000000}},
+      "effets": [
+        {"effet": "attendre_validation", "par_role": "directeur-risques", "quatre_yeux": true},
+        {"effet": "notifier", "destinataire_role": "direction-juridique", "rythme": "temps_reel", "si_echec": "refuser"}
+      ]
+    },
+    {
+      "id": "D-006", "version": 1, "statut": "active", "date_effet": "2025-01-01T00:00:00Z",
+      "texte_fr": "Aucune action sur des données personnelles si un salarié concerné fait l'objet d'un contentieux en cours. (Démonstration : fondement à valider par le juriste.)",
+      "fondements": [{"texte": "Code du travail — à valider par le juriste", "article": "L1121-1"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"etiquette": "donnees_personnelles", "acces": "action"}},
+      "condition": {"existe": {"champ": "/salarie_ids", "condition": {"sujet": {"groupe": "contentieux-en-cours"}}}},
+      "effets": [{"effet": "refuser"}]
+    },
+    {
+      "id": "D-007", "version": 1, "statut": "active", "date_effet": "2025-01-01T00:00:00Z",
+      "texte_fr": "Toute action visant un salarié protégé attend la validation du responsable RH. (Démonstration : fondement à valider par le juriste.)",
+      "fondements": [{"texte": "Code du travail — à valider par le juriste", "article": "L2411-1"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"etiquette": "donnees_personnelles", "acces": "action"}},
+      "condition": {"existe": {"champ": "/salarie_ids", "condition": {"sujet": {"groupe": "salaries-proteges"}}}},
+      "effets": [{"effet": "attendre_validation", "par_role": "responsable-rh"}]
+    },
+    {
+      "id": "D-008", "version": 1, "statut": "active", "date_effet": "2025-01-01T00:00:00Z",
+      "texte_fr": "Un prestataire externe ne peut obtenir un rapport fondé sur des données client ; la direction juridique est prévenue. (Démonstration : fondement à valider par le juriste.)",
+      "fondements": [{"texte": "RGPD — à valider par le juriste", "article": "32"}],
+      "declencheur": {"evenement": "appel_outil", "cible": {"etiquette": "production_rapport"}},
+      "condition": {"et": [
+        {"demandeur": {"groupe": "prestataires-externes"}},
+        {"session.a_consulte": {"etiquette": "donnees_client", "critere": "donnees_recues"}}
+      ]},
+      "effets": [
+        {"effet": "refuser"},
+        {"effet": "notifier", "destinataire_role": "direction-juridique", "rythme": "temps_reel", "si_echec": "refuser"}
+      ]
+    }
+  ]
+}

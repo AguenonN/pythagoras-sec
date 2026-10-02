@@ -8,7 +8,6 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -17,22 +16,30 @@ import (
 	"strings"
 	"time"
 
-	"mcprogue/internal/directive"
 	"mcprogue/internal/journal"
 )
 
 // Depot désigne les fichiers que la console lit. Il ne les écrit jamais.
 type Depot struct {
-	// Donnees est un répertoire de journaux : chaque sous-répertoire porte
-	// journal.jsonl (et coffre.jsonl si présent), et les fichiers *.jsonl à
-	// la racine sont des journaux sans coffre. Un chemin vers un fichier
-	// est aussi accepté.
+	// Donnees est un répertoire de sessions : chaque sous-répertoire porte
+	// journal.jsonl (et coffre.jsonl, etat.json, reponse.json,
+	// notifications.jsonl si présents), et les fichiers *.jsonl à la racine
+	// sont des journaux sans coffre. Un chemin vers un fichier est aussi
+	// accepté.
 	Donnees string
-	// Jeux sont des répertoires ou fichiers de jeux de directives (JSON).
-	Jeux []string
+	// Demo est la racine de la démonstration (demo/) : la console n'y lit
+	// que directives/demo.json, son historique, origines.json, l'annuaire
+	// et les dossiers d'exécution (voir Chemins).
+	Demo string
 	// Cle est la clé HMAC des journaux. Vide : la chaîne ne peut pas être
 	// vérifiée et l'écran le dit en rouge.
 	Cle []byte
+	// Juriste est l'identité qui signe les actions de l'écran de
+	// rédaction (auteur des nouvelles versions des règles).
+	Juriste string
+	// Commandes sont les programmes que la console appelle ; elle ne
+	// signe, ne compile et ne lance rien elle-même.
+	Commandes Commandes
 }
 
 // Journal est un journal trouvé sur disque.
@@ -41,6 +48,10 @@ type Journal struct {
 	Chemin string `json:"-"`
 	Coffre string `json:"-"`
 }
+
+// Dossier est le répertoire de la session : etat.json, reponse.json et
+// notifications.jsonl s'y trouvent à côté du journal.
+func (j Journal) Dossier() string { return filepath.Dir(j.Chemin) }
 
 // Verification est le résultat de la vérification de chaîne, affiché à
 // chaque vue.
@@ -62,6 +73,12 @@ type Etat struct {
 	Entrees []journal.Entree
 	Verif   Verification
 	Coffre  *coffreLecture
+	// Dossier : etat.json de la session (nil s'il est absent), écrit par
+	// l'orchestrateur ; Reponse : reponse.json, à la fin de la demande ;
+	// Notifs : notifications.jsonl (nil s'il est absent).
+	Dossier *EtatDossier
+	Reponse *ReponseDossier
+	Notifs  []journal.Entree
 }
 
 // Journaux liste les journaux, triés par identifiant.
@@ -117,6 +134,10 @@ var reLigne = regexp.MustCompile(`ligne (\d+)`)
 // Une dernière ligne sans saut de ligne est en cours d'écriture par le gate :
 // elle est ignorée, ni lue ni comptée en écart.
 func (d *Depot) Lire(j Journal) (*Etat, error) {
+	// etat.json, reponse.json et notifications.jsonl d'abord : l'orchestrateur
+	// écrit le journal avant de changer l'état, donc un journal lu après est
+	// au moins aussi récent que l'état affiché, jamais en retard sur lui.
+	etat, rep, notifs := lireDossier(j.Dossier())
 	brut, err := os.ReadFile(j.Chemin)
 	if err != nil {
 		return nil, err
@@ -150,6 +171,7 @@ func (d *Depot) Lire(j Journal) (*Etat, error) {
 		}
 	}
 	st.Coffre = ouvrirCoffreLecture(j.Coffre)
+	st.Dossier, st.Reponse, st.Notifs = etat, rep, notifs
 	return st, nil
 }
 
@@ -224,71 +246,3 @@ func (c *coffreLecture) Purgee(e string) (time.Time, bool) {
 // ---------------------------------------------------------------------------
 // Jeux de directives
 // ---------------------------------------------------------------------------
-
-// JeuCharge est un jeu lisible, avec sa provenance.
-type JeuCharge struct {
-	Jeu    directive.Jeu
-	Source string
-	Brut   []byte
-}
-
-// Libelle est le nom d'un jeu à l'écran.
-func (j JeuCharge) Libelle() string {
-	return fmt.Sprintf("%s, version %d", j.Jeu.Meta.ID, j.Jeu.Meta.Version)
-}
-
-// ChargerJeux lit les jeux des chemins donnés, puis les jeux intégrés qui
-// ne sont pas déjà présents (même identifiant, version et empreinte). Un
-// fichier refusé par le chargeur strict est listé dans les refus, jamais
-// utilisé.
-func (d *Depot) ChargerJeux() (jeux []JeuCharge, refus []string) {
-	vus := map[string]bool{}
-	ajouter := func(nom string, brut []byte) {
-		j, err := directive.Charger(brut)
-		if err != nil {
-			refus = append(refus, fmt.Sprintf("%s : %v", nom, err))
-			return
-		}
-		cle := fmt.Sprintf("%s|%d|%s", j.Meta.ID, j.Meta.Version, j.Meta.Empreinte)
-		if vus[cle] {
-			return
-		}
-		vus[cle] = true
-		jeux = append(jeux, JeuCharge{Jeu: *j, Source: nom, Brut: brut})
-	}
-	for _, chemin := range d.Jeux {
-		info, err := os.Stat(chemin)
-		if err != nil {
-			continue
-		}
-		var fichiers []string
-		if info.IsDir() {
-			ents, _ := os.ReadDir(chemin)
-			for _, e := range ents {
-				if !e.IsDir() && strings.HasSuffix(e.Name(), ".json") {
-					fichiers = append(fichiers, filepath.Join(chemin, e.Name()))
-				}
-			}
-		} else {
-			fichiers = []string{chemin}
-		}
-		for _, f := range fichiers {
-			if brut, err := os.ReadFile(f); err == nil {
-				ajouter(filepath.Base(f), brut)
-			}
-		}
-	}
-	for _, nom := range nomsExemples() {
-		if brut, err := exemples.ReadFile("exemples/" + nom); err == nil {
-			ajouter("intégré : "+nom, brut)
-		}
-	}
-	sort.SliceStable(jeux, func(i, k int) bool {
-		a, b := jeux[i].Jeu.Meta, jeux[k].Jeu.Meta
-		if a.ID != b.ID {
-			return a.ID < b.ID
-		}
-		return a.Version < b.Version
-	})
-	return jeux, refus
-}
