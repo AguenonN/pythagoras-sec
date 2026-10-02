@@ -1,0 +1,13 @@
+{
+ "requete": {
+  "texte": "Aucune recherche de salariés ne porte sur un critère protégé : âge, état de santé, grossesse, nationalité ou origine, appartenance syndicale.",
+  "fondement": "Code du travail, art. L1132-1 — à valider par le juriste",
+  "auteur": "julie.juridique@exemple.test",
+  "jeu_existant": "demo/directives/demo.json",
+  "date_effet": "2026-10-01T00:00:00+02:00"
+ },
+ "reponses": {
+  "Par quel critère observable (par exemple, une liste explicite des arguments interdits comme /criteres/age_min, /criteres/en_arret_maladie, /criteres/enceinte, /criteres/nationalite, /criteres/syndique) remplacer cette règle ?": "La recherche (outil rechercher_salaries du serveur rh-synthetique) est refusée dès que l'un des arguments /criteres/age_min, /criteres/age_max, /criteres/en_arret_maladie, /criteres/enceinte, /criteres/nationalite ou /criteres/syndique est présent.",
+  "si_indetermine": "refuser"
+ }
+}

@@ -1,0 +1,15 @@
+{
+ "requete": {
+  "texte": "Aucun export de la paie n'est fait vers un pays situé hors de l'Union européenne.",
+  "fondement": "RGPD, chapitre V (transferts hors de l'Union) — à valider par le juriste",
+  "auteur": "julie.juridique@exemple.test",
+  "jeu_existant": "demo/directives/demo.json",
+  "date_effet": "2026-10-01T00:00:00+02:00"
+ },
+ "reponses": {
+  "Le texte mentionne « pays situé hors de l'Union européenne ». Souhaitez-vous que cette règle s'applique à l'outil `exporter_paie` du serveur `rh-synthetique` ?": "Oui, l'outil exporter_paie du serveur rh-synthetique.",
+  "Comment identifier si un pays est situé hors de l'Union européenne ? Faut-il utiliser une liste prédéfinie de pays ou un critère observable dans les arguments de l'outil (par exemple, `/pays`) ?": "L'argument /pays (code ISO à deux lettres) : l'export est refusé si /pays n'est pas dans la liste des 27 pays de l'Union : AT, BE, BG, CY, CZ, DE, DK, EE, ES, FI, FR, GR, HR, HU, IE, IT, LT, LU, LV, MT, NL, PL, PT, RO, SE, SI, SK.",
+  "Le fondement juridique cité est « RGPD, chapitre V (transferts hors de l'Union) ». Souhaitez-vous l'associer à cette règle ?": "Oui.",
+  "si_indetermine": "refuser"
+ }
+}

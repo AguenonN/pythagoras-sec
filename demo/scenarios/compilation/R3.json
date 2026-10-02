@@ -1,0 +1,12 @@
+{
+ "requete": {
+  "texte": "Aucune sanction disciplinaire n'est notifiée à un salarié par l'outil sanctionner du serveur rh-synthetique si la convocation à un entretien préalable (outil convoquer_entretien_prealable du même serveur) n'a pas été transmise dans la même demande.",
+  "fondement": "Code du travail, art. L1332-2 — à valider par le juriste",
+  "auteur": "julie.juridique@exemple.test",
+  "jeu_existant": "demo/directives/demo.json",
+  "date_effet": "2026-10-01T00:00:00+02:00"
+ },
+ "reponses": {
+  "si_indetermine": "refuser"
+ }
+}

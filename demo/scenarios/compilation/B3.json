@@ -1,0 +1,13 @@
+{
+ "requete": {
+  "texte": "Toute modification qui porte le plafond de découvert d'un compte au-delà de 10 000 euros attend la validation d'un analyste des risques.",
+  "fondement": "Politique de risque interne — à valider par le juriste",
+  "auteur": "julie.juridique@exemple.test",
+  "jeu_existant": "demo/directives/demo.json",
+  "date_effet": "2026-10-01T00:00:00+02:00"
+ },
+ "reponses": {
+  "Le texte mentionne « un analyste des risques ». Souhaitez-vous utiliser le rôle « analyste-risques » (rôle connu) pour cette validation ?": "analyste-risques",
+  "si_indetermine": "refuser"
+ }
+}
