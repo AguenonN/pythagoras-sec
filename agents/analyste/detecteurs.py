@@ -32,8 +32,10 @@ SOURCE_INTERNE_PERIMEE = "source_interne_perimee"
 ACTION_SANS_CONTROLE = "action_sans_controle_humain"
 DONNEES_PERSONNELLES_EXTERNE = "donnees_personnelles_vers_externe"
 ENTREPRISE_NON_RETROUVEE = "entreprise_non_retrouvee"
+CONTOURNEMENT_CAVIARDAGE = "contournement_caviardage"
 
-TYPES = (SOURCE_INTERNE_PERIMEE, ACTION_SANS_CONTROLE, DONNEES_PERSONNELLES_EXTERNE, ENTREPRISE_NON_RETROUVEE)
+TYPES = (SOURCE_INTERNE_PERIMEE, ACTION_SANS_CONTROLE, DONNEES_PERSONNELLES_EXTERNE, ENTREPRISE_NON_RETROUVEE,
+         CONTOURNEMENT_CAVIARDAGE)
 
 
 def lire_catalogue(chemin=CATALOGUE):
@@ -299,6 +301,67 @@ def entreprise_non_retrouvee(sessions, catalogue, racine=RACINE, jeu_courant=Non
     return out, non_verifiables
 
 
+# -- 5. contournement d'un caviardage -----------------------------------------
+
+def etiquettes_de_serveur(catalogue, racine=RACINE):
+    """Étiquettes qui valent pour tout un serveur (registre) : elles ne
+    disent pas quelle donnée un outil précis porte."""
+    try:
+        with open(_chemin(catalogue["etiquettes_registre"], racine), encoding="utf-8") as f:
+            return {k: set(v) for k, v in (json.load(f).get("serveurs") or {}).items()}
+    except (FileNotFoundError, ValueError, KeyError):
+        return {}
+
+
+def _caviarde(appel):
+    """Directives appliquées qui ont retiré des champs de cet appel."""
+    return [(a["id"], list(a.get("champs_retires") or [])) for a in appel.applications
+            if a.get("appliquee") and a.get("champs_retires")]
+
+
+def contournement_caviardage(sessions, catalogue, racine=RACINE, jeu_courant=None):
+    """Dans une session, un appel dont une directive a retiré des champs
+    (caviardage), puis, plus loin, un **autre** outil qui porte une étiquette
+    propre à l'outil caviardé (pas une étiquette de tout le serveur), appelé
+    avec données reçues et sans caviardage : la donnée retirée a pu être
+    obtenue en clair par ce chemin (exemple : salaires retirés de la liste
+    des salariés, puis lus fiche par fiche)."""
+    de_serveur = etiquettes_de_serveur(catalogue, racine)
+    out = []
+    for s in sessions:
+        for c1 in s.appels:
+            retraits = _caviarde(c1)
+            if not retraits:
+                continue
+            propres = set(c1.etiquettes_cible) - de_serveur.get(c1.serveur, set())
+            if not propres:
+                continue
+            suites = {}
+            for c2 in s.appels:
+                if c2.seq is None or c2.seq <= c1.seq or c2.nom == c1.nom or not c2.donnees_recues:
+                    continue
+                communes = sorted(propres & set(c2.etiquettes_cible))
+                if not communes or _caviarde(c2) or c2.effet == "refuser":
+                    continue
+                if couverture.couvert_pendant(s, c2, ["etiquette:" + e for e in communes] + ["outil:" + c1.nom],
+                                              jeu_courant):
+                    continue
+                suites.setdefault(c2.nom, []).append((c2, communes))
+            for nom, appels in suites.items():
+                dernier = appels[-1][0]
+                o = _base(s, dernier)
+                o.update({
+                    "seq_action": appels[0][0].seq,
+                    "caviardage": {"seq": c1.seq, "outil": c1.nom, "directives": [i for i, _ in retraits],
+                                   "champs_retires": sorted({c for _, cs in retraits for c in cs}),
+                                   "etiquettes_propres": sorted(propres)},
+                    "contournements": [{"seq": c.seq, "outil": c.nom, "etiquettes_communes": e} for c, e in appels],
+                    "valeurs_coffre": _coffre(dernier),
+                })
+                out.append(o)
+    return out
+
+
 def elements_repertoire(catalogue):
     outil = catalogue["repertoire_entreprises"]["outil"]
     return ["outil:" + outil, "serveur:" + outil.split("/")[0]]
@@ -314,6 +377,7 @@ def detecter(sessions, catalogue=None, racine=RACINE, seuil_montant=None, jeu_co
         ACTION_SANS_CONTROLE: action_sans_controle(sessions, catalogue, seuil_montant),
         DONNEES_PERSONNELLES_EXTERNE: donnees_personnelles_externe(sessions, catalogue, jeu_courant),
         ENTREPRISE_NON_RETROUVEE: sirene,
+        CONTOURNEMENT_CAVIARDAGE: contournement_caviardage(sessions, catalogue, racine, jeu_courant),
     }
     return {t: dedoublonner(o) for t, o in occurrences.items()}, {ENTREPRISE_NON_RETROUVEE: non_verifiables}
 

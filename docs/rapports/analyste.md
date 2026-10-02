@@ -12,7 +12,8 @@ Branche `feat/analyste`, partie de `5b83cd5`. Rien de poussé ni fusionné.
 | `db892ba` | Rapport (alors `RAPPORT_E.md`), `RAPPORT_NUIT.md` |
 | `d8e9180` | Rapport déplacé ici ; écarts au contrat §6 acceptés par Manu |
 | `268743a` | Suite embeddings, étape 1 : corpus local des fondements (§7) |
-| (étape 2) | Suite embeddings : sessions similaires et fondements suggérés (§7) |
+| `f73f68e` | Suite embeddings, étape 2 : sessions similaires et fondements suggérés (§7) |
+| (étape 3) | Suite, point 5 : détecteur « contournement d'un caviardage » (§7) |
 
 **Critère de réussite : atteint, enregistré, rejouable hors ligne.**
 - Le détecteur « source interne périmée » trouve DOS-FICTIF-002 (passage nominal : base interne consultée à l'entrée 2, trimestre 2026-Q3 ; taux officiel consulté à l'entrée 5, trimestre 2026-Q4 ; attribution transmise à l'entrée 7).
@@ -145,6 +146,39 @@ Résultats sur les 9 sessions (rejouables hors ligne, copies dans `exemples/prop
 5. **Propositions déjà écrites non enrichies** : une proposition n'est jamais réécrite. Les trois déjà dans `demo/execution/propositions/` n'ont donc pas ces champs. Elles les auront si l'on vide ce dossier (de démo, hors Git) avant de relancer `proposer`.
 6. **L314-6** relève du Code de la consommation, pas du CMF : il est classé ainsi dans le corpus.
 
-### Pas encore fait
+**Étape 3, détecteur « contournement d'un caviardage »** (`detecteurs.contournement_caviardage`).
+- **Le fait détecté** : dans une session, une directive appliquée a retiré des champs d'un appel (`champs_retires` du journal). Plus loin, un **autre** outil porte une étiquette **propre** à l'outil caviardé (pas une étiquette de tout son serveur, lue dans `demo/etiquettes.json`). Il est appelé avec données reçues, sans caviardage et sans directive qui le retienne.
+- **Testé sur une session construite à la main** (`tests/donnees/sessions-construites/`), comme le brief le demande avant la fusion n° 3 : `lister_salaries` caviardé par D-023 (`/inclure_salaires`), puis `consulter_fiche` (étiquette `salaire`) aux entrées 2, 3 et 4. `consulter_salarie`, qui ne partage que `donnees_personnelles`, n'est pas retenu.
+- **Vérifié en lecture seule sur les vrais journaux de la session secteurs** (`mcp_rogue-secteurs/demo/execution/sessions/`, 79 sessions) : le détecteur trouve **exactement** les deux sessions piège D-023 (`20261002-172413-secteur-d023-piege` et son rejeu) et aucune session propre. Ces journaux ne sont pas copiés ici : ils le seront après la fusion n° 3.
+- **Proposition rédigée** par Mistral : « *Si un appel à l'outil rh-synthetique/lister_salaries a été fait dans la session et que l'appel suivant porte l'étiquette salaire sans caviardage, alors demander une validation humaine au rôle responsable-rh avant d'autoriser l'accès aux données.* »
+  - Fondements suggérés : RGPD articles 22 et 5.
+  - Aucune session similaire : la session construite est seule dans son dossier.
+- **Couverture** : une directive active qui caviarde ou refuse déjà l'outil du contournement le ferme, et la proposition n'est alors pas faite (test).
+- **Pour la fusion** : le brief parle d'un champ « retiré d'une réponse », mais D-023 caviarde un **argument** (la demande des salaires) ; c'est ce que le journal consigne et ce que lit le détecteur.
 
-- Point 5 de la suite : détecteur « contournement d'un caviardage » (en cours, étape suivante).
+**Budget de la suite, à jour : 7 appels réels sur 40.**
+- 4 `mistral-embed` : disponibilité, deux calibrations, nouveaux textes.
+- 3 rédactions : contournement, deux versions.
+Le premier jet de la proposition de contournement reposait sur un fait non observable (« a caviardé des champs ») et proposait `analyste-risques`, un rôle sans rapport avec la RH. Plutôt que de modifier le prompt commun, ce qui aurait invalidé les trois rédactions enregistrées dont celle qui donne D-009, le contexte de ce constat cite désormais la directive contournée (texte, cible, effets) et un fait observable. Le premier jet a été retiré des enregistrements.
+
+### Pas fait
+
+- La proposition de contournement n'est pas passée au compilateur. Dans sa forme, la condition « l'appel suivant porte l'étiquette salaire » relève du déclencheur (étiquette de la cible), et « sans caviardage » est redondant ; le juriste la reprendra probablement modifiée.
+- Les propositions déjà écrites dans `demo/execution/propositions/` ne sont pas enrichies (voir décision 5).
+
+### Questions pour Manu (suite)
+
+1. Comparer les sessions **entre elles** plutôt qu'au constat (décision 1) : cela vous convient-il ?
+2. Faut-il un historique plus large que 9 sessions pour revoir le seuil de 0,95 avant le jour J ?
+3. Après la fusion n° 3 : copier les deux sessions piège D-023 de la session secteurs dans les journaux de test.
+
+### Vérifier la suite en 5 minutes
+
+```sh
+cd agents
+env -u MISTRAL_API_KEY python3 -m unittest discover -s analyste/tests -t .          # 63 tests, sans réseau
+T=$(mktemp -d); env -u MISTRAL_API_KEY python3 -m analyste proposer --sessions analyste/tests/donnees/sessions --sortie $T
+python3 -c "import json,glob; [print(p['id'], p['sessions_similaires'], [f['id'] for f in p['fondements_suggeres']]) for p in map(lambda f: json.load(open(f)), glob.glob('$T/*.json'))]"
+python3 -m analyste constats --sessions analyste/tests/donnees/sessions-construites   # contournement D-023
+python3 -m analyste constats --sessions ../../mcp_rogue-secteurs/demo/execution/sessions | grep -c contournement   # lecture seule
+```

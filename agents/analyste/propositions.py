@@ -24,6 +24,7 @@ ENTETES = {
     det.ACTION_SANS_CONTROLE: "action sans contrôle humain",
     det.DONNEES_PERSONNELLES_EXTERNE: "données personnelles vers l'extérieur",
     det.ENTREPRISE_NON_RETROUVEE: "entreprise non retrouvée au répertoire SIRENE",
+    det.CONTOURNEMENT_CAVIARDAGE: "contournement d'un caviardage",
 }
 
 COURTS = {
@@ -31,6 +32,7 @@ COURTS = {
     det.ACTION_SANS_CONTROLE: "action-sans-controle",
     det.DONNEES_PERSONNELLES_EXTERNE: "donnees-personnelles-externe",
     det.ENTREPRISE_NON_RETROUVEE: "entreprise-non-retrouvee",
+    det.CONTOURNEMENT_CAVIARDAGE: "contournement-caviardage",
 }
 
 
@@ -88,6 +90,13 @@ def _ligne(type_, o):
         else:
             quoi = "SIREN %s jamais recherché au répertoire dans la session" % siren
         return tete + "%s ; action %s." % (quoi, _decision_fr(o))
+    if type_ == det.CONTOURNEMENT_CAVIARDAGE:
+        cav = o["caviardage"]
+        cs = ", ".join(str(c["seq"]) for c in o["contournements"])
+        return tete + ("%s caviardé à l'entrée %s par %s (champs retirés : %s) ; puis %s, qui porte aussi "
+                       "l'étiquette %s, appelé sans caviardage, données reçues, aux entrées %s.") % (
+            cav["outil"], cav["seq"], ", ".join(cav["directives"]), ", ".join(cav["champs_retires"]),
+            o["action"], ", ".join(o["contournements"][0]["etiquettes_communes"]), cs)
     raise ValueError(type_)
 
 
@@ -110,6 +119,12 @@ def _resume(type_, action, occ, catalogue):
         outil = catalogue["repertoire_entreprises"]["outil"]
         return ("%d action(s) %s présentée(s) pour une entreprise que la session n'a pas retrouvée au répertoire "
                 "SIRENE (%s) ; aucune directive ne porte sur ce contrôle." % (n, action, outil))
+    if type_ == det.CONTOURNEMENT_CAVIARDAGE:
+        cav = occ[0]["caviardage"]
+        return ("Dans %d session(s), %s a été caviardé (%s), puis %s, qui porte la même donnée (étiquette %s), "
+                "l'a rendue sans caviardage : le caviardage a pu être contourné."
+                % (n, cav["outil"], ", ".join(cav["directives"]), action,
+                   ", ".join(occ[0]["contournements"][0]["etiquettes_communes"])))
     raise ValueError(type_)
 
 
@@ -123,12 +138,24 @@ def elements_risque(type_, occ, catalogue):
         return ["etiquette:" + catalogue["etiquettes"]["donnees_personnelles"]]
     if type_ == det.ENTREPRISE_NON_RETROUVEE:
         return det.elements_repertoire(catalogue)
+    if type_ == det.CONTOURNEMENT_CAVIARDAGE:
+        cav = occ[0]["caviardage"]
+        return ["outil:" + cav["outil"]] + ["etiquette:" + e for e in cav["etiquettes_propres"]]
     raise ValueError(type_)
 
 
 def _couvert_aujourdhui(type_, action, occ, catalogue, jeu_courant):
     serveur, outil = action.split("/", 1)
     ids = couverture.couvert_aujourdhui(jeu_courant, serveur, outil, elements_risque(type_, occ, catalogue))
+    if type_ == det.CONTOURNEMENT_CAVIARDAGE:
+        # Une directive qui caviarde ou refuse déjà l'outil du contournement
+        # le ferme, quelle que soit sa condition.
+        for d in (jeu_courant or {}).get("directives", []):
+            if d.get("statut") in couverture.EVALUEES and couverture.vise(d, serveur, outil) and \
+                    any(e.get("effet") in ("caviarder", "refuser") for e in d.get("effets") or []) and \
+                    d.get("id") not in ids:
+                ids.append(d.get("id"))
+        return ids
     if type_ != det.ACTION_SANS_CONTROLE:
         return ids
     # Un seuil de montant ne couvre que les montants au-delà : il faut qu'il
@@ -175,6 +202,8 @@ FAITS_COMMUNS = {
                                       "{perso} avant une action vers un serveur étiqueté {externe}",
     det.ENTREPRISE_NON_RETROUVEE: "dans toutes les occurrences, l'entreprise désignée par l'action n'a pas été "
                                   "retrouvée par {repertoire} dans la session",
+    det.CONTOURNEMENT_CAVIARDAGE: "dans toutes les occurrences, la session a consulté {caviarde} avant l'appel à "
+                                  "l'outil visé, qui porte l'étiquette {etiquettes} et n'a pas été caviardé",
 }
 
 LIMITES = {
@@ -206,10 +235,22 @@ def contexte(constat, sessions, jeu_courant, catalogue):
                "perso": catalogue["etiquettes"]["donnees_personnelles"],
                "externe": catalogue["etiquettes"]["externe"],
                "repertoire": catalogue["repertoire_entreprises"]["outil"],
-               "seuil": _montant(constat["occurrences"][0].get("seuil", 0))}
+               "seuil": _montant(constat["occurrences"][0].get("seuil", 0)),
+               "caviarde": (constat["occurrences"][0].get("caviardage") or {}).get("outil", ""),
+               "etiquettes": ", ".join((constat["occurrences"][0].get("contournements") or [{}])[0]
+                                       .get("etiquettes_communes", []))}
     out = {"roles_ayant_valide_cette_action": sorted(roles),
            "directives_qui_visent_cette_action": directives,
            "fait_observable_commun": FAITS_COMMUNS[constat["type"]].format(**valeurs)}
+    if constat["type"] == det.CONTOURNEMENT_CAVIARDAGE:
+        par_id = couverture.directives_par_id(jeu_courant)
+        for s_ in sessions:
+            if s_.nom in constat["sessions"]:
+                par_id.update(couverture.directives_par_id(couverture.jeu_de_session(s_, jeu_courant)))
+        ids = sorted({i for o in constat["occurrences"] for i in o["caviardage"]["directives"]})
+        out["directives_contournees"] = [{"id": i, "texte": par_id[i].get("texte_fr", ""),
+                                          "cible": par_id[i].get("declencheur", {}).get("cible"),
+                                          "effets": par_id[i].get("effets")} for i in ids if i in par_id]
     if constat["type"] in LIMITES:
         out["limite_d_observation"] = LIMITES[constat["type"]].format(**valeurs)
     return out

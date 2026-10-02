@@ -1,0 +1,5 @@
+{"empreinte": "e1", "outil": "lister_salaries", "arguments_origine": {"service": "Finance", "inclure_salaires": true}}
+{"empreinte": "e2", "outil": "consulter_fiche", "arguments_origine": {"salarie_id": "SAL-FICTIF-011"}}
+{"empreinte": "e3", "outil": "consulter_fiche", "arguments_origine": {"salarie_id": "SAL-FICTIF-012"}}
+{"empreinte": "e4", "outil": "consulter_fiche", "arguments_origine": {"salarie_id": "SAL-FICTIF-013"}}
+{"empreinte": "e5", "outil": "consulter_salarie", "arguments_origine": {"salarie_id": "SAL-FICTIF-011"}}

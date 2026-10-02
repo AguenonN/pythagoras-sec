@@ -64,6 +64,8 @@ def _en_cause(o):
         out += [c["outil"] + " (lecture) consulté" for c in o.get("consultations_officielles", [])]
     out += [r["outil"] + " (lecture) : aucun résultat" for r in o.get("recherches", [])]
     out += [c["outil"] + " (lecture) consulté" for c in o.get("consultations_personnelles", [])]
+    if "caviardage" in o:
+        out.append(o["caviardage"]["outil"] + " : caviardé par " + ", ".join(o["caviardage"]["directives"]))
     return out
 
 

@@ -47,6 +47,10 @@ NATURES = {
         "Une action (attribution) a été présentée pour une entreprise que la session n'a pas retrouvée au "
         "répertoire officiel des entreprises (SIRENE) : recherchée sans résultat, ou jamais recherchée. Rien "
         "n'établit que l'entreprise existe."),
+    det.CONTOURNEMENT_CAVIARDAGE: (
+        "Une directive a retiré des champs d'un appel (caviardage) ; plus loin dans la même session, un autre "
+        "outil qui porte la même catégorie de donnée (même étiquette) a été appelé sans caviardage et a rendu des "
+        "données : la donnée retirée a pu être obtenue par ce chemin, par exemple fiche par fiche."),
 }
 
 SYSTEME = """Tu assistes le juriste d'une banque qui encadre des agents d'IA par des directives. Un \
