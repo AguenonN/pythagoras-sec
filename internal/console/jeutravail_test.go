@@ -106,3 +106,48 @@ func TestSessionsSousJeuDeTravail(t *testing.T) {
 		t.Fatalf("file : %s", n)
 	}
 }
+
+// Une directive qui n'existe que dans un jeu de travail (D-009 avant son
+// activation) se compare : « sans » = ce jeu privé d'elle, « avec » = ce jeu.
+func TestComparaisonDUneDirectiveDeJeuDeTravail(t *testing.T) {
+	b := nouveauBanc(t)
+	orig, err := os.ReadFile(filepath.Join(b.racine, "demo", "directives", "demo.json"))
+	must(t, err)
+	var doc map[string]any
+	must(t, json.Unmarshal(orig, &doc))
+	var d4 map[string]any
+	for _, d := range doc["directives"].([]any) {
+		if d.(map[string]any)["id"] == "D-004" {
+			brut, _ := json.Marshal(d)
+			must(t, json.Unmarshal(brut, &d4))
+		}
+	}
+	d4["id"] = "D-099"
+	doc["directives"] = append(doc["directives"].([]any), d4)
+	delete(doc["jeu"].(map[string]any), "empreinte")
+	avec, err := json.Marshal(doc)
+	must(t, err)
+	must(t, os.MkdirAll(filepath.Join(b.racine, "demo", "scenarios", "jeux"), 0o755))
+	must(t, os.WriteFile(filepath.Join(b.racine, "demo", "scenarios", "jeux", "avec-d099.json"), avec, 0o644))
+	b.demandeSous(avec, claire, "Peut-on accorder le prêt demandé sans gel vérifié ?")
+
+	va := b.Dep.AvantApres(b.tous(), b.jeux(), "D-099", nil)
+	trouvee := false
+	for _, d := range va.Directives {
+		trouvee = trouvee || d.ID == "D-099"
+	}
+	if !trouvee || va.Choix == nil || va.Choix.ID != "D-099" || va.LibelleAvant != "Sans la directive D-099" || va.LibelleApres != "Avec la directive D-099" {
+		t.Fatalf("directive du jeu de travail : %+v %q", va.Choix, va.LibelleApres)
+	}
+	if va.Compteurs.Appels == 0 || va.Compteurs.NonRejouables != 0 {
+		t.Fatalf("compteurs : %+v", va.Compteurs)
+	}
+	// Elle n'entre pas dans les règles en vigueur.
+	for _, j := range b.jeux() {
+		for _, d := range j.Jeu.Directives {
+			if d.ID == "D-099" {
+				t.Fatal("un jeu de travail ne doit pas entrer dans les règles connues")
+			}
+		}
+	}
+}

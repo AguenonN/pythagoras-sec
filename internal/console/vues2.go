@@ -489,11 +489,33 @@ func (d *Depot) AvantApres(etats []*Etat, tous []JeuCharge, choix string, choisi
 	}
 	tous = d.AvecTravail(tous, etats)
 	var dir *directive.Directive
+	avec := base.Jeu // l'ensemble qui porte la directive comparée
+	vues := map[string]bool{}
 	for i := range base.Jeu.Directives {
 		dd := &base.Jeu.Directives[i]
+		vues[dd.ID] = true
 		v.Directives = append(v.Directives, DirListe{ID: dd.ID, Version: dd.Version, Statut: string(dd.Statut), Titre: Titre(dd.TexteFR)})
 		if dir == nil && (choix == "" || choix == dd.ID) {
 			dir = dd
+		}
+	}
+	// Une directive qui n'existe que dans un jeu de travail sous lequel des
+	// sessions ont tourné (D-009 avant son activation) se compare aussi :
+	// « sans » = ce jeu privé d'elle, « avec » = ce jeu.
+	for i := range tous {
+		if !strings.HasPrefix(tous[i].Travail, "règles de travail") {
+			continue
+		}
+		for k := range tous[i].Jeu.Directives {
+			dd := &tous[i].Jeu.Directives[k]
+			if vues[dd.ID] {
+				continue
+			}
+			vues[dd.ID] = true
+			v.Directives = append(v.Directives, DirListe{ID: dd.ID, Version: dd.Version, Statut: string(dd.Statut), Titre: Titre(dd.TexteFR)})
+			if dir == nil && choix == dd.ID {
+				dir, avec = dd, tous[i].Jeu
+			}
 		}
 	}
 	for _, st := range etats {
@@ -509,7 +531,7 @@ func (d *Depot) AvantApres(etats []*Etat, tous []JeuCharge, choix string, choisi
 	}
 	v.Choix = &DirListe{ID: dir.ID, Version: dir.Version, Statut: string(dir.Statut), Titre: Titre(dir.TexteFR)}
 	v.LibelleAvant, v.LibelleApres = "Sans la directive "+dir.ID, "Avec la directive "+dir.ID
-	cmp := Comparaison{Avec: base.Jeu, Sans: sansDirective(base.Jeu, dir.ID), Dir: *dir, Tous: tous}
+	cmp := Comparaison{Avec: avec, Sans: sansDirective(avec, dir.ID), Dir: *dir, Tous: tous}
 	v.Lignes, v.Compteurs, v.Verifiees = cmp.Rejouer(etats, choisies)
 	if v.Lignes == nil {
 		v.Lignes = []LigneAA{}
