@@ -131,3 +131,20 @@ func TestNavigateurDecision(t *testing.T) {
 		t.Fatalf("carte de décision ou rejet invisible : %v", err)
 	}
 }
+
+// Point 7 (console-3) : sans proposition, l'onglet dit comment en produire.
+func TestNavigateurAucuneProposition(t *testing.T) {
+	py := navigateur(t)
+	b := nouveauBanc(t)
+	must(t, os.RemoveAll(b.Dep.Chemins().Propositions))
+	web, _ := filepath.Abs("web")
+	b.Srv.Dev = web
+	srv := httptest.NewServer(b.Srv.Handler())
+	defer srv.Close()
+	script, _ := filepath.Abs("testdata/navigateur/propositions.py")
+	out, err := exec.Command(py, script, srv.URL).CombinedOutput()
+	t.Logf("%s", out)
+	if err != nil {
+		t.Fatalf("onglet vide muet : %v", err)
+	}
+}

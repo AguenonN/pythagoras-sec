@@ -105,7 +105,10 @@
             'Seules les réponses déjà enregistrées du modèle sont relues ; aucun appel n\'est fait.' },
             donnees.mode_compilateur === 'reel' ? 'compilation réelle' : 'compilation rejouée')),
       ] : (donnees.propositions.length ? donnees.propositions.map(carteProposition) :
-        h('div', { class: 'carte compacte' }, h('b', {}, 'Aucune proposition'), h('span', { class: 'moyen second' }, 'L\'Analyste n\'a rien proposé pour l\'instant.')));
+        h('div', { class: 'carte compacte', id: 'aucune-proposition' }, h('b', {}, 'Aucune proposition.'),
+          h('span', { class: 'moyen second' }, 'L\'Analyste n\'a rien proposé pour l\'instant (dossier demo/execution/propositions/ vide). Pour en produire, depuis la racine du dépôt :'),
+          h('code', { class: 'mono petit', style: 'user-select:all' }, 'cd agents && python3 -m analyste proposer'),
+          h('span', { class: 'petit second' }, 'Mode rejeu par défaut (réponses enregistrées) ; --mode reel pour appeler le modèle.')));
       return h('section', {},
         h('div', { class: 'onglets' },
           h('button', { type: 'button', class: S.onglet === 'ecrire' ? 'actif' : '', onclick: () => { S.onglet = 'ecrire'; dessiner(); } }, 'Écrire une directive'),

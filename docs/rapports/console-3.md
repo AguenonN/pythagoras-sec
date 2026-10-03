@@ -32,6 +32,7 @@ Branche `feat/console-3`. Mis à jour après chaque commit. Périmètre : `cmd/c
 - **Point 6 — demandeur du Poste.** Cause : la liste prenait la première identité de l'annuaire (Claire Analyste), tandis que l'en-tête « Connecté : » affichait le demandeur de la session regardée (Camille), et changeait avec elle.
   - Identité connectée : option `-conseiller <identité>` de la console ; sans elle, le demandeur de la demande la plus récente (`/api/etat` → `conseiller`). Par défaut la liste la propose ; ensuite, la dernière identité choisie (gardée en mémoire et dans le navigateur, `localStorage`, lecture protégée). Ni le sondage ni la session affichée ne la changent ; « Connecté : » montre cette identité. Une demande suggérée qui porte un demandeur compte comme un choix.
   - Tests : `TestConseillerParDefaut`, `TestNavigateurDemandeur` (défaut, deux sondages, changement de session, choix gardé d'une session à l'autre et au rechargement).
+- **Point 7 — aucune proposition.** L'Analyste n'est pas modifié. Si `demo/execution/propositions/` est vide (ou absent), l'onglet affiche « Aucune proposition. » et la commande exacte, vérifiée dans `agents/analyste/__main__.py` : `cd agents && python3 -m analyste proposer` (mode rejeu par défaut, `--mode reel` pour appeler le modèle). Test : `TestNavigateurAucuneProposition` (dossier supprimé, texte et compteur « · 0 »).
 
 ## Pas fait
 
