@@ -1,0 +1,15 @@
+{
+ "requete": {
+  "texte": "Aucun agent n'envoie directement à un salarié un message rédigé dans une session où des données de rémunération ont été consultées ; le message est relu et validé par un gestionnaire RH.",
+  "fondement": "Règlement intérieur, confidentialité des rémunérations ; RGPD art. 5 — à valider par le juriste",
+  "auteur": "julie.juridique@exemple.test",
+  "jeu_existant": "demo/directives/demo.json",
+  "date_effet": "2026-10-01T00:00:00+02:00"
+ },
+ "reponses": {
+  "Faut-il bloquer uniquement l'envoi du message (outils classés action) ou aussi sa préparation (outils classés read comme rediger_message) ?": "Uniquement l'envoi : l'outil envoyer_message_salarie du serveur rh-synthetique. La préparation (rediger_message) reste libre.",
+  "Le message visé est-il celui préparé par l'outil rh-synthetique/rediger_message ou aussi celui préparé par rh-synthetique/envoyer_message_salarie ?": "Le message envoyé par rh-synthetique/envoyer_message_salarie, qu'il ait été préparé ou non avec rh-synthetique/rediger_message.",
+  "Par « données de rémunération », faut-il entendre toute consultation d'un outil ou serveur étiqueté « salaire » (par exemple rh-synthetique/consulter_fiche avec /inclure_remuneration=true, rh-synthetique/lister_salaries avec /inclure_salaires=true, ou rh-synthetique/exporter_paie) ?": "salaire : la session a reçu des données d'un outil portant l'étiquette salaire au registre (consulter_fiche, lister_salaries, exporter_paie). L'envoi attend alors la validation du rôle gestionnaire-rh.",
+  "si_indetermine": "refuser"
+ }
+}

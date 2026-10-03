@@ -86,9 +86,9 @@ class TestSecteurs(unittest.TestCase):
 
     def test_origines(self):
         o = lire(os.path.join(RACINE, "demo", "directives", "origines.json"))
-        self.assertEqual(sorted(o), ["D-%03d" % i for i in range(11, 24)])
+        self.assertEqual(sorted(o), ["D-%03d" % i for i in range(11, 32)])
         for i, e in o.items():
-            self.assertIn("à valider par le juriste", e["texte"])
+            self.assertIn("à valider par le", e["texte"])
             self.assertEqual("note" in e and "rétablie" in e["note"], i in RETABLIES)
 
     def test_compilation_rejouee(self):
@@ -124,7 +124,7 @@ class TestSecteurs(unittest.TestCase):
             self.assertIn(s["demandeur"], annuaire, chemin)
             self.assertTrue(os.path.exists(os.path.join(RACINE, s["jeu"])), chemin)
             self.assertIn(s["attendu"]["statut"], ("termine", "bloque", "en_attente", "erreur"), chemin)
-        self.assertEqual(vus, 29)  # 13 pièges, 13 propres (un par directive), 3 PPE (A4)
+        self.assertEqual(vus, 33)  # 13 pièges, 13 propres, 3 PPE (A4), 3 rémunération (A5), D-023 fermée
 
     def test_chaque_directive_a_son_piege_enregistre(self):
         """Pour chaque directive D-011 à D-023, un scénario piège enregistré en
@@ -208,3 +208,32 @@ class TestPPE(unittest.TestCase):
         for d in installees:
             self.assertEqual(d["condition"]["sujet"]["groupe"], "personne-politiquement-exposee")
             self.assertEqual([e["effet"] for e in d["effets"]], ["refuser", "notifier"])
+
+
+class TestRemuneration(unittest.TestCase):
+    """A5 : le texte brut du juriste se rejoue jusqu'à ses questions (pas de
+    jeu) ; les textes a et b se rejouent jusqu'aux directives installées
+    D-030 et D-031 (sur le jeu de la compilation, demo.json v3)."""
+
+    def derouler(self, cle):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        requete, reponses = service.lire_parcours(os.path.join(COMPILATION, cle + ".json"))
+        requete = dict(requete, jeu_existant="demo/directives/historique/demo.v3.json")
+        return service.parcours(service.Service(mode="rejeu", dossier=tmp), requete, reponses)
+
+    def test_texte_brut_questions(self):
+        sorties = self.derouler("A5-brut")
+        self.assertEqual([s["etat"] for s in sorties], ["questions"])
+        self.assertTrue(any("inclure_remuneration" in q["texte"] for q in sorties[0]["questions"]))
+
+    def test_a_et_b(self):
+        jeu = lire(os.path.join(JEUX, "secteurs-a5ab.json"))["directives"]
+        installees = {d["id"]: d for d in jeu}
+        for cle, ident in (("A5a", "D-030"), ("A5b", "D-031")):
+            fin = self.derouler(cle)[-1]
+            self.assertEqual(fin["etat"], "jeu", fin["erreurs"])
+            compilee = lire(service.chemin_absolu(fin["jeu_candidat"]))["directives"][-1]
+            attendue = installees[ident]
+            for k in ("declencheur", "condition", "effets"):
+                self.assertEqual(compilee[k], attendue[k], (cle, k))

@@ -1,7 +1,7 @@
 {
  "jeu": {
   "id": "demo",
-  "version": 3,
+  "version": 4,
   "date_effet": "2026-10-01T00:00:00+02:00",
   "auteur": "julie.juridique@exemple.test"
  },
@@ -1046,6 +1046,85 @@
      "destinataire_role": "conformite",
      "rythme": "temps_reel",
      "si_echec": "refuser"
+    }
+   ]
+  },
+  {
+   "id": "D-030",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-10-01T00:00:00+02:00",
+   "texte_fr": "Aucun agent n'envoie directement à un salarié un message rédigé dans une session où des données de rémunération ont été consultées ; le message est relu et validé par un gestionnaire RH.",
+   "fondements": [
+    {
+     "texte": "Règlement intérieur, confidentialité des rémunérations — à valider par le juriste"
+    },
+    {
+     "texte": "RGPD",
+     "article": "5"
+    }
+   ],
+   "si_indetermine": "refuser",
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "rh-synthetique",
+     "outil": "envoyer_message_salarie"
+    }
+   },
+   "condition": {
+    "session.a_consulte": {
+     "etiquette": "salaire",
+     "critere": "donnees_recues"
+    }
+   },
+   "effets": [
+    {
+     "effet": "attendre_validation",
+     "par_role": "gestionnaire-rh"
+    }
+   ]
+  },
+  {
+   "id": "D-031",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-10-01T00:00:00+02:00",
+   "texte_fr": "Les salaires et primes sont retirés des fiches salariés consultées par un agent, sauf quand le demandeur appartient au service paie.",
+   "fondements": [
+    {
+     "texte": "Règlement intérieur, confidentialité des rémunérations — à valider par le juriste"
+    },
+    {
+     "texte": "RGPD",
+     "article": "5"
+    }
+   ],
+   "si_indetermine": "refuser",
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "rh-synthetique",
+     "outil": "consulter_fiche"
+    }
+   },
+   "condition": {
+    "non": {
+     "demandeur": {
+      "groupe": "paie"
+     }
+    }
+   },
+   "effets": [
+    {
+     "effet": "caviarder",
+     "champs_autorises": [
+      "/salarie_id",
+      "/inclure_sante",
+      "/inclure_syndical",
+      "/inclure_situation_familiale"
+     ],
+     "mode": "caviarder"
     }
    ]
   }
