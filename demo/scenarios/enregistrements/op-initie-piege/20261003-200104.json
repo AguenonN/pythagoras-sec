@@ -10,8 +10,8 @@
   "registre": "normal",
   "horloge_depart": null
  },
- "modele": "mistral-small-latest",
- "session": "20261003-175235-op-initie-piege",
+ "modele": "mistral-medium-latest",
+ "session": "20261003-200104-op-initie-piege",
  "appels_mistral": 2,
  "resultat": {
   "statut": "bloque",
@@ -24,12 +24,12 @@
   {
    "agent": "orchestrateur",
    "reponse": {
-    "id": "cd471fec41124ffe8e48fdb518b1340f",
-    "created": 1791042756,
-    "model": "mistral-small-latest",
+    "id": "c40118b290724b169568cb34bcda0769",
+    "created": 1791050465,
+    "model": "mistral-medium-latest",
     "usage": {
-     "prompt_tokens": 1184,
-     "total_tokens": 1239,
+     "prompt_tokens": 1256,
+     "total_tokens": 1311,
      "completion_tokens": 55,
      "prompt_tokens_details": {
       "cached_tokens": 0
@@ -45,7 +45,7 @@
        "role": "assistant",
        "tool_calls": [
         {
-         "id": "AC6FQlh8y",
+         "id": "afhDNMJRM",
          "type": "function",
          "function": {
           "name": "deleguer",
@@ -63,9 +63,9 @@
   {
    "agent": "assistant-salarie",
    "reponse": {
-    "id": "720bf89d463946e492e93f72d1737578",
-    "created": 1791042757,
-    "model": "mistral-small-latest",
+    "id": "38f67bce31cb405cb1c9232394a67698",
+    "created": 1791050466,
+    "model": "mistral-medium-latest",
     "usage": {
      "prompt_tokens": 1613,
      "total_tokens": 1668,
@@ -84,7 +84,7 @@
        "role": "assistant",
        "tool_calls": [
         {
-         "id": "BeUwdP1tk",
+         "id": "XKzpPSycK",
          "type": "function",
          "function": {
           "name": "bourse__passer_ordre",

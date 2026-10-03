@@ -8,7 +8,7 @@
   "statut": "termine",
   "directives": [],
   "sous_agents": [
-   "assistant-salarie"
+   "equipe-deal"
   ],
   "decisions": {
    "data-room/lire_document": "autoriser",

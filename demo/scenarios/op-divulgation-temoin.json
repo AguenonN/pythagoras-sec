@@ -8,7 +8,7 @@
   "statut": "termine",
   "directives": [],
   "sous_agents": [
-   "equipe-deal"
+   "assistant-salarie"
   ],
   "decisions": {
    "messagerie/envoyer_message": "autoriser"
