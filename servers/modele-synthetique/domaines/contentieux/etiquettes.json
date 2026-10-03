@@ -1,0 +1,6 @@
+{
+  "serveur": ["donnees_client"],
+  "outils": {
+    "deposer_conclusions": ["externe"]
+  }
+}

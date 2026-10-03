@@ -1,5 +1,7 @@
 # Ajouter un scénario
 
+> Création en une commande, avec son test de rejeu hors ligne : `scripts/nouveau-scenario.sh` (recette 4 de [`docs/demo/etendre.md`](../demo/etendre.md), la référence). Ce document détaille le fichier et les passages réels.
+
 Un scénario = **un fichier** `demo/scenarios/<nom>.json`, joué par `scripts/lancer-demo.sh scenario <nom>`.
 
 ## 1. Écrire le fichier
@@ -18,8 +20,9 @@ Un scénario = **un fichier** `demo/scenarios/<nom>.json`, joué par `scripts/la
 
 - `demande`, `demandeur` (une identité de `demo/annuaire-source.json`) : obligatoires.
 - Facultatifs : `sans_directive` (« D-00n » : même jeu sans cette directive), `jeu` (chemin d'un jeu de travail, par exemple `demo/scenarios/jeux/avec-d009.json`), `registre` (`normal` ou `attaque`).
+- `attendu.sous_agents` et `attendu.decisions` (`"serveur/outil": "effet"`), facultatifs : lus par le test généré par `nouveau-scenario.sh`, ignorés par le lanceur.
 - `validations` : ce que l'opérateur devra déposer à chaque attente (affiché au lancement).
-- `attendu` : `statut` (`termine`, `bloque`, `en_attente`, `erreur`, ou `null` si le résultat n'est pas prévisible) et `directives` citées (ou `null`) ; comparé à la fin (« attendu : conforme » ou « ÉCART »).
+- `attendu` : `statut` (`termine`, `bloque` (un refus de l'engine arrête la demande), `en_attente`, `erreur`, ou `null` si le résultat n'est pas prévisible) et `directives` citées (ou `null`) ; comparé à la fin (« attendu : conforme » ou « ÉCART »).
 
 ## 2. Le jouer
 

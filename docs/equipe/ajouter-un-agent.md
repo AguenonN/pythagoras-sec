@@ -1,5 +1,7 @@
 # Ajouter un sous-agent
 
+> Recette 2 de [`docs/demo/etendre.md`](../demo/etendre.md), la référence (testée par `test/extension/`). Ce document en détaille les champs.
+
 Un sous-agent = **un fichier JSON**, aucune ligne de code. L'orchestrateur découvre les sous-agents dans `agents/orchestrateur/sous_agents/` au lancement de chaque demande et liste leurs rôles dans sa consigne.
 
 ## 1. Écrire le fichier
@@ -30,7 +32,7 @@ Le code pose `_meta.sous_agent` = `nom` sur chaque appel ; le modèle ne peut pa
 ## 2. Vérifier
 
 ```sh
-scripts/lancer-demo.sh                          # si un serveur a été ajouté : régénère demo/registre.json
+scripts/lancer-demo.sh                          # si un serveur a été ajouté (nouveau-serveur.sh le fait déjà) : régénère demo/registre.json
 (cd agents && python3 -m orchestrateur sous-agents)
 ```
 

@@ -1,0 +1,19 @@
+{
+  "avertissement": "DONNÉES FICTIVES inventées pour la démonstration : assureur, assurés, sinistres et pièces imaginaires, aucune personne réelle.",
+  "collections": {
+    "sinistres": [
+      {"id": "SIN-FICTIF-001", "assure": "Assuré fictif A (ASSURE-FICTIF-001)", "police": "POL-FICTIVE-1001", "type": "dégât des eaux", "date_survenance": "2026-08-12", "montant_declare": 3200, "statut": "ouvert", "pieces": ["PIECE-FICTIVE-001", "PIECE-FICTIVE-002"]},
+      {"id": "SIN-FICTIF-002", "assure": "Assuré fictif B (ASSURE-FICTIF-002)", "police": "POL-FICTIVE-1002", "type": "accident corporel", "date_survenance": "2026-07-03", "montant_declare": 18500, "statut": "en expertise", "pieces": ["PIECE-FICTIVE-003", "PIECE-FICTIVE-004"]},
+      {"id": "SIN-FICTIF-003", "assure": "Assuré fictif C (ASSURE-FICTIF-003)", "police": "POL-FICTIVE-1003", "type": "collision automobile", "date_survenance": "2026-09-01", "montant_declare": 7400, "statut": "ouvert", "pieces": ["PIECE-FICTIVE-005"]},
+      {"id": "SIN-FICTIF-004", "assure": "Assuré fictif D (ASSURE-FICTIF-004)", "police": "POL-FICTIVE-1004", "type": "incendie", "date_survenance": "2026-06-20", "montant_declare": 240000, "statut": "en expertise", "pieces": ["PIECE-FICTIVE-006"]}
+    ],
+    "pieces": [
+      {"id": "PIECE-FICTIVE-001", "sinistre_id": "SIN-FICTIF-001", "libelle": "Constat amiable de dégât des eaux", "categorie": "administrative", "contient_donnees_sante": false},
+      {"id": "PIECE-FICTIVE-002", "sinistre_id": "SIN-FICTIF-001", "libelle": "Devis de réparation (plombier fictif)", "categorie": "administrative", "contient_donnees_sante": false},
+      {"id": "PIECE-FICTIVE-003", "sinistre_id": "SIN-FICTIF-002", "libelle": "Certificat médical initial (fictif)", "categorie": "médicale", "contient_donnees_sante": true},
+      {"id": "PIECE-FICTIVE-004", "sinistre_id": "SIN-FICTIF-002", "libelle": "Compte rendu d'expertise médicale (fictif)", "categorie": "médicale", "contient_donnees_sante": true},
+      {"id": "PIECE-FICTIVE-005", "sinistre_id": "SIN-FICTIF-003", "libelle": "Constat amiable de collision", "categorie": "administrative", "contient_donnees_sante": false},
+      {"id": "PIECE-FICTIVE-006", "sinistre_id": "SIN-FICTIF-004", "libelle": "Rapport de pompiers (fictif)", "categorie": "administrative", "contient_donnees_sante": false}
+    ]
+  }
+}

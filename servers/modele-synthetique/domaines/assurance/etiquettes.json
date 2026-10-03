@@ -1,0 +1,7 @@
+{
+  "serveur": ["donnees_client"],
+  "outils": {
+    "lire_piece": ["donnees_sante"],
+    "lister_pieces": ["donnees_sante"]
+  }
+}

@@ -40,6 +40,7 @@ import (
 	"sort"
 	"strings"
 
+	"mcprogue/internal/nommage"
 	"mcprogue/internal/registre"
 )
 
@@ -56,6 +57,57 @@ const Detourne = "taux-officiel"
 var Serveurs = []string{
 	"taux-officiel", "recherche-entreprises", "gels-avoirs", "eurlex",
 	"legifrance", "banque-synthetique", "rh-synthetique", "referentiel-rh",
+}
+
+// FichierSupplementaires décrit les serveurs ajoutés par l'équipe avec
+// scripts/nouveau-serveur.sh, et leurs étiquettes :
+//
+//	{"serveurs": ["nom", ...], "etiquettes": {"serveurs": {...}, "outils": {...}, "personnes_concernees": {...}}}
+//
+// « etiquettes » a la forme de demo/etiquettes.json et s'applique après lui.
+// Fichier à part : demo/etiquettes.json et les fichiers qui en dérivent
+// (vocabulaire du compilateur, enregistrements) restent ceux de la démo
+// figée. Absent, le registre compte les huit serveurs de Serveurs ; les
+// serveurs nommés les suivent, dans l'ordre du manifeste.
+const FichierSupplementaires = "demo/serveurs-supplementaires.json"
+
+// Supplementaires est le contenu de FichierSupplementaires.
+type Supplementaires struct {
+	Serveurs   []string    `json:"serveurs"`
+	Etiquettes *Etiquettes `json:"etiquettes,omitempty"`
+}
+
+// LireSupplementaires lit FichierSupplementaires sous racine ; un fichier
+// absent n'ajoute rien (résultat vide, sans erreur). Un nom invalide, en
+// double ou déjà au registre est une erreur.
+func LireSupplementaires(racine string) (*Supplementaires, error) {
+	b, err := os.ReadFile(filepath.Join(racine, FichierSupplementaires))
+	if errors.Is(err, os.ErrNotExist) {
+		return &Supplementaires{}, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("registredemo: serveurs supplémentaires: %w", err)
+	}
+	dec := json.NewDecoder(bytes.NewReader(b))
+	dec.DisallowUnknownFields()
+	var f Supplementaires
+	if err := dec.Decode(&f); err != nil {
+		return nil, fmt.Errorf("registredemo: serveurs supplémentaires illisibles: %w", err)
+	}
+	vus := map[string]bool{Imposteur: true}
+	for _, n := range Serveurs {
+		vus[n] = true
+	}
+	for _, n := range f.Serveurs {
+		if err := nommage.ValiderNomLogique(n); err != nil {
+			return nil, fmt.Errorf("registredemo: serveurs supplémentaires: %w", err)
+		}
+		if vus[n] {
+			return nil, fmt.Errorf("registredemo: serveurs supplémentaires: %s en double ou déjà au registre", n)
+		}
+		vus[n] = true
+	}
+	return &f, nil
 }
 
 // Variables d'environnement transmises par nom.
@@ -114,6 +166,9 @@ type Options struct {
 	// Etiquettes est le fichier des étiquettes, relatif à la racine ou
 	// absolu. Vide : FichierEtiquettes, le fichier versionné.
 	Etiquettes string
+	// Supplementaires : serveurs et étiquettes ajoutés à ceux de la démo
+	// (voir FichierSupplementaires) ; nil : aucun.
+	Supplementaires *Supplementaires
 }
 
 // DossierGelsLocal est le registre des gels complet, préparé par
@@ -155,7 +210,11 @@ func Generer(m *Manifeste, o Options) (demo, attaque *registre.Registre, err err
 		}
 		entrees[e.Nom] = e
 	}
-	attendus := append(append([]string{}, Serveurs...), Imposteur)
+	serveurs := append([]string{}, Serveurs...)
+	if o.Supplementaires != nil {
+		serveurs = append(serveurs, o.Supplementaires.Serveurs...)
+	}
+	attendus := append(append([]string{}, serveurs...), Imposteur)
 	var errs []error
 	for _, nom := range attendus {
 		if _, ok := entrees[nom]; !ok {
@@ -189,7 +248,7 @@ func Generer(m *Manifeste, o Options) (demo, attaque *registre.Registre, err err
 	}
 
 	demo = &registre.Registre{Meta: Meta}
-	for _, nom := range Serveurs {
+	for _, nom := range serveurs {
 		e := entrees[nom]
 		outils, err := OutilsDepuisSchema(o.Racine, e)
 		if err != nil {
@@ -213,6 +272,11 @@ func Generer(m *Manifeste, o Options) (demo, attaque *registre.Registre, err err
 	}
 	if err := etiquettes.Appliquer(demo); err != nil {
 		return nil, nil, err
+	}
+	if o.Supplementaires != nil && o.Supplementaires.Etiquettes != nil {
+		if err := o.Supplementaires.Etiquettes.Appliquer(demo); err != nil {
+			return nil, nil, fmt.Errorf("serveurs supplémentaires : %w", err)
+		}
 	}
 	if err := registre.Valider(demo); err != nil {
 		return nil, nil, err

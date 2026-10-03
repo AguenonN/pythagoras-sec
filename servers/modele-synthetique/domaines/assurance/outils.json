@@ -1,0 +1,57 @@
+{
+  "description": "Assureur fictif : déclarations de sinistre, pièces (dont des données de santé, RGPD art. 9) et indemnisation.",
+  "outils": [
+    {
+      "nom": "lister_sinistres",
+      "description": "Liste les déclarations de sinistre de l'assureur fictif, éventuellement filtrées par statut (ouvert, en expertise).",
+      "genre": "lister",
+      "readOnlyHint": true,
+      "collection": "sinistres",
+      "arguments": [
+        {"nom": "statut", "type": "string", "description": "statut à retenir, par exemple « ouvert »"}
+      ]
+    },
+    {
+      "nom": "lire_sinistre",
+      "description": "Lit une déclaration de sinistre : assuré, police, type, date, montant déclaré, statut, pièces.",
+      "genre": "lire",
+      "readOnlyHint": true,
+      "collection": "sinistres",
+      "arguments": [
+        {"nom": "sinistre_id", "type": "string", "description": "identifiant du sinistre, par exemple SIN-FICTIF-001", "obligatoire": true, "champ": "id"}
+      ]
+    },
+    {
+      "nom": "lister_pieces",
+      "description": "Liste les pièces d'un sinistre (libellé, catégorie, présence de données de santé).",
+      "genre": "lister",
+      "readOnlyHint": true,
+      "collection": "pieces",
+      "arguments": [
+        {"nom": "sinistre_id", "type": "string", "description": "identifiant du sinistre, par exemple SIN-FICTIF-002"}
+      ]
+    },
+    {
+      "nom": "lire_piece",
+      "description": "Lit une pièce du dossier de sinistre. Certaines pièces contiennent des données de santé.",
+      "genre": "lire",
+      "readOnlyHint": true,
+      "collection": "pieces",
+      "arguments": [
+        {"nom": "piece_id", "type": "string", "description": "identifiant de la pièce, par exemple PIECE-FICTIVE-003", "obligatoire": true, "champ": "id"}
+      ]
+    },
+    {
+      "nom": "valider_indemnisation",
+      "description": "Valide l'indemnisation d'un sinistre pour un montant en euros (action : enregistrée en mémoire, fictive).",
+      "genre": "action",
+      "readOnlyHint": false,
+      "reference_prefixe": "INDEMNISATION-FICTIVE",
+      "verifie": [{"argument": "sinistre_id", "collection": "sinistres", "champ": "id"}],
+      "arguments": [
+        {"nom": "sinistre_id", "type": "string", "description": "identifiant du sinistre", "obligatoire": true},
+        {"nom": "montant", "type": "number", "description": "montant de l'indemnisation en euros", "obligatoire": true}
+      ]
+    }
+  ]
+}
