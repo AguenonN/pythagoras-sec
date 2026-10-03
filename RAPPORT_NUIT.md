@@ -101,7 +101,20 @@ Branche : `feat/operation` (worktree). Engine **non modifié**. Tout est **ficti
 
 ## 4. Blocages rencontrés
 
+- **Gate refuse de démarrer si des journaux de sessions précédentes ont été scellés avec une
+  autre clé** : résolu en nettoyant `demo/execution/sessions/*` (transitoire, hors Git) avant
+  chaque enregistrement et en gardant **une** clé par invocation (jamais écrite sur disque).
+- **Orchestrateur « hors périmètre »** pour les demandes ATLAS : résolu en élargissant la
+  consigne (§3). **Routage « cabinet » → `assistant-salarie`** : non bloquant, aligné.
+- **Budget Mistral (40)** : atteint à 38 ; 9 scénarios restent en fichiers (voir §2).
+
 ## 5. Questions pour Manu (par urgence)
+
+1. *(moyenne)* Grain « document » dans l'engine, ou « a consulté la data room » suffit-il
+   pour la démo ? (voir `docs/rapports/operation.md`)
+2. *(faible)* Enregistrer les 9 scénarios restants + passer les textes par le compilateur
+   (session avec budget Mistral).
+3. *(faible)* Mécanisme hors code pour étendre le périmètre de l'orchestrateur ?
 
 ## 6. Vérifier en 5 minutes
 
