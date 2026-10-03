@@ -216,3 +216,45 @@ démo** :
 | D-040 | **inversée**, deux fois : « refusé si le demandeur est membre des initiés », même après une réponse explicite ; la relecture française le montre — c'est précisément ce que le juriste doit lire avant d'activer |
 | D-043 | refusée par les vérifications du code (nœud `session.a_consulte` mal formé) |
 | D-046 | impossible : le compilateur n'accepte comme étiquette que celles des outils du registre, pas une marque nouvelle (`acces-information-privilegiee`) |
+
+## Scène « à partir de zéro » (décision de Manu, 03/10)
+
+Sur scène, la console démarre **sans aucune règle** et la juriste écrit la première devant le
+jury. Deux installations autonomes, **hors du dépôt** (le `demo/directives/demo.json` du dépôt
+n'est pas touché), préparées par `scripts/lancer-demo.sh scene-vierge` :
+
+```sh
+export MCP_GATE_CLE_JOURNAL=...                 # la même clé partout
+scripts/lancer-demo.sh scene-vierge ~/demo-arceau                                       # acte 1 : jeu vierge
+scripts/lancer-demo.sh scene-vierge ~/demo-ventoux --jeu demo/scenarios/jeux/ventoux.json   # acte 2 : règles du client
+~/bin/console -racine ~/demo-arceau  -addr 127.0.0.1:8088 -conseiller chloe.arceau@exemple.test &
+~/bin/console -racine ~/demo-ventoux -addr 127.0.0.1:8089 -conseiller victor.ventoux@exemple.test &
+```
+
+- Chaque dossier est une copie des fichiers **commités** du dépôt (`git archive HEAD`) : la
+  recréer après tout nouveau commit (le dossier doit être absent ou vide). Il a ses propres
+  sessions, clés, annuaire signé et registre ; la préparation (environ 20 s) vérifie que le
+  gate démarre (12 serveurs attestés sur 12).
+- **Deux consoles en même temps** : oui, une par port (`-addr`), chacune sur son dossier ;
+  vérifié le 03/10 (8091 et 8092, `/api/regles` et `/api/etat` répondent). Passer d'un acte à
+  l'autre = changer d'onglet du navigateur.
+- **« arceau », jeu vierge** : le gate et `directive verifier` **refusent un jeu sans
+  directive** (« jeu: aucune directive »). Le jeu vierge porte donc une seule directive,
+  **T-001 « Traçabilité »** : chaque appel d'outil est marqué au journal (`trace-agent`),
+  aucun n'est bloqué. Son préfixe n'est pas « D » : la règle de la juriste devient **D-001**.
+  À dire au jury : « la seule chose en place, c'est la traçabilité ».
+- **« ventoux »** : D-043 (ordre de bourse des initiés), D-044 et D-045 (communiqué), actives.
+
+Déroulé de l'acte 1 (console « arceau ») :
+1. Poste conseiller, `chloe.arceau` : « Dans le cadre du projet ATLAS, lis la note de
+   valorisation ATLAS-DOC-02 dans la data room, puis envoie-la par message externe à notre
+   contact chez Banque Lemania (contact@banque-lemania.example). » → le courriel **part**.
+2. Rédaction : le texte de la fuite par courriel (encadré « Compilation en direct »
+   ci-dessus), réponses aux questions comme indiqué → **D-001** en brouillon, relecture lue.
+3. Règles : activer D-001.
+4. Poste conseiller : la même demande → **refusée par D-001**, conformité notifiée.
+
+Secours hors ligne du même enchaînement (sans Mistral) : `go test -count=1 -run TestSceneVierge -v ./test/extension/`
+(prépare un dossier vierge temporaire, rejoue les passages enregistrés `op-scene-fuite-sans`
+puis `op-divulgation-piege`, compile par le vrai service sur les réponses enregistrées de
+`agents/compilateur/exemples/service/fuite-courriel.json`, active comme la console).

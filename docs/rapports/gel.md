@@ -10,6 +10,7 @@ Budget : **400 appels** (autorisé par Manu, prime sur les 40 des règles commun
 |---|---|---|
 | Phase 1, point 0 : compilations A4, A5-brut, A5a, A5b | 9 | 9 |
 | Phase 1, point 9 : 7 règles ATLAS (+ 1 nouvel essai de D-040) | 23 | 32 |
+| Scène vierge : compilation « fuite par courriel » sur le jeu vierge | 1 | 33 |
 
 ## Phase 1 — derniers changements de code
 
@@ -109,4 +110,11 @@ Actives : D-001 à D-008. Libres : D-009, D-010. En brouillon (28) :
 | D-045 | Communication avant l'annonce : la publication d'un communiqué avant le 15 octobre 2026 attend aussi la validation de la conformité, distincte de la directrice juridique. | attente : conformite, quatre yeux | Règlement (UE) n° 596/2014 relatif aux abus de marché — communication de l'information privilégiée au public — à valider par le juriste ; contrôle interne (art. 17) |
 | D-046 | Traçabilité de l'information privilégiée : toute lecture d'un document du projet ATLAS est marquée au journal comme accès à une information privilégiée (registre d'accès à l'information privilégiée). | marque « acces-information-privilegiee » | Règlement (UE) n° 596/2014 relatif aux abus de marché — listes d'initiés et traçabilité des accès — à valider par le juriste (art. 18) |
 
-**En attente de Manu** : activation dans la console de celles qu'il retient. Après sa confirmation : vérification de la nouvelle version (`directive verifier`), D-009 et D-010 libres, commit avec l'historique.
+**Fait** : Manu a activé D-011 à D-031 et D-040 à D-046 (voir plus bas, « Réponses de Manu », point 4).
+
+## Réponses de Manu (03/10, soir) — traitées avant la phase 3
+
+1. **Adresses `@cabinet.fr`** → `@exemple.test` partout **hors engine** (agents, tests, données du lab et d'intégration, relecture : commit `43d63ca`). **Non remplacées, signalées** : les fichiers de test et données des paquets de l'engine (`internal/directive`, `internal/gate`, `internal/journal`, `internal/rejeu` : brief « l'engine n'est pas modifié ») et deux fichiers antérieurs au tag `baseline-pre-hackathon` (`internal/approval/approval_test.go`, `pyagent/agent_juriste.py` : règles communes) ; les attendus de `internal/relecture` dérivés des jeux de `internal/directive/testdata` gardent donc l'ancienne adresse. Journaux signés des données de test de l'Analyste : phase 5. Aucun parcours du compilateur cassé par le remplacement (l'auteur n'entre pas dans les requêtes à Mistral).
+2. Encadré « Compilation en direct » dans `docs/demo/operation.md` (fuite par courriel seule ; inversion de D-040 et sa relecture, réponse type au jury).
+3. **`scripts/lancer-demo.sh scene-vierge <dossier> [--jeu F]`** : dossier autonome hors du dépôt (copie de HEAD, jeu remplacé, historique et origines vides, `demo/execution/` neuf, registre local des gels recopié, préparation complète). **Signalé** : le gate et `directive verifier` refusent un jeu sans directive ; le jeu « vierge » porte une directive de traçabilité sans blocage, **T-001** (préfixe distinct : la première règle compilée est bien D-001, vérifié). Jeu « ventoux » : `demo/scenarios/jeux/ventoux.json` (D-043, D-044, D-045). Deux consoles sur deux ports : oui (`-addr`), vérifié. Option `DEMO_GELS_HORS_LIGNE=1` de la préparation : pas de téléchargement du registre des gels s'il en existe un local (tests hors ligne). Test de bout en bout en rejeu : `test/extension/scene_vierge_test.go` (vierge → courriel autorisé → règle compilée par le **vrai** service sur réponses enregistrées → D-001 → activée → refusée), vert. 1 appel Mistral (second tour de la compilation sur le jeu vierge).
+4. Phase 2 : Manu a activé D-011 à D-031 et D-040 à D-046 ; `demo.json` **version 33**, 36 directives actives, D-009 et D-010 libres, `directive verifier` ok, historique v5 à v32 ; commit `cf4713c`. Tests qui figeaient l'état « brouillon » ajustés (statut et date d'effet seuls changés) ; tests de l'Analyste figés sur `historique/demo.v5.json` (leurs données datent de cet état).
