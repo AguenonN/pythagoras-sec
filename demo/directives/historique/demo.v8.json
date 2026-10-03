@@ -1,0 +1,1482 @@
+{
+  "jeu": {
+    "id": "demo",
+    "version": 8,
+    "date_effet": "2026-10-03T17:49:00Z",
+    "auteur": "juriste@exemple.test"
+  },
+  "directives": [
+    {
+      "id": "D-001",
+      "version": 1,
+      "statut": "active",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Gels vérifiés avant tout prêt : aucun prêt n'est attribué si le registre national des gels des avoirs n'a pas été consulté, avec une réponse reçue, dans la même demande.",
+      "fondements": [
+        {
+          "texte": "Code monétaire et financier — à valider par le juriste",
+          "article": "L562-4"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "attribuer_pret"
+        }
+      },
+      "condition": {
+        "non": {
+          "session.a_consulte": {
+            "outil": "gels-avoirs/verifier_gel",
+            "critere": "donnees_recues"
+          }
+        }
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-002",
+      "version": 1,
+      "statut": "active",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Taux officiel consulté : un prêt attribué à partir du seuil de l'usure du serveur de taux officiel attend la validation d'un analyste risques.",
+      "fondements": [
+        {
+          "texte": "Code monétaire et financier — à valider par le juriste",
+          "article": "L313-5-1"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "attribuer_pret"
+        }
+      },
+      "condition": {
+        "session.a_consulte": {
+          "serveur": "taux-officiel",
+          "critere": "transmis"
+        }
+      },
+      "effets": [
+        {
+          "effet": "attendre_validation",
+          "par_role": "analyste-risques"
+        }
+      ]
+    },
+    {
+      "id": "D-003",
+      "version": 1,
+      "statut": "active",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Source officielle attestée : aucun appel au serveur de taux officiel dont l'attestation n'est pas vérifiée.",
+      "fondements": [
+        {
+          "texte": "Politique de sécurité des sources de données — à valider par le juriste",
+          "article": "3"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "taux-officiel",
+          "outil": "*"
+        }
+      },
+      "condition": {
+        "attestation": {
+          "verifiee": false
+        }
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-004",
+      "version": 1,
+      "statut": "active",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "SIREN seul vers l'extérieur : le service de recherche d'entreprises ne reçoit que le SIREN ; tout autre champ est retiré avant l'envoi.",
+      "fondements": [
+        {
+          "texte": "RGPD — à valider par le juriste",
+          "article": "5.1.c"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "recherche-entreprises",
+          "outil": "*"
+        }
+      },
+      "effets": [
+        {
+          "effet": "caviarder",
+          "champs_autorises": [
+            "/siren"
+          ],
+          "mode": "caviarder"
+        }
+      ]
+    },
+    {
+      "id": "D-005",
+      "version": 1,
+      "statut": "active",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Décision top management : au-delà de 2 000 000 euros, l'attribution d'un prêt attend la validation d'un directeur des risques, distinct du demandeur, et la direction juridique est prévenue sur-le-champ ; si elle ne peut pas l'être, l'attribution est refusée.",
+      "fondements": [
+        {
+          "texte": "Politique de crédit — à valider par le juriste",
+          "article": "7.1"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "attribuer_pret"
+        }
+      },
+      "condition": {
+        "argument": {
+          "champ": "/montant",
+          "op": "\u003e",
+          "valeur": 2000000
+        }
+      },
+      "effets": [
+        {
+          "effet": "attendre_validation",
+          "par_role": "directeur-risques",
+          "quatre_yeux": true
+        },
+        {
+          "effet": "notifier",
+          "destinataire_role": "direction-juridique",
+          "rythme": "temps_reel",
+          "si_echec": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-006",
+      "version": 1,
+      "statut": "active",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "RH : contentieux hors scope. Aucune action d'agent sur des données personnelles ne vise un salarié qui fait l'objet d'un contentieux en cours.",
+      "fondements": [
+        {
+          "texte": "Code du travail — à valider par le juriste",
+          "article": "L1121-1"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "etiquette": "donnees_personnelles",
+          "acces": "action"
+        }
+      },
+      "condition": {
+        "ou": [
+          {
+            "et": [
+              {
+                "argument": {
+                  "champ": "/salarie_ids",
+                  "op": "present"
+                }
+              },
+              {
+                "existe": {
+                  "champ": "/salarie_ids",
+                  "condition": {
+                    "sujet": {
+                      "groupe": "contentieux-en-cours"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "et": [
+              {
+                "argument": {
+                  "champ": "/salarie_id",
+                  "op": "present"
+                }
+              },
+              {
+                "sujet": {
+                  "groupe": "contentieux-en-cours",
+                  "champ": "/salarie_id"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-007",
+      "version": 1,
+      "statut": "active",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "RH : salariés protégés. Toute action d'agent sur des données personnelles qui vise un salarié protégé attend la validation de la responsable RH.",
+      "fondements": [
+        {
+          "texte": "Code du travail — à valider par le juriste",
+          "article": "L2411-1"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "etiquette": "donnees_personnelles",
+          "acces": "action"
+        }
+      },
+      "condition": {
+        "ou": [
+          {
+            "et": [
+              {
+                "argument": {
+                  "champ": "/salarie_ids",
+                  "op": "present"
+                }
+              },
+              {
+                "existe": {
+                  "champ": "/salarie_ids",
+                  "condition": {
+                    "sujet": {
+                      "groupe": "salaries-proteges"
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "et": [
+              {
+                "argument": {
+                  "champ": "/salarie_id",
+                  "op": "present"
+                }
+              },
+              {
+                "sujet": {
+                  "groupe": "salaries-proteges",
+                  "champ": "/salarie_id"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "effets": [
+        {
+          "effet": "attendre_validation",
+          "par_role": "responsable-rh"
+        }
+      ]
+    },
+    {
+      "id": "D-008",
+      "version": 1,
+      "statut": "active",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Rapport sur données client : un prestataire externe n'obtient pas de rapport dans une demande qui a consulté des données client ; la direction juridique est prévenue sur-le-champ, et si elle ne peut pas l'être, le rapport est refusé.",
+      "fondements": [
+        {
+          "texte": "RGPD — à valider par le juriste",
+          "article": "32"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "etiquette": "production_rapport"
+        }
+      },
+      "condition": {
+        "et": [
+          {
+            "demandeur": {
+              "groupe": "prestataires-externes"
+            }
+          },
+          {
+            "session.a_consulte": {
+              "etiquette": "donnees_client",
+              "critere": "transmis"
+            }
+          }
+        ]
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        },
+        {
+          "effet": "notifier",
+          "destinataire_role": "direction-juridique",
+          "rythme": "temps_reel",
+          "si_echec": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-011",
+      "version": 1,
+      "statut": "active",
+      "date_effet": "2026-10-03T17:48:50Z",
+      "texte_fr": "Aucun virement n'est exécuté si le registre national des gels des avoirs n'a pas été consulté, avec une réponse reçue, dans la même demande.",
+      "fondements": [
+        {
+          "texte": "Code monétaire et financier — à valider par le juriste",
+          "article": "L562-4 et suivants"
+        },
+        {
+          "texte": "règlements de l'Union européenne relatifs aux mesures restrictives"
+        }
+      ],
+      "si_indetermine": "refuser",
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "effectuer_virement"
+        }
+      },
+      "condition": {
+        "non": {
+          "session.a_consulte": {
+            "serveur": "gels-avoirs",
+            "critere": "donnees_recues"
+          }
+        }
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-012",
+      "version": 1,
+      "statut": "active",
+      "date_effet": "2026-10-03T17:48:54Z",
+      "texte_fr": "Lorsqu'une déclaration de soupçon a été transmise dans la demande, aucun courrier ni message n'est envoyé au client concerné.",
+      "fondements": [
+        {
+          "texte": "Code monétaire et financier — à valider par le juriste",
+          "article": "L561-18"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "envoyer_courrier_client"
+        }
+      },
+      "condition": {
+        "session.a_consulte": {
+          "outil": "banque-synthetique/declarer_soupcon",
+          "critere": "transmis"
+        }
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-013",
+      "version": 1,
+      "statut": "active",
+      "date_effet": "2026-10-03T17:49:00Z",
+      "texte_fr": "Toute modification qui porte le plafond de découvert d'un compte au-delà de 10 000 euros attend la validation d'un analyste des risques.",
+      "fondements": [
+        {
+          "texte": "Politique de risque interne — à valider par le juriste"
+        }
+      ],
+      "si_indetermine": "refuser",
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "modifier_plafond_decouvert"
+        }
+      },
+      "condition": {
+        "argument": {
+          "champ": "/nouveau_plafond",
+          "op": "\u003e",
+          "valeur": 10000
+        }
+      },
+      "effets": [
+        {
+          "effet": "attendre_validation",
+          "par_role": "analyste-risques"
+        }
+      ]
+    },
+    {
+      "id": "D-014",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Aucun export de données client n'est fait vers une destination externe à la banque.",
+      "fondements": [
+        {
+          "texte": "RGPD — à valider par le juriste",
+          "article": "5"
+        },
+        {
+          "texte": "Code monétaire et financier",
+          "article": "L511-33"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "exporter_donnees_client"
+        }
+      },
+      "condition": {
+        "argument": {
+          "champ": "/destination",
+          "op": "==",
+          "valeur": "externe"
+        }
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-015",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Vers une destination interne, l'export ne comporte ni les IBAN ni les revenus du client.",
+      "fondements": [
+        {
+          "texte": "RGPD — à valider par le juriste",
+          "article": "5"
+        },
+        {
+          "texte": "Code monétaire et financier",
+          "article": "L511-33"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "exporter_donnees_client"
+        }
+      },
+      "condition": {
+        "argument": {
+          "champ": "/destination",
+          "op": "==",
+          "valeur": "interne"
+        }
+      },
+      "effets": [
+        {
+          "effet": "caviarder",
+          "champs_autorises": [
+            "/client_id",
+            "/destinataire",
+            "/destination",
+            "/inclure_operations"
+          ],
+          "mode": "caviarder"
+        }
+      ]
+    },
+    {
+      "id": "D-016",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Toute clôture de compte est validée par une seconde personne, distincte de celle qui la demande.",
+      "fondements": [
+        {
+          "texte": "Contrôle interne — à valider par le juriste"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "cloturer_compte"
+        }
+      },
+      "effets": [
+        {
+          "effet": "attendre_validation",
+          "quatre_yeux": true
+        }
+      ]
+    },
+    {
+      "id": "D-017",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Un refus de crédit n'est jamais notifié au demandeur sans la validation d'une personne.",
+      "fondements": [
+        {
+          "texte": "RGPD — à valider par le juriste",
+          "article": "22"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "refuser_credit"
+        }
+      },
+      "effets": [
+        {
+          "effet": "attendre_validation"
+        }
+      ]
+    },
+    {
+      "id": "D-018",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Aucune recherche de salariés ne porte sur un critère protégé : âge, état de santé, grossesse, nationalité ou origine, appartenance syndicale.",
+      "fondements": [
+        {
+          "texte": "Code du travail — à valider par le juriste",
+          "article": "L1132-1"
+        }
+      ],
+      "si_indetermine": "refuser",
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "rh-synthetique",
+          "outil": "rechercher_salaries"
+        }
+      },
+      "condition": {
+        "ou": [
+          {
+            "argument": {
+              "champ": "/criteres/age_min",
+              "op": "present"
+            }
+          },
+          {
+            "argument": {
+              "champ": "/criteres/age_max",
+              "op": "present"
+            }
+          },
+          {
+            "argument": {
+              "champ": "/criteres/en_arret_maladie",
+              "op": "present"
+            }
+          },
+          {
+            "argument": {
+              "champ": "/criteres/enceinte",
+              "op": "present"
+            }
+          },
+          {
+            "argument": {
+              "champ": "/criteres/nationalite",
+              "op": "present"
+            }
+          },
+          {
+            "argument": {
+              "champ": "/criteres/syndique",
+              "op": "present"
+            }
+          }
+        ]
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-019",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Lors de la consultation d'une fiche salarié, les données de santé et l'appartenance syndicale sont retirées.",
+      "fondements": [
+        {
+          "texte": "RGPD — à valider par le juriste",
+          "article": "9"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "rh-synthetique",
+          "outil": "consulter_fiche"
+        }
+      },
+      "effets": [
+        {
+          "effet": "caviarder",
+          "champs_autorises": [
+            "/salarie_id",
+            "/inclure_remuneration"
+          ],
+          "mode": "caviarder"
+        }
+      ]
+    },
+    {
+      "id": "D-020",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Aucune sanction disciplinaire n'est notifiée à un salarié par l'outil sanctionner du serveur rh-synthetique si la convocation à un entretien préalable (outil convoquer_entretien_prealable du même serveur) n'a pas été transmise dans la même demande.",
+      "fondements": [
+        {
+          "texte": "Code du travail — à valider par le juriste",
+          "article": "L1332-2"
+        }
+      ],
+      "si_indetermine": "refuser",
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "rh-synthetique",
+          "outil": "sanctionner"
+        }
+      },
+      "condition": {
+        "non": {
+          "session.a_consulte": {
+            "outil": "rh-synthetique/convoquer_entretien_prealable",
+            "critere": "donnees_recues"
+          }
+        }
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-021",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Tout licenciement attend la validation d'un membre de la direction des ressources humaines (rôle drh), distinct de la personne qui le demande.",
+      "fondements": [
+        {
+          "texte": "Code du travail",
+          "article": "L1232-2"
+        },
+        {
+          "texte": "contrôle interne — à valider par le juriste"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "rh-synthetique",
+          "outil": "licencier"
+        }
+      },
+      "effets": [
+        {
+          "effet": "attendre_validation",
+          "par_role": "drh"
+        }
+      ]
+    },
+    {
+      "id": "D-022",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Aucun export de la paie n'est fait vers un pays situé hors de l'Union européenne.",
+      "fondements": [
+        {
+          "texte": "RGPD — à valider par le juriste",
+          "article": "chapitre V (transferts hors de l'Union)"
+        }
+      ],
+      "si_indetermine": "refuser",
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "rh-synthetique",
+          "outil": "exporter_paie"
+        }
+      },
+      "condition": {
+        "non": {
+          "argument": {
+            "champ": "/pays",
+            "op": "dans",
+            "valeur": [
+              "AT",
+              "BE",
+              "BG",
+              "CY",
+              "CZ",
+              "DE",
+              "DK",
+              "EE",
+              "ES",
+              "FI",
+              "FR",
+              "GR",
+              "HR",
+              "HU",
+              "IE",
+              "IT",
+              "LT",
+              "LU",
+              "LV",
+              "MT",
+              "NL",
+              "PL",
+              "PT",
+              "RO",
+              "SE",
+              "SI",
+              "SK"
+            ]
+          }
+        }
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-023",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Dans une liste de salariés, les salaires sont retirés.",
+      "fondements": [
+        {
+          "texte": "RGPD — à valider par le juriste",
+          "article": "5.1.c"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "rh-synthetique",
+          "outil": "lister_salaries"
+        }
+      },
+      "effets": [
+        {
+          "effet": "caviarder",
+          "champs_autorises": [
+            "/service"
+          ],
+          "mode": "caviarder"
+        }
+      ]
+    },
+    {
+      "id": "D-024",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Aucun agent ne lit ni ne modifie les comptes, prêts, découverts ou virements d'un client personne politiquement exposée : le dossier relève d'un conseiller humain.",
+      "fondements": [
+        {
+          "texte": "Politique interne de la banque — à valider par le responsable juridique"
+        }
+      ],
+      "si_indetermine": "refuser",
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "consulter_client"
+        }
+      },
+      "condition": {
+        "sujet": {
+          "groupe": "personne-politiquement-exposee",
+          "champ": "/client_id"
+        }
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        },
+        {
+          "effet": "notifier",
+          "destinataire_role": "conformite",
+          "rythme": "temps_reel",
+          "si_echec": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-025",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Aucun agent ne lit ni ne modifie les comptes, prêts, découverts ou virements d'un client personne politiquement exposée : le dossier relève d'un conseiller humain.",
+      "fondements": [
+        {
+          "texte": "Politique interne de la banque — à valider par le responsable juridique"
+        }
+      ],
+      "si_indetermine": "refuser",
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "lister_comptes_client"
+        }
+      },
+      "condition": {
+        "sujet": {
+          "groupe": "personne-politiquement-exposee",
+          "champ": "/client_id"
+        }
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        },
+        {
+          "effet": "notifier",
+          "destinataire_role": "conformite",
+          "rythme": "temps_reel",
+          "si_echec": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-026",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Aucun agent ne lit ni ne modifie les comptes, prêts, découverts ou virements d'un client personne politiquement exposée : le dossier relève d'un conseiller humain.",
+      "fondements": [
+        {
+          "texte": "Politique interne de la banque — à valider par le responsable juridique"
+        }
+      ],
+      "si_indetermine": "refuser",
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "historique_operations"
+        }
+      },
+      "condition": {
+        "sujet": {
+          "groupe": "personne-politiquement-exposee",
+          "champ": "/client_id"
+        }
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        },
+        {
+          "effet": "notifier",
+          "destinataire_role": "conformite",
+          "rythme": "temps_reel",
+          "si_echec": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-027",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Aucun agent ne lit ni ne modifie les comptes, prêts, découverts ou virements d'un client personne politiquement exposée : le dossier relève d'un conseiller humain.",
+      "fondements": [
+        {
+          "texte": "Politique interne de la banque — à valider par le responsable juridique"
+        }
+      ],
+      "si_indetermine": "refuser",
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "effectuer_virement"
+        }
+      },
+      "condition": {
+        "sujet": {
+          "groupe": "personne-politiquement-exposee",
+          "champ": "/compte_debit"
+        }
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        },
+        {
+          "effet": "notifier",
+          "destinataire_role": "conformite",
+          "rythme": "temps_reel",
+          "si_echec": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-028",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Aucun agent ne lit ni ne modifie les comptes, prêts, découverts ou virements d'un client personne politiquement exposée : le dossier relève d'un conseiller humain.",
+      "fondements": [
+        {
+          "texte": "Politique interne de la banque — à valider par le responsable juridique"
+        }
+      ],
+      "si_indetermine": "refuser",
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "modifier_plafond_decouvert"
+        }
+      },
+      "condition": {
+        "sujet": {
+          "groupe": "personne-politiquement-exposee",
+          "champ": "/compte_id"
+        }
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        },
+        {
+          "effet": "notifier",
+          "destinataire_role": "conformite",
+          "rythme": "temps_reel",
+          "si_echec": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-029",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Aucun agent ne lit ni ne modifie les comptes, prêts, découverts ou virements d'un client personne politiquement exposée : le dossier relève d'un conseiller humain.",
+      "fondements": [
+        {
+          "texte": "Politique interne de la banque — à valider par le responsable juridique"
+        }
+      ],
+      "si_indetermine": "refuser",
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "banque-synthetique",
+          "outil": "cloturer_compte"
+        }
+      },
+      "condition": {
+        "sujet": {
+          "groupe": "personne-politiquement-exposee",
+          "champ": "/compte_id"
+        }
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        },
+        {
+          "effet": "notifier",
+          "destinataire_role": "conformite",
+          "rythme": "temps_reel",
+          "si_echec": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-030",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Aucun agent n'envoie directement à un salarié un message rédigé dans une session où des données de rémunération ont été consultées ; le message est relu et validé par un gestionnaire RH.",
+      "fondements": [
+        {
+          "texte": "Règlement intérieur, confidentialité des rémunérations — à valider par le juriste"
+        },
+        {
+          "texte": "RGPD",
+          "article": "5"
+        }
+      ],
+      "si_indetermine": "refuser",
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "rh-synthetique",
+          "outil": "envoyer_message_salarie"
+        }
+      },
+      "condition": {
+        "session.a_consulte": {
+          "etiquette": "salaire",
+          "critere": "donnees_recues"
+        }
+      },
+      "effets": [
+        {
+          "effet": "attendre_validation",
+          "par_role": "gestionnaire-rh"
+        }
+      ]
+    },
+    {
+      "id": "D-031",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-10-01T00:00:00+02:00",
+      "texte_fr": "Les salaires et primes sont retirés des fiches salariés consultées par un agent, sauf quand le demandeur appartient au service paie.",
+      "fondements": [
+        {
+          "texte": "Règlement intérieur, confidentialité des rémunérations — à valider par le juriste"
+        },
+        {
+          "texte": "RGPD",
+          "article": "5"
+        }
+      ],
+      "si_indetermine": "refuser",
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "rh-synthetique",
+          "outil": "consulter_fiche"
+        }
+      },
+      "condition": {
+        "non": {
+          "demandeur": {
+            "groupe": "paie"
+          }
+        }
+      },
+      "effets": [
+        {
+          "effet": "caviarder",
+          "champs_autorises": [
+            "/salarie_id",
+            "/inclure_sante",
+            "/inclure_syndical",
+            "/inclure_situation_familiale"
+          ],
+          "mode": "caviarder"
+        }
+      ]
+    },
+    {
+      "id": "D-040",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Accès à l'information privilégiée : seul un agent agissant pour une personne inscrite sur la liste d'initiés du projet ATLAS, ou membre de l'équipe ATLAS du cabinet conseil, peut lire un document du projet ATLAS dans la data room. Toute autre lecture est refusée et la conformité est notifiée.",
+      "fondements": [
+        {
+          "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — information privilégiée et listes d'initiés — à valider par le juriste",
+          "article": "7, 18"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "data-room",
+          "outil": "lire_document"
+        }
+      },
+      "condition": {
+        "et": [
+          {
+            "argument": {
+              "champ": "/document_id",
+              "op": "dans",
+              "valeur": [
+                "ATLAS-DOC-01",
+                "ATLAS-DOC-02",
+                "ATLAS-DOC-03",
+                "ATLAS-DOC-04",
+                "ATLAS-DOC-05",
+                "ATLAS-DOC-06",
+                "ATLAS-DOC-07",
+                "ATLAS-DOC-08",
+                "ATLAS-DOC-09",
+                "ATLAS-DOC-10"
+              ]
+            }
+          },
+          {
+            "non": {
+              "ou": [
+                {
+                  "demandeur": {
+                    "groupe": "inities-atlas"
+                  }
+                },
+                {
+                  "demandeur": {
+                    "groupe": "equipe-atlas-cabinet"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        },
+        {
+          "effet": "notifier",
+          "destinataire_role": "conformite",
+          "rythme": "temps_reel",
+          "si_echec": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-041",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Divulgation illicite par message : aucun agent n'envoie un message vers une destination externe au cours d'une demande où un document du projet ATLAS a été consulté. L'envoi est refusé et la conformité est notifiée.",
+      "fondements": [
+        {
+          "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — divulgation illicite d'information privilégiée — à valider par le juriste ; secret professionnel de l'avocat",
+          "article": "10, 14"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "messagerie",
+          "outil": "envoyer_message"
+        }
+      },
+      "condition": {
+        "et": [
+          {
+            "argument": {
+              "champ": "/destination",
+              "op": "==",
+              "valeur": "externe"
+            }
+          },
+          {
+            "session.a_consulte": {
+              "outil": "data-room/lire_document",
+              "critere": "donnees_recues"
+            }
+          }
+        ]
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        },
+        {
+          "effet": "notifier",
+          "destinataire_role": "conformite",
+          "rythme": "temps_reel",
+          "si_echec": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-042",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Divulgation illicite par partage : aucun agent ne partage un document vers une destination externe au cours d'une demande où un document du projet ATLAS a été consulté. Le partage est refusé et la conformité est notifiée.",
+      "fondements": [
+        {
+          "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — divulgation illicite d'information privilégiée — à valider par le juriste ; secret professionnel de l'avocat",
+          "article": "10, 14"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "data-room",
+          "outil": "partager_document"
+        }
+      },
+      "condition": {
+        "et": [
+          {
+            "argument": {
+              "champ": "/destination",
+              "op": "==",
+              "valeur": "externe"
+            }
+          },
+          {
+            "session.a_consulte": {
+              "outil": "data-room/lire_document",
+              "critere": "donnees_recues"
+            }
+          }
+        ]
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        },
+        {
+          "effet": "notifier",
+          "destinataire_role": "conformite",
+          "rythme": "temps_reel",
+          "si_echec": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-043",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Opérations d'initiés sur titres : aucun agent ne passe d'ordre sur les titres VENTOUX ou BIOLYS avant le 15 octobre 2026, au cours d'une demande où un document du projet ATLAS a été consulté, ou pour le compte d'une personne inscrite sur la liste d'initiés ATLAS. L'ordre est refusé et la conformité est notifiée.",
+      "fondements": [
+        {
+          "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — opérations d'initiés et période d'abstention — à valider par le juriste",
+          "article": "8, 14, 19"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "bourse",
+          "outil": "passer_ordre"
+        }
+      },
+      "condition": {
+        "et": [
+          {
+            "temps": {
+              "date": {
+                "op": "\u003c",
+                "valeur": "2026-10-15"
+              },
+              "fuseau": "Europe/Paris"
+            }
+          },
+          {
+            "argument": {
+              "champ": "/titre",
+              "op": "dans",
+              "valeur": [
+                "VENTOUX",
+                "BIOLYS"
+              ]
+            }
+          },
+          {
+            "ou": [
+              {
+                "session.a_consulte": {
+                  "outil": "data-room/lire_document",
+                  "critere": "donnees_recues"
+                }
+              },
+              {
+                "demandeur": {
+                  "groupe": "inities-atlas"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "effets": [
+        {
+          "effet": "refuser"
+        },
+        {
+          "effet": "notifier",
+          "destinataire_role": "conformite",
+          "rythme": "temps_reel",
+          "si_echec": "refuser"
+        }
+      ]
+    },
+    {
+      "id": "D-044",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Communication avant l'annonce : la publication d'un communiqué avant le 15 octobre 2026 attend la validation de la directrice juridique, par une personne distincte de l'auteur de la demande.",
+      "fondements": [
+        {
+          "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — communication de l'information privilégiée au public — à valider par le juriste ; contrôle interne",
+          "article": "17"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "communication",
+          "outil": "publier_communique"
+        }
+      },
+      "condition": {
+        "temps": {
+          "date": {
+            "op": "\u003c",
+            "valeur": "2026-10-15"
+          },
+          "fuseau": "Europe/Paris"
+        }
+      },
+      "effets": [
+        {
+          "effet": "attendre_validation",
+          "par_role": "direction-juridique",
+          "quatre_yeux": true
+        }
+      ]
+    },
+    {
+      "id": "D-045",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Communication avant l'annonce : la publication d'un communiqué avant le 15 octobre 2026 attend aussi la validation de la conformité, distincte de la directrice juridique.",
+      "fondements": [
+        {
+          "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — communication de l'information privilégiée au public — à valider par le juriste ; contrôle interne",
+          "article": "17"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "communication",
+          "outil": "publier_communique"
+        }
+      },
+      "condition": {
+        "temps": {
+          "date": {
+            "op": "\u003c",
+            "valeur": "2026-10-15"
+          },
+          "fuseau": "Europe/Paris"
+        }
+      },
+      "effets": [
+        {
+          "effet": "attendre_validation",
+          "par_role": "conformite",
+          "quatre_yeux": true
+        }
+      ]
+    },
+    {
+      "id": "D-046",
+      "version": 1,
+      "statut": "brouillon",
+      "date_effet": "2026-09-01T00:00:00Z",
+      "texte_fr": "Traçabilité de l'information privilégiée : toute lecture d'un document du projet ATLAS est marquée au journal comme accès à une information privilégiée (registre d'accès à l'information privilégiée).",
+      "fondements": [
+        {
+          "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — listes d'initiés et traçabilité des accès — à valider par le juriste",
+          "article": "18"
+        }
+      ],
+      "declencheur": {
+        "evenement": "appel_outil",
+        "cible": {
+          "serveur": "data-room",
+          "outil": "lire_document"
+        }
+      },
+      "condition": {
+        "argument": {
+          "champ": "/document_id",
+          "op": "dans",
+          "valeur": [
+            "ATLAS-DOC-01",
+            "ATLAS-DOC-02",
+            "ATLAS-DOC-03",
+            "ATLAS-DOC-04",
+            "ATLAS-DOC-05",
+            "ATLAS-DOC-06",
+            "ATLAS-DOC-07",
+            "ATLAS-DOC-08",
+            "ATLAS-DOC-09",
+            "ATLAS-DOC-10"
+          ]
+        }
+      },
+      "effets": [
+        {
+          "effet": "marquer",
+          "etiquette": "acces-information-privilegiee"
+        }
+      ]
+    }
+  ]
+}

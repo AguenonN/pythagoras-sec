@@ -12,7 +12,10 @@ from analyste import couverture, detecteurs as det, journaux, propositions
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 SESSIONS = os.path.join(ICI, "donnees", "sessions")
-JEU = os.path.join(det.RACINE, "demo", "directives", "demo.json")
+# Jeu figé (version 5 : directives des secteurs et d'ATLAS en brouillon),
+# celui des données de test : depuis le 03/10, demo.json les a toutes
+# actives (le juriste), ce qui couvre les constats que ces tests attendent.
+JEU = os.path.join(det.RACINE, "demo", "directives", "historique", "demo.v5.json")
 
 NOMINAL = "20261002-170137-nominal-rejeu"
 TOP = "20261002-170140-top-management-rejeu"

@@ -78,11 +78,15 @@ class TestSecteurs(unittest.TestCase):
     def test_demo_installe(self):
         """demo.json v2 = le jeu en brouillon (décision de Manu, 02/10)."""
         demo = lire(os.path.join(RACINE, "demo", "directives", "demo.json"))
-        self.assertEqual(demo["directives"][:21], self.brouillon["directives"])
+        # Activées par le juriste le 03/10 (session gel) : seuls le statut et
+        # la date d'effet ont changé depuis le brouillon.
+        def hors_activation(ds):
+            return [{k: v for k, v in d.items() if k not in ("statut", "date_effet")} for d in ds]
+        self.assertEqual(hors_activation(demo["directives"][:21]), hors_activation(self.brouillon["directives"]))
         self.assertEqual(lire(os.path.join(RACINE, "demo", "directives", "historique", "demo.v2.json")), self.brouillon)
         # D-024 à D-029 (A4) : celles de secteurs-ppe.json, en brouillon.
         ppe = lire(os.path.join(JEUX, "secteurs-ppe.json"))["directives"][21:27]
-        self.assertEqual([dict(d, statut="active") for d in demo["directives"][21:27]], ppe)
+        self.assertEqual(hors_activation(demo["directives"][21:27]), hors_activation(ppe))
 
     def test_origines(self):
         o = lire(os.path.join(RACINE, "demo", "directives", "origines.json"))
