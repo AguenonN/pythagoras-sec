@@ -13,7 +13,7 @@ const NAV = [
 ];
 const LIBELLE_BADGE = {
   autorise: 'Autorisé', caviarde: 'Caviardé', en_attente: 'En attente', refuse: 'Refusé',
-  indisponible: 'Indisponible', source_non_attestee: 'Source non attestée',
+  indisponible: 'Indisponible', source_non_attestee: 'Source non attestée', rejete: 'Rejeté',
 };
 const EFFET_BADGE = {
   autoriser: 'autorise', caviarder: 'caviarde', attendre_validation: 'en_attente', refuser: 'refuse',
@@ -124,6 +124,12 @@ function motifAffiche(m) {
     .replace(/sha256:([0-9a-f]{8})[0-9a-f]{8,}/g, 'sha256:$1…')
     .replace(/\b([A-Z]+-\d+) v(\d+)\b/g, '$1, version $2');
 }
+// Un rejet consigné par la console (approbations/<empreinte>/rejet.json).
+function texteRejet(r) {
+  return 'Rejeté par ' + (r.nom || r.valideur) + (r.role ? ' (rôle « ' + r.role + ' »)' : '') +
+    (r.date ? ' le ' + jourComplet(r.date) + ' à ' + heureSec(r.date) : '') + ' : ' + r.motif;
+}
+const parQui = (r) => (r.nom || r.valideur) + (r.role ? ' (' + r.role + ')' : '');
 function humanise(nom) { return String(nom || '').replace(/_/g, ' '); }
 
 // ------------------------------------------------------------------ outils

@@ -21,6 +21,12 @@ Branche `feat/console-3`. Mis à jour après chaque commit. Périmètre : `cmd/c
   - Le relevé « Décisions de l'engine : … » que l'orchestrateur ajoute en fin de `reponse.json` est séparé côté Go (`separerReleve`, `reponse.detail_technique`) et replié sous « voir le détail technique » (élément `details`), une ligne par décision.
   - Libellés des outils : `GET /api/outils` (`outils.go`) rend, pour chaque `serveur__outil`, un libellé (« Attribution de prêt — banque ») et la description du catalogue `agents/compilateur/exemples/catalogue-demo.json` (lecture seule). Libellés courts tenus dans une table de la console, écrits d'après ces descriptions ; un outil inconnu de la table prend le début de sa description, sinon son nom sans tirets bas. Partout (Poste, Journal, Demandé/décidé, Validation, Règles, Avant/après, Essai, Notifications, explications Go de l'écran 4) : le libellé, le nom technique et la description en info-bulle. Dans un texte libre (réponse, détail technique), chaque `serveur__outil` est remplacé par son libellé.
   - Tests : `TestReponseSansReleve`, `TestLibellesOutils` (catalogue réel du dépôt), `TestNavigateurReponse` (Playwright : gras, liste, paragraphes, une balise `<img onerror>` du texte affichée telle quelle et jamais interprétée, aucun script exécuté, relevé replié puis déplié, libellés et info-bulle).
+- **Point 4 — rejet visible.** Le journal signé garde l'appel « en attente » (l'engine n'est pas rappelé après un rejet) ; la console lit `demo/execution/approbations/<empreinte>/rejet.json` pour chaque appel en attente non repris (empreinte prise au journal, pas seulement dans `etat.json`).
+  - Frise du Poste, du Journal et de « Demandé / décidé » : badge **« Rejeté »** (nouvelle couleur, légende comprise) ; détail : valideur, rôle, motif, date et heure, et la mention « décision consignée par la console, hors journal signé ». Volet du Journal : carte du rejet. Plus de bouton « Ouvrir la validation » sur un appel rejeté.
+  - Bandeau de la demande : « rejetée par Anna Risques (analyste-risques) à 10:02:11 » (Poste, Journal), au lieu de « bloquée » ; liste des demandes : « rejetée » (`/api/etat` → `rejetee`).
+  - « Attente humaine » : mesurée de l'appel en attente jusqu'à la date du rejet (« … (1 validation(s), jusqu'au rejet) ») ; titre de « Ce que l'engine a rendu » : « Validation rejetée par … ».
+  - `rejet.json` porte désormais le **rôle** choisi par le valideur (`role`, champ ajouté ; l'orchestrateur lit `nom`, `valideur`, `motif`, inchangés) ; la console refuse un rôle que le valideur ne détient pas.
+  - Test : `TestRejetVisible` (Poste, Journal, liste, rôle refusé, attente mesurée, titre).
 
 ## Pas fait
 
@@ -31,6 +37,7 @@ Branche `feat/console-3`. Mis à jour après chaque commit. Périmètre : `cmd/c
 - **Playwright** installé dans `.venv-navigateur/` à la racine du worktree (règle : environnement virtuel du worktree), exclu de Git par `info/exclude` du dépôt (pas par `.gitignore`, hors périmètre). Chromium : celui déjà présent dans le cache de Playwright de la machine (aucun téléchargement de navigateur).
 - `-compilateur` garde son rôle de commande (aucun script du dépôt ne l'utilise aujourd'hui, mais la doc de la console le cite) : seules les valeurs `reel` et `rejeu` changent de sens.
 - Libellés courts des outils : table dans la console (une phrase de description ne fait pas un libellé d'écran) ; la « requête exacte » de la Validation affiche aussi le libellé, le nom technique restant en info-bulle (le brief dit « partout »).
+- Un rejet change le **badge affiché** (« Rejeté ») d'un appel que le journal porte « en attente » : c'est demandé par le brief, et la mention « décision consignée par la console, hors journal signé » accompagne chaque affichage pour que la frise ne fasse pas passer ce rejet pour une décision de l'engine.
 - Le test du navigateur est un test Go qui appelle un script Python : sauté sans interpréteur Playwright, pour ne pas imposer de navigateur à `go test ./...`.
 
 ## Blocages

@@ -82,7 +82,7 @@ func TestNavigateurFormulaires(t *testing.T) {
 	arreter := b.agitateur()
 	defer func() {
 		arreter()
-		if _, err := b.Dep.Rejeter(longue, anna, "fin du test"); err != nil {
+		if _, err := b.Dep.Rejeter(longue, anna, "", "fin du test"); err != nil {
 			t.Error(err)
 		}
 		<-finLongue

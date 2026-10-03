@@ -21,6 +21,8 @@
         return motifAffiche(e.motif);
       case 'indisponible':
         return 'Aucune donnée présentée comme obtenue';
+      case 'rejete':
+        return texteRejet(e.rejet) + ' — ' + e.rejet.mention;
     }
     const morceaux = [];
     if (e.source && ORIGINES[e.source.origine]) morceaux.push(ORIGINES[e.source.origine]);
@@ -60,7 +62,8 @@
       h('div', { class: 'petit second' },
         mesure ? 'Temps ajouté : mesuré par l\'engine pour ' + c.mesures + ' appel(s) sur ' + c.appels + ' (maximum ' + ms(c.max_us / 1000) + ', total ' + ms(c.total_us / 1000) + ')' +
           (c.non_mesures ? ' ; ' + c.non_mesures + ' appel(s) non mesuré(s)' : '') + '. ' : 'Temps ajouté : non mesuré (journal sans durée). ',
-        c.attentes_mesurees ? 'Attente humaine mesurée : ' + duree(c.attente_secondes) + ' (' + c.attentes_mesurees + ' validation(s)). ' :
+        c.attentes_mesurees ? 'Attente humaine mesurée : ' + duree(c.attente_secondes) + ' (' + c.attentes_mesurees + ' validation(s)' +
+          (c.attentes_rejetees ? (c.attentes_rejetees === c.attentes_mesurees ? ', jusqu\'au rejet' : ', dont ' + c.attentes_rejetees + ' jusqu\'au rejet') : '') + '). ' :
           (c.validations ? 'Attente humaine : non mesurée (aucune validation reprise). ' : ''),
         c.serveurs_ms ? 'Temps chez les serveurs : ' + ms(c.serveurs_ms) + ' (hors règles).' : ''));
   }
@@ -71,8 +74,9 @@
     return [
       h('div', { style: 'display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap' },
         h('h2', {}, h('span', { class: 'vif', title: 'suivi en continu' }), 'Déroulé en direct'),
-        h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' }, ['autorise', 'caviarde', 'en_attente', 'refuse', 'indisponible', 'source_non_attestee'].map(k => badge(k)))),
-      v.statut_session ? h('p', { class: 'moyen second' }, 'Demande : ' + (v.demande ? '« ' + v.demande + ' » · ' : '') + STATUT[v.statut_session]) : null,
+        h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' }, ['autorise', 'caviarde', 'en_attente', 'refuse', 'rejete', 'indisponible', 'source_non_attestee'].map(k => badge(k)))),
+      v.statut_session ? h('p', { class: 'moyen ' + (v.rejet ? 'erreur gras' : 'second') }, 'Demande : ' + (v.demande ? '« ' + v.demande + ' » · ' : '') +
+        (v.rejet ? 'rejetée par ' + parQui(v.rejet) + ' à ' + heureSec(v.rejet.date) : STATUT[v.statut_session])) : null,
       v.etapes.length ? h('ol', { class: 'deroule' }, v.etapes.map(ligne)) : h('p', { class: 'second' }, v.session ? 'Aucun appel pour l\'instant.' : 'Aucun appel d\'outil : l\'orchestrateur a répondu sans consulter de serveur.'),
       cout(v.cout)];
   }

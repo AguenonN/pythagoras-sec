@@ -26,6 +26,7 @@ var libelleBadge = map[string]string{
 	BadgeRefuse:     "Refusé",
 	BadgeIndispo:    "Source indisponible",
 	BadgeNonAttesta: "Source non attestée",
+	BadgeRejete:     "Rejeté",
 }
 
 // Lien relie une décision à une consultation antérieure qui a fondé une
@@ -94,6 +95,7 @@ type Etape struct {
 	DureeUs        int64           `json:"duree_us"`                // 0 : non mesurée (ancien journal)
 	ValidePar      []Valideur      `json:"valide_par,omitempty"`    // approbation acceptée, appel transmis
 	ValideAu       int             `json:"valide_au_seq,omitempty"` // appel en attente : n° de l'appel repris
+	Rejet          *RejetVue       `json:"rejet,omitempty"`         // appel en attente, validation rejetée
 	Sujets         []journal.Sujet `json:"sujets,omitempty"`
 	NonResolus     int             `json:"sujets_non_resolus,omitempty"`
 }
@@ -149,20 +151,23 @@ type VueChaine struct {
 	AnnuaireRef    *journal.RefAnnuaire `json:"annuaire,omitempty"`
 	Message        string               `json:"message,omitempty"`
 	Demande        string               `json:"demande,omitempty"` // etat.json
-	StatutSession  string               `json:"statut_session,omitempty"`
-	Notifications  []NotifVue           `json:"notifications,omitempty"` // toutes celles de la session
-	Ouverte        time.Time            `json:"ouverte"`
-	Fermee         bool                 `json:"fermee"`
-	Fermeture      string               `json:"fermeture,omitempty"`
-	Jeu            *journal.RefJeu      `json:"-"`
-	JeuConnu       bool                 `json:"-"`
-	Regles         *Regles              `json:"regles,omitempty"` // règles en vigueur ; absent si non disponibles
-	SousAgents     []string             `json:"sous_agents"`
-	Serveurs       []ServeurVue         `json:"serveurs"`
-	Etapes         []Etape              `json:"etapes"`
-	Verif          Verification         `json:"verification"`
-	Ecart          int                  `json:"premier_ecart"`
-	Signature      string               `json:"signature"` // change quand le journal change
+	// Rejet : le dernier rejet consigné par la console pour un appel en
+	// attente de cette demande (hors journal signé).
+	Rejet         *RejetVue       `json:"rejet,omitempty"`
+	StatutSession string          `json:"statut_session,omitempty"`
+	Notifications []NotifVue      `json:"notifications,omitempty"` // toutes celles de la session
+	Ouverte       time.Time       `json:"ouverte"`
+	Fermee        bool            `json:"fermee"`
+	Fermeture     string          `json:"fermeture,omitempty"`
+	Jeu           *journal.RefJeu `json:"-"`
+	JeuConnu      bool            `json:"-"`
+	Regles        *Regles         `json:"regles,omitempty"` // règles en vigueur ; absent si non disponibles
+	SousAgents    []string        `json:"sous_agents"`
+	Serveurs      []ServeurVue    `json:"serveurs"`
+	Etapes        []Etape         `json:"etapes"`
+	Verif         Verification    `json:"verification"`
+	Ecart         int             `json:"premier_ecart"`
+	Signature     string          `json:"signature"` // change quand le journal change
 }
 
 // Regles décrit les règles en vigueur pour l'écran : depuis quand, et par qui.

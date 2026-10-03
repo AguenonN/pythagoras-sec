@@ -28,6 +28,9 @@ type Cout struct {
 	// l'appel en attente.
 	Attentes        int   `json:"attentes_mesurees"`
 	AttenteSecondes int64 `json:"attente_secondes"`
+	// Rejets : attentes mesurées jusqu'au rejet consigné (date de
+	// rejet.json moins celle de l'appel en attente), comprises dans Attentes.
+	Rejets int `json:"attentes_rejetees,omitempty"`
 }
 
 // VuePoste est l'écran 2.
@@ -103,6 +106,14 @@ func (d *Depot) Poste(st *Etat, jeux []JeuCharge, session string) (*VuePoste, bo
 			delete(attendus, en.Approbation.EmpreinteTransmise)
 		}
 	}
+	for _, e := range c.Etapes {
+		if t0, ok := attendus[e.Empreinte]; ok && e.Rejet != nil && e.Rejet.Date.After(t0) {
+			p.Cout.Attentes++
+			p.Cout.Rejets++
+			p.Cout.AttenteSecondes += int64(e.Rejet.Date.Sub(t0) / time.Second)
+			delete(attendus, e.Empreinte)
+		}
+	}
 	p.Reponse = reponseFinale(c, st)
 	return p, true
 }
@@ -126,6 +137,8 @@ func reponseFinale(c *VueChaine, st *Etat) Reponse {
 		r.Titre = fmt.Sprintf("Demande refusée : l'appel %s n'a pas été transmis.", e.Outil)
 	case BadgeNonAttesta:
 		r.Titre = fmt.Sprintf("Source non attestée : l'appel %s a été refusé.", e.Outil)
+	case BadgeRejete:
+		r.Titre = fmt.Sprintf("Validation rejetée par %s : l'appel %s n'a pas été transmis.", nomRejet(e.Rejet), e.Outil)
 	case BadgeAttente:
 		r.Titre = fmt.Sprintf("Décision suspendue : une validation humaine est requise avant la transmission de l'appel %s.", e.Outil)
 	case BadgeIndispo:
@@ -153,4 +166,11 @@ func separerReleve(texte string) (corps, releve string) {
 		return texte, ""
 	}
 	return strings.TrimRight(texte[:i], " \n"), strings.TrimSpace(texte[i+len(enteteReleve):])
+}
+
+func nomRejet(r *RejetVue) string {
+	if r.Nom != "" {
+		return r.Nom
+	}
+	return r.Valideur
 }

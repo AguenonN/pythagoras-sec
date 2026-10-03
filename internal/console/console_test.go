@@ -241,13 +241,13 @@ func TestRejetConsigne(t *testing.T) {
 	id, fin := b.demandeAsync(claire, "Peut-on accorder un prêt de 120 000 euros ?")
 	st := b.attendreStatut(id, StatutEnAttente)
 	emp := st.Dossier.Attente.EmpreinteTransmise
-	if _, err := b.Dep.Rejeter(id, anna, "  "); err == nil {
+	if _, err := b.Dep.Rejeter(id, anna, "", "  "); err == nil {
 		t.Fatal("un rejet exige un motif")
 	}
-	if _, err := b.Dep.Rejeter(id, claire, "non"); err == nil {
+	if _, err := b.Dep.Rejeter(id, claire, "", "non"); err == nil {
 		t.Fatal("un demandeur n'est pas un valideur")
 	}
-	if _, err := b.Dep.Rejeter(id, anna, "Montant incohérent avec le dossier"); err != nil {
+	if _, err := b.Dep.Rejeter(id, anna, "", "Montant incohérent avec le dossier"); err != nil {
 		t.Fatal(err)
 	}
 	if err := <-fin; err != nil {

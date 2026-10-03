@@ -78,7 +78,7 @@
       blocControles(a),
       a.motif_jeton ? h('p', { class: 'erreur gras' }, 'Dernier jeton refusé par l\'engine : ' + a.motif_jeton) : null,
       a.rejet ? h('div', { class: 'carte', style: 'border-color:var(--ref)' }, h('b', { class: 'erreur' }, 'Rejet consigné'),
-        h('span', { class: 'moyen' }, (a.rejet.nom || a.rejet.valideur) + ' le ' + jourComplet(a.rejet.date) + ' à ' + heureSec(a.rejet.date) + ' : ' + a.rejet.motif)) : null,
+        h('span', { class: 'moyen' }, texteRejet(a.rejet)), h('span', { class: 'petit second' }, 'Décision consignée par la console, hors journal signé.')) : null,
       enAttente ? null : h('p', { class: 'second' }, 'Cette demande n\'attend plus de validation (statut : ' + (a.statut_session || ND) + ').')];
   }
 
@@ -112,7 +112,7 @@
         h('span', { class: 'petit second', style: 'margin-right:auto' }, 'La signature est faite par la commande de l\'engine avec la clé du valideur ; l\'approbation est écrite au journal chaîné à la reprise de l\'appel.'),
         h('button', { type: 'button', class: 'btn danger', disabled: !choix.length || undefined, onclick: () => {
           if (!motif.value.trim()) { err.dire('Un rejet exige un motif.'); return; }
-          agir('/api/validation/rejeter', { journal: a.journal, valideur: quel().identite, motif: motif.value }, 'Rejet consigné.');
+          const q = quel(); agir('/api/validation/rejeter', { journal: a.journal, valideur: q.identite, role: q.role, motif: motif.value }, 'Rejet consigné.');
         } }, 'Rejeter'),
         h('button', { type: 'button', class: 'btn', disabled: bloque || undefined, onclick: () => {
           const q = quel(); agir('/api/validation/valider', { journal: a.journal, valideur: q.identite, role: q.role }, 'Jeton signé et déposé : l\'orchestrateur reprend l\'appel.');

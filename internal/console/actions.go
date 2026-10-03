@@ -121,7 +121,7 @@ func (d *Depot) Valider(journalID, valideur, role string) (*AttenteVue, error) {
 
 // Rejeter écrit un refus consigné : approbations/<empreinte>/rejet.json, que
 // l'orchestrateur lit comme une fin « bloque ». Le motif est obligatoire.
-func (d *Depot) Rejeter(journalID, valideur, motif string) (*Rejet, error) {
+func (d *Depot) Rejeter(journalID, valideur, role, motif string) (*Rejet, error) {
 	motif = strings.TrimSpace(motif)
 	if motif == "" {
 		return nil, refus(400, "Un rejet exige un motif.")
@@ -137,16 +137,20 @@ func (d *Depot) Rejeter(journalID, valideur, motif string) (*Rejet, error) {
 	if err != nil {
 		return nil, refus(409, "Annuaire indisponible : %v", err)
 	}
-	ok := false
+	ok, roleOk := false, role == ""
 	for _, v := range possibles {
 		if v.Identite == valideur {
 			ok = true
+			roleOk = roleOk || v.Role == role
 		}
 	}
 	if !ok {
 		return nil, refus(403, "%s n'est pas un valideur de l'annuaire.", valideur)
 	}
-	r := Rejet{Valideur: valideur, Nom: d.NomIdentite(valideur), Motif: motif, Date: time.Now().UTC()}
+	if !roleOk {
+		return nil, refus(403, "%s ne détient pas le rôle « %s », d'après l'annuaire.", valideur, role)
+	}
+	r := Rejet{Valideur: valideur, Nom: d.NomIdentite(valideur), Role: role, Motif: motif, Date: time.Now().UTC()}
 	b, err := jsonIndent(r)
 	if err != nil {
 		return nil, err

@@ -158,8 +158,9 @@ type journalListe struct {
 	Entrees  int             `json:"entrees"`
 	Ecart    int             `json:"premier_ecart"`
 	Sessions []SessionResume `json:"sessions"`
-	Debut    *time.Time      `json:"debut,omitempty"`  // etat.json, sinon première session
-	Statut   string          `json:"statut,omitempty"` // etat.json
+	Debut    *time.Time      `json:"debut,omitempty"`   // etat.json, sinon première session
+	Statut   string          `json:"statut,omitempty"`  // etat.json
+	Rejetee  bool            `json:"rejetee,omitempty"` // un rejet consigné par la console
 	Demande  string          `json:"demande,omitempty"`
 }
 
@@ -187,6 +188,7 @@ func (s *Serveur) etat(w http.ResponseWriter, r *http.Request) {
 				jl.Debut = st.Dossier.Debut
 			}
 			jl.Statut, jl.Demande = st.Dossier.Statut, st.Dossier.Demande
+			jl.Rejetee = len(s.Depot.rejetsDe(st)) > 0
 			if st.Dossier.Statut == StatutEnAttente {
 				out.Attentes++
 			}
@@ -388,12 +390,13 @@ func (s *Serveur) rejeter(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		Journal  string `json:"journal"`
 		Valideur string `json:"valideur"`
+		Role     string `json:"role"`
 		Motif    string `json:"motif"`
 	}
 	if !lireCorps(w, r, &in) {
 		return
 	}
-	rj, err := s.Depot.Rejeter(in.Journal, in.Valideur, in.Motif)
+	rj, err := s.Depot.Rejeter(in.Journal, in.Valideur, in.Role, in.Motif)
 	if err != nil {
 		echec(w, err)
 		return
