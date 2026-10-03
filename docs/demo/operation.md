@@ -161,6 +161,47 @@ demandeur de la dernière demande) ; pour la scène du collaborateur, la choisir
 
 Passages retenus et empreintes : `docs/demo/passages.md`.
 
+> **Compilation en direct (décision de Manu, 03/10).** Devant le jury, **une seule règle est
+> compilée** : celle de la **fuite par courriel** (équivalente à D-041). Les autres règles
+> ATLAS restent **pré-installées**, telles que vérifiées à la main (`operation.json`).
+>
+> Texte à dicter dans l'écran Rédaction :
+> « Divulgation illicite par message : aucun agent n'envoie un message vers une destination
+> externe au cours d'une demande où un document du projet ATLAS a été consulté. L'envoi est
+> refusé et la conformité est notifiée. »
+> Fondement : « Règlement (UE) n° 596/2014 relatif aux abus de marché — divulgation illicite
+> d'information privilégiée — à valider par le juriste ; secret professionnel de l'avocat ».
+>
+> Réponses données au compilateur le 03/10 (elles ont produit une règle équivalente à D-041) :
+> - document du projet ATLAS consulté → « Aucune étiquette : un document du projet ATLAS est
+>   consulté quand la demande a lu un document de la data room avec data-room/lire_document
+>   et en a reçu le contenu (la data room est celle du projet). »
+> - destination externe → « L'argument /destination de messagerie/envoyer_message vaut « externe ». »
+> - conformité → « Oui, le rôle conformite, prévenu en temps réel ; si la notification ne peut
+>   pas partir, l'envoi reste refusé. » ; puis `refuser`, `temps_reel`, `refuser`.
+>
+> Relecture obtenue (à lire à voix haute avant d'activer) :
+> « Quand : tout appel à l'outil envoyer_message sur le serveur messagerie. Si toutes les
+> conditions suivantes sont vraies : la session a reçu des données de l'outil lire_document du
+> serveur data-room ; l'argument /destination est égal à « externe ». Alors : l'appel est
+> refusé ; le rôle « conformite » est notifié en temps réel ; si la notification ne part pas,
+> l'appel est refusé. »
+>
+> **Si le jury demande pourquoi les autres règles ne sont pas compilées en direct** : parce que
+> le compilateur peut se tromper, et que c'est la relecture du juriste qui l'attrape. Exemple
+> réel du 03/10, D-040 (« seul un agent agissant pour une personne inscrite sur la liste
+> d'initiés … peut lire un document du projet ATLAS ; toute autre lecture est refusée »),
+> compilée deux fois, **inversée** les deux fois. Relecture du compilateur :
+> « Si toutes les conditions suivantes sont vraies : au moins une des conditions suivantes est
+> vraie : le demandeur est membre du groupe « inities-atlas » ; le demandeur est membre du
+> groupe « equipe-atlas-cabinet » ; l'argument /document_id vaut l'une des valeurs
+> « ATLAS-DOC-01 » … « ATLAS-DOC-10 ». Alors : l'appel est refusé ; le rôle « conformite » est
+> notifié en temps réel. »
+> Lue par le juriste, l'erreur saute aux yeux : la règle bloquerait les initiés et laisserait
+> lire tous les autres. Rien n'est appliqué tant que le juriste n'a pas activé : la règle
+> serait restée en brouillon. Le jeu vérifié à la main garde la bonne règle (« non membre
+> d'aucun des deux groupes »). Pièces : `docs/rapports/gel/compilation-atlas.json`.
+
 ## Les règles passées par le compilateur (session gel, 03/10)
 
 Chaque texte de D-040 à D-046 a été soumis au compilateur (service, réel,
