@@ -130,3 +130,20 @@ Actives : D-001 à D-008. Libres : D-009, D-010. En brouillon (28) :
 Méthode : `scripts/lancer-demo.sh enregistrer <nom>` (réel, `mistral-medium-latest`, données en MIXTE, horloge réelle, jeu du scénario), validations déposées par un pilote au moment de l'attente, selon le fichier du scénario (jetons signés par `lancer-demo.sh valider`, ou `rejet.json` au format de la console pour un rejet) ; puis `verifier` (chaîne HMAC + rejeu des décisions), rejeu hors ligne (`--mode rejeu`) et `comparer` (journal réel / journal rejoué). Un secours n'est retenu que si les trois sont bons ; l'ancien enregistrement est alors supprimé (l'historique Git le garde).
 
 **Journal historique de l'incident du 1er octobre** : il n'est versionné nulle part dans ce worktree (aucun `journal.jsonl` suivi, hors données de test de l'Analyste) ; il est sans doute dans `demo/execution/sessions/` d'un autre checkout, hors de mon périmètre : **non vérifié** (`cmd/journal verifier`), à faire par Manu sur la machine qui l'a. L'enregistrement de l'orchestrateur de ce passage (`archives/nominal-20261001-213129-gels-indisponible.json`), rejoué sous le code actuel : **il ne se rejoue pas à l'identique** — en rejeu, le registre des gels répond (il était indisponible le 01/10), D-001 n'a donc rien à refuser, et l'attribution s'arrête en attente de D-002 (« bloque »). L'incident reste une pièce historique, pas un secours rejouable.
+
+### Routage des trois scènes ATLAS jouées en direct (demande de Manu, 03/10 soir)
+
+5 passages réels par scène (`scripts/lancer-demo.sh scenario <scène sans règles>`, en direct, rien de versionné), sous-agent obtenu :
+
+| Scène | Demandeur | Attendu | Obtenu |
+|---|---|---|---|
+| Fuite par courriel (`op-scene-fuite-sans`) | chloe.arceau | equipe-deal | equipe-deal **5/5** |
+| Mauvais collaborateur (`op-scene-collab-sans`), demande d'origine | damien.arceau | equipe-deal | assistant-salarie **5/5** (0/5 bon) |
+| Mauvais collaborateur, demande reformulée « En tant que collaborateur du cabinet Arceau Avocats, … » | damien.arceau | equipe-deal | equipe-deal **5/5** |
+| Délit d'initié (`op-scene-initie-sans`) | victor.ventoux | assistant-salarie | assistant-salarie **5/5** |
+
+La décision de l'engine ne dépend pas du routage (D-040 porte sur le demandeur) ; la demande a tout de même été reformulée (jamais la consigne de l'orchestrateur), dans `op-scene-collab-sans` **et** `op-acces-piege` (même demande sans / avec règles), donc aussi dans la demande suggérée par la console ; les deux secours ont été réenregistrés (anciens dans `archives/…-ancienne-demande-mal-routee.json`). `docs/demo/operation.md` donne les trois demandes exactes et ce taux. Coût : 20 passages, 116 appels.
+
+### Bilan provisoire de la phase 4 et budget
+
+**387 appels sur 400** à ce stade : le modèle des agents (`mistral-medium-latest`) fait environ deux fois plus d'appels par passage que l'estimation, et la mesure du routage en a pris 116. Faits : les 15 scénarios ATLAS, les 11 scénarios de base. **Reste 13 appels** : je les réserve aux textes du compilateur de la scène (week-end, base interne, texte brut de la rémunération). **Non réenregistrés faute de budget** : les scénarios des secteurs (`secteur-*`, une quarantaine, dont les personnes politiquement exposées et les trois versions de l'e-mail de rémunération) ; leurs enregistrements du 02-03/10 sont **gardés** (pas supprimés) et leur rejeu sous le code actuel est vérifié en phase 6.
