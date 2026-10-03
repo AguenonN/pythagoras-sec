@@ -1,0 +1,29 @@
+{
+  "description": "Marché fictif : consultation de cours et passage d'ordres de bourse. Titres fictifs VENTOUX, BIOLYS et quelques autres.",
+  "outils": [
+    {
+      "nom": "consulter_cours",
+      "description": "Lit le cours fictif d'un titre : libellé, dernier cours, variation, devise.",
+      "genre": "lire",
+      "readOnlyHint": true,
+      "collection": "cours",
+      "arguments": [
+        {"nom": "titre", "type": "string", "description": "code du titre, par exemple VENTOUX ou BIOLYS", "obligatoire": true, "champ": "titre"}
+      ]
+    },
+    {
+      "nom": "passer_ordre",
+      "description": "Passe un ordre de bourse (action fictive, enregistrée en mémoire) : titre, sens (achat ou vente), quantité, pour le compte de qui.",
+      "genre": "action",
+      "readOnlyHint": false,
+      "reference_prefixe": "ORDRE-FICTIF",
+      "verifie": [{"argument": "titre", "collection": "cours", "champ": "titre"}],
+      "arguments": [
+        {"nom": "titre", "type": "string", "description": "code du titre", "obligatoire": true},
+        {"nom": "sens", "type": "string", "description": "« achat » ou « vente »", "obligatoire": true},
+        {"nom": "quantite", "type": "integer", "description": "nombre de titres", "obligatoire": true},
+        {"nom": "pour_le_compte_de", "type": "string", "description": "personne ou compte pour lequel l'ordre est passé", "obligatoire": true}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "avertissement": "DONNÉES FICTIVES inventées pour la démonstration : gabarits de message imaginaires. Aucune personne réelle.",
+  "collections": {
+    "gabarits": [
+      {"id": "GAB-INTERNE", "type": "interne", "libelle": "Note interne", "modele": "Objet : [objet]. Bonjour, [corps]. Cordialement. (gabarit fictif)"},
+      {"id": "GAB-EXTERNE", "type": "externe", "libelle": "Message externe", "modele": "Objet : [objet]. Madame, Monsieur, [corps]. Cordialement. (gabarit fictif)"}
+    ]
+  }
+}

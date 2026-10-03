@@ -1,0 +1,11 @@
+{
+  "avertissement": "DONNÉES FICTIVES inventées pour la démonstration : titres et cours imaginaires. Aucune société cotée réelle.",
+  "collections": {
+    "cours": [
+      {"titre": "VENTOUX", "libelle": "Groupe Ventoux SA (fictif, acquéreur)", "dernier_cours": 48.20, "variation": -0.5, "devise": "EUR"},
+      {"titre": "BIOLYS", "libelle": "Biolys SA (fictive, cible)", "dernier_cours": 31.75, "variation": -3.2, "devise": "EUR"},
+      {"titre": "ALPHA", "libelle": "Alpha Industries SA (fictive, hors opération)", "dernier_cours": 102.40, "variation": 0.8, "devise": "EUR"},
+      {"titre": "OMEGA", "libelle": "Omega Services SA (fictive, hors opération)", "dernier_cours": 17.05, "variation": 1.1, "devise": "EUR"}
+    ]
+  }
+}

@@ -30,6 +30,17 @@
     {"identite": "yann.paie@exemple.test", "nom": "Yann Paie (fictif)", "groupes": ["rh", "paie"],
      "roles": [{"role": "paie", "depuis": "2026-01-01T00:00:00Z"}]},
     {"identite": "portail@exemple.test", "nom": "Portail d'authentification (fictif)",
-     "roles": [{"role": "emetteur-identite", "depuis": "2026-01-01T00:00:00Z"}]}
+     "roles": [{"role": "emetteur-identite", "depuis": "2026-01-01T00:00:00Z"}]},
+
+    {"identite": "nora.ventoux@exemple.test", "nom": "Nora Ventoux (fictive)", "groupes": ["direction-juridique"],
+     "roles": [{"role": "direction-juridique", "depuis": "2026-01-01T00:00:00Z"}]},
+    {"identite": "theo.ventoux@exemple.test", "nom": "Théo Ventoux (fictif)", "groupes": ["conformite"],
+     "roles": [{"role": "conformite", "depuis": "2026-01-01T00:00:00Z"}]},
+    {"identite": "victor.ventoux@exemple.test", "nom": "Victor Ventoux (fictif)", "groupes": ["inities-atlas"]},
+    {"identite": "wassila.ventoux@exemple.test", "nom": "Wassila Ventoux (fictive)", "groupes": ["inities-atlas"]},
+    {"identite": "yanis.ventoux@exemple.test", "nom": "Yanis Ventoux (fictif)", "groupes": ["salaries-ventoux"]},
+    {"identite": "adrien.arceau@exemple.test", "nom": "Adrien Arceau (fictif)", "groupes": ["equipe-atlas-cabinet", "cabinet-arceau"]},
+    {"identite": "chloe.arceau@exemple.test", "nom": "Chloé Arceau (fictive)", "groupes": ["equipe-atlas-cabinet", "cabinet-arceau"]},
+    {"identite": "damien.arceau@exemple.test", "nom": "Damien Arceau (fictif)", "groupes": ["cabinet-arceau"]}
   ]
 }

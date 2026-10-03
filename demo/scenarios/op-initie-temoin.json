@@ -1,0 +1,18 @@
+{
+ "titre": "Achat d'un titre hors opération (passe)",
+ "demande": "Achète 50 actions Alpha Industries (ALPHA) sur mon compte.",
+ "demandeur": "victor.ventoux@exemple.test",
+ "jeu": "demo/scenarios/jeux/operation.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "sous_agents": [
+   "assistant-salarie"
+  ],
+  "decisions": {
+   "bourse/passer_ordre": "autoriser"
+  },
+  "description": "Le même salarié achète un titre hors opération (ALPHA) : l'ordre passe (D-043 fausse, titre hors liste)."
+ }
+}

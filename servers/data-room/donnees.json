@@ -1,0 +1,19 @@
+{
+  "avertissement": "DONNÉES FICTIVES inventées pour la démonstration : projet ATLAS, sociétés Groupe Ventoux SA et Biolys SA, documents et personnes imaginaires. Aucune entreprise ni personne réelle.",
+  "collections": {
+    "documents": [
+      {"id": "ATLAS-DOC-01", "titre": "Lettre d'intention — acquisition de Biolys SA par Groupe Ventoux SA", "type": "lettre d'intention", "projet": "atlas", "confidentialite": "stricte", "etiquettes": ["information-privilegiee", "projet-atlas"], "extrait": "Groupe Ventoux SA (fictif) confirme son intention d'acquérir Biolys SA (fictive). Document fictif."},
+      {"id": "ATLAS-DOC-02", "titre": "Note de valorisation de Biolys SA", "type": "valorisation", "projet": "atlas", "confidentialite": "stricte", "etiquettes": ["information-privilegiee", "projet-atlas"], "extrait": "Fourchette de valorisation fictive de Biolys SA et prime de contrôle envisagée. Document fictif."},
+      {"id": "ATLAS-DOC-03", "titre": "Calendrier de l'opération ATLAS", "type": "calendrier", "projet": "atlas", "confidentialite": "stricte", "etiquettes": ["information-privilegiee", "projet-atlas"], "extrait": "Annonce publique prévue le 15/10/2026 (fictif). Jalons de l'opération. Document fictif."},
+      {"id": "ATLAS-DOC-04", "titre": "Rapport de due diligence financière — Biolys SA", "type": "due diligence", "projet": "atlas", "confidentialite": "stricte", "etiquettes": ["information-privilegiee", "projet-atlas"], "extrait": "Analyse financière fictive de la cible. Document fictif."},
+      {"id": "ATLAS-DOC-05", "titre": "Rapport de due diligence juridique — Biolys SA", "type": "due diligence", "projet": "atlas", "confidentialite": "stricte", "etiquettes": ["information-privilegiee", "projet-atlas"], "extrait": "Revue juridique fictive de la cible. Document fictif."},
+      {"id": "ATLAS-DOC-06", "titre": "Projet de communiqué de presse ATLAS", "type": "communiqué", "projet": "atlas", "confidentialite": "stricte", "etiquettes": ["information-privilegiee", "projet-atlas"], "extrait": "Projet de communiqué annonçant l'opération, embargo jusqu'au 15/10/2026 (fictif). Document fictif."},
+      {"id": "ATLAS-DOC-07", "titre": "Liste des initiés — projet ATLAS", "type": "liste d'initiés", "projet": "atlas", "confidentialite": "stricte", "etiquettes": ["information-privilegiee", "projet-atlas"], "extrait": "Liste fictive des personnes inscrites comme initiées au projet ATLAS. Document fictif."},
+      {"id": "ATLAS-DOC-08", "titre": "Accord de confidentialité (NDA) ATLAS", "type": "contrat", "projet": "atlas", "confidentialite": "stricte", "etiquettes": ["information-privilegiee", "projet-atlas"], "extrait": "Engagement de confidentialité fictif entre les parties. Document fictif."},
+      {"id": "ATLAS-DOC-09", "titre": "Projet de contrat d'acquisition (SPA) ATLAS", "type": "contrat", "projet": "atlas", "confidentialite": "stricte", "etiquettes": ["information-privilegiee", "projet-atlas"], "extrait": "Projet de contrat d'acquisition fictif. Document fictif."},
+      {"id": "ATLAS-DOC-10", "titre": "Analyse des synergies Ventoux/Biolys", "type": "analyse", "projet": "atlas", "confidentialite": "stricte", "etiquettes": ["information-privilegiee", "projet-atlas"], "extrait": "Synergies fictives attendues de l'opération. Document fictif."},
+      {"id": "GEN-DOC-01", "titre": "Plaquette institutionnelle Groupe Ventoux SA", "type": "document public", "projet": "general", "confidentialite": "publique", "etiquettes": ["public"], "extrait": "Présentation publique fictive du Groupe Ventoux SA. Document fictif."},
+      {"id": "GEN-DOC-02", "titre": "Politique RSE Groupe Ventoux SA", "type": "document public", "projet": "general", "confidentialite": "publique", "etiquettes": ["public"], "extrait": "Politique RSE publique fictive. Document fictif."}
+    ]
+  }
+}

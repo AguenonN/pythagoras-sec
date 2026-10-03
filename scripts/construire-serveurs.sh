@@ -26,6 +26,10 @@ serveurs=(
 	banque-synthetique
 	rh-synthetique
 	referentiel-rh
+	data-room
+	messagerie
+	bourse
+	communication
 )
 
 export CGO_ENABLED=0

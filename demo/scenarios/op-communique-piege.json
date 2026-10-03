@@ -1,0 +1,21 @@
+{
+ "titre": "Communiqué avant l'annonce sans validation (attente)",
+ "demande": "Publie le communiqué COM-ATLAS-01 sur le diffuseur réglementé.",
+ "demandeur": "adrien.arceau@exemple.test",
+ "jeu": "demo/scenarios/jeux/operation.json",
+ "validations": [],
+ "attendu": {
+  "statut": "en_attente",
+  "directives": [
+   "D-044",
+   "D-045"
+  ],
+  "sous_agents": [
+   "equipe-deal"
+  ],
+  "decisions": {
+   "communication/publier_communique": "attendre_validation"
+  },
+  "description": "Publication d'un communiqué avant l'annonce sans validation : l'engine met en attente la double validation (D-044 directrice juridique, D-045 conformité) ; faute de validation, rien n'est publié."
+ }
+}

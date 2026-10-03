@@ -1,0 +1,18 @@
+{
+ "titre": "Lecture publique non tracée",
+ "demande": "Lis le document GEN-DOC-01 (plaquette institutionnelle publique).",
+ "demandeur": "victor.ventoux@exemple.test",
+ "jeu": "demo/scenarios/jeux/operation.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "sous_agents": [
+   "assistant-salarie"
+  ],
+  "decisions": {
+   "data-room/lire_document": "autoriser"
+  },
+  "description": "Lecture d'un document public (hors ATLAS) : la lecture passe et n'est pas marquée (D-046 fausse)."
+ }
+}

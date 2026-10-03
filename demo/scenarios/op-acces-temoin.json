@@ -1,0 +1,18 @@
+{
+ "titre": "Lecture d'un document ATLAS par un initié (passe)",
+ "demande": "Dans la data room, lis le document ATLAS-DOC-02 et fais-m'en un résumé.",
+ "demandeur": "victor.ventoux@exemple.test",
+ "jeu": "demo/scenarios/jeux/operation.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "sous_agents": [
+   "assistant-salarie"
+  ],
+  "decisions": {
+   "data-room/lire_document": "autoriser"
+  },
+  "description": "Un salarié initié ATLAS lit le même document : la lecture passe (D-040 fausse) et D-046 la trace au journal."
+ }
+}

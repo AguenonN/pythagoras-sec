@@ -1,0 +1,20 @@
+{
+ "titre": "Lecture d'un document ATLAS par un non-initié (refus)",
+ "demande": "Dans la data room du projet ATLAS, lis le document ATLAS-DOC-02 (note de valorisation de Biolys) et résume-le-moi.",
+ "demandeur": "damien.arceau@exemple.test",
+ "jeu": "demo/scenarios/jeux/operation.json",
+ "validations": [],
+ "attendu": {
+  "statut": "bloque",
+  "directives": [
+   "D-040"
+  ],
+  "sous_agents": [
+   "assistant-salarie"
+  ],
+  "decisions": {
+   "data-room/lire_document": "refuser"
+  },
+  "description": "Le mauvais collaborateur (hors équipe ATLAS) cherche dans la data room et tente de lire un document du projet ATLAS : l'engine refuse la lecture (D-040) et notifie la conformité. Sert aussi de scène « avec » du mauvais collaborateur."
+ }
+}
