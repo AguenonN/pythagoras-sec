@@ -20,7 +20,7 @@ Budget relevé à **300** appels au total. **Compteur : 245 / 300** (compilateur
 | 3. A4 Personnes politiquement exposées | **fait** | `fb092b1` |
 | 3. A5 Rémunération dans un e-mail | **fait** (+ propres D-030, D-031 : `3d7f0e8`) | `ddb2efb` |
 | 4. A5 b ferme le contournement de D-023 | **fait** | `ddb2efb` |
-| 5. « Une action par demande » dans `docs/demo/secteurs.md`, avec exemples | **fait** | (point 5) |
+| 5. « Une action par demande » dans `docs/demo/secteurs.md`, avec exemples | **fait** | `a989550` |
 
 **A1.** Préparer et agir séparés pour les messages : `rediger_courrier_client` (banque) et `rediger_message` (RH), en lecture, rendent un brouillon ; l'envoi reste `envoyer_courrier_client` / `envoyer_message_salarie` (action). Un outil par effet irréversible (déjà le cas). Arguments explicites (`montant`, `pays`, `destinataire`, `salarie_id`, `compte_id`, `destination`). **Étiquettes des champs sensibles dans les réponses** : `etiquettes_champs` dans `lister_comptes_client` (IBAN), `consulter_client` (revenus, crédits, incidents), `lister_salaries` (salaire, s'il est demandé), `consulter_fiche` (santé, grossesse, congé en cours, syndical, rémunération, situation familiale), à côté des étiquettes d'outil du registre (`demo/etiquettes.json`). Destination qualifiée `interne` / `externe` sur `exporter_donnees_client` ; `exporter_paie` porte le pays (code ISO). `readOnlyHint` vérifié par test pour chaque outil. Non fait : un « simuler » pour `attribuer_pret` (outil existant d'une autre session).
 
