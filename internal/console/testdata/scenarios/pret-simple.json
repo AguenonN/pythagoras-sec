@@ -1,0 +1,6 @@
+{
+ "titre": "Prêt sans gel vérifié",
+ "demande": "Peut-on accorder le prêt demandé sans gel vérifié ?",
+ "demandeur": "claire.analyste@exemple.test",
+ "attendu": {"statut": "termine"}
+}

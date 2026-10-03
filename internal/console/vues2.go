@@ -21,6 +21,18 @@ func catalogue(jeux []JeuCharge) rejeu.Catalogue {
 	return cat
 }
 
+// catalogueDe met en tête l'ensemble sous lequel l'entrée a été journalisée :
+// le catalogue du rejeu cherche par identifiant et version seulement, et un
+// ensemble de travail porte les mêmes (« demo », version n) que les règles en
+// vigueur, avec une autre empreinte.
+func catalogueDe(jeux []JeuCharge, ref *journal.RefJeu) rejeu.Catalogue {
+	cat := rejeu.Catalogue{}
+	if j := jeuChargeDe(jeux, ref); j != nil {
+		cat = append(cat, j.Jeu)
+	}
+	return append(cat, catalogue(jeux)...)
+}
+
 // rejoue est le rejeu d'une entrée appel, avec son erreur éventuelle (jeu
 // introuvable) : un appel non rejouable ne doit pas arrêter l'écran.
 type rejoue struct {
@@ -30,14 +42,13 @@ type rejoue struct {
 }
 
 func rejouerTout(st *Etat, jeux []JeuCharge, opts rejeu.Options) []rejoue {
-	cat := catalogue(jeux)
 	purges := rejeu.PurgesChainees(st.Entrees)
 	var out []rejoue
 	for _, en := range st.Entrees {
 		if en.Type != journal.AppelT || en.Jeu == nil || en.Decision == nil || en.Appel == nil {
 			continue
 		}
-		r, err := rejeu.Rejouer(en, st.Coffre, cat, purges, opts)
+		r, err := rejeu.Rejouer(en, st.Coffre, catalogueDe(jeux, en.Jeu), purges, opts)
 		out = append(out, rejoue{Entree: en, Rejeu: r, Err: err})
 	}
 	return out
@@ -140,6 +151,7 @@ func (d *Depot) ReglesEnVigueur(jc JeuCharge, etats []*Etat, tous []JeuCharge, c
 		return v
 	}
 	act := Activations(tous)[sel.ID]
+	tous = d.AvecTravail(tous, etats)
 	det := &DirDetail{DirListe: DirListe{ID: sel.ID, Version: sel.Version, Statut: string(sel.Statut), Titre: Titre(sel.TexteFR)},
 		Texte: sel.TexteFR, DateEffet: sel.DateEffet, Fondements: fondementsDe(*sel), Relecture: strings.TrimSpace(relecture.Directive(*sel)),
 		Fuseaux: evalueHeure(*sel), Decisions: []DecisionRejouee{}, Journaux: []string{}, Verifies: true,
@@ -239,6 +251,9 @@ type SessionAA struct {
 	Ouverte time.Time `json:"ouverte"`
 	Demande string    `json:"demande,omitempty"`
 	Choisie bool      `json:"choisie"`
+	// Regles : ensemble de travail sous lequel la session a tourné (« sans
+	// la directive D-009 », « règles de travail « … » ») ; absent : règles en vigueur.
+	Regles string `json:"regles,omitempty"`
 }
 
 // CompteursAA sont les compteurs réels de la comparaison.
@@ -342,7 +357,6 @@ type Comparaison struct {
 // Rejouer produit les lignes et les compteurs pour les journaux donnés ;
 // choisies, s'il est non vide, restreint aux sessions « journal|session ».
 func (c Comparaison) Rejouer(etats []*Etat, choisies map[string]bool) ([]LigneAA, CompteursAA, bool) {
-	cat := catalogue(c.Tous)
 	var lignes []LigneAA
 	var cpt CompteursAA
 	sess := map[string]bool{}
@@ -365,6 +379,7 @@ func (c Comparaison) Rejouer(etats []*Etat, choisies map[string]bool) ([]LigneAA
 					opts[i].AuDate = c.Dir.DateEffet
 				}
 			}
+			cat := catalogueDe(c.Tous, en.Jeu)
 			ra, ea := rejeu.Rejouer(en, st.Coffre, cat, purges, opts[0])
 			rb, eb := rejeu.Rejouer(en, st.Coffre, cat, purges, opts[1])
 			cpt.Appels++
@@ -472,18 +487,42 @@ func (d *Depot) AvantApres(etats []*Etat, tous []JeuCharge, choix string, choisi
 	if base == nil {
 		return v
 	}
+	tous = d.AvecTravail(tous, etats)
 	var dir *directive.Directive
+	avec := base.Jeu // l'ensemble qui porte la directive comparée
+	vues := map[string]bool{}
 	for i := range base.Jeu.Directives {
 		dd := &base.Jeu.Directives[i]
+		vues[dd.ID] = true
 		v.Directives = append(v.Directives, DirListe{ID: dd.ID, Version: dd.Version, Statut: string(dd.Statut), Titre: Titre(dd.TexteFR)})
 		if dir == nil && (choix == "" || choix == dd.ID) {
 			dir = dd
 		}
 	}
+	// Une directive qui n'existe que dans un jeu de travail sous lequel des
+	// sessions ont tourné (D-009 avant son activation) se compare aussi :
+	// « sans » = ce jeu privé d'elle, « avec » = ce jeu.
+	for i := range tous {
+		if !strings.HasPrefix(tous[i].Travail, "règles de travail") {
+			continue
+		}
+		for k := range tous[i].Jeu.Directives {
+			dd := &tous[i].Jeu.Directives[k]
+			if vues[dd.ID] {
+				continue
+			}
+			vues[dd.ID] = true
+			v.Directives = append(v.Directives, DirListe{ID: dd.ID, Version: dd.Version, Statut: string(dd.Statut), Titre: Titre(dd.TexteFR)})
+			if dir == nil && choix == dd.ID {
+				dir, avec = dd, tous[i].Jeu
+			}
+		}
+	}
 	for _, st := range etats {
 		for _, s := range Sessions(st) {
 			v.Sessions = append(v.Sessions, SessionAA{Journal: st.Journal.ID, Session: s.ID, Ouverte: s.Ouverte,
-				Demande: demandeDe(st), Choisie: len(choisies) == 0 || choisies[st.Journal.ID+"|"+s.ID]})
+				Demande: demandeDe(st), Choisie: len(choisies) == 0 || choisies[st.Journal.ID+"|"+s.ID],
+				Regles: reglesDeSession(st, s.ID, tous)})
 		}
 	}
 	sort.SliceStable(v.Sessions, func(i, j int) bool { return v.Sessions[i].Ouverte.After(v.Sessions[j].Ouverte) })
@@ -492,8 +531,11 @@ func (d *Depot) AvantApres(etats []*Etat, tous []JeuCharge, choix string, choisi
 	}
 	v.Choix = &DirListe{ID: dir.ID, Version: dir.Version, Statut: string(dir.Statut), Titre: Titre(dir.TexteFR)}
 	v.LibelleAvant, v.LibelleApres = "Sans la directive "+dir.ID, "Avec la directive "+dir.ID
-	cmp := Comparaison{Avec: base.Jeu, Sans: sansDirective(base.Jeu, dir.ID), Dir: *dir, Tous: tous}
+	cmp := Comparaison{Avec: avec, Sans: sansDirective(avec, dir.ID), Dir: *dir, Tous: tous}
 	v.Lignes, v.Compteurs, v.Verifiees = cmp.Rejouer(etats, choisies)
+	if v.Lignes == nil {
+		v.Lignes = []LigneAA{}
+	}
 	v.Explication = explication(v.Lignes, dir.ID)
 	return v
 }
@@ -509,4 +551,19 @@ func memeDirective(a, b directive.Directive) bool {
 	x, _ := json.Marshal(a)
 	y, _ := json.Marshal(b)
 	return string(x) == string(y)
+}
+
+// reglesDeSession dit sous quel ensemble de règles la session a tourné quand
+// ce n'est pas celui en vigueur ni une version de son historique : « sans la
+// directive D-009 », « règles de travail « … » ». Vide sinon.
+func reglesDeSession(st *Etat, session string, jeux []JeuCharge) string {
+	for _, e := range st.Entrees {
+		if e.Type == journal.AppelT && e.Session == session && e.Jeu != nil {
+			if j := jeuChargeDe(jeux, e.Jeu); j != nil {
+				return j.Travail
+			}
+			return ""
+		}
+	}
+	return ""
 }

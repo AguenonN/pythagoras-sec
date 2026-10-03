@@ -167,3 +167,22 @@ func (b *banc) signerCmd(args ...string) (string, error) {
 }
 
 func hexa(b []byte) string { return fmt.Sprintf("%x", b) }
+
+// attendreSecondeApresJournaux rend la main quand la seconde en cours (celle
+// où s'écrira une date d'effet tronquée à la seconde) est strictement
+// postérieure à toute entrée de tous les journaux : indépendant de la charge
+// de la machine, contrairement à une pause fixe.
+func (b *banc) attendreSecondeApresJournaux() {
+	b.t.Helper()
+	var dernier time.Time
+	for _, st := range b.tous() {
+		for _, e := range st.Entrees {
+			if e.TS.After(dernier) {
+				dernier = e.TS
+			}
+		}
+	}
+	for !time.Now().UTC().Truncate(time.Second).After(dernier) {
+		time.Sleep(20 * time.Millisecond)
+	}
+}

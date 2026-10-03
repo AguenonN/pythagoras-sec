@@ -110,7 +110,7 @@ func reponseFinale(c *VueChaine, st *Etat) Reponse {
 		r.Texte, r.Statut, r.DirectivesCitees, r.Terminee = st.Reponse.Texte, st.Reponse.Statut, st.Reponse.DirectivesCitees, true
 	}
 	if len(c.Etapes) == 0 {
-		r.Badge, r.Titre = BadgeIndispo, "Aucun appel dans cette session."
+		r.Badge, r.Titre = BadgeIndispo, "Aucun appel d'outil pour cette demande."
 		return r
 	}
 	e := c.Etapes[len(c.Etapes)-1]

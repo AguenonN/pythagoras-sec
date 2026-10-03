@@ -7,9 +7,11 @@ import (
 	"path/filepath"
 	"regexp"
 	"sort"
+	"strings"
 	"time"
 
 	"mcprogue/internal/directive"
+	"mcprogue/internal/journal"
 )
 
 // JeuCharge est l'ensemble des règles lisible, avec sa provenance.
@@ -20,6 +22,10 @@ type JeuCharge struct {
 	// Courant : ce sont les règles en vigueur (demo/directives/demo.json),
 	// par opposition à une version archivée de l'historique.
 	Courant bool
+	// Travail : non vide pour un ensemble de travail (jeu d'essai d'une
+	// session lancée avec un jeu de travail ou « sans la directive D-00n »),
+	// avec son libellé ; ces ensembles ne servent qu'à rejouer.
+	Travail string
 }
 
 // Libelle est le nom de ces règles dans l'API (jamais affiché tel quel).
@@ -88,6 +94,89 @@ func (d *Depot) ChargerJeux() (jeux []JeuCharge, refus []string) {
 		return a.Version < b.Version
 	})
 	return jeux, refus
+}
+
+// AvecTravail complète les ensembles de règles connus (en vigueur et
+// historique) des ensembles de travail sous lesquels des sessions ont tourné,
+// retrouvés par l'empreinte consignée au journal :
+//   - les fichiers de demo/directives/ et de demo/scenarios/jeux/ ;
+//   - chacun des ensembles connus ou de ces fichiers privé d'une directive
+//     (« --sans-directive D-00n »).
+//
+// Rien n'est lu si tous les journaux portent un ensemble déjà connu. Les
+// ensembles de travail suivent les autres, sans jamais être « en vigueur » :
+// listes, activations et règles en vigueur ne les voient pas.
+func (d *Depot) AvecTravail(base []JeuCharge, etats []*Etat) []JeuCharge {
+	manque := false
+	for _, st := range etats {
+		for _, e := range st.Entrees {
+			if e.Type == journal.AppelT && e.Jeu != nil {
+				if _, ok := trouverJeu(base, e.Jeu); !ok {
+					manque = true
+				}
+			}
+		}
+	}
+	if !manque {
+		return base
+	}
+	vus := map[string]bool{}
+	cle := func(m directive.MetaJeu) string { return fmt.Sprintf("%s|%d|%s", m.ID, m.Version, m.Empreinte) }
+	for _, j := range base {
+		vus[cle(j.Jeu.Meta)] = true
+	}
+	out := append([]JeuCharge(nil), base...)
+	fichiers := []JeuCharge{}
+	for _, dir := range []string{filepath.Dir(d.Chemins().Directives), d.Chemins().JeuxTravail} {
+		ents, _ := os.ReadDir(dir)
+		for _, e := range ents {
+			if e.IsDir() || filepath.Ext(e.Name()) != ".json" {
+				continue
+			}
+			brut, err := os.ReadFile(filepath.Join(dir, e.Name()))
+			if err != nil {
+				continue
+			}
+			j, err := chargerOctets(brut)
+			if err != nil || vus[cle(j.Meta)] {
+				continue
+			}
+			vus[cle(j.Meta)] = true
+			fichiers = append(fichiers, JeuCharge{Jeu: *j, Source: filepath.Base(dir) + "/" + e.Name(), Brut: brut,
+				Travail: "règles de travail « " + strings.TrimSuffix(e.Name(), ".json") + " »"})
+		}
+	}
+	out = append(out, fichiers...)
+	for _, j := range out {
+		for _, dd := range j.Jeu.Directives {
+			s := sansDirective(j.Jeu, dd.ID)
+			if len(s.Directives) == 0 {
+				continue
+			}
+			s.Directives = append([]directive.Directive(nil), s.Directives...)
+			s.Meta.Empreinte, s.Meta.Signature = "", ""
+			if directive.Valider(&s) != nil || vus[cle(s.Meta)] {
+				continue
+			}
+			vus[cle(s.Meta)] = true
+			out = append(out, JeuCharge{Jeu: s, Source: j.Source, Travail: "sans la directive " + dd.ID})
+		}
+	}
+	return out
+}
+
+// jeuChargeDe retrouve l'ensemble sous lequel une entrée a été journalisée.
+func jeuChargeDe(jeux []JeuCharge, ref *journal.RefJeu) *JeuCharge {
+	if ref == nil {
+		return nil
+	}
+	for i := range jeux {
+		m := jeux[i].Jeu.Meta
+		if m.ID == ref.ID && m.Version == ref.Version && m.Empreinte == ref.Empreinte {
+			return &jeux[i]
+		}
+	}
+	return nil
 }
 
 // Courant rend les règles en vigueur, ou nil.

@@ -8,7 +8,7 @@
 
   function detail(e) {
     const ids = [...new Set(e.applications.filter(a => a.appliquee).map(a => a.id))];
-    if (e.valide_par && e.valide_par.length) return 'Validé par ' + e.valide_par.map(v => v.identite + ' (' + v.role + ')').join(', ') + ', puis transmis';
+    if (e.valide_par && e.valide_par.length) return 'Validé par ' + e.valide_par.map(v => nomValideur(v) + ' (' + v.role + ')').join(', ') + ', puis transmis';
     switch (e.badge) {
       case 'caviarde':
         return 'Champs retirés avant envoi : ' + (e.champs_retires || []).join(', ') + (ids.length ? ' (' + ids.join(', ') + ')' : '');
@@ -78,7 +78,7 @@
           h('h2', {}, h('span', { class: 'vif', title: 'suivi en continu' }), 'Déroulé en direct'),
           h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' }, ['autorise', 'caviarde', 'en_attente', 'refuse', 'indisponible', 'source_non_attestee'].map(k => badge(k)))),
         v.statut_session ? h('p', { class: 'moyen second' }, 'Demande : ' + (v.demande ? '« ' + v.demande + ' » · ' : '') + STATUT[v.statut_session]) : null,
-        v.etapes.length ? h('ol', { class: 'deroule' }, v.etapes.map(ligne)) : h('p', { class: 'second' }, 'Aucun appel pour l\'instant.'),
+        v.etapes.length ? h('ol', { class: 'deroule' }, v.etapes.map(ligne)) : h('p', { class: 'second' }, v.session ? 'Aucun appel pour l\'instant.' : 'Aucun appel d\'outil : l\'orchestrateur a répondu sans consulter de serveur.'),
         cout(v.cout)),
       h('aside', { class: 'volet', style: 'width:auto;padding:28px;gap:18px' },
         h('div', { class: 'etiq' }, 'Réponse au conseiller'),
@@ -91,7 +91,7 @@
           h('p', { class: 'gras' }, r.titre),
           r.paragraphes.map(p => h('p', { class: 'second moyen' }, motifAffiche(p)))),
         h('div', { style: 'border-top:1px solid var(--trait);padding-top:14px;display:flex;flex-direction:column;gap:6px' },
-          h('div', { class: 'kv' }, h('span', {}, 'Session'), lienSession(v.journal, v.session, nomSession(v.session) + ' · voir la preuve')),
+          h('div', { class: 'kv' }, h('span', {}, 'Session'), lienSession(v.journal, v.session, nomSession(v.session || v.journal) + ' · voir la preuve')),
           h('div', { class: 'kv' }, h('span', {}, 'Règles appliquées'), v.regles ? h('span', {}, 'en vigueur depuis le ' + jourMoisHeure(v.regles.depuis)) : nd()),
           h('div', { class: 'kv' }, h('span', {}, 'Chaîne du journal'), ligneChaine),
           h('div', { class: 'kv' }, h('span', {}, 'Demandeur'), dem ? h('span', {}, dem.identite) : nd())),
@@ -120,12 +120,25 @@
       } catch (e) { err.dire(e.message); }
       bouton.disabled = false;
     });
+    // Demandes suggérées (scénarios) : un clic remplit, ne lance rien.
+    const suggestions = (await api('/api/suggestions').catch(() => ({}))).suggestions || [];
+    if (!ctx.vivant()) return;
+    const proposer = (g) => {
+      demande.value = g.demande;
+      if (g.demandeur && [...demandeur.options].some(o => o.value === g.demandeur)) demandeur.value = g.demandeur;
+      info.textContent = 'Demande remplie : vérifiez-la puis cliquez sur « Lancer les agents ».';
+      demande.focus();
+    };
+    const exemples = suggestions.length ? h('div', { class: 'suggestions', style: 'display:flex;flex-direction:column;gap:6px' },
+      h('div', { class: 'etiq' }, 'Demandes suggérées'),
+      h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' }, suggestions.map(g =>
+        h('button', { type: 'button', class: 'btn contour petit', title: g.demande, 'data-suggestion': g.fichier, onclick: () => proposer(g) }, g.titre)))) : null;
     const formulaire = h('div', { class: 'carte' },
       h('div', { style: 'display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap' },
         h('label', { class: 'etiq', for: 'demande' }, 'Demande'),
         ch ? h('span', { class: 'moyen second' }, 'Session : ', selecteurSession('poste', ch)) : null),
       h('div', { style: 'display:flex;gap:12px;flex-wrap:wrap' }, demande, demandeur, bouton),
-      err, info);
+      exemples, err, info);
     const racine = h('div', { style: 'flex:1;display:flex;min-width:0' });
     ctx.monter(racine);
     let courante = ch, signature = null;
@@ -135,12 +148,12 @@
       if (lancement) {
         etat = await api('/api/etat');
         const nouvelle = toutesSessions().find(x => !avant.has(x.j.id));
-        if (nouvelle) { lancement = null; allerA('poste', { j: nouvelle.j.id, s: nouvelle.s.id }); return; }
+        if (nouvelle) { lancement = null; allerA('poste', { j: nouvelle.j.id, s: nouvelle.s ? nouvelle.s.id : '' }); return; }
         const l = (await api('/api/lancements')).lancements.find(x => x.id === lancement.id);
         if (l && l.termine && l.code !== 0) { info.textContent = ''; err.dire('Le lanceur s\'est arrêté (code ' + l.code + ') : ' + (l.erreur || 'sans message')); lancement = null; }
       }
       if (!courante) { racine.textContent = ''; racine.append(h('div', { class: 'principal ample' }, formulaire, h('p', { class: 'second' }, 'Aucune session pour l\'instant.'))); return; }
-      const v = await api('/api/journal/' + encodeURIComponent(courante.j.id) + '/session/' + encodeURIComponent(courante.s.id) + '/poste');
+      const v = await api(cheminJournal(courante, 'poste'));
       if (!ctx.vivant()) return;
       ctx.droite(v.demandeur ? ['Connecté : ', h('b', {}, (v.demandeur_fiche && v.demandeur_fiche.nom) || v.demandeur.identite)] : ['Connecté : ', nd()]);
       const sig = v.signature + '|' + v.verification.ok + '|' + v.verification.erreur;

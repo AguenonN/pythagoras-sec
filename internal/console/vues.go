@@ -54,35 +54,37 @@ type AppVue struct {
 
 // Etape est un appel de la session, de bout en bout.
 type Etape struct {
-	Index       int                  `json:"index"`  // position de l'entrée dans le journal
-	Numero      int                  `json:"numero"` // numéro de l'entrée (Index + 1)
-	Prev        string               `json:"prev,omitempty"`
-	Acces       string               `json:"acces,omitempty"`
-	Empreinte   string               `json:"empreinte_transmise,omitempty"`
-	Evaluees    int                  `json:"evaluees"`
-	Appliquees  int                  `json:"appliquees"`
-	Indeterm    int                  `json:"indeterminees"`
-	Seq         int                  `json:"seq"`
-	TS          time.Time            `json:"ts"`
-	SousAgent   string               `json:"sous_agent,omitempty"`
-	Serveur     string               `json:"serveur"`
-	Outil       string               `json:"outil"`
-	Attestation *journal.Attestation `json:"attestation,omitempty"`
-	Effet       string               `json:"effet"`
-	Origine     string               `json:"origine,omitempty"`
-	Motif       string               `json:"motif"`
-	Badge       string               `json:"badge"`
-	Libelle     string               `json:"libelle"`
-	Apps        []AppVue             `json:"applications"`
-	Statut      string               `json:"statut"`
-	Transmis    bool                 `json:"transmis"`
-	Source      *journal.Source      `json:"source,omitempty"`
-	DureeMs     int64                `json:"duree_ms,omitempty"`
-	Champs      []string             `json:"champs_retires,omitempty"`
-	Liens       []Lien               `json:"provenance,omitempty"`
-	Validation  *journal.Validation  `json:"validation,omitempty"`
-	Alertes     []string             `json:"alertes,omitempty"`
-	Suspect     bool                 `json:"suspect,omitempty"` // après le premier écart de chaîne
+	Index     int    `json:"index"`  // position de l'entrée dans le journal
+	Numero    int    `json:"numero"` // numéro de l'entrée (Index + 1)
+	Prev      string `json:"prev,omitempty"`
+	Acces     string `json:"acces,omitempty"`
+	Empreinte string `json:"empreinte_transmise,omitempty"`
+	// EmpreinteOrigine : clé du coffre (arguments tels que le modèle les a demandés).
+	EmpreinteOrigine string               `json:"-"`
+	Evaluees         int                  `json:"evaluees"`
+	Appliquees       int                  `json:"appliquees"`
+	Indeterm         int                  `json:"indeterminees"`
+	Seq              int                  `json:"seq"`
+	TS               time.Time            `json:"ts"`
+	SousAgent        string               `json:"sous_agent,omitempty"`
+	Serveur          string               `json:"serveur"`
+	Outil            string               `json:"outil"`
+	Attestation      *journal.Attestation `json:"attestation,omitempty"`
+	Effet            string               `json:"effet"`
+	Origine          string               `json:"origine,omitempty"`
+	Motif            string               `json:"motif"`
+	Badge            string               `json:"badge"`
+	Libelle          string               `json:"libelle"`
+	Apps             []AppVue             `json:"applications"`
+	Statut           string               `json:"statut"`
+	Transmis         bool                 `json:"transmis"`
+	Source           *journal.Source      `json:"source,omitempty"`
+	DureeMs          int64                `json:"duree_ms,omitempty"`
+	Champs           []string             `json:"champs_retires,omitempty"`
+	Liens            []Lien               `json:"provenance,omitempty"`
+	Validation       *journal.Validation  `json:"validation,omitempty"`
+	Alertes          []string             `json:"alertes,omitempty"`
+	Suspect          bool                 `json:"suspect,omitempty"` // après le premier écart de chaîne
 
 	// Ce que la décision porte au journal et que l'écran montre.
 	OrigineLibelle string          `json:"origine_libelle,omitempty"`
@@ -197,7 +199,7 @@ func Titre(texte string) string {
 
 // Sessions liste les sessions ouvertes d'un journal.
 func Sessions(st *Etat) []SessionResume {
-	var out []SessionResume
+	out := []SessionResume{}
 	idx := map[string]int{}
 	for _, e := range st.Entrees {
 		switch e.Type {

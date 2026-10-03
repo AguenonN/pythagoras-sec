@@ -173,8 +173,9 @@ func TestCompilationEssaiEtActivation(t *testing.T) {
 	contient(t, c.Ajoutees[0].Relecture, "Europe/Paris", "samedi", "Alors :")
 
 	// Directive de la base interne : essai sur les journaux existants. La
-	// date d'effet est écrite à la seconde : on attend qu'elle suive l'appel.
-	time.Sleep(1100 * time.Millisecond)
+	// date d'effet est écrite à la seconde : on attend, sans marge fixe, que la
+	// seconde en cours soit postérieure au dernier appel journalisé.
+	b.attendreSecondeApresJournaux()
 	c, err = b.Dep.Compiler("Un prêt dont la session a consulté la base interne des taux attend la validation d'un analyste des risques.", "Politique de crédit art. 7", "", nil, "")
 	must(t, err)
 	if c.Etat != "jeu" || c.Ajoutees[0].ID != "D-009" {

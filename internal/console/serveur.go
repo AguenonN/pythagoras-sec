@@ -46,7 +46,12 @@ func (s *Serveur) Handler() http.Handler {
 	mux.HandleFunc("GET /api/etat", s.etat)
 	mux.HandleFunc("GET /api/journal/{id}/session/{sid}/chaine", s.chaine)
 	mux.HandleFunc("GET /api/journal/{id}/session/{sid}/poste", s.poste)
+	mux.HandleFunc("GET /api/journal/{id}/chaine", s.chaine)
+	mux.HandleFunc("GET /api/journal/{id}/poste", s.poste)
+	mux.HandleFunc("GET /api/journal/{id}/session/{sid}/demande", s.demande)
+	mux.HandleFunc("GET /api/journal/{id}/demande", s.demande)
 	mux.HandleFunc("GET /api/identites", s.identites)
+	mux.HandleFunc("GET /api/suggestions", s.suggestions)
 	mux.HandleFunc("POST /api/lancer", s.lancer)
 	mux.HandleFunc("GET /api/lancements", s.lancements)
 	mux.HandleFunc("GET /api/regles", s.regles)
@@ -152,6 +157,7 @@ type journalListe struct {
 	Entrees  int             `json:"entrees"`
 	Ecart    int             `json:"premier_ecart"`
 	Sessions []SessionResume `json:"sessions"`
+	Debut    *time.Time      `json:"debut,omitempty"`  // etat.json, sinon première session
 	Statut   string          `json:"statut,omitempty"` // etat.json
 	Demande  string          `json:"demande,omitempty"`
 }
@@ -171,7 +177,14 @@ func (s *Serveur) etat(w http.ResponseWriter, r *http.Request) {
 	}{Journaux: []journalListe{}, Jeux: []jeuListe{}, Cle: len(s.Depot.Cle) > 0}
 	for _, st := range s.tousEtats() {
 		jl := journalListe{ID: st.Journal.ID, Verif: st.Verif, Entrees: len(st.Entrees), Ecart: st.Verif.PremierEcart(), Sessions: Sessions(st)}
+		if len(jl.Sessions) > 0 {
+			t := jl.Sessions[0].Ouverte
+			jl.Debut = &t
+		}
 		if st.Dossier != nil {
+			if st.Dossier.Debut != nil {
+				jl.Debut = st.Dossier.Debut
+			}
 			jl.Statut, jl.Demande = st.Dossier.Statut, st.Dossier.Demande
 			if st.Dossier.Statut == StatutEnAttente {
 				out.Attentes++
@@ -219,6 +232,20 @@ func (s *Serveur) chaine(w http.ResponseWriter, r *http.Request) {
 	}
 	jeux, _ := s.Depot.ChargerJeux()
 	v, ok := s.Depot.Chaine(st, jeux, r.PathValue("sid"))
+	if !ok {
+		erreur(w, http.StatusNotFound, "session inconnue")
+		return
+	}
+	ecrire(w, v)
+}
+
+func (s *Serveur) demande(w http.ResponseWriter, r *http.Request) {
+	st, ok := s.ouvrir(w, r.PathValue("id"))
+	if !ok {
+		return
+	}
+	jeux, _ := s.Depot.ChargerJeux()
+	v, ok := s.Depot.Demande(st, jeux, r.PathValue("sid"))
 	if !ok {
 		erreur(w, http.StatusNotFound, "session inconnue")
 		return
@@ -283,6 +310,10 @@ func (s *Serveur) lancer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	ecrire(w, l)
+}
+
+func (s *Serveur) suggestions(w http.ResponseWriter, r *http.Request) {
+	ecrire(w, map[string]any{"suggestions": s.Depot.Suggestions()})
 }
 
 func (s *Serveur) lancements(w http.ResponseWriter, r *http.Request) {
@@ -367,7 +398,8 @@ func (s *Serveur) rejeter(w http.ResponseWriter, r *http.Request) {
 
 func (s *Serveur) notifications(w http.ResponseWriter, r *http.Request) {
 	jeux, _ := s.Depot.ChargerJeux()
-	ecrire(w, map[string]any{"notifications": Notifications(s.tousEtats(), jeux)})
+	etats := s.tousEtats()
+	ecrire(w, map[string]any{"notifications": Notifications(etats, s.Depot.AvecTravail(jeux, etats))})
 }
 
 func (s *Serveur) redaction(w http.ResponseWriter, r *http.Request) {

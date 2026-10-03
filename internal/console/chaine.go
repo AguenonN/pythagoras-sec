@@ -2,6 +2,7 @@ package console
 
 import (
 	"fmt"
+	"time"
 
 	"mcprogue/internal/directive"
 	"mcprogue/internal/journal"
@@ -55,12 +56,22 @@ func badgeEtape(e journal.Entree, transmis bool) (string, string) {
 
 // Chaine construit l'écran 1 pour une session.
 func (d *Depot) Chaine(st *Etat, jeux []JeuCharge, session string) (*VueChaine, bool) {
+	jeux = d.AvecTravail(jeux, []*Etat{st})
 	v, ok := Chaine(st, jeux, session)
 	if !ok {
 		return nil, false
 	}
-	if v.Demandeur != nil && !v.Ouverte.IsZero() {
-		if f, ok := d.Fiche(v.Demandeur.Identite, v.Ouverte); ok {
+	for i := range v.Etapes {
+		for k := range v.Etapes[i].ValidePar {
+			v.Etapes[i].ValidePar[k].Nom = d.NomIdentite(v.Etapes[i].ValidePar[k].Identite)
+		}
+	}
+	if v.Demandeur != nil {
+		quand := v.Ouverte
+		if quand.IsZero() {
+			quand = time.Now()
+		}
+		if f, ok := d.Fiche(v.Demandeur.Identite, quand); ok {
 			v.DemandeurFiche = &f
 		}
 	}
@@ -69,6 +80,13 @@ func (d *Depot) Chaine(st *Etat, jeux []JeuCharge, session string) (*VueChaine, 
 
 // Chaine construit l'écran 1 pour une session, sans l'annuaire.
 func Chaine(st *Etat, jeux []JeuCharge, session string) (*VueChaine, bool) {
+	// Sans identifiant : la première session d'outils de la demande, ou, si
+	// elle n'en a pas, la demande seule (etat.json, reponse.json).
+	if session == "" {
+		if ss := Sessions(st); len(ss) > 0 {
+			session = ss[0].ID
+		}
+	}
 	v := &VueChaine{Journal: st.Journal.ID, Session: session, Verif: st.Verif, Ecart: st.Verif.PremierEcart(),
 		SousAgents: []string{}, Serveurs: []ServeurVue{}, Etapes: []Etape{}}
 	if st.Dossier != nil {
@@ -163,6 +181,7 @@ func Chaine(st *Etat, jeux []JeuCharge, session string) (*VueChaine, bool) {
 			if e.Appel != nil {
 				et.Champs = e.Appel.ChampsRetires
 				et.Empreinte = e.Appel.EmpreinteTransmise
+				et.EmpreinteOrigine = e.Appel.EmpreinteOrigine
 			}
 			for _, a := range e.Decision.Applications {
 				et.Evaluees++
@@ -195,8 +214,19 @@ func Chaine(st *Etat, jeux []JeuCharge, session string) (*VueChaine, bool) {
 			note(e.Serveur, e.Attestation)
 		}
 	}
+	if !trouvee && session == "" && (st.Dossier != nil || st.Reponse != nil) {
+		trouvee = true
+	}
 	if !trouvee {
 		return nil, false
+	}
+	if st.Dossier != nil {
+		if v.Ouverte.IsZero() && st.Dossier.Debut != nil {
+			v.Ouverte = *st.Dossier.Debut
+		}
+		if v.Demandeur == nil && st.Dossier.Demandeur != "" {
+			v.Demandeur = &journal.Demandeur{Identite: st.Dossier.Demandeur}
+		}
 	}
 	// Un appel en attente que l'agent a repris : l'appel repris (même
 	// empreinte transmise, approbation acceptée) le suit.

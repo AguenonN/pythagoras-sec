@@ -101,9 +101,23 @@ func TestValidationDeBoutEnBout(t *testing.T) {
 		c.QuatreYeux.Etat != "non_requis" || c.UnJetonParRole.Etat != "ok" || len(c.Valideurs) != 1 || c.Valideurs[0].Identite != anna {
 		t.Fatalf("contrôles : %+v", c)
 	}
+	// L'orchestrateur renomme les jetons consommés en « .jwt.utilise » : la
+	// reprise les compte toujours (et non « 0 jeton déposé »).
+	dirJetons := filepath.Join(b.racine, "demo", "execution", "approbations", f.Reprises[0].Empreinte)
+	must(t, os.Rename(filepath.Join(dirJetons, anna+".jwt"), filepath.Join(dirJetons, anna+".jwt.utilise")))
+	if f = b.Dep.File(b.tous(), b.jeux(), time.Now()); f.Reprises[0].Deposes != f.Reprises[0].Requis || f.Reprises[0].Deposes != 1 {
+		t.Fatalf("jetons déposés d'une reprise : %d sur %d", f.Reprises[0].Deposes, f.Reprises[0].Requis)
+	}
 	// Écran 1 : l'appel repris est autorisé après validation ; l'appel retenu
 	// reste « en attente » et dit qui l'a validé ensuite.
 	v, _ := b.Dep.Chaine(st, b.jeux(), Sessions(st)[0].ID)
+	for _, e := range v.Etapes {
+		for _, va := range e.ValidePar {
+			if va.Nom == "" || !strings.Contains(va.Nom, "Anna") {
+				t.Fatalf("nom du valideur : %+v", va)
+			}
+		}
+	}
 	var attente, repris *Etape
 	for i := range v.Etapes {
 		e := &v.Etapes[i]
