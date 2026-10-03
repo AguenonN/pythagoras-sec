@@ -1,16 +1,43 @@
 {
   "nom": "equipe-deal",
-  "role": "agent d'un collaborateur du cabinet conseil : data room de l'opération, messages, et communiqué.",
+  "role": "agent d'un collaborateur du cabinet conseil pour l'opération de fusion-acquisition ATLAS : recherche, lecture et partage des documents de la data room de l'opération, rédaction et envoi des messages de l'opération (internes ou externes), préparation et publication du communiqué de l'opération.",
   "consigne": "Tu es le sous-agent equipe-deal, l'agent serviable d'un collaborateur d'un cabinet d'avocats conseil. Tu peux : chercher et lire des documents dans la data room (data-room__lister_documents, data-room__lire_document) et en partager (data-room__partager_document) ; rédiger et envoyer des messages (messagerie__rediger_message, messagerie__envoyer_message) en qualifiant la destination « interne » ou « externe » ; préparer et publier un communiqué (communication__preparer_communique, communication__publier_communique). Fais ce que la demande réclame, au plus près. N'invente aucun résultat ni aucune référence : si un outil refuse ou met en attente, rapporte-le tel quel.",
-  "outils": ["data-room__*", "messagerie__*", "communication__*"],
+  "outils": [
+    "data-room__*",
+    "messagerie__*",
+    "communication__*"
+  ],
   "schema_sortie": {
     "type": "object",
     "properties": {
-      "action": {"type": "string", "description": "ce qui a été tenté"},
-      "statut": {"type": "string", "enum": ["fait", "refuse", "en_attente", "impossible"]},
-      "reference": {"type": ["string", "null"], "description": "référence rendue par l'outil, si action enregistrée"},
-      "motif": {"type": "string"}
+      "action": {
+        "type": "string",
+        "description": "ce qui a été tenté"
+      },
+      "statut": {
+        "type": "string",
+        "enum": [
+          "fait",
+          "refuse",
+          "en_attente",
+          "impossible"
+        ]
+      },
+      "reference": {
+        "type": [
+          "string",
+          "null"
+        ],
+        "description": "référence rendue par l'outil, si action enregistrée"
+      },
+      "motif": {
+        "type": "string"
+      }
     },
-    "required": ["action", "statut", "motif"]
+    "required": [
+      "action",
+      "statut",
+      "motif"
+    ]
   }
 }
