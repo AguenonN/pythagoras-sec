@@ -2,6 +2,7 @@ package console
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"mcprogue/internal/journal"
@@ -27,6 +28,9 @@ type Cout struct {
 	// l'appel en attente.
 	Attentes        int   `json:"attentes_mesurees"`
 	AttenteSecondes int64 `json:"attente_secondes"`
+	// Rejets : attentes mesurées jusqu'au rejet consigné (date de
+	// rejet.json moins celle de l'appel en attente), comprises dans Attentes.
+	Rejets int `json:"attentes_rejetees,omitempty"`
 }
 
 // VuePoste est l'écran 2.
@@ -42,7 +46,11 @@ type VuePoste struct {
 type Reponse struct {
 	// Texte et Statut : reponse.json, absents tant que la demande n'est pas
 	// terminée.
-	Texte            string   `json:"texte,omitempty"`
+	Texte string `json:"texte,omitempty"`
+	// DetailTechnique : le relevé « Décisions de l'engine » que
+	// l'orchestrateur ajoute à la fin du texte, retiré de Texte (la frise le
+	// montre déjà) et rendu à part, pour qui veut le déplier.
+	DetailTechnique  string   `json:"detail_technique,omitempty"`
 	Statut           string   `json:"statut,omitempty"`
 	DirectivesCitees []string `json:"directives_citees,omitempty"`
 	Terminee         bool     `json:"terminee"`
@@ -98,6 +106,14 @@ func (d *Depot) Poste(st *Etat, jeux []JeuCharge, session string) (*VuePoste, bo
 			delete(attendus, en.Approbation.EmpreinteTransmise)
 		}
 	}
+	for _, e := range c.Etapes {
+		if t0, ok := attendus[e.Empreinte]; ok && e.Rejet != nil && e.Rejet.Date.After(t0) {
+			p.Cout.Attentes++
+			p.Cout.Rejets++
+			p.Cout.AttenteSecondes += int64(e.Rejet.Date.Sub(t0) / time.Second)
+			delete(attendus, e.Empreinte)
+		}
+	}
 	p.Reponse = reponseFinale(c, st)
 	return p, true
 }
@@ -108,30 +124,54 @@ func reponseFinale(c *VueChaine, st *Etat) Reponse {
 	r := Reponse{Paragraphes: []string{}}
 	if st.Reponse != nil {
 		r.Texte, r.Statut, r.DirectivesCitees, r.Terminee = st.Reponse.Texte, st.Reponse.Statut, st.Reponse.DirectivesCitees, true
+		r.Texte, r.DetailTechnique = separerReleve(r.Texte)
 	}
 	if len(c.Etapes) == 0 {
 		r.Badge, r.Titre = BadgeIndispo, "Aucun appel d'outil pour cette demande."
 		return r
 	}
 	e := c.Etapes[len(c.Etapes)-1]
+	outil := "« " + libelleDe(e.Serveur, e.Outil, "") + " »"
 	r.Badge = e.Badge
 	switch e.Badge {
 	case BadgeRefuse:
-		r.Titre = fmt.Sprintf("Demande refusée : l'appel %s n'a pas été transmis.", e.Outil)
+		r.Titre = fmt.Sprintf("Demande refusée : l'appel %s n'a pas été transmis.", outil)
 	case BadgeNonAttesta:
-		r.Titre = fmt.Sprintf("Source non attestée : l'appel %s a été refusé.", e.Outil)
+		r.Titre = fmt.Sprintf("Source non attestée : l'appel %s a été refusé.", outil)
+	case BadgeRejete:
+		r.Titre = fmt.Sprintf("Validation rejetée par %s : l'appel %s n'a pas été transmis.", nomRejet(e.Rejet), outil)
 	case BadgeAttente:
-		r.Titre = fmt.Sprintf("Décision suspendue : une validation humaine est requise avant la transmission de l'appel %s.", e.Outil)
+		r.Titre = fmt.Sprintf("Décision suspendue : une validation humaine est requise avant la transmission de l'appel %s.", outil)
 	case BadgeIndispo:
-		r.Titre = fmt.Sprintf("Source indisponible : aucune donnée n'a été obtenue pour l'appel %s.", e.Outil)
+		r.Titre = fmt.Sprintf("Source indisponible : aucune donnée n'a été obtenue pour l'appel %s.", outil)
 	case BadgeCaviarde:
-		r.Titre = fmt.Sprintf("Appel %s transmis après retrait de %d champ(s).", e.Outil, len(e.Champs))
+		r.Titre = fmt.Sprintf("Appel %s transmis après retrait de %d champ(s).", outil, len(e.Champs))
 	default:
-		r.Titre = fmt.Sprintf("Appel %s autorisé : la réponse du serveur a été remise à l'agent.", e.Outil)
+		r.Titre = fmt.Sprintf("Appel %s autorisé : la réponse du serveur a été remise à l'agent.", outil)
 		if len(e.ValidePar) > 0 {
-			r.Titre = fmt.Sprintf("Appel %s transmis après validation humaine.", e.Outil)
+			r.Titre = fmt.Sprintf("Appel %s transmis après validation humaine.", outil)
 		}
 	}
 	r.Paragraphes = append(r.Paragraphes, "Motif de l'engine : "+e.Motif)
 	return r
+}
+
+// enteteReleve ouvre le relevé que l'orchestrateur ajoute à la réponse
+// (agents/orchestrateur : « \n\nDécisions de l'engine :\n- … »).
+const enteteReleve = "Décisions de l'engine :"
+
+// separerReleve sépare le texte de l'agent du relevé technique final.
+func separerReleve(texte string) (corps, releve string) {
+	i := strings.LastIndex(texte, enteteReleve)
+	if i < 0 || (i > 0 && texte[i-1] != '\n') {
+		return texte, ""
+	}
+	return strings.TrimRight(texte[:i], " \n"), strings.TrimSpace(texte[i+len(enteteReleve):])
+}
+
+func nomRejet(r *RejetVue) string {
+	if r.Nom != "" {
+		return r.Nom
+	}
+	return r.Valideur
 }

@@ -33,7 +33,7 @@
           h('span', {}, jourSemaine(d.ts)),
           h('span', { class: 'mono petit' }, utcCourt(d.ts)),
           h('span', {}, d.acces || nd()),
-          h('span', {}, d.outil, ' ', h('a', { class: 'petit', href: '#journal?' + new URLSearchParams({ j: d.journal, s: d.session, a: d.seq }) }, 'voir'), d.declenchee ? '' : h('span', { class: 'petit second' }, ' · examinée, non déclenchée')),
+          h('span', {}, outilLisible(d.serveur, d.outil), ' ', h('a', { class: 'petit', href: '#journal?' + new URLSearchParams({ j: d.journal, s: d.session, a: d.seq }) }, 'voir'), d.declenchee ? '' : h('span', { class: 'petit second' }, ' · examinée, non déclenchée')),
           h('span', { style: 'display:flex;gap:6px;align-items:center;flex-wrap:wrap' }, badgeEffet(d.rejoue),
             d.identique ? null : h('span', { class: 'petit gras', style: 'color:var(--ref)' }, 'écart avec le journal : ' + (EFFET_BADGE[d.journalise] ? LIBELLE_BADGE[EFFET_BADGE[d.journalise]] : d.journalise)))))
       ] : h('p', { class: 'second' }, 'Aucune décision journalisée ne concerne cette directive.'),

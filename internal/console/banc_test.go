@@ -84,13 +84,23 @@ func (b *banc) demande(demandeur, texte string) string {
 // session créée.
 func (b *banc) demandeAsync(demandeur, texte string) (id string, fin chan error) {
 	b.t.Helper()
+	return b.demandeAsyncCfg(nil, demandeur, texte)
+}
+
+// demandeAsyncCfg : demandeAsync avec une configuration retouchée.
+func (b *banc) demandeAsyncCfg(regler func(*simulateur.Config), demandeur, texte string) (id string, fin chan error) {
+	b.t.Helper()
+	cfg := b.config()
+	if regler != nil {
+		regler(&cfg)
+	}
 	avant := map[string]bool{}
 	for _, j := range b.Dep.Journaux() {
 		avant[j.ID] = true
 	}
 	fin = make(chan error, 1)
 	go func() {
-		_, err := b.config().Demande(demandeur, texte)
+		_, err := cfg.Demande(demandeur, texte)
 		fin <- err
 	}()
 	limite := time.Now().Add(10 * time.Second)

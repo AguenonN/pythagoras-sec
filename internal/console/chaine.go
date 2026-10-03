@@ -61,10 +61,20 @@ func (d *Depot) Chaine(st *Etat, jeux []JeuCharge, session string) (*VueChaine, 
 	if !ok {
 		return nil, false
 	}
+	rejets := d.rejetsDe(st)
 	for i := range v.Etapes {
-		for k := range v.Etapes[i].ValidePar {
-			v.Etapes[i].ValidePar[k].Nom = d.NomIdentite(v.Etapes[i].ValidePar[k].Identite)
+		e := &v.Etapes[i]
+		for k := range e.ValidePar {
+			e.ValidePar[k].Nom = d.NomIdentite(e.ValidePar[k].Identite)
 		}
+		if r := rejets[e.Empreinte]; r != nil && e.Badge == BadgeAttente && e.ValideAu == 0 {
+			e.Rejet = &RejetVue{Rejet: *r, Seq: e.Seq, Mention: MentionRejet}
+			e.Badge, e.Libelle = BadgeRejete, libelleBadge[BadgeRejete]
+			v.Rejet = e.Rejet
+		}
+	}
+	if v.Rejet != nil {
+		v.Signature += "|rejet"
 	}
 	if v.Demandeur != nil {
 		quand := v.Ouverte

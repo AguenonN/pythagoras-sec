@@ -444,7 +444,7 @@ func explication(lignes []LigneAA, id string) string {
 			continue
 		}
 		if l.Avant.Effet != l.Apres.Effet {
-			parts = append(parts, fmt.Sprintf("l'appel n° %d (%s) serait %s au lieu de %s", l.Seq, l.Outil, libelleEffet(l.Apres.Effet), libelleEffet(l.Avant.Effet)))
+			parts = append(parts, fmt.Sprintf("l'appel n° %d (%s) serait %s au lieu de %s", l.Seq, libelleDe(l.Serveur, l.Outil, ""), libelleEffet(l.Apres.Effet), libelleEffet(l.Avant.Effet)))
 			continue
 		}
 		var quoi []string
@@ -452,7 +452,7 @@ func explication(lignes []LigneAA, id string) string {
 			quoi = append(quoi, map[string]string{"directives": "les directives appliquées", "roles": "les rôles requis",
 				"notifications": "les notifications", "champs": "les champs retirés"}[d])
 		}
-		parts = append(parts, fmt.Sprintf("l'appel n° %d (%s) reste %s, mais changent : %s", l.Seq, l.Outil, libelleEffet(l.Apres.Effet), strings.Join(quoi, ", ")))
+		parts = append(parts, fmt.Sprintf("l'appel n° %d (%s) reste %s, mais changent : %s", l.Seq, libelleDe(l.Serveur, l.Outil, ""), libelleEffet(l.Apres.Effet), strings.Join(quoi, ", ")))
 	}
 	if len(parts) == 0 {
 		return "Aucun appel rejoué ne change avec la directive " + id + "."

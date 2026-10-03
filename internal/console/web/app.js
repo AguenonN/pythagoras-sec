@@ -13,7 +13,7 @@ const NAV = [
 ];
 const LIBELLE_BADGE = {
   autorise: 'Autorisé', caviarde: 'Caviardé', en_attente: 'En attente', refuse: 'Refusé',
-  indisponible: 'Indisponible', source_non_attestee: 'Source non attestée',
+  indisponible: 'Indisponible', source_non_attestee: 'Source non attestée', rejete: 'Rejeté',
 };
 const EFFET_BADGE = {
   autoriser: 'autorise', caviarder: 'caviarde', attendre_validation: 'en_attente', refuser: 'refuse',
@@ -124,7 +124,95 @@ function motifAffiche(m) {
     .replace(/sha256:([0-9a-f]{8})[0-9a-f]{8,}/g, 'sha256:$1…')
     .replace(/\b([A-Z]+-\d+) v(\d+)\b/g, '$1, version $2');
 }
+// Un rejet consigné par la console (approbations/<empreinte>/rejet.json).
+function texteRejet(r) {
+  return 'Rejeté par ' + (r.nom || r.valideur) + (r.role ? ' (rôle « ' + r.role + ' »)' : '') +
+    (r.date ? ' le ' + jourComplet(r.date) + ' à ' + heureSec(r.date) : '') + ' : ' + r.motif;
+}
+const parQui = (r) => (r.nom || r.valideur) + (r.role ? ' (' + r.role + ')' : '');
 function humanise(nom) { return String(nom || '').replace(/_/g, ' '); }
+
+// ------------------------------------------------------------------ outils
+
+// Libellés des outils (GET /api/outils), chargés une fois : à l'écran,
+// « Attribution de prêt — banque » ; le nom technique serveur__outil et la
+// description du catalogue en info-bulle.
+let OUTILS = null;
+async function chargerOutils() {
+  if (OUTILS) return;
+  try { OUTILS = (await api('/api/outils')).outils || {}; } catch (e) { OUTILS = {}; }
+}
+function cleOutil(serveur, outil) {
+  outil = String(outil || '');
+  return outil.includes('__') || !serveur ? outil : serveur + '__' + outil;
+}
+function libelleOutil(serveur, outil) {
+  const k = cleOutil(serveur, outil), l = OUTILS && OUTILS[k];
+  if (l) return l.libelle;
+  const [s, o] = k.includes('__') ? k.split('__') : ['', k];
+  const t = humanise(o);
+  return (t.charAt(0).toUpperCase() + t.slice(1)) + (s ? ' — ' + s : '');
+}
+function outilLisible(serveur, outil, attrs) {
+  const k = cleOutil(serveur, outil), l = OUTILS && OUTILS[k];
+  return h('span', Object.assign({ class: 'outil', title: k + (l && l.description ? '\n' + l.description : '') }, attrs || {}), libelleOutil(serveur, outil));
+}
+// Remplace, dans un texte libre, chaque nom serveur__outil par son libellé.
+const RE_OUTIL = /\b[a-z0-9][a-z0-9-]*__[a-z0-9_]+\b/g;
+function avecOutils(texte) {
+  const out = [];
+  let i = 0;
+  for (const m of String(texte).matchAll(RE_OUTIL)) {
+    if (m.index > i) out.push(texte.slice(i, m.index));
+    out.push(outilLisible('', m[0]));
+    i = m.index + m[0].length;
+  }
+  if (i < texte.length) out.push(texte.slice(i));
+  return out;
+}
+
+// ------------------------------------------------------------------ Markdown
+
+// Markdown minimal et sûr : paragraphes, listes (« - », « * », « 1. »),
+// gras (**…**), titres (#…) rendus en gras. Le texte n'est jamais interprété
+// comme du HTML : chaque morceau devient un nœud texte ; seules les balises
+// p, ul, ol, li, strong et br sont créées, par ce code.
+function enLigne(texte) {
+  const out = [];
+  String(texte).split(/(\*\*[^*\n]+?\*\*)/).forEach((m, i) => {
+    if (i % 2 === 1) out.push(h('strong', {}, avecOutils(m.slice(2, -2))));
+    else if (m) out.push(...avecOutils(m));
+  });
+  return out;
+}
+function markdown(texte) {
+  const blocs = [];
+  const lignes = String(texte || '').replace(/\r\n?/g, '\n').split('\n');
+  let para = [], liste = null;
+  const finPara = () => {
+    if (!para.length) return;
+    blocs.push(h('p', {}, para.map((l, i) => [i ? h('br') : null, enLigne(l)])));
+    para = [];
+  };
+  const finListe = () => { if (liste) { blocs.push(liste); liste = null; } };
+  for (const brute of lignes) {
+    const l = brute.trim();
+    const puce = /^[-*•]\s+(.*)$/.exec(l), num = /^\d+[.)]\s+(.*)$/.exec(l), titre = /^#{1,6}\s+(.*)$/.exec(l);
+    if (!l) { finPara(); finListe(); continue; }
+    if (puce || num) {
+      finPara();
+      const tag = puce ? 'ul' : 'ol';
+      if (!liste || liste.tagName.toLowerCase() !== tag) { finListe(); liste = h(tag, { class: 'md-liste' }); }
+      liste.append(h('li', {}, enLigne((puce || num)[1])));
+      continue;
+    }
+    finListe();
+    if (titre) { finPara(); blocs.push(h('p', {}, h('strong', {}, enLigne(titre[1].replace(/\*\*/g, ''))))); continue; }
+    para.push(l);
+  }
+  finPara(); finListe();
+  return h('div', { class: 'md' }, blocs);
+}
 
 function badge(cle, texte, extra) {
   return h('span', { class: 'badge b-' + cle + (extra ? ' ' + extra : '') }, texte || LIBELLE_BADGE[cle] || cle);
@@ -200,7 +288,7 @@ async function router() {
     suivre(f) { minuteur = setInterval(() => f().catch(() => {}), INTERVALLE_MS); },
   };
   try {
-    etat = await api('/api/etat');
+    [etat] = await Promise.all([api('/api/etat'), chargerOutils()]);
     if (gen !== generation) return;
     c.produit.textContent = etat.produit || 'Console de gouvernance';
     for (const a of c.nav.querySelectorAll('a')) {

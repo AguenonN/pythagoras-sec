@@ -27,7 +27,7 @@
             onclick: () => allerA('journal', { j: j.id, s: ch.s ? ch.s.id : '' }) },
             h('span', { class: 'gras' }, nomChoix(ch) + ' · ' + heureMin(dateDemande(j))),
             h('span', { class: 'moyen second' }, j.demande ? j.demande.slice(0, 70) + (j.demande.length > 70 ? '…' : '') : j.id),
-            h('span', { class: 'petit second' }, (j.sessions.length ? resume + ' appel(s)' : 'aucun appel d\'outil') + (j.statut ? ' · ' + STATUT_SESSION[j.statut] : '')),
+            h('span', { class: 'petit second' }, (j.sessions.length ? resume + ' appel(s)' : 'aucun appel d\'outil') + (j.rejetee ? ' · rejetée' : j.statut ? ' · ' + STATUT_SESSION[j.statut] : '')),
             ligneChaineSession(j)),
           j.sessions.length > 1 ? j.sessions.map(s => h('button', { type: 'button', class: 'petit second' + (j.id === courante.j.id && courante.s && s.id === courante.s.id ? ' gras' : ''),
             onclick: () => allerA('journal', { j: j.id, s: s.id }) }, '↳ session ' + nomSession(s.id) + ' · ' + s.appels + ' appel(s)')) : null);
@@ -62,7 +62,7 @@
       onkeydown: ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onclick(); } } },
       h('span', { class: 'num' }, e.seq),
       h('span', e.sous_agent ? { class: 'tiret', style: 'border-radius:12px;padding:2px 8px;display:inline-block' } : {}, e.sous_agent || nd('—')),
-      h('span', { class: 'mono moyen' }, e.outil),
+      outilLisible(e.serveur, e.outil, { class: 'moyen' }),
       serveurCellule(e),
       decisionCellule(e, fonde));
   }
@@ -105,6 +105,8 @@
       h('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap' }, badge(e.badge, e.libelle, 'grand'),
         h('span', { class: 'moyen second' }, heureSec(e.ts) + ' · Europe/Paris')),
       e.origine_libelle ? h('p', { class: 'moyen gras', style: 'color:var(--non)' }, e.origine_libelle) : null,
+      e.rejet ? h('div', { class: 'carte compacte', style: 'border-color:var(--ref)' },
+        h('b', { class: 'erreur' }, texteRejet(e.rejet)), h('span', { class: 'petit second' }, e.rejet.mention)) : null,
       e.valide_par && e.valide_par.length ? h('p', { class: 'moyen ok-txt gras' }, 'Validé par ' + e.valide_par.map(v => nomValideur(v) + ' (' + v.role + ')').join(', ')) : null,
       appliquees.length ? appliquees.map(a => carteDirective(a, liens)) :
         h('div', { class: 'carte compacte' }, h('div', { class: 'moyen' }, motifAffiche(e.motif)), h('div', { class: 'moyen second' }, 'Aucune directive appliquée à cet appel.')),
@@ -143,7 +145,7 @@
   function celluleDemande(l) {
     return h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
       h('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' },
-        h('span', { class: 'mono gras' }, l.outil),
+        outilLisible('', l.outil, { class: 'gras' }),
         l.delegation ? h('span', { class: 'pastille' }, 'délégation · hors du gate') : null,
         l.ts ? h('span', { class: 'petit second' }, heureSec(l.ts)) : null),
       l.arguments.length ? l.arguments.map(argument) : h('span', { class: 'petit second' }, 'aucun argument'),
@@ -165,6 +167,7 @@
       h('div', { class: 'petit second' }, motifAffiche(e.motif)),
       (e.champs_retires || []).length ? h('div', { class: 'petit' }, 'Champs retirés avant envoi : ' + e.champs_retires.join(', ')) : null,
       e.badge === 'en_attente' ? h('div', { class: 'moyen', style: 'color:var(--accent)' }, 'Mise en attente' + (roles ? ' : validation ' + roles + ' requise' : '')) : null,
+      e.rejet ? h('div', { class: 'moyen erreur' }, 'Mise en attente, puis ' + texteRejet(e.rejet).charAt(0).toLowerCase() + texteRejet(e.rejet).slice(1) + ' (' + e.rejet.mention + ')') : null,
       (l.intermediaires || []).map(i => h('div', { class: 'petit second' },
         'Repris (appel n° ' + i.seq + ', ' + heureSec(i.ts) + ') puis remis en attente : ' + motifAffiche(i.motif))),
       l.suite ? h('div', { class: 'carte compacte' },
@@ -216,7 +219,8 @@
           h('div', { style: 'display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap' },
             h('div', { style: 'display:flex;flex-direction:column;gap:4px' },
               h('h1', {}, 'Demande ' + nomSession(v.session || v.journal)),
-              h('div', { class: 'second' }, 'Demande : ', v.demande ? '« ' + v.demande + ' »' : nd('non disponible'))),
+              h('div', { class: 'second' }, 'Demande : ', v.demande ? '« ' + v.demande + ' »' : nd('non disponible')),
+              v.rejet ? h('div', { class: 'erreur gras' }, 'Demande rejetée par ' + parQui(v.rejet) + ' à ' + heureSec(v.rejet.date) + ' · ' + v.rejet.mention) : null),
             pastilleChaine(v.verification)),
           onglets(),
           onglet === 'demande' ? tableauDemande(donneesDemande) : null,

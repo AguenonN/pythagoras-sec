@@ -39,6 +39,9 @@ type Depot struct {
 	// Juriste est l'identité qui signe les actions de l'écran de
 	// rédaction (auteur des nouvelles versions des règles).
 	Juriste string
+	// Conseiller est l'identité connectée au poste conseiller (demandeur
+	// proposé par défaut). Vide : le demandeur de la demande la plus récente.
+	Conseiller string
 	// Commandes sont les programmes que la console appelle ; elle ne
 	// signe, ne compile et ne lance rien elle-même.
 	Commandes Commandes

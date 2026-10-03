@@ -52,6 +52,7 @@ func (s *Serveur) Handler() http.Handler {
 	mux.HandleFunc("GET /api/journal/{id}/demande", s.demande)
 	mux.HandleFunc("GET /api/identites", s.identites)
 	mux.HandleFunc("GET /api/suggestions", s.suggestions)
+	mux.HandleFunc("GET /api/outils", s.outils)
 	mux.HandleFunc("POST /api/lancer", s.lancer)
 	mux.HandleFunc("GET /api/lancements", s.lancements)
 	mux.HandleFunc("GET /api/regles", s.regles)
@@ -157,8 +158,9 @@ type journalListe struct {
 	Entrees  int             `json:"entrees"`
 	Ecart    int             `json:"premier_ecart"`
 	Sessions []SessionResume `json:"sessions"`
-	Debut    *time.Time      `json:"debut,omitempty"`  // etat.json, sinon première session
-	Statut   string          `json:"statut,omitempty"` // etat.json
+	Debut    *time.Time      `json:"debut,omitempty"`   // etat.json, sinon première session
+	Statut   string          `json:"statut,omitempty"`  // etat.json
+	Rejetee  bool            `json:"rejetee,omitempty"` // un rejet consigné par la console
 	Demande  string          `json:"demande,omitempty"`
 }
 
@@ -174,7 +176,9 @@ func (s *Serveur) etat(w http.ResponseWriter, r *http.Request) {
 		JuristeNom   string         `json:"juriste_nom"`
 		Attentes     int            `json:"attentes"`
 		Propositions int            `json:"propositions"`
+		Conseiller   string         `json:"conseiller,omitempty"`
 	}{Journaux: []journalListe{}, Jeux: []jeuListe{}, Cle: len(s.Depot.Cle) > 0}
+	var recente time.Time
 	for _, st := range s.tousEtats() {
 		jl := journalListe{ID: st.Journal.ID, Verif: st.Verif, Entrees: len(st.Entrees), Ecart: st.Verif.PremierEcart(), Sessions: Sessions(st)}
 		if len(jl.Sessions) > 0 {
@@ -186,6 +190,10 @@ func (s *Serveur) etat(w http.ResponseWriter, r *http.Request) {
 				jl.Debut = st.Dossier.Debut
 			}
 			jl.Statut, jl.Demande = st.Dossier.Statut, st.Dossier.Demande
+			jl.Rejetee = len(s.Depot.rejetsDe(st)) > 0
+			if st.Dossier.Demandeur != "" && jl.Debut != nil && !jl.Debut.Before(recente) {
+				recente, out.Conseiller = *jl.Debut, st.Dossier.Demandeur
+			}
 			if st.Dossier.Statut == StatutEnAttente {
 				out.Attentes++
 			}
@@ -196,6 +204,11 @@ func (s *Serveur) etat(w http.ResponseWriter, r *http.Request) {
 	for i, j := range jeux {
 		out.Jeux = append(out.Jeux, jeuListe{Index: i, Libelle: j.Libelle(), Empreinte: j.Jeu.Meta.Empreinte, Source: j.Source,
 			Directives: len(j.Jeu.Directives), Version: j.Jeu.Meta.Version, Courant: j.Courant, DateEffet: j.Jeu.Meta.DateEffet})
+	}
+	if c := s.Depot.Conseiller; c != "" {
+		if _, ok := s.Depot.Fiche(c, time.Now()); ok {
+			out.Conseiller = c
+		}
 	}
 	out.Produit = s.Produit
 	out.Juriste, out.JuristeNom = s.Depot.Juriste, s.Depot.NomIdentite(s.Depot.Juriste)
@@ -316,6 +329,10 @@ func (s *Serveur) suggestions(w http.ResponseWriter, r *http.Request) {
 	ecrire(w, map[string]any{"suggestions": s.Depot.Suggestions()})
 }
 
+func (s *Serveur) outils(w http.ResponseWriter, r *http.Request) {
+	ecrire(w, map[string]any{"outils": s.Depot.LibellesOutils()})
+}
+
 func (s *Serveur) lancements(w http.ResponseWriter, r *http.Request) {
 	ecrire(w, map[string]any{"lancements": s.lanceur.Liste()})
 }
@@ -376,19 +393,25 @@ func (s *Serveur) valider(w http.ResponseWriter, r *http.Request) {
 		echec(w, err)
 		return
 	}
-	ecrire(w, a)
+	// La carte de décision de l'écran 5 : qui a signé, sous quel rôle, quand
+	// le jeton a été déposé (les contrôles viendront du journal, à la reprise).
+	ecrire(w, struct {
+		*AttenteVue
+		Depot JetonDepose `json:"depot"`
+	}{a, JetonDepose{Valideur: in.Valideur, Nom: s.Depot.NomIdentite(in.Valideur), Role: in.Role, Date: time.Now().UTC()}})
 }
 
 func (s *Serveur) rejeter(w http.ResponseWriter, r *http.Request) {
 	var in struct {
 		Journal  string `json:"journal"`
 		Valideur string `json:"valideur"`
+		Role     string `json:"role"`
 		Motif    string `json:"motif"`
 	}
 	if !lireCorps(w, r, &in) {
 		return
 	}
-	rj, err := s.Depot.Rejeter(in.Journal, in.Valideur, in.Motif)
+	rj, err := s.Depot.Rejeter(in.Journal, in.Valideur, in.Role, in.Motif)
 	if err != nil {
 		echec(w, err)
 		return
@@ -411,7 +434,8 @@ func (s *Serveur) redaction(w http.ResponseWriter, r *http.Request) {
 		Regles       *VueRegles        `json:"regles,omitempty"`
 		Origines     map[string]string `json:"origines"`
 		Refus        []string          `json:"jeux_refuses"`
-	}{Propositions: s.Depot.ListerPropositions(), Juriste: s.Depot.Juriste, JuristeNom: s.Depot.NomIdentite(s.Depot.Juriste),
+		Mode         string            `json:"mode_compilateur"` // reel | rejeu
+	}{Mode: s.Depot.ModeCompilateur(), Propositions: s.Depot.ListerPropositions(), Juriste: s.Depot.Juriste, JuristeNom: s.Depot.NomIdentite(s.Depot.Juriste),
 		Origines: map[string]string{}, Refus: append([]string{}, refus...)}
 	if jc := EnVigueur(jeux); jc != nil {
 		out.Regles = s.Depot.ReglesEnVigueur(*jc, nil, jeux, "")

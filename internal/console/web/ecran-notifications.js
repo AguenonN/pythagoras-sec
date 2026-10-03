@@ -26,7 +26,7 @@
               h('span', {}, h('span', { class: 'badge ' + (CLASSE[n.statut] || 'b-indisponible') }, REMISE[n.statut] || n.statut || ND)),
               h('span', { class: 'moyen second' },
                 (RYTHME[n.rythme] || n.rythme) + (n.si_echec === 'refuser' ? ' · si la remise échoue, l\'appel est refusé' : '') +
-                (n.remis ? ' · ' + n.remis + ' destinataire(s) atteint(s)' : '') + (n.outil ? ' · appel ' + n.outil : '') + ' · ',
+                (n.remis ? ' · ' + n.remis + ' destinataire(s) atteint(s)' : '') + (n.outil ? ' · appel ' + libelleOutil(n.serveur, n.outil) : '') + ' · ',
                 lienSession(n.journal, n.session, nomSession(n.session)))))
           ] : h('p', { class: 'second' }, 'Aucune notification pour l\'instant.')))));
     }

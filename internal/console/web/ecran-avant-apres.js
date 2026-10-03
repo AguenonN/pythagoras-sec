@@ -23,7 +23,7 @@
     return h('div', { class: 'rang-aa grille-aa2' + (l.change ? ' diff' : '') },
       h('span', { class: 'num mono second' }, l.seq),
       h('div', { style: 'display:flex;flex-direction:column;gap:2px' },
-        h('span', { class: 'mono moyen' + (l.change ? ' gras' : '') }, l.outil),
+        outilLisible(l.serveur, l.outil, { class: 'moyen' + (l.change ? ' gras' : '') }),
         h('span', { class: 'second petit' }, l.serveur + ' · ' + nomSession(l.session) + ' · ' + heureMin(l.ts)),
         l.change ? h('span', { class: 'petit gras', style: 'color:var(--cav)' },
           'Ce qui change : ' + l.differences.map(d => CHAMPS[d] || d).join(', ') + ' · ' + (l.qualification === 'violation' ? 'violation' : 'exposition')) : null),

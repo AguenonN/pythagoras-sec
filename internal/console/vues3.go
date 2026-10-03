@@ -26,8 +26,55 @@ var reEmpreinte = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9:_-]{7,199}$`)
 type Rejet struct {
 	Valideur string    `json:"valideur"`
 	Nom      string    `json:"nom,omitempty"`
+	Role     string    `json:"role,omitempty"` // rôle sous lequel le valideur a rejeté
 	Motif    string    `json:"motif"`
 	Date     time.Time `json:"date"`
+}
+
+// JetonDepose : un jeton signé par mcp-approve et déposé par la console.
+type JetonDepose struct {
+	Valideur string    `json:"valideur"`
+	Nom      string    `json:"nom,omitempty"`
+	Role     string    `json:"role"`
+	Date     time.Time `json:"date"`
+}
+
+// MentionRejet accompagne tout rejet affiché : le journal signé ne le porte
+// pas (l'engine n'a pas été rappelé), c'est la console qui l'a consigné.
+const MentionRejet = "décision consignée par la console, hors journal signé"
+
+// BadgeRejete : appel en attente dont la validation a été rejetée
+// (approbations/<empreinte>/rejet.json). Le journal garde l'attente ;
+// l'écran montre le rejet, avec sa mention.
+const BadgeRejete = "rejete"
+
+// RejetVue est un rejet tel que l'écran le montre.
+type RejetVue struct {
+	Rejet
+	Seq     int    `json:"seq"`
+	Mention string `json:"mention"`
+}
+
+// rejetsDe rend les rejets consignés pour les appels en attente du journal
+// qui n'ont pas été repris, par empreinte transmise.
+func (d *Depot) rejetsDe(st *Etat) map[string]*Rejet {
+	out := map[string]*Rejet{}
+	for _, e := range st.Entrees {
+		if e.Type != journal.AppelT || e.Decision == nil || e.Decision.Effet != string(directive.AttendreValidation) || e.Appel == nil {
+			continue
+		}
+		emp := e.Appel.EmpreinteTransmise
+		if _, vu := out[emp]; vu || emp == "" {
+			continue
+		}
+		if r := d.LireRejet(emp); r != nil {
+			if r.Nom == "" {
+				r.Nom = d.NomIdentite(r.Valideur)
+			}
+			out[emp] = r
+		}
+	}
+	return out
 }
 
 // Controle est l'un des quatre contrôles que l'engine fait avant la
