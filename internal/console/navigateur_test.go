@@ -102,3 +102,32 @@ func TestNavigateurFormulaires(t *testing.T) {
 		t.Fatalf("formulaires reconstruits ou saisie perdue : %v", err)
 	}
 }
+
+// Points 4 et 5 (console-3), dans le navigateur : après « Signer et
+// valider » puis « Rejeter », une carte de décision reste à l'écran jusqu'au
+// clic ; le rejet se voit au Poste et au Journal.
+func TestNavigateurDecision(t *testing.T) {
+	py := navigateur(t)
+	b := nouveauBanc(t)
+	longue := func(c *simulateur.Config) { c.Attente = 2 * time.Minute }
+	a, finA := b.demandeAsyncCfg(longue, claire, "Peut-on accorder un prêt de 120 000 euros pour le dossier DOS-FICTIF-002 ?")
+	b.attendreStatut(a, StatutEnAttente)
+	r, finR := b.demandeAsyncCfg(longue, claire, "Peut-on accorder un prêt de 150 000 euros pour le dossier DOS-FICTIF-002 ?")
+	b.attendreStatut(r, StatutEnAttente)
+	web, _ := filepath.Abs("web")
+	b.Srv.Dev = web
+	srv := httptest.NewServer(b.Srv.Handler())
+	defer srv.Close()
+	script, _ := filepath.Abs("testdata/navigateur/decision.py")
+	out, err := exec.Command(py, script, srv.URL, a, r).CombinedOutput()
+	t.Logf("%s", out)
+	for id, fin := range map[string]chan error{a: finA, r: finR} {
+		if st := b.etat(id); st.Dossier != nil && st.Dossier.Statut == StatutEnAttente {
+			_, _ = b.Dep.Rejeter(id, anna, "", "fin du test")
+		}
+		<-fin
+	}
+	if err != nil {
+		t.Fatalf("carte de décision ou rejet invisible : %v", err)
+	}
+}

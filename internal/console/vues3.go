@@ -31,6 +31,14 @@ type Rejet struct {
 	Date     time.Time `json:"date"`
 }
 
+// JetonDepose : un jeton signé par mcp-approve et déposé par la console.
+type JetonDepose struct {
+	Valideur string    `json:"valideur"`
+	Nom      string    `json:"nom,omitempty"`
+	Role     string    `json:"role"`
+	Date     time.Time `json:"date"`
+}
+
 // MentionRejet accompagne tout rejet affiché : le journal signé ne le porte
 // pas (l'engine n'a pas été rappelé), c'est la console qui l'a consigné.
 const MentionRejet = "décision consignée par la console, hors journal signé"

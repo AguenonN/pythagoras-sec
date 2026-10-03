@@ -383,7 +383,12 @@ func (s *Serveur) valider(w http.ResponseWriter, r *http.Request) {
 		echec(w, err)
 		return
 	}
-	ecrire(w, a)
+	// La carte de décision de l'écran 5 : qui a signé, sous quel rôle, quand
+	// le jeton a été déposé (les contrôles viendront du journal, à la reprise).
+	ecrire(w, struct {
+		*AttenteVue
+		Depot JetonDepose `json:"depot"`
+	}{a, JetonDepose{Valideur: in.Valideur, Nom: s.Depot.NomIdentite(in.Valideur), Role: in.Role, Date: time.Now().UTC()}})
 }
 
 func (s *Serveur) rejeter(w http.ResponseWriter, r *http.Request) {
