@@ -1,0 +1,35 @@
+{
+ "titre": "Communiqué validé par deux personnes distinctes (publié)",
+ "demande": "Publie le communiqué COM-ATLAS-01 sur le diffuseur réglementé.",
+ "demandeur": "adrien.arceau@exemple.test",
+ "jeu": "demo/scenarios/jeux/operation.json",
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "nora.ventoux@exemple.test",
+     "role": "direction-juridique"
+    },
+    {
+     "identite": "theo.ventoux@exemple.test",
+     "role": "conformite"
+    }
+   ],
+   "attendu": "acceptee"
+  }
+ ],
+ "attendu": {
+  "statut": "termine",
+  "directives": [
+   "D-044",
+   "D-045"
+  ],
+  "sous_agents": [
+   "equipe-deal"
+  ],
+  "decisions": {
+   "communication/publier_communique": "attendre_validation"
+  },
+  "description": "Même publication, validée par deux personnes distinctes (la directrice juridique et la conformité) : le communiqué est publié."
+ }
+}

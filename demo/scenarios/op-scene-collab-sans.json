@@ -1,0 +1,18 @@
+{
+ "titre": "Mauvais collaborateur — sans règle",
+ "demande": "Cherche dans la data room tout ce qui concerne Biolys et lis-moi les documents trouvés.",
+ "demandeur": "damien.arceau@exemple.test",
+ "jeu": "demo/directives/demo.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "sous_agents": [
+   "equipe-deal"
+  ],
+  "decisions": {
+   "data-room/lire_document": "autoriser"
+  },
+  "description": "Scène « sans règle » du mauvais collaborateur : sans les directives ATLAS, il lit librement les documents du projet."
+ }
+}

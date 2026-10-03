@@ -1,0 +1,18 @@
+{
+ "titre": "Message externe sans lecture de la data room (passe)",
+ "demande": "Envoie un message externe à contact@banque-lemania.example pour proposer un rendez-vous de courtoisie le mois prochain, sans pièce jointe et sans document de la data room.",
+ "demandeur": "chloe.arceau@exemple.test",
+ "jeu": "demo/scenarios/jeux/operation.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "sous_agents": [
+   "equipe-deal"
+  ],
+  "decisions": {
+   "messagerie/envoyer_message": "autoriser"
+  },
+  "description": "Message externe sans aucune lecture de la data room : l'envoi passe (D-041 fausse, la session n'a pas consulté la data room)."
+ }
+}

@@ -32,6 +32,14 @@ Branche : `feat/operation` (worktree). Engine **non modifié**. Tout est **ficti
   Aucune règle dans les consignes. `python3 -m orchestrateur sous-agents` les liste.
   Tests Python **verts** (`test_orchestrateur`, `test_jeux`, `test_secteurs`).
 
+- **15 scénarios** (`demo/scenarios/op-*.json`) + leurs tests de rejeu hors ligne
+  (`test/extension/scenario_op_*_test.go`, ignorés tant que non enregistrés) :
+  pour chaque règle un piège et un témoin (D-040 à D-046), et les 3 scènes « sans »
+  (délit d'initié, fuite par courriel, mauvais collaborateur) ; les scènes « avec »
+  sont les pièges correspondants (op-initie-piege, op-divulgation-piege, op-acces-piege).
+- **Harnais vérifié** : `scripts/lancer-demo.sh` prépare le gate avec **12/12 serveurs
+  attestés (dont les 4 nouveaux)** ; le rejeu hors ligne d'un scénario existant est conforme.
+
 ## 2. Ce qui n'est pas fait, et pourquoi
 
 ## 3. Décisions prises seul (avec justification)
