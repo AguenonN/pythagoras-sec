@@ -196,3 +196,10 @@ scripts/lancer-demo.sh scenario op-divulgation-piege --mode rejeu      # refus D
 go test -count=1 -run 'TestSceneVierge|TestScenario_op|TestJournalAutreCle|TestDemandeDirecte' ./test/extension/
 (cd agents && python3 -m unittest tests.test_scene_courante)           # D-009, D-010 hors ligne
 ```
+
+## Derniers points avant fusion (03/10, fin de soirée)
+
+1. **Routage des trois scènes ATLAS** : déjà mesuré plus haut (« Routage des trois scènes ATLAS jouées en direct ») selon exactement ce protocole — fuite 5/5, initié 5/5, mauvais collaborateur 0/5 puis 5/5 après reformulation de la demande ; scénario, demande suggérée, `operation.md` et secours mis à jour. **Non refait** (environ 115 appels pour un résultat déjà acquis).
+2. **`reprises[].roles` à `null` (exception console autorisée par Manu)** : origine côté serveur, `internal/console/vues3.go` l. 209-210 et 286-287 — quand l'approbation ne porte aucun rôle (validation « par tout validateur », D-016, D-017), la vue reprend `Decision.Validation.Roles`, `nil`, d'où `null`. **Mais l'interface ne le parcourt jamais sans garde** : `ecran-validation.js` l. 56 (`a.roles && a.roles.length`), l. 91 (`a.roles || []`, repris l. 112) ; les autres écrans (`avant-apres`, `poste`, `journal`) gardent aussi. Condition de l'exception (« si oui, corrige ») non remplie : **console non modifiée**. À faire après dimanche, si l'on veut une API sans `null` : `[]` à ces deux endroits du serveur, avec un test sur une validation sans rôle.
+
+Mistral : **400 appels sur 550** (aucun appel pour ces deux points).
