@@ -1,0 +1,10 @@
+{
+  "serveurs": ["data-room", "messagerie", "bourse", "communication"],
+  "etiquettes": {
+    "serveurs": {},
+    "outils": {
+      "data-room/lire_document": ["information-privilegiee", "projet-atlas"],
+      "data-room/partager_document": ["transfert_donnees"]
+    }
+  }
+}

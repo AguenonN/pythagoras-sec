@@ -1,0 +1,27 @@
+{
+  "description": "Communication fictive : préparation (lecture de projets de communiqué) et publication d'un communiqué.",
+  "outils": [
+    {
+      "nom": "preparer_communique",
+      "description": "Lit un projet de communiqué fictif : titre, projet, statut, corps.",
+      "genre": "lire",
+      "readOnlyHint": true,
+      "collection": "communiques",
+      "arguments": [
+        {"nom": "communique_id", "type": "string", "description": "identifiant du communiqué, par exemple COM-ATLAS-01", "obligatoire": true, "champ": "id"}
+      ]
+    },
+    {
+      "nom": "publier_communique",
+      "description": "Publie un communiqué (action fictive, enregistrée en mémoire) sur un canal donné.",
+      "genre": "action",
+      "readOnlyHint": false,
+      "reference_prefixe": "COMMUNIQUE-FICTIF",
+      "verifie": [{"argument": "communique_id", "collection": "communiques", "champ": "id"}],
+      "arguments": [
+        {"nom": "communique_id", "type": "string", "description": "identifiant du communiqué à publier", "obligatoire": true},
+        {"nom": "canal", "type": "string", "description": "canal de publication, par exemple « site institutionnel » ou « diffuseur réglementé »", "obligatoire": true}
+      ]
+    }
+  ]
+}

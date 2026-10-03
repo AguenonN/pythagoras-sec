@@ -1,0 +1,9 @@
+{
+  "avertissement": "DONNÉES FICTIVES inventées pour la démonstration : projets de communiqué imaginaires, projet ATLAS fictif. Aucune entreprise réelle.",
+  "collections": {
+    "communiques": [
+      {"id": "COM-ATLAS-01", "projet": "atlas", "titre": "Projet de communiqué — rapprochement Ventoux / Biolys", "statut": "brouillon", "corps": "Groupe Ventoux SA (fictif) annonce son projet d'acquisition de Biolys SA (fictive). Embargo jusqu'au 15/10/2026. Communiqué fictif."},
+      {"id": "COM-GEN-01", "projet": "general", "titre": "Communiqué — résultats trimestriels Groupe Ventoux SA", "statut": "brouillon", "corps": "Résultats trimestriels fictifs du Groupe Ventoux SA. Communiqué fictif."}
+    ]
+  }
+}

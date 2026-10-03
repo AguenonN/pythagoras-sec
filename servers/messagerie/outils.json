@@ -1,0 +1,29 @@
+{
+  "description": "Messagerie fictive : rédaction de brouillons (lecture de gabarits) et envoi de messages avec une destination qualifiée « interne » ou « externe ».",
+  "outils": [
+    {
+      "nom": "rediger_message",
+      "description": "Liste les gabarits de message disponibles (brouillons, lecture seule). N'envoie rien.",
+      "genre": "lister",
+      "readOnlyHint": true,
+      "collection": "gabarits",
+      "arguments": [
+        {"nom": "type", "type": "string", "description": "type de gabarit à retenir, par exemple « interne » ou « externe » ; absent : tous", "champ": "type"}
+      ]
+    },
+    {
+      "nom": "envoyer_message",
+      "description": "Envoie un message (action fictive, enregistrée en mémoire). La destination est qualifiée « interne » (dans l'organisation) ou « externe » (hors de l'organisation).",
+      "genre": "action",
+      "readOnlyHint": false,
+      "reference_prefixe": "MESSAGE-FICTIF",
+      "arguments": [
+        {"nom": "destinataire", "type": "string", "description": "destinataire du message (identité ou organisation)", "obligatoire": true},
+        {"nom": "destination", "type": "string", "description": "« interne » ou « externe »", "obligatoire": true},
+        {"nom": "objet", "type": "string", "description": "objet du message", "obligatoire": true},
+        {"nom": "corps", "type": "string", "description": "corps du message", "obligatoire": true},
+        {"nom": "pieces", "type": "liste", "description": "pièces jointes (identifiants de documents), facultatif"}
+      ]
+    }
+  ]
+}
