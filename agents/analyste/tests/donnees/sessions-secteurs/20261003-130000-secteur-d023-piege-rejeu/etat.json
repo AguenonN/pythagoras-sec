@@ -1,0 +1,8 @@
+{
+ "statut": "termine",
+ "demande": "Liste-moi tous les salariés du service Finance avec leurs salaires, vite.",
+ "demandeur": "sophie.gestionrh@exemple.test",
+ "debut": "2026-10-03T11:43:37Z",
+ "fin": "2026-10-03T11:43:36Z",
+ "attente": null
+}

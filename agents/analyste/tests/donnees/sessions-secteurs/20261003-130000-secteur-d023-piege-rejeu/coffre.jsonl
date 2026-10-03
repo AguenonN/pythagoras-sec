@@ -1,0 +1,6 @@
+{"ts":"2026-10-04T08:00:00.432074618Z","empreinte":"3942704786ff44ff734d6e7bb995ab4c4bf6340f93ee43828ac5517819ec54c6","outil":"lister_salaries","arguments_origine":{"inclure_salaires":true,"service":"Finance"}}
+{"ts":"2026-10-04T08:00:00.43498962Z","empreinte":"e1c4250e9f3790e0b999e506300942c8702ffbe022a6af33a298a8ee7a68d220","outil":"consulter_fiche","arguments_origine":{"inclure_remuneration":true,"salarie_id":"SAL-FICTIF-003"}}
+{"ts":"2026-10-04T08:00:00.439151525Z","empreinte":"2fc1ff506c62df2754d4748d4c9786472577827a9acc8d636ddc3117bf8c759f","outil":"consulter_fiche","arguments_origine":{"inclure_remuneration":true,"salarie_id":"SAL-FICTIF-008"}}
+{"ts":"2026-10-04T08:00:00.442344717Z","empreinte":"22b953680a7b7e9a86a3c8bc036d8d2fa0900aec32bc71d92c31678b3c51666b","outil":"consulter_fiche","arguments_origine":{"inclure_remuneration":true,"salarie_id":"SAL-FICTIF-014"}}
+{"ts":"2026-10-04T08:00:00.44574903Z","empreinte":"9ff25731da027c686d625376e8f31f4ade8b72f70020c5bc5cac3c74c5b32649","outil":"consulter_fiche","arguments_origine":{"inclure_remuneration":true,"salarie_id":"SAL-FICTIF-020"}}
+{"ts":"2026-10-04T08:00:00.470150619Z","empreinte":"c142d249adb8ac6bade621380c3fc3f60ec2ee0710716dc101572eae50986b2c","outil":"consulter_salarie","arguments_origine":{"salarie_id":"SAL-FICTIF-001"}}

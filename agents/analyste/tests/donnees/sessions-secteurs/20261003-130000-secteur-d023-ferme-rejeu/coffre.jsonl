@@ -1,0 +1,10 @@
+{"ts":"2026-10-04T08:00:00.428927531Z","empreinte":"3942704786ff44ff734d6e7bb995ab4c4bf6340f93ee43828ac5517819ec54c6","outil":"lister_salaries","arguments_origine":{"inclure_salaires":true,"service":"Finance"}}
+{"ts":"2026-10-04T08:00:00.432130633Z","empreinte":"e1c4250e9f3790e0b999e506300942c8702ffbe022a6af33a298a8ee7a68d220","outil":"consulter_fiche","arguments_origine":{"inclure_remuneration":true,"salarie_id":"SAL-FICTIF-003"}}
+{"ts":"2026-10-04T08:00:00.43566387Z","empreinte":"2fc1ff506c62df2754d4748d4c9786472577827a9acc8d636ddc3117bf8c759f","outil":"consulter_fiche","arguments_origine":{"inclure_remuneration":true,"salarie_id":"SAL-FICTIF-008"}}
+{"ts":"2026-10-04T08:00:00.440034913Z","empreinte":"22b953680a7b7e9a86a3c8bc036d8d2fa0900aec32bc71d92c31678b3c51666b","outil":"consulter_fiche","arguments_origine":{"inclure_remuneration":true,"salarie_id":"SAL-FICTIF-014"}}
+{"ts":"2026-10-04T08:00:00.443474795Z","empreinte":"9ff25731da027c686d625376e8f31f4ade8b72f70020c5bc5cac3c74c5b32649","outil":"consulter_fiche","arguments_origine":{"inclure_remuneration":true,"salarie_id":"SAL-FICTIF-020"}}
+{"ts":"2026-10-04T08:00:00.464440988Z","empreinte":"c142d249adb8ac6bade621380c3fc3f60ec2ee0710716dc101572eae50986b2c","outil":"consulter_salarie","arguments_origine":{"salarie_id":"SAL-FICTIF-001"}}
+{"ts":"2026-10-04T08:00:00.467932711Z","empreinte":"b85c7e57323ca1f26ac64a6eaf02cf6b41c44d0a490fc36362936e0460875c38","outil":"consulter_salarie","arguments_origine":{"salarie_id":"SAL-FICTIF-002"}}
+{"ts":"2026-10-04T08:00:00.471276942Z","empreinte":"da6d9d06fac85a7698f28dcd05214e2250dda7cfc2666c865cce2bd49911b69d","outil":"consulter_salarie","arguments_origine":{"salarie_id":"SAL-FICTIF-003"}}
+{"ts":"2026-10-04T08:00:00.475448338Z","empreinte":"a6379162586dcf3d48460b700e20df9fba12ff8961b890c0058cd86677c215fc","outil":"consulter_salarie","arguments_origine":{"salarie_id":"SAL-FICTIF-004"}}
+{"ts":"2026-10-04T08:00:00.479538374Z","empreinte":"b0e9edbd96d3a6aea3b3f51105c888764c694dfb343794cb6ecca4fd211cb351","outil":"consulter_salarie","arguments_origine":{"salarie_id":"SAL-FICTIF-005"}}

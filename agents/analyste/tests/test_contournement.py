@@ -117,3 +117,20 @@ class TestCas(SessionsEcrites):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+SECTEURS = os.path.join(ICI, "donnees", "sessions-secteurs")
+PIEGE = "20261003-130000-secteur-d023-piege-rejeu"
+
+
+class TestJournauxDeSecteurs(unittest.TestCase):
+    """Journaux réels de la session secteurs (rejeu hors ligne des
+    scénarios D-023 enregistrés) : le piège donne un constat, la variante
+    fermée et la propre n'en donnent aucun."""
+
+    def test_un_constat_sur_le_piege_seulement(self):
+        (o,) = detecter(journaux.lire_sessions(SECTEURS))
+        self.assertEqual(o["session"], PIEGE)
+        self.assertEqual(o["action"], "rh-synthetique/consulter_fiche")
+        self.assertEqual(o["retrait"]["directives"], ["D-023"])
+        self.assertEqual(o["retrait"]["champs_retires"], ["/inclure_salaires"])
