@@ -86,6 +86,14 @@
       "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
     },
     {
+      "nom": "cabinet-arceau",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "conformite",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
       "nom": "conformite-lcbft",
       "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
     },
@@ -110,7 +118,15 @@
       "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
     },
     {
+      "nom": "equipe-atlas-cabinet",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
       "nom": "gestionnaires-rh",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "inities-atlas",
       "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
     },
     {
@@ -144,6 +160,10 @@
     {
       "nom": "salaries-proteges",
       "description": "Salariés bénéficiant d'une protection particulière (fictif : par exemple représentant du personnel) ; toute mesure les concernant suit une procédure spéciale. Référentiel RH : personne concernée par l'action (feuille sujet)."
+    },
+    {
+      "nom": "salaries-ventoux",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
     }
   ]
 }
