@@ -12,6 +12,7 @@
 #	scripts/lancer-demo.sh valider <empreinte> --valideur <id> --role <role>
 #	scripts/lancer-demo.sh verifier <dossier de session>
 #	scripts/lancer-demo.sh comparer <dossier de session> <dossier de session>
+#	scripts/lancer-demo.sh archiver-sessions   (journaux signés avec une autre clé)
 #	scripts/lancer-demo.sh gate ...     # interne : ce que l'orchestrateur lance
 #
 # Options de « demande » (et de « scenario », qui les lit dans le fichier) :
@@ -96,6 +97,45 @@ exiger_prepare() {
 	done
 }
 
+# Le gate relit les journaux des demandes précédentes (-journaux-precedents)
+# et refuse de démarrer si l'un ne se vérifie pas avec la clé courante ;
+# l'orchestrateur n'affiche alors que « le serveur MCP s'est arrêté pendant
+# initialize ». Vérifiés ici d'abord, avec un message clair.
+verifier_journaux_precedents() {
+	local j mauvais=()
+	for j in "$sessions"/*/journal.jsonl; do
+		[[ -s "$j" ]] || continue
+		if ! MCP_GATE_CLE_JOURNAL="$MCP_GATE_CLE_JOURNAL" "$racine/bin/journal" verifier "$j" >/dev/null 2>&1; then
+			mauvais+=("${j#"$racine"/}")
+		fi
+	done
+	(( ${#mauvais[@]} == 0 )) && return 0
+	echo "lancer-demo: ${#mauvais[@]} journal(aux) ne se vérifie(nt) pas avec la clé courante, dont ${mauvais[0]}" >&2
+	die "journaux signés avec une autre clé : scripts/lancer-demo.sh archiver-sessions"
+}
+
+# Déplace les sessions dont le journal ne se vérifie pas avec la clé
+# courante dans demo/execution/sessions-archivees/<date>/ ; rien n'est
+# supprimé.
+archiver_sessions() {
+	exiger_cle
+	[[ -x "$racine/bin/journal" ]] || die "bin/journal absent ; lancer d'abord scripts/lancer-demo.sh"
+	local dest="$execution/sessions-archivees/$(date +%Y%m%d-%H%M%S)" j d n=0
+	for j in "$sessions"/*/journal.jsonl; do
+		[[ -s "$j" ]] || continue
+		MCP_GATE_CLE_JOURNAL="$MCP_GATE_CLE_JOURNAL" "$racine/bin/journal" verifier "$j" >/dev/null 2>&1 && continue
+		d="$(dirname "$j")"
+		mkdir -p "$dest"
+		mv "$d" "$dest/"
+		n=$((n + 1))
+	done
+	if (( n == 0 )); then
+		echo "lancer-demo: tous les journaux se vérifient avec la clé courante, rien à archiver" >&2
+	else
+		echo "lancer-demo: $n session(s) déplacée(s) dans ${dest#"$racine"/}" >&2
+	fi
+}
+
 registre_de() {
 	case "$1" in
 		normal) echo "$racine/demo/registre.json" ;;
@@ -143,7 +183,11 @@ synchroniser_serveurs() {
 	local s
 	for s in "${serveurs_enregistres[@]}"; do
 		mkdir -p "$racine/$enr_travail/$s"
-		[[ -d "$racine/$enr_serveurs/$s" ]] && cp -RLn "$racine/$enr_serveurs/$s/." "$racine/$enr_travail/$s/"
+		[[ -d "$racine/$enr_serveurs/$s" ]] || continue
+		local f
+		while IFS= read -r -d '' f; do
+			[[ -e "$racine/$enr_travail/$s/$(basename "$f")" ]] || cp "$f" "$racine/$enr_travail/$s/"
+		done < <(find -L "$racine/$enr_serveurs/$s" -maxdepth 1 -type f -print0)
 	done
 	return 0
 }
@@ -270,6 +314,7 @@ demande() {
 	done
 	exiger_cle
 	exiger_prepare
+	verifier_journaux_precedents
 	[[ "$mode" == reel || "$mode" == rejeu ]] || die "--mode reel ou rejeu"
 	[[ "$mode" == rejeu && -z "$enr" ]] && die "--mode rejeu exige --enregistrement"
 	synchroniser_serveurs
@@ -516,6 +561,7 @@ case "$commande" in
 	valider) valider "$@" ;;
 	verifier) verifier "$@" ;;
 	comparer) comparer "$@" ;;
+	archiver-sessions) archiver_sessions ;;
 	-h|--help|aide) usage ;;
 	*) usage ;;
 esac
