@@ -7,9 +7,9 @@
   "date_effet": "2026-10-01T00:00:00+02:00"
  },
  "reponses": {
-  "Le texte mentionne « les salaires et primes sont retirés des fiches salariés consultées ». Doit-on comprendre que cela concerne uniquement l'outil `consulter_fiche` du serveur `rh-synthetique` (qui inclut les rubriques santé, appartenance syndicale et rémunération) ? Ou bien cela s'applique-t-il aussi à d'autres outils comme `consulter_salarie` ou `lister_salaries` ?": "Uniquement l'outil consulter_fiche du serveur rh-synthetique : l'argument /inclure_remuneration est retiré ; les arguments /salarie_id, /inclure_sante, /inclure_syndical et /inclure_situation_familiale sont conservés.",
-  "Le texte précise que les salaires et primes sont retirés « sauf quand le demandeur appartient au service paie ». Faut-il comprendre que cela s'applique uniquement au groupe `paie` de l'annuaire, ou aussi à d'autres groupes ou rôles (par exemple, `gestionnaires-rh` ou `responsable-rh`) ?": "Uniquement le groupe paie de l'annuaire : quand le demandeur est membre du groupe paie, rien n'est retiré.",
-  "Le fondement juridique cité est « Règlement intérieur, confidentialité des rémunérations ; RGPD art. 5 — à valider par le juriste ». Faut-il conserver ces deux fondements (Règlement intérieur et RGPD art. 5) ou seulement l'un des deux ?": "Les deux.",
-  "si_indetermine": "refuser"
+  "si_indetermine": "refuser",
+  "Le texte mentionne « les salaires et primes sont retirés des fiches salariés consultées ». Doit-on comprendre que cela concerne uniquement l'outil `consulter_fiche` du serveur `rh-synthetique` (qui inclut les rubriques santé, appartenance syndicale et rémunération) ? Ou bien cela s'applique-t-il également à d'autres outils comme `consulter_salarie` ou `lister_salaries` ?": "Uniquement l'outil consulter_fiche du serveur rh-synthetique : l'argument /inclure_remuneration est retiré ; les arguments /salarie_id, /inclure_sante, /inclure_syndical et /inclure_situation_familiale sont conservés.",
+  "Le texte précise que les salaires et primes sont « retirés » des fiches consultées. Faut-il les **caviarder** (masquer) ou **refuser** l'accès à l'outil si le demandeur n'appartient pas au service paie ?": "Caviarder : l'argument /inclure_remuneration est retiré de l'appel, qui est ensuite transmis sans lui.",
+  "Le texte mentionne « le demandeur appartient au service paie ». Faut-il utiliser le **groupe** `paie` ou le **rôle** `paie` pour cette condition ?": "Uniquement le groupe paie de l'annuaire : quand le demandeur est membre du groupe paie, rien n'est retiré."
  }
 }

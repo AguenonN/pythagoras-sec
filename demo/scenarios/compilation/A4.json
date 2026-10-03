@@ -7,8 +7,6 @@
   "date_effet": "2026-10-01T00:00:00+02:00"
  },
  "reponses": {
-  "Faut-il bloquer uniquement les actions (modification, virement, etc.) ou aussi la lecture (consultation des comptes, prêts, découverts) pour les clients personnes politiquement exposées ?": "Les deux : la lecture et la modification. Outils visés, du serveur banque-synthetique : consulter_client, lister_comptes_client et historique_operations, où le client est désigné par l'argument /client_id ; effectuer_virement, où le compte est désigné par /compte_debit ; modifier_plafond_decouvert et cloturer_compte, où le compte est désigné par /compte_id. L'appel est refusé quand la personne concernée (client ou compte) appartient au groupe personne-politiquement-exposee. La conformité est le rôle conformite, prévenue en temps réel à chaque tentative ; si elle ne peut pas l'être, l'appel reste refusé.",
-  "Quel est le fondement juridique exact à utiliser pour cette règle ? Le texte mentionne \"Politique interne de la banque — à valider par le responsable juridique\", mais faut-il ajouter un fondement légal ou réglementaire (par exemple, RGPD, LCB-FT, etc.) ?": "Non : seulement « Politique interne de la banque — à valider par le responsable juridique ».",
   "si_indetermine": "refuser",
   "rythme:D-009:conformite": "temps_reel",
   "si_echec:D-009:conformite": "refuser",
@@ -21,6 +19,10 @@
   "rythme:D-026:conformite": "temps_reel",
   "si_echec:D-026:conformite": "refuser",
   "rythme:D-027:conformite": "temps_reel",
-  "si_echec:D-027:conformite": "refuser"
+  "si_echec:D-027:conformite": "refuser",
+  "Le texte mentionne « personne politiquement exposée ». S'agit-il du groupe « personne-politiquement-exposee » du référentiel RH (feuille sujet) ?": "Oui : le groupe personne-politiquement-exposee, résolu au référentiel pour la personne concernée (client ou compte).",
+  "Le texte interdit de « lire ni modifier les comptes, prêts, découverts ou virements ». Faut-il aussi bloquer la consultation des outils de lecture (par exemple, consulter_client, lister_comptes_client, historique_operations) ou seulement les actions (par exemple, attribuer_pret, modifier_plafond_decouvert, effectuer_virement) ?": "Les deux : la lecture et la modification. Outils visés, du serveur banque-synthetique : consulter_client, lister_comptes_client et historique_operations, où le client est désigné par l'argument /client_id ; effectuer_virement, où le compte est désigné par /compte_debit ; modifier_plafond_decouvert et cloturer_compte, où le compte est désigné par /compte_id. L'appel est refusé quand la personne concernée (client ou compte) appartient au groupe personne-politiquement-exposee.",
+  "Le texte précise que « la conformité est prévenue de chaque tentative ». Doit-on notifier un rôle spécifique (par exemple, « conformite » ou « conformite-lcbft ») ?": "Le rôle conformite, prévenu en temps réel à chaque tentative ; si elle ne peut pas l'être, l'appel reste refusé.",
+  "Le fondement cité est « Politique interne de la banque — à valider par le responsable juridique ». Doit-on ajouter un fondement juridique spécifique (par exemple, un article ou un texte) ou se limiter à cette mention ?": "Non : seulement « Politique interne de la banque — à valider par le responsable juridique »."
  }
 }

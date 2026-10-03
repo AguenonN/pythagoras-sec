@@ -15,7 +15,8 @@ from .aides import CATALOGUE_DEMO, catalogue_demo
 RACINE = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 REGISTRE = os.path.join(RACINE, "demo", "registre.json")
 SERVEURS = ["taux-officiel", "recherche-entreprises", "gels-avoirs", "eurlex",
-            "legifrance", "banque-synthetique", "rh-synthetique", "referentiel-rh"]
+            "legifrance", "banque-synthetique", "rh-synthetique", "referentiel-rh",
+            "data-room", "messagerie", "bourse", "communication"]
 
 
 def pointeurs(schema, prefixe=""):

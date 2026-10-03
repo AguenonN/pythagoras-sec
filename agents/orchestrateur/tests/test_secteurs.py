@@ -187,6 +187,17 @@ class TestNumerotationScene(unittest.TestCase):
         self.assertEqual(derouler("weekend", chemin)["directives"][-1]["id"], "D-010")
 
 
+def normaliser(v):
+    """L'ordre des champs autorisés d'un caviardage n'a pas de sens : le
+    compilateur peut les rendre dans un autre ordre d'un enregistrement à
+    l'autre."""
+    if isinstance(v, dict):
+        return {k: (sorted(x) if k == "champs_autorises" else normaliser(x)) for k, x in v.items()}
+    if isinstance(v, list):
+        return [normaliser(x) for x in v]
+    return v
+
+
 class TestPPE(unittest.TestCase):
     """A4 : le texte du juriste se rejoue jusqu'aux six directives, une par
     outil bancaire, refus + notification de la conformité, sujet résolu au
@@ -236,4 +247,4 @@ class TestRemuneration(unittest.TestCase):
             compilee = lire(service.chemin_absolu(fin["jeu_candidat"]))["directives"][-1]
             attendue = installees[ident]
             for k in ("declencheur", "condition", "effets"):
-                self.assertEqual(compilee[k], attendue[k], (cle, k))
+                self.assertEqual(normaliser(compilee[k]), normaliser(attendue[k]), (cle, k))

@@ -28,8 +28,15 @@ func TestCatalogueVersionne(t *testing.T) {
 	}
 	// Les outils du registre ne dépendent que des schema.json : le
 	// catalogue se vérifie sans binaires ni manifeste.
+	// Serveurs de la démo, puis ceux de demo/serveurs-supplementaires.json
+	// (projet ATLAS) : le compilateur les connaît pour la scène en direct.
+	supp, err := LireSupplementaires(racine)
+	if err != nil {
+		t.Fatal(err)
+	}
+	noms := append(append([]string{}, Serveurs...), supp.Serveurs...)
 	r := &registre.Registre{Meta: Meta}
-	for _, nom := range Serveurs {
+	for _, nom := range noms {
 		b, err := os.ReadFile(filepath.Join(racine, "servers", nom, "schema.json"))
 		if err != nil {
 			t.Fatal(err)
@@ -62,11 +69,11 @@ func TestCatalogueVersionne(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Les serveurs ajoutés par scripts/nouveau-serveur.sh ont leur propre
-	// catalogue (demo/execution/extension) : seuls ceux de la démo comptent.
+	// Seuls comptent les serveurs de la démo et les supplémentaires
+	// versionnés.
 	var base []registre.Serveur
 	for _, s := range demo.Serveurs {
-		if contient(Serveurs, s.Nom) {
+		if contient(noms, s.Nom) {
 			base = append(base, s)
 		}
 	}
