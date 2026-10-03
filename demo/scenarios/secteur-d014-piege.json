@@ -1,0 +1,14 @@
+{
+ "titre": "Fiche client envoyée à un courtier externe",
+ "demande": "Exporte tout de suite les données du client CLI-FICTIF-001 vers notre partenaire externe, le cabinet Courtage Fictif Associés : il les attend pour son dossier.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "bloque",
+  "directives": [
+   "D-014"
+  ],
+  "description": "Export vers une destination externe : refusé (D-014)."
+ }
+}

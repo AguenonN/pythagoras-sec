@@ -228,7 +228,8 @@ class TestVerifications(Base):
                         {"id": "s", "type": "sujet", "groupe": "salaries-proteges", "champ": ""}],
              "effets": [{"effet": "refuser"}]}
         self.refuse("Aucune décision RH visant un salarié du groupe salaries-proteges (Code du travail).", p,
-                    "l'argument /salarie_ids n'existe pas pour rh-synthetique/proposer_sanction")
+                    "l'argument /salarie_ids n'existe pas pour rh-synthetique/attribuer_prime, "
+                    "rh-synthetique/convoquer_entretien_prealable")
 
     def test_arbre_invalide_rendu_a_mistral(self):
         p = d_seuil()
@@ -462,8 +463,8 @@ class TestDesignationPersonne(Base):
                             "juriste@cabinet.fr", "2026-10-04T00:00:00Z", existant=demo,
                             reponses=[self.designation("demandeur"), self.SI])
         self.assertEqual(r["etat"], c2.JEU, r["erreurs"])
-        self.assertEqual((r["jeu"]["jeu"]["id"], r["jeu"]["jeu"]["version"], r["ajoutees"]), ("demo", 2, ["D-009"]))
-        self.assertEqual(r["jeu"]["directives"][:8], demo["directives"])
+        self.assertEqual((r["jeu"]["jeu"]["id"], r["jeu"]["jeu"]["version"], r["ajoutees"]), ("demo", demo["jeu"]["version"] + 1, ["D-009"]))
+        self.assertEqual(r["jeu"]["directives"][:len(demo["directives"])], demo["directives"])
 
     def test_reponse_hors_options_redemandee(self):
         r = self.compiler(self.TEXTE, ClientScripte(self.propo("demandeur")), [self.designation("les deux"), self.SI])

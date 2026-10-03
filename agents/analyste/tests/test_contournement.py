@@ -13,6 +13,7 @@ from analyste import __main__ as cli
 from analyste import couverture, detecteurs as det, journaux, plongements, propositions, redaction
 
 from .test_detecteurs import JEU, SessionsEcrites, appel
+from .annuaire_fige import figer
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 CONSTRUITES = os.path.join(ICI, "donnees", "sessions-construites")
@@ -27,6 +28,14 @@ def detecter(sessions, jeu=None):
     occ, _ = det.detecter(sessions, jeu_courant=jeu or couverture.lire_jeu(JEU))
     return occ[det.CONTOURNEMENT_RETRAIT]
 
+
+
+def setUpModule():
+    globals()["_fige"] = figer()
+
+
+def tearDownModule():
+    _fige.stop()
 
 class TestSessionConstruite(unittest.TestCase):
     def test_contournement_trouve(self):

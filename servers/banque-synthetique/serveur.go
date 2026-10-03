@@ -229,14 +229,26 @@ type Banque struct {
 	instantane *Instantane
 	maintenant func() time.Time
 
+	clients map[string]Client
+
 	mu           sync.Mutex
 	attributions map[string]SortieAttribution
 	remises      []SortieRemise
+	compteurs    map[string]int     // références des actions de la clientèle
+	plafonds     map[string]float64 // plafonds modifiés dans le processus
+	clotures     map[string]bool    // comptes clôturés dans le processus
 }
 
-// NouvelleBanque assemble les données.
+// NouvelleBanque assemble les données. Les clients sont ceux embarqués
+// (clients_fictifs.json), contrôlés par ChargerClients.
 func NouvelleBanque(dossiers map[string]Dossier, inst *Instantane, maintenant func() time.Time) *Banque {
-	return &Banque{dossiers: dossiers, instantane: inst, maintenant: maintenant, attributions: map[string]SortieAttribution{}}
+	clients, err := ChargerClients()
+	if err != nil {
+		panic("banque-synthetique: clients_fictifs.json: " + err.Error())
+	}
+	return &Banque{dossiers: dossiers, instantane: inst, maintenant: maintenant, clients: clients,
+		attributions: map[string]SortieAttribution{}, compteurs: map[string]int{},
+		plafonds: map[string]float64{}, clotures: map[string]bool{}}
 }
 
 func vrai() *bool { b := true; return &b }
@@ -273,6 +285,7 @@ func Serveur(b *Banque) *mcp.Server {
 	}, func(_ context.Context, _ *mcp.CallToolRequest, in EntreeRemise) (*mcp.CallToolResult, SortieRemise, error) {
 		return b.remettre(in)
 	})
+	ajouterOutilsClientele(s, b)
 	return s
 }
 

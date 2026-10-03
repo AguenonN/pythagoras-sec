@@ -12,6 +12,7 @@ from analyste import __main__ as cli
 from analyste import critere, detecteurs as det, mesure, redaction
 
 from .test_detecteurs import JEU, SANS_D009, SESSIONS
+from .annuaire_fige import derouler_fige, figer
 
 ICI = os.path.dirname(os.path.abspath(__file__))
 EXEMPLES = os.path.join(os.path.dirname(ICI), "exemples", "propositions")
@@ -27,6 +28,14 @@ def client_rejeu():
 def constats():
     return cli.constats(SESSIONS, JEU)["constats"]
 
+
+
+def setUpModule():
+    globals()["_fige"] = figer()
+
+
+def tearDownModule():
+    _fige.stop()
 
 class TestVueModele(unittest.TestCase):
     def test_aucune_valeur_du_coffre(self):
@@ -137,7 +146,7 @@ class TestMesure(unittest.TestCase):
     def candidat(self):
         with open(JEU, encoding="utf-8") as f:
             demo = json.load(f)
-        r = critere.derouler()
+        r = derouler_fige()
         os.makedirs(os.path.join(self.comp, "conv1"))
         jeu = {"jeu": {"id": "demo", "version": 2, "date_effet": "2026-10-04T11:05:00+02:00", "auteur": "j"},
                "directives": demo["directives"] + r["ajoutees"]}
@@ -219,7 +228,7 @@ class TestMesure(unittest.TestCase):
 class TestCritere(unittest.TestCase):
     def test_d009_hors_ligne(self):
         os.environ.pop("MISTRAL_API_KEY", None)
-        r = critere.derouler()
+        r = derouler_fige()
         self.assertTrue(r["conforme_d009"], r.get("ecarts"))
         (d,) = r["ajoutees"]
         self.assertEqual(d["id"], "D-009")

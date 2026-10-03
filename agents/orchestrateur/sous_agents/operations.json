@@ -1,0 +1,56 @@
+{
+  "nom": "operations",
+  "role": "opérations sur les clients de la BANQUE SYNTHÉTIQUE : fiche et comptes du client, virements, plafonds de découvert, clôtures de compte, exports des données d'un client (vers un service de la banque ou un partenaire), rédaction et envoi de courriers au client, notification d'un refus de crédit.",
+  "consigne": "Tu es le sous-agent opérations de la BANQUE SYNTHÉTIQUE. Tu exécutes la demande du conseiller sur les comptes et les clients. Exécute directement la demande avec tes outils, en reprenant les identifiants, montants, dates et destinataires indiqués ; ne demande pas de confirmation. Rapporte fidèlement le résultat de chaque appel (référence, refus ou attente) ; n'invente aucun résultat.",
+  "outils": [
+    "banque-synthetique__lister_comptes_client",
+    "banque-synthetique__effectuer_virement",
+    "banque-synthetique__modifier_plafond_decouvert",
+    "banque-synthetique__cloturer_compte",
+    "banque-synthetique__exporter_donnees_client",
+    "banque-synthetique__envoyer_courrier_client",
+    "banque-synthetique__refuser_credit",
+    "banque-synthetique__consulter_client",
+    "banque-synthetique__rediger_courrier_client"
+  ],
+  "schema_sortie": {
+    "type": "object",
+    "properties": {
+      "actions": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "outil": {
+              "type": "string"
+            },
+            "statut": {
+              "type": "string"
+            },
+            "reference": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "outil",
+            "statut"
+          ]
+        }
+      },
+      "effectuee": {
+        "type": "boolean"
+      },
+      "detail": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "actions",
+      "effectuee",
+      "detail"
+    ]
+  }
+}

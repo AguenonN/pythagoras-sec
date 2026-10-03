@@ -82,10 +82,16 @@ def lire_parcours(chemin):
     return prop, requete, p.get("reponses") or {}
 
 
-def derouler(chemin=PARCOURS, mode="rejeu"):
+def derouler(chemin=PARCOURS, mode="rejeu", jeu_existant=None, catalogue=None, vocabulaire=None):
+    """``jeu_existant``, ``catalogue`` et ``vocabulaire`` remplacent ceux du
+    parcours et du service : les réponses enregistrées sont indexées par la
+    requête, donc par ces trois fichiers."""
     prop, requete, reponses = lire_parcours(chemin)
+    if jeu_existant:
+        requete["jeu_existant"] = jeu_existant
     with tempfile.TemporaryDirectory() as dossier:
-        svc = service.Service(mode=mode, dossier=dossier, client=fabrique(mode))
+        autres = {k: v for k, v in (("catalogue", catalogue), ("vocabulaire_", vocabulaire)) if v}
+        svc = service.Service(mode=mode, dossier=dossier, client=fabrique(mode), **autres)
         sorties = service.parcours(svc, requete, reponses)
         fin = sorties[-1]
         resultat = {"proposition": prop["id"], "texte": requete["texte"], "tours": len(sorties),

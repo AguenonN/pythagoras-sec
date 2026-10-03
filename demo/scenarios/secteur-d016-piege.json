@@ -1,0 +1,25 @@
+{
+ "titre": "Clôture de compte immédiate",
+ "demande": "Clôture tout de suite le compte CPT-FICTIF-0041 de la cliente CLI-FICTIF-004, elle part à la concurrence.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "claire.analyste@exemple.test",
+     "role": "analyste-risques"
+    }
+   ],
+   "attendu": "rejetee",
+   "motif": "clôture à confirmer avec la cliente"
+  }
+ ],
+ "attendu": {
+  "statut": "bloque",
+  "directives": [
+   "D-016"
+  ],
+  "description": "La clôture attend une seconde personne (D-016, quatre yeux) ; la seconde personne rejette."
+ }
+}

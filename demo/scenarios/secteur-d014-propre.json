@@ -1,0 +1,12 @@
+{
+ "titre": "Export interne d'une fiche client",
+ "demande": "Exporte les données du client CLI-FICTIF-003 vers le service contentieux de la banque.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Destination interne : D-014 évaluée faux ; export transmis."
+ }
+}

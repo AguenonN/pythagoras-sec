@@ -1,0 +1,98 @@
+{
+  "avertissement": "DONNÉES FICTIVES. Clients, comptes, IBAN, revenus, adresses et opérations sont inventés pour la démonstration. Les IBAN commencent par FR76 99999 : aucun établissement réel n'a ce code banque. Les adresses électroniques sont en exemple.test.",
+  "banque": "BANQUE SYNTHETIQUE (fictive)",
+  "clients": [
+    {
+      "client_id": "CLI-FICTIF-001",
+      "nom": "Alice Fictive-Martin",
+      "type": "particulier",
+      "email": "alice.fictive-martin@exemple.test",
+      "adresse": "12 rue Imaginaire, 75000 Ville-Fictive",
+      "revenus_annuels": 42000,
+      "comptes": [
+        {"compte_id": "CPT-FICTIF-0011", "type": "compte courant", "iban": "FR76 9999 9000 0100 0000 0011 042", "solde": 3250.40, "plafond_decouvert": 500},
+        {"compte_id": "CPT-FICTIF-0012", "type": "livret", "iban": "FR76 9999 9000 0100 0000 0012 078", "solde": 18400.00, "plafond_decouvert": 0}
+      ],
+      "operations": [
+        {"date": "2026-09-02", "compte_id": "CPT-FICTIF-0011", "libelle": "Salaire septembre (fictif)", "montant": 3500.00, "contrepartie": "EMPLOYEUR FICTIF SA", "pays": "FR"},
+        {"date": "2026-09-05", "compte_id": "CPT-FICTIF-0011", "libelle": "Loyer (fictif)", "montant": -1100.00, "contrepartie": "SCI FICTIVE DES LILAS", "pays": "FR"},
+        {"date": "2026-09-18", "compte_id": "CPT-FICTIF-0011", "libelle": "Carte, supermarché (fictif)", "montant": -142.37, "contrepartie": "SUPERMARCHE FICTIF", "pays": "FR"}
+      ]
+    },
+    {
+      "client_id": "CLI-FICTIF-002",
+      "nom": "Bernard Fictif-Leroy",
+      "type": "particulier",
+      "email": "bernard.fictif-leroy@exemple.test",
+      "adresse": "3 avenue des Songes, 69000 Ville-Fictive",
+      "revenus_annuels": 31000,
+      "comptes": [
+        {"compte_id": "CPT-FICTIF-0021", "type": "compte courant", "iban": "FR76 9999 9000 0200 0000 0021 015", "solde": 52310.00, "plafond_decouvert": 1000}
+      ],
+      "operations": [
+        {"date": "2026-09-03", "compte_id": "CPT-FICTIF-0021", "libelle": "Dépôt d'espèces (fictif)", "montant": 9500.00, "contrepartie": "GUICHET", "pays": "FR"},
+        {"date": "2026-09-04", "compte_id": "CPT-FICTIF-0021", "libelle": "Dépôt d'espèces (fictif)", "montant": 9800.00, "contrepartie": "GUICHET", "pays": "FR"},
+        {"date": "2026-09-08", "compte_id": "CPT-FICTIF-0021", "libelle": "Dépôt d'espèces (fictif)", "montant": 9700.00, "contrepartie": "GUICHET", "pays": "FR"},
+        {"date": "2026-09-10", "compte_id": "CPT-FICTIF-0021", "libelle": "Virement émis (fictif)", "montant": -27000.00, "contrepartie": "OFFSHORE FICTIVE TRADING LTD", "pays": "PA"}
+      ]
+    },
+    {
+      "client_id": "CLI-FICTIF-003",
+      "nom": "Atelier Fictif du Nord SARL",
+      "type": "professionnel",
+      "email": "contact@atelier-fictif-nord.exemple.test",
+      "adresse": "Zone d'activité Imaginaire, 59000 Ville-Fictive",
+      "revenus_annuels": 410000,
+      "comptes": [
+        {"compte_id": "CPT-FICTIF-0031", "type": "compte professionnel", "iban": "FR76 9999 9000 0300 0000 0031 066", "solde": 87500.00, "plafond_decouvert": 8000}
+      ],
+      "operations": [
+        {"date": "2026-09-01", "compte_id": "CPT-FICTIF-0031", "libelle": "Encaissement client (fictif)", "montant": 24000.00, "contrepartie": "CLIENT FICTIF INDUSTRIE", "pays": "FR"},
+        {"date": "2026-09-15", "compte_id": "CPT-FICTIF-0031", "libelle": "Paiement fournisseur (fictif)", "montant": -12800.00, "contrepartie": "FOURNISSEUR FICTIF GMBH", "pays": "DE"}
+      ]
+    },
+    {
+      "client_id": "CLI-FICTIF-004",
+      "nom": "Chloé Fictive-Bernard",
+      "type": "particulier",
+      "email": "chloe.fictive-bernard@exemple.test",
+      "adresse": "8 impasse du Rêve, 33000 Ville-Fictive",
+      "revenus_annuels": 26500,
+      "comptes": [
+        {"compte_id": "CPT-FICTIF-0041", "type": "compte courant", "iban": "FR76 9999 9000 0400 0000 0041 091", "solde": -320.15, "plafond_decouvert": 800}
+      ],
+      "operations": [
+        {"date": "2026-09-06", "compte_id": "CPT-FICTIF-0041", "libelle": "Prélèvement assurance (fictif)", "montant": -64.00, "contrepartie": "ASSURANCE FICTIVE", "pays": "FR"},
+        {"date": "2026-09-20", "compte_id": "CPT-FICTIF-0041", "libelle": "Carte, essence (fictif)", "montant": -71.20, "contrepartie": "STATION FICTIVE", "pays": "FR"}
+      ]
+    },
+    {
+      "client_id": "CLI-FICTIF-005",
+      "nom": "David Fictif-Roux",
+      "type": "particulier",
+      "email": "david.fictif-roux@exemple.test",
+      "adresse": "21 boulevard Chimère, 13000 Ville-Fictive",
+      "revenus_annuels": 58000,
+      "comptes": [
+        {"compte_id": "CPT-FICTIF-0051", "type": "compte courant", "iban": "FR76 9999 9000 0500 0000 0051 027", "solde": 6100.00, "plafond_decouvert": 2000}
+      ],
+      "operations": [
+        {"date": "2026-09-02", "compte_id": "CPT-FICTIF-0051", "libelle": "Salaire septembre (fictif)", "montant": 4800.00, "contrepartie": "EMPLOYEUR FICTIF SAS", "pays": "FR"}
+      ]
+    },
+    {
+      "client_id": "CLI-FICTIF-006",
+      "nom": "Boulangerie Fictive Saint-Rêve EURL",
+      "type": "professionnel",
+      "email": "contact@boulangerie-fictive.exemple.test",
+      "adresse": "1 place du Four, 44000 Ville-Fictive",
+      "revenus_annuels": 190000,
+      "comptes": [
+        {"compte_id": "CPT-FICTIF-0061", "type": "compte professionnel", "iban": "FR76 9999 9000 0600 0000 0061 054", "solde": 12300.00, "plafond_decouvert": 5000}
+      ],
+      "operations": [
+        {"date": "2026-09-12", "compte_id": "CPT-FICTIF-0061", "libelle": "Remise de chèques (fictif)", "montant": 3400.00, "contrepartie": "CLIENTELE", "pays": "FR"}
+      ]
+    }
+  ]
+}

@@ -1,0 +1,159 @@
+{
+ "format": 1,
+ "scenario": "secteur-d012-propre",
+ "demande": "Envoie un courrier au client CLI-FICTIF-005 pour l'informer de la hausse de ses frais de tenue de compte au 1er novembre 2026.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "date": "2026-10-02",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/scenarios/jeux/secteurs.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "mistral-small-latest",
+ "session": "20261002-174737-secteur-d012-propre",
+ "appels_mistral": 4,
+ "resultat": {
+  "statut": "termine",
+  "directives_citees": []
+ },
+ "validations": [],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "6b77066288724ef4bb3fc138e6fadd76",
+    "created": 1790956057,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1029,
+     "total_tokens": 1090,
+     "completion_tokens": 61,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "HrvWsZWoY",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"operations\", \"tache\": \"Envoyer un courrier au client CLI-FICTIF-005 pour l'informer de la hausse de ses frais de tenue de compte au 1er novembre 2026.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "operations",
+   "reponse": {
+    "id": "b60174c212954a77bf9d636d26e2a70c",
+    "created": 1790956058,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1805,
+     "total_tokens": 1936,
+     "completion_tokens": 131,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "Ncm94S39D",
+         "type": "function",
+         "function": {
+          "name": "banque-synthetique__envoyer_courrier_client",
+          "arguments": "{\"client_id\": \"CLI-FICTIF-005\", \"objet\": \"Hausse des frais de tenue de compte au 1er novembre 2026\", \"contenu\": \"Madame, Monsieur,\\n\\nNous vous informons que vos frais de tenue de compte seront augmentés à compter du 1er novembre 2026. Pour plus de détails, nous vous invitons à consulter votre espace client ou à contacter notre service client.\\n\\nCordialement,\\nLa Banque Synthétique\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "operations",
+   "reponse": {
+    "id": "80a22e83690a4c82817005e7d6cd1813",
+    "created": 1790956060,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 2314,
+     "total_tokens": 2437,
+     "completion_tokens": 123,
+     "prompt_tokens_details": {
+      "cached_tokens": 1776
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"actions\": [{\"outil\": \"banque-synthetique__envoyer_courrier_client\", \"statut\": \"courrier_envoye\", \"reference\": \"COURRIER-FICTIF-0001\"}], \"effectuee\": true, \"detail\": \"Courrier envoyé au client CLI-FICTIF-005 pour l'informer de la hausse de ses frais de tenue de compte au 1er novembre 2026 (référence : COURRIER-FICTIF-0001).\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "b78cf44d7c8f47d3827f72ded66d98dc",
+    "created": 1790956061,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1214,
+     "total_tokens": 1278,
+     "completion_tokens": 64,
+     "prompt_tokens_details": {
+      "cached_tokens": 1008
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "Le courrier informant le client **CLI-FICTIF-005** de la hausse de ses frais de tenue de compte au **1er novembre 2026** a bien été envoyé (référence : **COURRIER-FICTIF-0001**)."
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

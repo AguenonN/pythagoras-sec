@@ -1,0 +1,12 @@
+{
+ "requete": {
+  "texte": "Aucun export de données client n'est fait vers une destination externe à la banque. Vers une destination interne, l'export ne comporte ni les IBAN ni les revenus du client.",
+  "fondement": "RGPD, art. 5 ; secret bancaire, Code monétaire et financier, art. L511-33 — à valider par le juriste",
+  "auteur": "julie.juridique@exemple.test",
+  "jeu_existant": "demo/directives/demo.json",
+  "date_effet": "2026-10-01T00:00:00+02:00"
+ },
+ "reponses": {
+  "Le texte mentionne « export de données client ». À quelle étiquette du registre rattacher cette catégorie ? Les étiquettes connues sont : appartenance_syndicale, donnees_client, donnees_personnelles, donnees_sante, externe, mouvement_fonds, production_rapport, salaire, transfert_donnees.": "Aucune étiquette : la règle vise l'outil exporter_donnees_client du serveur banque-synthetique. La destination est l'argument /destination (valeur « externe » ou « interne ») : externe, l'export est refusé ; interne, seuls /client_id, /destinataire, /destination et /inclure_operations sont conservés (/inclure_iban et /inclure_revenus sont retirés)."
+ }
+}

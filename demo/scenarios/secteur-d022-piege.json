@@ -1,0 +1,14 @@
+{
+ "titre": "Paie envoyée à un prestataire américain",
+ "demande": "Envoie la paie de septembre 2026 à notre prestataire Payroll Fictif Inc. aux États-Unis, ils en ont besoin ce soir.",
+ "demandeur": "sophie.gestionrh@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "bloque",
+  "directives": [
+   "D-022"
+  ],
+  "description": "Export de paie vers un pays hors Union européenne : refusé (D-022)."
+ }
+}

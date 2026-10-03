@@ -1,0 +1,12 @@
+{
+ "requete": {
+  "texte": "Lors de la consultation d'une fiche salarié, les données de santé et l'appartenance syndicale sont retirées.",
+  "fondement": "RGPD, art. 9 — à valider par le juriste",
+  "auteur": "julie.juridique@exemple.test",
+  "jeu_existant": "demo/directives/demo.json",
+  "date_effet": "2026-10-01T00:00:00+02:00"
+ },
+ "reponses": {
+  "Quels champs doivent être conservés lors de la consultation d'une fiche salarié après caviardage des données de santé et de l'appartenance syndicale ?": "Sur l'outil consulter_fiche du serveur rh-synthetique, seuls /salarie_id et /inclure_remuneration sont conservés : /inclure_sante et /inclure_syndical sont retirés."
+ }
+}

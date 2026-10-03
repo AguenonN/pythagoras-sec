@@ -1,0 +1,198 @@
+{
+ "format": 1,
+ "scenario": "secteur-ppe-temoin",
+ "demande": "Montre-moi les comptes du client CLI-FICTIF-014.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "date": "2026-10-03",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/scenarios/jeux/secteurs-ppe.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "mistral-small-latest",
+ "session": "20261003-130329-secteur-ppe-temoin",
+ "appels_mistral": 5,
+ "resultat": {
+  "statut": "termine",
+  "directives_citees": []
+ },
+ "validations": [],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "30ee46f8065d42019943eefcd232825c",
+    "created": 1791025409,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1027,
+     "total_tokens": 1063,
+     "completion_tokens": 36,
+     "prompt_tokens_details": {
+      "cached_tokens": 1008
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "dyYNntHDb",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"operations\", \"tache\": \"Afficher les comptes du client CLI-FICTIF-014.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "operations",
+   "reponse": {
+    "id": "2c05da86ff444c16b3618db8fa32d051",
+    "created": 1791025410,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 2080,
+     "total_tokens": 2111,
+     "completion_tokens": 31,
+     "prompt_tokens_details": {
+      "cached_tokens": 2048
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "IIYXxFkoE",
+         "type": "function",
+         "function": {
+          "name": "banque-synthetique__lister_comptes_client",
+          "arguments": "{\"client_id\": \"CLI-FICTIF-014\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "operations",
+   "reponse": {
+    "id": "40ace2db285d452ab8a5bb3ba12a6f92",
+    "created": 1791025411,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 2567,
+     "total_tokens": 2596,
+     "completion_tokens": 29,
+     "prompt_tokens_details": {
+      "cached_tokens": 2064
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "Qqab1mn2k",
+         "type": "function",
+         "function": {
+          "name": "banque-synthetique__consulter_client",
+          "arguments": "{\"client_id\": \"CLI-FICTIF-014\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "operations",
+   "reponse": {
+    "id": "6e263d242248478e8992b7b23ba4de71",
+    "created": 1791025412,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 3256,
+     "total_tokens": 3505,
+     "completion_tokens": 249,
+     "prompt_tokens_details": {
+      "cached_tokens": 2544
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "```json\n{\n  \"actions\": [\n    {\"outil\": \"banque-synthetique__lister_comptes_client\", \"statut\": \"effectué\", \"reference\": null},\n    {\"outil\": \"banque-synthetique__consulter_client\", \"statut\": \"effectué\", \"reference\": null}\n  ],\n  \"effectuee\": true,\n  \"detail\": \"Affichage des comptes et des informations du client CLI-FICTIF-014 :\\n- **Client** : Ulysse Quelaudrin (CLI-FICTIF-014), artisan menuisier, revenus annuels de 27 600 €.\\n- **Adresse** : 23 boulevard du Pré-Inventé, 21000 Dijon-Imaginaire.\\n- **Compte courant** : IBAN FR76 9999 9000 1400 0000 0014 100, solde de 2 897,24 €, découvert autorisé de 1 250 €.\"\n}\n```"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "383ea4827d974d9bbca0ec804bfd2178",
+    "created": 1791025414,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1302,
+     "total_tokens": 1455,
+     "completion_tokens": 153,
+     "prompt_tokens_details": {
+      "cached_tokens": 1008
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "Voici les informations et comptes du client **CLI-FICTIF-014** (Ulysse Quelaudrin) :\n\n- **Adresse** : 23 boulevard du Pré-Inventé, 21000 Dijon-Imaginaire.\n- **Revenus annuels** : 27 600 €.\n- **Compte courant** :\n  - IBAN : FR76 9999 9000 1400 0000 0014 100\n  - Solde : **2 897,24 €**\n  - Découvert autorisé : **1 250 €**"
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -40,7 +40,24 @@ OUTILS = [
     {"name": "recherche-entreprises__rechercher_entreprise", "description": "Fiche.", "inputSchema": schema("siren")},
     {"name": "rh-synthetique__consulter_salarie", "description": "Fiche.", "inputSchema": schema("salarie_id")},
     {"name": "referentiel-rh__groupes_salarie", "description": "Groupes.", "inputSchema": schema("salarie_id")},
+    {"name": "rh-synthetique__decider_prime", "description": "Prime.", "inputSchema": schema("salarie_ids", "montant")},
+    {"name": "rh-synthetique__proposer_sanction", "description": "Sanction.", "inputSchema": schema("salarie_id", "motif")},
 ]
+# Outils des secteurs banque et RH (session secteurs) : exposés pour que les
+# sous-agents de la démo se chargent ; aucun n'est appelé par ces tests.
+SECTEURS_LECTURE = ["banque-synthetique__lister_comptes_client", "banque-synthetique__historique_operations",
+                    "banque-synthetique__consulter_client", "banque-synthetique__rediger_courrier_client",
+                    "rh-synthetique__rediger_message",
+                    "rh-synthetique__lister_salaries", "rh-synthetique__rechercher_salaries",
+                    "rh-synthetique__consulter_fiche"]
+SECTEURS_ACTION = ["banque-synthetique__effectuer_virement", "banque-synthetique__modifier_plafond_decouvert",
+                   "banque-synthetique__cloturer_compte", "banque-synthetique__exporter_donnees_client",
+                   "banque-synthetique__envoyer_courrier_client", "banque-synthetique__declarer_soupcon",
+                   "banque-synthetique__refuser_credit", "rh-synthetique__convoquer_entretien_prealable",
+                   "rh-synthetique__sanctionner", "rh-synthetique__licencier", "rh-synthetique__attribuer_prime",
+                   "rh-synthetique__exporter_paie", "rh-synthetique__envoyer_message_salarie"]
+OUTILS += [{"name": n, "description": "Outil des secteurs.", "inputSchema": schema("x")}
+           for n in SECTEURS_LECTURE + SECTEURS_ACTION]
 
 
 def texte(t):
@@ -83,7 +100,7 @@ def appeler(p):
 
 LECTURE = {"banque-synthetique__evaluer_dossier", "gels-avoirs__verifier_gel", "taux-officiel__get_taux_usure",
            "banque-synthetique__get_taux_interne", "recherche-entreprises__rechercher_entreprise",
-           "rh-synthetique__consulter_salarie", "referentiel-rh__groupes_salarie"}
+           "rh-synthetique__consulter_salarie", "referentiel-rh__groupes_salarie"} | set(SECTEURS_LECTURE)
 for _o in OUTILS:  # annotations du gate : readOnlyHint en lecture, destructiveHint sinon
     _o["annotations"] = {"readOnlyHint": True} if _o["name"] in LECTURE else {"destructiveHint": True}
 

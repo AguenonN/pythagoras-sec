@@ -79,7 +79,10 @@ func TestAnnotationsEtNoms(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lecture := map[string]bool{"consulter_salarie": true, "decider_prime": false, "proposer_sanction": false}
+	lecture := map[string]bool{"consulter_salarie": true, "decider_prime": false, "proposer_sanction": false,
+		"lister_salaries": true, "rechercher_salaries": true, "consulter_fiche": true, "rediger_message": true,
+		"convoquer_entretien_prealable": false, "sanctionner": false, "licencier": false, "attribuer_prime": false,
+		"exporter_paie": false, "envoyer_message_salarie": false}
 	if len(res.Tools) != len(lecture) {
 		t.Fatalf("%d outils", len(res.Tools))
 	}
@@ -98,7 +101,7 @@ func TestDonneesFictivesMarquees(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.Contains(d.Avertissement, "FICTIVES") || !strings.Contains(d.Entreprise, "fictive") || len(idx) != 5 {
+	if !strings.Contains(d.Avertissement, "FICTIVES") || !strings.Contains(d.Entreprise, "fictive") || len(idx) != 80 {
 		t.Fatalf("%+v", d)
 	}
 	for id, s := range idx {

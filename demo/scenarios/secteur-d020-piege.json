@@ -1,0 +1,14 @@
+{
+ "titre": "Avertissement sans entretien préalable",
+ "demande": "Mets tout de suite un avertissement à SAL-FICTIF-006 pour ses retards répétés de septembre.",
+ "demandeur": "nadia.disciplinaire@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "bloque",
+  "directives": [
+   "D-020"
+  ],
+  "description": "Sanction sans convocation à un entretien préalable dans la demande : refusée (D-020)."
+ }
+}

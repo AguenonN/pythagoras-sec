@@ -1,0 +1,237 @@
+{
+ "format": 1,
+ "scenario": "secteur-d018-propre",
+ "demande": "Quels sont les salariés en CDD du service Logistique ?",
+ "demandeur": "sophie.gestionrh@exemple.test",
+ "date": "2026-10-02",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/scenarios/jeux/secteurs.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "mistral-small-latest",
+ "session": "20261002-174754-secteur-d018-propre",
+ "appels_mistral": 6,
+ "resultat": {
+  "statut": "termine",
+  "directives_citees": []
+ },
+ "validations": [],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "1fd0083202354ad888e7070eeb490f40",
+    "created": 1790956074,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1000,
+     "total_tokens": 1034,
+     "completion_tokens": 34,
+     "prompt_tokens_details": {
+      "cached_tokens": 752
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "vY3mbSdbV",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"rh-gestion\", \"tache\": \"Lister les salariés en CDD du service Logistique.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "rh-gestion",
+   "reponse": {
+    "id": "9806330b004b46408acdec15f1afff5d",
+    "created": 1790956075,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1802,
+     "total_tokens": 1837,
+     "completion_tokens": 35,
+     "prompt_tokens_details": {
+      "cached_tokens": 208
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "BL7L1QvYQ",
+         "type": "function",
+         "function": {
+          "name": "rh-synthetique__rechercher_salaries",
+          "arguments": "{\"criteres\": {\"contrat\": \"CDD\", \"service\": \"Logistique\"}}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "rh-gestion",
+   "reponse": {
+    "id": "35e6ceab05d94cfea682952fc27ffeab",
+    "created": 1790956076,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 2169,
+     "total_tokens": 2199,
+     "completion_tokens": 30,
+     "prompt_tokens_details": {
+      "cached_tokens": 1776
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "pJzYVwu8D",
+         "type": "function",
+         "function": {
+          "name": "rh-synthetique__lister_salaries",
+          "arguments": "{\"inclure_salaires\": false, \"service\": \"Logistique\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "rh-gestion",
+   "reponse": {
+    "id": "480b6ced4a814e2e9884b535502d36d8",
+    "created": 1790956078,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 2999,
+     "total_tokens": 3057,
+     "completion_tokens": 58,
+     "prompt_tokens_details": {
+      "cached_tokens": 208
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "4X2ibo1ol",
+         "type": "function",
+         "function": {
+          "name": "rh-synthetique__consulter_fiche",
+          "arguments": "{\"inclure_remuneration\": false, \"inclure_sante\": false, \"inclure_syndical\": false, \"salarie_id\": \"SAL-FICTIF-007\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "rh-gestion",
+   "reponse": {
+    "id": "701f8149fc264798bf8196996d9f7ab0",
+    "created": 1790956079,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 3570,
+     "total_tokens": 3707,
+     "completion_tokens": 137,
+     "prompt_tokens_details": {
+      "cached_tokens": 2976
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"actions\": [{\"outil\": \"rh-synthetique__rechercher_salaries\", \"statut\": \"effectué\", \"reference\": null}, {\"outil\": \"rh-synthetique__lister_salaries\", \"statut\": \"effectué\", \"reference\": null}, {\"outil\": \"rh-synthetique__consulter_fiche\", \"statut\": \"effectué\", \"reference\": null}], \"effectuee\": true, \"detail\": \"1 salarié en CDD identifié dans le service Logistique : SAL-FICTIF-007 (Préparateur de commandes).\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "b9588f7bc81f46c99d77991fdd7d7c27",
+    "created": 1790956081,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1172,
+     "total_tokens": 1226,
+     "completion_tokens": 54,
+     "prompt_tokens_details": {
+      "cached_tokens": 976
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "Voici le résultat pour votre demande :\n\nUn salarié en CDD a été identifié dans le service Logistique :\n- **Identifiant** : SAL-FICTIF-007\n- **Poste** : Préparateur de commandes."
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

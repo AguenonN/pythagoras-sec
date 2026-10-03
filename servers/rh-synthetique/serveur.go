@@ -48,6 +48,13 @@ func Charger() (*donnees, map[string]Salarie, error) {
 	if err := json.Unmarshal(salariesFictifs, &d); err != nil {
 		return nil, nil, err
 	}
+	var pop struct {
+		Salaries []Salarie `json:"salaries"`
+	}
+	if err := json.Unmarshal(salariesPopulation, &pop); err != nil {
+		return nil, nil, err
+	}
+	d.Salaries = append(d.Salaries, pop.Salaries...)
 	idx := make(map[string]Salarie, len(d.Salaries))
 	for _, s := range d.Salaries {
 		if _, dup := idx[s.SalarieID]; dup {
@@ -126,9 +133,13 @@ type RH struct {
 	salaries   map[string]Salarie
 	maintenant func() time.Time
 
+	complets map[string]SalarieComplet // toutes les données (gestion.go)
+	ordre    []string                  // ordre des données
+
 	mu        sync.Mutex
 	primes    int
 	sanctions int
+	compteurs map[string]int // références des actions de gestion
 }
 
 // NouveauRH assemble les données.
@@ -137,7 +148,11 @@ func NouveauRH(maintenant func() time.Time) (*RH, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &RH{d: d, salaries: idx, maintenant: maintenant}, nil
+	complets, ordre, err := ChargerComplets()
+	if err != nil {
+		return nil, err
+	}
+	return &RH{d: d, salaries: idx, maintenant: maintenant, complets: complets, ordre: ordre}, nil
 }
 
 func faux() *bool { b := false; return &b }
@@ -167,6 +182,7 @@ func Serveur(rh *RH) *mcp.Server {
 	}, func(_ context.Context, _ *mcp.CallToolRequest, in EntreeSanction) (*mcp.CallToolResult, SortieSanction, error) {
 		return rh.sanction(in)
 	})
+	ajouterOutilsGestion(s, rh)
 	return s
 }
 

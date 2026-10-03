@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -248,11 +249,25 @@ func TestKit(t *testing.T) {
 		if !strings.Contains(c.Relecture, "100") {
 			t.Errorf("relecture : %q", c.Relecture)
 		}
+		// Version du jeu avant la mise en vigueur : lue, non figée (les
+		// secteurs l'ont fait passer de 1 à 4).
+		var avant struct {
+			Jeu struct {
+				Version int `json:"version"`
+			} `json:"jeu"`
+		}
+		brut, err := os.ReadFile(filepath.Join(dir, "demo", "directives", "demo.json"))
+		if err == nil {
+			err = json.Unmarshal(brut, &avant)
+		}
+		if err != nil || avant.Jeu.Version == 0 {
+			t.Fatalf("version du jeu avant : %v", err)
+		}
 		res, err := dep.MettreEnVigueur(c.Conversation, "active")
-		if err != nil || res.Version != 2 || len(res.Directives) != 1 || res.Directives[0] != "D-009" {
+		if err != nil || res.Version != avant.Jeu.Version+1 || len(res.Directives) != 1 || res.Directives[0] != "D-009" {
 			t.Fatalf("mise en vigueur : %+v, %v", res, err)
 		}
-		if _, err := os.Stat(filepath.Join(dir, "demo", "directives", "historique", "demo.v1.json")); err != nil {
+		if _, err := os.Stat(filepath.Join(dir, "demo", "directives", "historique", fmt.Sprintf("demo.v%d.json", avant.Jeu.Version))); err != nil {
 			t.Errorf("ancienne version non archivée : %v", err)
 		}
 		bash(t, dir, recettes["recette-directive"])

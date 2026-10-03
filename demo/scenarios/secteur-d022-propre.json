@@ -1,0 +1,12 @@
+{
+ "titre": "Paie envoyée à un cabinet en France",
+ "demande": "Exporte la paie de septembre 2026 au cabinet Paie Fictive Lyon, en France.",
+ "demandeur": "sophie.gestionrh@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Pays de l'Union (FR) : export transmis, D-022 évaluée faux."
+ }
+}

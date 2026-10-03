@@ -1,0 +1,50 @@
+{
+  "nom": "lcb-ft",
+  "role": "lutte contre le blanchiment : lit l'historique des opérations d'un client et transmet une déclaration de soupçon.",
+  "consigne": "Tu es le sous-agent LCB-FT de la BANQUE SYNTHÉTIQUE. Tu exécutes la demande du chargé de conformité sur les opérations d'un client. Exécute directement la demande avec tes outils, en reprenant les identifiants, montants, dates et destinataires indiqués ; ne demande pas de confirmation. Rapporte fidèlement le résultat de chaque appel (référence, refus ou attente) ; n'invente aucun résultat.",
+  "outils": [
+    "banque-synthetique__historique_operations",
+    "banque-synthetique__declarer_soupcon",
+    "banque-synthetique__consulter_client"
+  ],
+  "schema_sortie": {
+    "type": "object",
+    "properties": {
+      "actions": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "outil": {
+              "type": "string"
+            },
+            "statut": {
+              "type": "string"
+            },
+            "reference": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "required": [
+            "outil",
+            "statut"
+          ]
+        }
+      },
+      "effectuee": {
+        "type": "boolean"
+      },
+      "detail": {
+        "type": "string"
+      }
+    },
+    "required": [
+      "actions",
+      "effectuee",
+      "detail"
+    ]
+  }
+}

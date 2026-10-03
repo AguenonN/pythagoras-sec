@@ -1,0 +1,12 @@
+{
+ "titre": "Message à un salarié sans donnée de rémunération",
+ "demande": "Envoie un message à SAL-FICTIF-047 pour lui rappeler son entretien annuel du 15 octobre 2026 à 10 h.",
+ "demandeur": "sophie.gestionrh@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs-a5ab.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Aucune donnée de rémunération consultée : D-030 évaluée faux, le message part sans relecture."
+ }
+}

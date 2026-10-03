@@ -1,0 +1,723 @@
+{
+ "reponse": {
+  "choices": [
+   {
+    "finish_reason": "tool_calls",
+    "index": 0,
+    "message": {
+     "content": "",
+     "role": "assistant",
+     "tool_calls": [
+      {
+       "function": {
+        "arguments": "{\"directives\": [{\"extrait\": \"Les salaires et primes sont retirés des fiches salariés consultées par un agent, sauf quand le demandeur appartient au service paie.\", \"fondements\": [{\"texte\": \"Règlement intérieur\", \"article\": \"\"}, {\"texte\": \"RGPD\", \"article\": \"5\"}], \"declencheur\": {\"serveur\": \"rh-synthetique\", \"outil\": \"consulter_fiche\"}, \"racine\": \"n1\", \"noeuds\": [{\"id\": \"n1\", \"type\": \"non\", \"enfants\": [\"n2\"]}, {\"id\": \"n2\", \"type\": \"demandeur\", \"groupe\": \"paie\"}], \"effets\": [{\"effet\": \"caviarder\", \"champs_autorises\": [\"/salarie_id\", \"/inclure_sante\", \"/inclure_syndical\", \"/inclure_situation_familiale\"], \"mode\": \"caviarder\"}]}]}",
+        "name": "proposer_jeu"
+       },
+       "id": "KlGpjD0Q6",
+       "index": 0,
+       "type": "function"
+      }
+     ]
+    }
+   }
+  ],
+  "created": 1791025578,
+  "id": "480413cf128d46d7b7b1f9fb2a9687d7",
+  "model": "mistral-medium-latest",
+  "object": "chat.completion",
+  "usage": {
+   "completion_tokens": 227,
+   "prompt_tokens": 10825,
+   "prompt_tokens_details": {
+    "cached_tokens": 0
+   },
+   "service_tier": "standard",
+   "total_tokens": 11052
+  }
+ },
+ "requete": {
+  "messages": [
+   {
+    "content": "Tu es le compilateur de directives d'une équipe juridique. Tu ne décides rien : tu traduis fidèlement le texte du juriste en un JEU de directives structurées, ou tu poses des questions, ou tu signales un critère non observable. Le code vérifiera ta proposition, puis le juriste la relira et la validera.\n\nRègles absolues :\n1. N'utilise que des valeurs écrites par le juriste (dans son texte ou ses réponses) ou des noms du catalogue. N'invente jamais un montant, une date, une heure, un fuseau, un serveur, un outil, un argument, une étiquette, un rôle, un groupe ni un fondement. Une étiquette, un rôle ou un groupe n'est utilisable que si le juriste l'a écrit ou choisi dans une réponse : sinon, pose une question en proposant les noms connus qui pourraient convenir, sans en choisir un.\n2. Un paragraphe peut contenir plusieurs règles : propose alors plusieurs directives dans le même jeu, une par règle, dans l'ordre du texte. Pour chacune, recopie dans « extrait » le passage exact du texte qu'elle traduit, mot pour mot.\n3. Pose une question (poser_question, une par point, plusieurs à la fois si besoin) au lieu de proposer, notamment :\n   - seuil non chiffré (« montant significatif », « gros montant ») : demande le montant exact (sujet seuil) ;\n   - règle horaire ou calendaire sans fuseau (« le week-end », « la nuit », « après 20 h ») : demande le fuseau (sujet fuseau) en proposant des fuseaux admis ;\n   - « de manière autonome », « sans contrôle », « automatiquement » : demande si l'action exige une validation humaine (attendre_validation) ou est interdite (refuser) (sujet autonome) ;\n   - « l'utilisateur », « user », « la personne » : demande s'il s'agit du demandeur (la personne pour qui l'agent travaille, feuille demandeur) ou de la personne concernée par l'action (feuille sujet) (sujet demandeur_ou_personne_concernee) ;\n   - « rapport », « données client » ou toute catégorie de serveurs ou d'outils : demande à quelle étiquette du registre la rattacher (sujet etiquette), en proposant les étiquettes connues ;\n   - « aucune exécution », « bloquer », « interdire » sans préciser : demande s'il faut bloquer aussi la consultation (outils de lecture) ou seulement la production et les actions (outils classés action) (sujet consultation_ou_production) ;\n   - un rôle ou un groupe désigné par une lettre ou une formule (« groupe X », « une telle personne ») : demande lequel parmi les noms connus (sujet role ou groupe) ;\n   - fondement juridique absent (sujet fondement) ; durée provisoire sans date (« en attendant », « pour l'instant ») : demande la date de relecture (sujet revision_avant).\n4. Signale un critère non observable (signaler_non_observable) quand la règle repose sur une notion qu'aucune feuille ne peut constater dans un appel : une intention, une qualité morale, un effet (« ne pas discriminer », « de bonne foi »), ou une implication de personnes sans critère (« impliquant le top management », « décision importante »). Explique pourquoi ce n'est pas observable, et demande par quel critère observable (montant, outil, groupe, étiquette…) le remplacer. Ne propose rien pour cette règle tant que le juriste n'a pas donné ce critère.\n5. Ne propose un jeu que lorsque chaque valeur est déterminée par le texte, les réponses et le catalogue. Ne retire aucune condition du texte et n'en ajoute aucune : chaque « si », « sans », « à partir de », « au-delà de », « le week-end »… devient un nœud de la condition.\n6. Ne pose pas de question sur ce que le texte fixe déjà. « attend une validation humaine » sans autre précision : attendre_validation sans par_role ni quatre_yeux. par_role et destinataire_role seulement pour un rôle que le juriste a nommé ou choisi.\n\nUne directive (proposer_jeu) :\n- declencheur : la cible de l'appel d'outil. serveur et outil du catalogue ou « * » ; etiquette (étiquette du registre portée par le serveur cible) ; acces « action » pour ne viser que les outils classés action, « read » pour la lecture, seulement si le juriste distingue lecture et actions et si cela écarte des outils de la cible (jamais sur un outil nommé). Les clés présentes se combinent en ET.\n- condition : une liste de nœuds à plat (noeuds), chacun avec un id unique ; racine est l'id du nœud racine, qui doit figurer dans noeuds ; sans condition, racine vaut \"\" et noeuds vaut []. Un nœud et, ou cite ses enfants dans enfants ; non, existe, tous citent exactement un enfant. Chaque nœud n'a qu'un parent. Au plus 6 niveaux et 64 nœuds.\n  Types de nœuds :\n  - et, ou, non ;\n  - existe / tous : champ = pointeur vers une liste en argument (par exemple /salarie_ids) ; l'enfant est évalué sur chaque élément, et dans l'enfant champ vaut \"\" pour désigner l'élément lui-même ;\n  - argument : champ (pointeur JSON), op, valeur ;\n  - a_consulte : la session a consulté un serveur (serveur), un outil (outil « serveur/outil ») ou un serveur portant une étiquette (etiquette) ; critere donnees_recues (données reçues, le choix par défaut pour « consulter », « consultation ») ou transmis (appel parti, quel que soit le résultat, seulement si le juriste le dit). « sans consultation de X » s'écrit non(a_consulte X). Toute règle qui vise l'usage des informations d'une source (« à partir de », « sur la base de », « en utilisant les informations de » A) porte la condition a_consulte A ;\n  - demandeur : la personne pour qui l'agent travaille, selon l'annuaire : groupe, ou identites ;\n  - sujet : la personne concernée par l'action, désignée par l'identifiant au pointeur champ ; groupe ;\n  - temps : jours, heure_de et heure_a (HH:MM, intervalle [de, a[), date_op et date_valeur (AAAA-MM-JJ) ; fuseau obligatoire ;\n  - etiquette_cible : le serveur cible porte l'étiquette ;\n  - attestation : verifiee (booléen), mode ;\n  - metadonnee_reponse : sur une réponse reçue d'un serveur (serveur) ou d'un serveur étiqueté (etiquette), meta source.origine ou source.date, op, valeur ;\n  - appelant (egal ou prefixe), sous_agent_declare (egal ou dans).\n- effets : une liste. refuser ; attendre_validation (par_role, quatre_yeux vrai seulement si le juriste demande deux personnes ou « quatre yeux ») ; caviarder (champs_autorises, mode caviarder ou refuser ; cible avec un serveur nommé) ; notifier (destinataire_role) ; marquer (etiquette). refuser ne se combine ni avec attendre_validation ni avec caviarder.\n- fondements : le premier est celui que citent les motifs ; texte seul (RGPD, Code civil) et article seul (22), recopié chaque fois que le juriste l'écrit.\nUne condition sur un argument doit porter sur un argument de chaque outil visé : sinon, restreins la cible ou fais une directive par outil.\n",
+    "role": "system"
+   },
+   {
+    "content": "Catalogue des serveurs et outils disponibles :\n{\n \"origine\": \"généré par cmd/registre-demo depuis demo/registre.json ; ne pas modifier à la main\",\n \"serveurs\": [\n  {\n   \"nom\": \"taux-officiel\",\n   \"outils\": [\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/categorie\",\n      \"/date_reference\"\n     ],\n     \"description\": \"Seuil de l'usure en vigueur pour une catégorie de crédit (Banque de France, séries trimestrielles Webstat) : seuil, trimestre, date de publication, identifiant de série. Signale aussi un seuil déjà publié pour le trimestre suivant. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).\",\n     \"nom\": \"get_taux_usure\"\n    }\n   ]\n  },\n  {\n   \"nom\": \"recherche-entreprises\",\n   \"outils\": [\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/siren\"\n     ],\n     \"description\": \"Fiche d'une entreprise française par son SIREN, depuis l'API Recherche d'entreprises (données SIRENE/RNE) : dénomination, forme juridique, état administratif, siège, activité. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).\",\n     \"nom\": \"rechercher_entreprise\"\n    }\n   ]\n  },\n  {\n   \"nom\": \"gels-avoirs\",\n   \"outils\": [\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/nom\"\n     ],\n     \"description\": \"Cherche un nom dans le registre national des gels des avoirs (DG Trésor) : correspondances exactes ou partielles, nature, fondements juridiques, et date de publication du registre. Une correspondance est un signal à examiner, pas une identification. Le champ source indique si le registre est obtenu à l'instant (direct) ou lu dans un enregistrement daté (rejeu).\",\n     \"nom\": \"verifier_gel\"\n    }\n   ]\n  },\n  {\n   \"nom\": \"eurlex\",\n   \"outils\": [\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/article\",\n      \"/celex\"\n     ],\n     \"description\": \"Texte d'un article d'un acte de l'Union européenne (numéro CELEX et numéro d'article), dans la version publiée au Journal officiel, non consolidée. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).\",\n     \"nom\": \"lire_article\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/celex\"\n     ],\n     \"description\": \"Métadonnées d'un acte de l'Union européenne par son numéro CELEX (CELLAR, Office des publications) : titre, dates, statut en vigueur, actes modificatifs. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).\",\n     \"nom\": \"rechercher_acte\"\n    }\n   ]\n  },\n  {\n   \"nom\": \"legifrance\",\n   \"outils\": [\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/date_reference\",\n      \"/identifiant\"\n     ],\n     \"description\": \"Texte d'un article de loi ou de règlement français (Légifrance, DILA) par son identifiant LEGIARTI : texte de la version en vigueur à la date de référence, numéro de version, dates de début et de fin, et version suivante déjà publiée. Le champ source indique si la donnée est obtenue à l'instant (direct) ou lue dans un enregistrement daté (rejeu).\",\n     \"nom\": \"lire_article\"\n    }\n   ]\n  },\n  {\n   \"nom\": \"banque-synthetique\",\n   \"outils\": [\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/dossier_id\",\n      \"/montant\",\n      \"/siren\"\n     ],\n     \"description\": \"Attribue un prêt sur un dossier de la banque synthétique (action, données fictives : aucun prêt réel n'est accordé). Le SIREN doit être celui du dossier et le montant au plus le montant demandé.\",\n     \"nom\": \"attribuer_pret\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/compte_id\",\n      \"/motif\"\n     ],\n     \"description\": \"Clôture un compte de la banque synthétique (action fictive, irréversible dans la démonstration).\",\n     \"nom\": \"cloturer_compte\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/client_id\"\n     ],\n     \"description\": \"Fiche d'un client de la banque synthétique (données fictives) : identité, contact, profession, revenus, crédits en cours, incidents de paiement, cotation de risque, conseiller, demandes en cours.\",\n     \"nom\": \"consulter_client\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/client_id\",\n      \"/motif\",\n      \"/operations\"\n     ],\n     \"description\": \"Transmet une déclaration de soupçon sur un client à la cellule de renseignement financier (action fictive : rien n'est transmis).\",\n     \"nom\": \"declarer_soupcon\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/beneficiaire\",\n      \"/compte_debit\",\n      \"/iban_beneficiaire\",\n      \"/montant\",\n      \"/motif\",\n      \"/pays_beneficiaire\"\n     ],\n     \"description\": \"Exécute un virement depuis un compte de la banque synthétique vers un bénéficiaire (action fictive : aucun fonds ne circule).\",\n     \"nom\": \"effectuer_virement\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/client_id\",\n      \"/contenu\",\n      \"/objet\"\n     ],\n     \"description\": \"Envoie un courrier ou un message à un client de la banque synthétique (action fictive : rien n'est envoyé).\",\n     \"nom\": \"envoyer_courrier_client\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/dossier_id\"\n     ],\n     \"description\": \"Lit un dossier de demande de crédit de la banque synthétique (données fictives) : demandeur, SIREN, objet, montant, durée, taux proposé, pièces et note de l'analyste.\",\n     \"nom\": \"evaluer_dossier\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/client_id\",\n      \"/destinataire\",\n      \"/destination\",\n      \"/inclure_iban\",\n      \"/inclure_operations\",\n      \"/inclure_revenus\"\n     ],\n     \"description\": \"Exporte la fiche d'un client de la banque synthétique (identité, adresse, comptes) vers un destinataire ; IBAN, revenus et opérations seulement si demandés (action fictive : rien n'est envoyé).\",\n     \"nom\": \"exporter_donnees_client\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/categorie\"\n     ],\n     \"description\": \"Seuil de l'usure pour une catégorie de crédit, selon la base interne de la banque synthétique (données fictives).\",\n     \"nom\": \"get_taux_interne\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/client_id\",\n      \"/compte_id\"\n     ],\n     \"description\": \"Historique des opérations d'un client de la banque synthétique (données fictives) : date, compte, libellé, montant, contrepartie, pays.\",\n     \"nom\": \"historique_operations\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/client_id\"\n     ],\n     \"description\": \"Liste les comptes d'un client de la banque synthétique (données fictives) : type, IBAN, solde, découvert autorisé.\",\n     \"nom\": \"lister_comptes_client\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/compte_id\",\n      \"/nouveau_plafond\"\n     ],\n     \"description\": \"Modifie le découvert autorisé d'un compte de la banque synthétique (action fictive).\",\n     \"nom\": \"modifier_plafond_decouvert\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/client_id\",\n      \"/contenu\",\n      \"/objet\"\n     ],\n     \"description\": \"Prépare le brouillon d'un courrier à un client de la banque synthétique, sans l'envoyer (lecture : rien n'est envoyé ; l'envoi se fait avec envoyer_courrier_client).\",\n     \"nom\": \"rediger_courrier_client\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/dossier_id\",\n      \"/motif\"\n     ],\n     \"description\": \"Notifie au demandeur le refus de sa demande de crédit, avec son motif (action fictive : rien n'est envoyé).\",\n     \"nom\": \"refuser_credit\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/contenu\",\n      \"/destinataire\",\n      \"/dossier_id\"\n     ],\n     \"description\": \"Remet un rapport sur un dossier à un destinataire de la banque synthétique (action fictive : le rapport est seulement enregistré en mémoire, rien n'est envoyé). Rend une référence de remise.\",\n     \"nom\": \"remettre_rapport\"\n    }\n   ]\n  },\n  {\n   \"nom\": \"rh-synthetique\",\n   \"outils\": [\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/montant\",\n      \"/motif\",\n      \"/salarie_id\"\n     ],\n     \"description\": \"Attribue une prime à un salarié de l'entreprise synthétique (action fictive : aucune prime réelle n'est versée).\",\n     \"nom\": \"attribuer_prime\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/inclure_remuneration\",\n      \"/inclure_sante\",\n      \"/inclure_situation_familiale\",\n      \"/inclure_syndical\",\n      \"/salarie_id\"\n     ],\n     \"description\": \"Fiche complète d'un salarié de l'entreprise synthétique (données fictives) ; les rubriques santé, appartenance syndicale et rémunération seulement si demandées.\",\n     \"nom\": \"consulter_fiche\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/salarie_id\"\n     ],\n     \"description\": \"Lit la fiche d'un salarié de l'entreprise synthétique (données fictives) : poste, service, ancienneté, contrat, évaluation, remarques.\",\n     \"nom\": \"consulter_salarie\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/date_entretien\",\n      \"/motif\",\n      \"/salarie_id\"\n     ],\n     \"description\": \"Convoque un salarié de l'entreprise synthétique à un entretien préalable à une sanction ou à un licenciement (action fictive : rien n'est envoyé).\",\n     \"nom\": \"convoquer_entretien_prealable\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/montant\",\n      \"/salarie_ids\"\n     ],\n     \"description\": \"Décide une prime pour un ou plusieurs salariés de l'entreprise synthétique (action, données fictives : aucune prime réelle).\",\n     \"nom\": \"decider_prime\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/contenu\",\n      \"/objet\",\n      \"/salarie_id\"\n     ],\n     \"description\": \"Envoie un message à un salarié de l'entreprise synthétique (action fictive : rien n'est envoyé).\",\n     \"nom\": \"envoyer_message_salarie\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/destinataire\",\n      \"/pays\",\n      \"/periode\"\n     ],\n     \"description\": \"Exporte les bulletins de paie d'un mois (tous les salariés, salaires compris) vers un destinataire (action fictive : rien n'est envoyé).\",\n     \"nom\": \"exporter_paie\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/motif\",\n      \"/salarie_id\"\n     ],\n     \"description\": \"Notifie le licenciement d'un salarié de l'entreprise synthétique (action fictive : aucun licenciement réel).\",\n     \"nom\": \"licencier\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/inclure_salaires\",\n      \"/service\"\n     ],\n     \"description\": \"Liste les salariés de l'entreprise synthétique (données fictives) : identifiant, libellé, poste, service, contrat ; le salaire seulement si demandé.\",\n     \"nom\": \"lister_salaries\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/motif\",\n      \"/salarie_id\"\n     ],\n     \"description\": \"Propose une sanction disciplinaire pour un salarié de l'entreprise synthétique (action, données fictives : aucune sanction réelle ; la proposition n'est pas une décision).\",\n     \"nom\": \"proposer_sanction\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/criteres\",\n      \"/criteres/age_max\",\n      \"/criteres/age_min\",\n      \"/criteres/anciennete_min_ans\",\n      \"/criteres/contrat\",\n      \"/criteres/en_arret_maladie\",\n      \"/criteres/enceinte\",\n      \"/criteres/evaluation\",\n      \"/criteres/nationalite\",\n      \"/criteres/poste\",\n      \"/criteres/service\",\n      \"/criteres/syndique\"\n     ],\n     \"description\": \"Recherche les salariés de l'entreprise synthétique (données fictives) sur des critères libres combinés : service, poste, contrat, ancienneté, évaluation, âge, arrêt maladie, grossesse, nationalité, adhésion syndicale.\",\n     \"nom\": \"rechercher_salaries\"\n    },\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/contenu\",\n      \"/objet\",\n      \"/salarie_id\"\n     ],\n     \"description\": \"Prépare le brouillon d'un message à un salarié de l'entreprise synthétique, sans l'envoyer (lecture : rien n'est envoyé ; l'envoi se fait avec envoyer_message_salarie).\",\n     \"nom\": \"rediger_message\"\n    },\n    {\n     \"acces\": \"action\",\n     \"arguments\": [\n      \"/motif\",\n      \"/salarie_id\",\n      \"/sanction\"\n     ],\n     \"description\": \"Notifie une sanction disciplinaire à un salarié de l'entreprise synthétique (action fictive : aucune sanction réelle).\",\n     \"nom\": \"sanctionner\"\n    }\n   ]\n  },\n  {\n   \"nom\": \"referentiel-rh\",\n   \"outils\": [\n    {\n     \"acces\": \"read\",\n     \"arguments\": [\n      \"/salarie_id\"\n     ],\n     \"description\": \"Groupes d'un salarié de l'entreprise synthétique dans le référentiel RH (données fictives), par exemple salaries-proteges ou contentieux-en-cours.\",\n     \"nom\": \"groupes_salarie\"\n    }\n   ]\n  }\n ]\n}\n\nÉtiquettes, rôles et groupes connus :\n{\n \"etiquettes\": [\n  {\n   \"description\": \"étiquette du registre, portée par : outil rh-synthetique/consulter_fiche\",\n   \"nom\": \"appartenance_syndicale\"\n  },\n  {\n   \"description\": \"étiquette du registre, portée par : serveur recherche-entreprises, outil banque-synthetique/consulter_client, outil banque-synthetique/evaluer_dossier, outil banque-synthetique/exporter_donnees_client, outil banque-synthetique/historique_operations, outil banque-synthetique/lister_comptes_client\",\n   \"nom\": \"donnees_client\"\n  },\n  {\n   \"description\": \"étiquette du registre, portée par : serveur rh-synthetique\",\n   \"nom\": \"donnees_personnelles\"\n  },\n  {\n   \"description\": \"étiquette du registre, portée par : outil rh-synthetique/consulter_fiche\",\n   \"nom\": \"donnees_sante\"\n  },\n  {\n   \"description\": \"étiquette du registre, portée par : serveur eurlex, serveur gels-avoirs, serveur legifrance, serveur recherche-entreprises, serveur taux-officiel\",\n   \"nom\": \"externe\"\n  },\n  {\n   \"description\": \"étiquette du registre, portée par : outil banque-synthetique/effectuer_virement\",\n   \"nom\": \"mouvement_fonds\"\n  },\n  {\n   \"description\": \"étiquette du registre, portée par : outil remettre_rapport (tout serveur)\",\n   \"nom\": \"production_rapport\"\n  },\n  {\n   \"description\": \"étiquette du registre, portée par : outil rh-synthetique/consulter_fiche, outil rh-synthetique/exporter_paie, outil rh-synthetique/lister_salaries\",\n   \"nom\": \"salaire\"\n  },\n  {\n   \"description\": \"étiquette du registre, portée par : outil banque-synthetique/exporter_donnees_client, outil rh-synthetique/exporter_paie\",\n   \"nom\": \"transfert_donnees\"\n  }\n ],\n \"groupes\": [\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"analystes-credit\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"conformite-lcbft\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"conseillers-credit\"\n  },\n  {\n   \"description\": \"Salariés en litige en cours avec l'entreprise (fictif) ; toute mesure les concernant est à examiner avec le service juridique. Référentiel RH : personne concernée par l'action (feuille sujet).\",\n   \"nom\": \"contentieux-en-cours\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"direction-juridique\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"direction-rh\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"direction-risques\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"gestionnaires-rh\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"juridique\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"managers\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"paie\"\n  },\n  {\n   \"description\": \"Personnes politiquement exposées (fictif : fonctions inventées) et leurs proches ; clients et comptes de la banque synthétique. Une fonction, pas une opinion. Référentiel RH : personne concernée par l'action (feuille sujet).\",\n   \"nom\": \"personne-politiquement-exposee\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"prestataires-externes\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"responsables-disciplinaires\"\n  },\n  {\n   \"description\": \"groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)\",\n   \"nom\": \"rh\"\n  },\n  {\n   \"description\": \"Salariés bénéficiant d'une protection particulière (fictif : par exemple représentant du personnel) ; toute mesure les concernant suit une procédure spéciale. Référentiel RH : personne concernée par l'action (feuille sujet).\",\n   \"nom\": \"salaries-proteges\"\n  }\n ],\n \"roles\": [\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"analyste-risques\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"conformite\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"directeur-risques\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"direction-juridique\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"drh\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"emetteur-identite\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"gestionnaire-rh\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"juridique\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"paie\"\n  },\n  {\n   \"description\": \"rôle de l'annuaire (valideur, destinataire d'une notification)\",\n   \"nom\": \"responsable-rh\"\n  }\n ]\n}\n\nFuseaux admis : America/Cayenne, America/Guadeloupe, America/Martinique, America/New_York, Asia/Singapore, Asia/Tokyo, Europe/Amsterdam, Europe/Berlin, Europe/Brussels, Europe/Dublin, Europe/London, Europe/Luxembourg, Europe/Madrid, Europe/Paris, Europe/Rome, Europe/Zurich, Indian/Mayotte, Indian/Reunion, Pacific/Noumea, Pacific/Tahiti, UTC\n\nTexte du juriste :\n<<<\nLes salaires et primes sont retirés des fiches salariés consultées par un agent, sauf quand le demandeur appartient au service paie.\n>>>\n\nFondement donné par le juriste :\n<<<\nRèglement intérieur, confidentialité des rémunérations ; RGPD art. 5 — à valider par le juriste\n>>>\n\nRéponses du juriste à tes questions :\n- Question : Le texte mentionne « les salaires et primes sont retirés des fiches salariés consultées ». Doit-on comprendre que cela concerne uniquement l'outil `consulter_fiche` du serveur `rh-synthetique` (qui inclut les rubriques santé, appartenance syndicale et rémunération) ? Ou bien cela s'applique-t-il aussi à d'autres outils comme `consulter_salarie` ou `lister_salaries` ?\n  Réponse : Uniquement l'outil consulter_fiche du serveur rh-synthetique : l'argument /inclure_remuneration est retiré ; les arguments /salarie_id, /inclure_sante, /inclure_syndical et /inclure_situation_familiale sont conservés.\n- Question : Le texte précise que les salaires et primes sont retirés « sauf quand le demandeur appartient au service paie ». Faut-il comprendre que cela s'applique uniquement au groupe `paie` de l'annuaire, ou aussi à d'autres groupes ou rôles (par exemple, `gestionnaires-rh` ou `responsable-rh`) ?\n  Réponse : Uniquement le groupe paie de l'annuaire : quand le demandeur est membre du groupe paie, rien n'est retiré.\n- Question : Le fondement juridique cité est « Règlement intérieur, confidentialité des rémunérations ; RGPD art. 5 — à valider par le juriste ». Faut-il conserver ces deux fondements (Règlement intérieur et RGPD art. 5) ou seulement l'un des deux ?\n  Réponse : Les deux.\n\nCes réponses sont définitives : ne repose pas ces questions. Si chaque valeur est maintenant déterminée, appelle proposer_jeu.",
+    "role": "user"
+   }
+  ],
+  "model": "mistral-medium-latest",
+  "random_seed": 0,
+  "temperature": 0,
+  "tool_choice": "any",
+  "tools": [
+   {
+    "function": {
+     "description": "Propose le jeu compilé, une directive par règle du texte, quand le texte, les réponses et le catalogue déterminent chaque valeur.",
+     "name": "proposer_jeu",
+     "parameters": {
+      "properties": {
+       "directives": {
+        "items": {
+         "properties": {
+          "declencheur": {
+           "properties": {
+            "acces": {
+             "enum": [
+              "action",
+              "read"
+             ],
+             "type": "string"
+            },
+            "etiquette": {
+             "enum": [
+              "appartenance_syndicale",
+              "donnees_client",
+              "donnees_personnelles",
+              "donnees_sante",
+              "externe",
+              "mouvement_fonds",
+              "production_rapport",
+              "salaire",
+              "transfert_donnees"
+             ],
+             "type": "string"
+            },
+            "outil": {
+             "enum": [
+              "attribuer_pret",
+              "attribuer_prime",
+              "cloturer_compte",
+              "consulter_client",
+              "consulter_fiche",
+              "consulter_salarie",
+              "convoquer_entretien_prealable",
+              "decider_prime",
+              "declarer_soupcon",
+              "effectuer_virement",
+              "envoyer_courrier_client",
+              "envoyer_message_salarie",
+              "evaluer_dossier",
+              "exporter_donnees_client",
+              "exporter_paie",
+              "get_taux_interne",
+              "get_taux_usure",
+              "groupes_salarie",
+              "historique_operations",
+              "licencier",
+              "lire_article",
+              "lister_comptes_client",
+              "lister_salaries",
+              "modifier_plafond_decouvert",
+              "proposer_sanction",
+              "rechercher_acte",
+              "rechercher_entreprise",
+              "rechercher_salaries",
+              "rediger_courrier_client",
+              "rediger_message",
+              "refuser_credit",
+              "remettre_rapport",
+              "sanctionner",
+              "verifier_gel",
+              "*"
+             ],
+             "type": "string"
+            },
+            "serveur": {
+             "enum": [
+              "banque-synthetique",
+              "eurlex",
+              "gels-avoirs",
+              "legifrance",
+              "recherche-entreprises",
+              "referentiel-rh",
+              "rh-synthetique",
+              "taux-officiel",
+              "*"
+             ],
+             "type": "string"
+            }
+           },
+           "type": "object"
+          },
+          "effets": {
+           "items": {
+            "properties": {
+             "champs_autorises": {
+              "items": {
+               "enum": [
+                "/article",
+                "/beneficiaire",
+                "/categorie",
+                "/celex",
+                "/client_id",
+                "/compte_debit",
+                "/compte_id",
+                "/contenu",
+                "/criteres",
+                "/criteres/age_max",
+                "/criteres/age_min",
+                "/criteres/anciennete_min_ans",
+                "/criteres/contrat",
+                "/criteres/en_arret_maladie",
+                "/criteres/enceinte",
+                "/criteres/evaluation",
+                "/criteres/nationalite",
+                "/criteres/poste",
+                "/criteres/service",
+                "/criteres/syndique",
+                "/date_entretien",
+                "/date_reference",
+                "/destinataire",
+                "/destination",
+                "/dossier_id",
+                "/iban_beneficiaire",
+                "/identifiant",
+                "/inclure_iban",
+                "/inclure_operations",
+                "/inclure_remuneration",
+                "/inclure_revenus",
+                "/inclure_salaires",
+                "/inclure_sante",
+                "/inclure_situation_familiale",
+                "/inclure_syndical",
+                "/montant",
+                "/motif",
+                "/nom",
+                "/nouveau_plafond",
+                "/objet",
+                "/operations",
+                "/pays",
+                "/pays_beneficiaire",
+                "/periode",
+                "/salarie_id",
+                "/salarie_ids",
+                "/sanction",
+                "/service",
+                "/siren"
+               ],
+               "type": "string"
+              },
+              "type": "array"
+             },
+             "destinataire_role": {
+              "enum": [
+               "analyste-risques",
+               "conformite",
+               "directeur-risques",
+               "direction-juridique",
+               "drh",
+               "emetteur-identite",
+               "gestionnaire-rh",
+               "juridique",
+               "paie",
+               "responsable-rh"
+              ],
+              "type": "string"
+             },
+             "effet": {
+              "enum": [
+               "refuser",
+               "attendre_validation",
+               "caviarder",
+               "notifier",
+               "marquer"
+              ],
+              "type": "string"
+             },
+             "etiquette": {
+              "enum": [
+               "appartenance_syndicale",
+               "donnees_client",
+               "donnees_personnelles",
+               "donnees_sante",
+               "externe",
+               "mouvement_fonds",
+               "production_rapport",
+               "salaire",
+               "transfert_donnees"
+              ],
+              "type": "string"
+             },
+             "mode": {
+              "enum": [
+               "caviarder",
+               "refuser"
+              ],
+              "type": "string"
+             },
+             "par_role": {
+              "enum": [
+               "analyste-risques",
+               "conformite",
+               "directeur-risques",
+               "direction-juridique",
+               "drh",
+               "emetteur-identite",
+               "gestionnaire-rh",
+               "juridique",
+               "paie",
+               "responsable-rh"
+              ],
+              "type": "string"
+             },
+             "quatre_yeux": {
+              "type": "boolean"
+             }
+            },
+            "required": [
+             "effet"
+            ],
+            "type": "object"
+           },
+           "type": "array"
+          },
+          "extrait": {
+           "description": "Le passage du texte du juriste que traduit cette directive, recopié mot pour mot.",
+           "type": "string"
+          },
+          "fondements": {
+           "items": {
+            "properties": {
+             "article": {
+              "description": "Le numéro d'article seul, tel que 22.",
+              "type": "string"
+             },
+             "texte": {
+              "description": "Le nom du texte seul, tel que RGPD ou Code civil.",
+              "type": "string"
+             }
+            },
+            "required": [
+             "texte"
+            ],
+            "type": "object"
+           },
+           "type": "array"
+          },
+          "noeuds": {
+           "description": "La condition, à plat.",
+           "items": {
+            "properties": {
+             "champ": {
+              "description": "Pointeur JSON d'un argument ; \"\" pour l'élément courant sous existe ou tous.",
+              "enum": [
+               "/article",
+               "/beneficiaire",
+               "/categorie",
+               "/celex",
+               "/client_id",
+               "/compte_debit",
+               "/compte_id",
+               "/contenu",
+               "/criteres",
+               "/criteres/age_max",
+               "/criteres/age_min",
+               "/criteres/anciennete_min_ans",
+               "/criteres/contrat",
+               "/criteres/en_arret_maladie",
+               "/criteres/enceinte",
+               "/criteres/evaluation",
+               "/criteres/nationalite",
+               "/criteres/poste",
+               "/criteres/service",
+               "/criteres/syndique",
+               "/date_entretien",
+               "/date_reference",
+               "/destinataire",
+               "/destination",
+               "/dossier_id",
+               "/iban_beneficiaire",
+               "/identifiant",
+               "/inclure_iban",
+               "/inclure_operations",
+               "/inclure_remuneration",
+               "/inclure_revenus",
+               "/inclure_salaires",
+               "/inclure_sante",
+               "/inclure_situation_familiale",
+               "/inclure_syndical",
+               "/montant",
+               "/motif",
+               "/nom",
+               "/nouveau_plafond",
+               "/objet",
+               "/operations",
+               "/pays",
+               "/pays_beneficiaire",
+               "/periode",
+               "/salarie_id",
+               "/salarie_ids",
+               "/sanction",
+               "/service",
+               "/siren",
+               ""
+              ],
+              "type": "string"
+             },
+             "critere": {
+              "enum": [
+               "donnees_recues",
+               "transmis"
+              ],
+              "type": "string"
+             },
+             "dans": {
+              "items": {
+               "type": "string"
+              },
+              "type": "array"
+             },
+             "date_op": {
+              "enum": [
+               ">",
+               ">=",
+               "<",
+               "<=",
+               "==",
+               "!="
+              ],
+              "type": "string"
+             },
+             "date_valeur": {
+              "description": "AAAA-MM-JJ",
+              "type": "string"
+             },
+             "egal": {
+              "type": "string"
+             },
+             "enfants": {
+              "description": "Identifiants des enfants (et, ou : au moins un ; non, existe, tous : exactement un).",
+              "items": {
+               "type": "string"
+              },
+              "type": "array"
+             },
+             "etiquette": {
+              "enum": [
+               "appartenance_syndicale",
+               "donnees_client",
+               "donnees_personnelles",
+               "donnees_sante",
+               "externe",
+               "mouvement_fonds",
+               "production_rapport",
+               "salaire",
+               "transfert_donnees"
+              ],
+              "type": "string"
+             },
+             "fuseau": {
+              "enum": [
+               "America/Cayenne",
+               "America/Guadeloupe",
+               "America/Martinique",
+               "America/New_York",
+               "Asia/Singapore",
+               "Asia/Tokyo",
+               "Europe/Amsterdam",
+               "Europe/Berlin",
+               "Europe/Brussels",
+               "Europe/Dublin",
+               "Europe/London",
+               "Europe/Luxembourg",
+               "Europe/Madrid",
+               "Europe/Paris",
+               "Europe/Rome",
+               "Europe/Zurich",
+               "Indian/Mayotte",
+               "Indian/Reunion",
+               "Pacific/Noumea",
+               "Pacific/Tahiti",
+               "UTC"
+              ],
+              "type": "string"
+             },
+             "groupe": {
+              "enum": [
+               "analystes-credit",
+               "conformite-lcbft",
+               "conseillers-credit",
+               "contentieux-en-cours",
+               "direction-juridique",
+               "direction-rh",
+               "direction-risques",
+               "gestionnaires-rh",
+               "juridique",
+               "managers",
+               "paie",
+               "personne-politiquement-exposee",
+               "prestataires-externes",
+               "responsables-disciplinaires",
+               "rh",
+               "salaries-proteges"
+              ],
+              "type": "string"
+             },
+             "heure_a": {
+              "description": "HH:MM",
+              "type": "string"
+             },
+             "heure_de": {
+              "description": "HH:MM",
+              "type": "string"
+             },
+             "id": {
+              "description": "Identifiant unique du nœud, tel que n1.",
+              "type": "string"
+             },
+             "identites": {
+              "items": {
+               "type": "string"
+              },
+              "type": "array"
+             },
+             "jours": {
+              "items": {
+               "enum": [
+                "lundi",
+                "mardi",
+                "mercredi",
+                "jeudi",
+                "vendredi",
+                "samedi",
+                "dimanche"
+               ],
+               "type": "string"
+              },
+              "type": "array"
+             },
+             "meta": {
+              "enum": [
+               "source.origine",
+               "source.date"
+              ],
+              "type": "string"
+             },
+             "mode": {
+              "enum": [
+               "spiffe",
+               "tls-pin",
+               "binaire",
+               "aucune"
+              ],
+              "type": "string"
+             },
+             "op": {
+              "enum": [
+               ">",
+               ">=",
+               "<",
+               "<=",
+               "==",
+               "!=",
+               "dans",
+               "prefixe",
+               "present",
+               "absent"
+              ],
+              "type": "string"
+             },
+             "outil": {
+              "description": "serveur/outil",
+              "enum": [
+               "banque-synthetique/attribuer_pret",
+               "banque-synthetique/cloturer_compte",
+               "banque-synthetique/consulter_client",
+               "banque-synthetique/declarer_soupcon",
+               "banque-synthetique/effectuer_virement",
+               "banque-synthetique/envoyer_courrier_client",
+               "banque-synthetique/evaluer_dossier",
+               "banque-synthetique/exporter_donnees_client",
+               "banque-synthetique/get_taux_interne",
+               "banque-synthetique/historique_operations",
+               "banque-synthetique/lister_comptes_client",
+               "banque-synthetique/modifier_plafond_decouvert",
+               "banque-synthetique/rediger_courrier_client",
+               "banque-synthetique/refuser_credit",
+               "banque-synthetique/remettre_rapport",
+               "eurlex/lire_article",
+               "eurlex/rechercher_acte",
+               "gels-avoirs/verifier_gel",
+               "legifrance/lire_article",
+               "recherche-entreprises/rechercher_entreprise",
+               "referentiel-rh/groupes_salarie",
+               "rh-synthetique/attribuer_prime",
+               "rh-synthetique/consulter_fiche",
+               "rh-synthetique/consulter_salarie",
+               "rh-synthetique/convoquer_entretien_prealable",
+               "rh-synthetique/decider_prime",
+               "rh-synthetique/envoyer_message_salarie",
+               "rh-synthetique/exporter_paie",
+               "rh-synthetique/licencier",
+               "rh-synthetique/lister_salaries",
+               "rh-synthetique/proposer_sanction",
+               "rh-synthetique/rechercher_salaries",
+               "rh-synthetique/rediger_message",
+               "rh-synthetique/sanctionner",
+               "taux-officiel/get_taux_usure"
+              ],
+              "type": "string"
+             },
+             "prefixe": {
+              "type": "string"
+             },
+             "serveur": {
+              "enum": [
+               "banque-synthetique",
+               "eurlex",
+               "gels-avoirs",
+               "legifrance",
+               "recherche-entreprises",
+               "referentiel-rh",
+               "rh-synthetique",
+               "taux-officiel"
+              ],
+              "type": "string"
+             },
+             "type": {
+              "enum": [
+               "a_consulte",
+               "appelant",
+               "argument",
+               "attestation",
+               "demandeur",
+               "et",
+               "etiquette_cible",
+               "existe",
+               "metadonnee_reponse",
+               "non",
+               "ou",
+               "sous_agent_declare",
+               "sujet",
+               "temps",
+               "tous"
+              ],
+              "type": "string"
+             },
+             "valeur": {
+              "description": "Nombre, chaîne, booléen, ou liste pour dans ; absente pour present et absent."
+             },
+             "verifiee": {
+              "type": "boolean"
+             }
+            },
+            "required": [
+             "id",
+             "type"
+            ],
+            "type": "object"
+           },
+           "type": "array"
+          },
+          "racine": {
+           "description": "Identifiant du nœud racine ; vide s'il n'y a pas de condition.",
+           "type": "string"
+          },
+          "revision_avant": {
+           "description": "AAAA-MM-JJ, écrite par le juriste.",
+           "type": "string"
+          }
+         },
+         "required": [
+          "extrait",
+          "fondements",
+          "declencheur",
+          "effets"
+         ],
+         "type": "object"
+        },
+        "type": "array"
+       }
+      },
+      "required": [
+       "directives"
+      ],
+      "type": "object"
+     }
+    },
+    "type": "function"
+   },
+   {
+    "function": {
+     "description": "Pose une question au juriste quand une information manque ou est ambiguë. Une question par point.",
+     "name": "poser_question",
+     "parameters": {
+      "properties": {
+       "extrait": {
+        "description": "Les mots du juriste qui posent question, recopiés.",
+        "type": "string"
+       },
+       "options": {
+        "description": "Réponses possibles, s'il y en a un nombre fermé.",
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       "question": {
+        "description": "La question, en français, adressée au juriste.",
+        "type": "string"
+       },
+       "sujet": {
+        "enum": [
+         "seuil",
+         "fuseau",
+         "autonome",
+         "demandeur_ou_personne_concernee",
+         "etiquette",
+         "consultation_ou_production",
+         "role",
+         "groupe",
+         "cible",
+         "argument",
+         "perimetre",
+         "fondement",
+         "revision_avant",
+         "effet",
+         "autre"
+        ],
+        "type": "string"
+       }
+      },
+      "required": [
+       "question",
+       "sujet"
+      ],
+      "type": "object"
+     }
+    },
+    "type": "function"
+   },
+   {
+    "function": {
+     "description": "Refuse de traduire une règle qui repose sur un critère non observable dans un appel d'outil, en expliquant pourquoi, et demande un critère observable.",
+     "name": "signaler_non_observable",
+     "parameters": {
+      "properties": {
+       "extrait": {
+        "description": "Les mots du juriste qui portent le critère, recopiés.",
+        "type": "string"
+       },
+       "question": {
+        "description": "La question au juriste : par quel critère observable le remplacer ?",
+        "type": "string"
+       },
+       "raison": {
+        "description": "Pourquoi aucune feuille ne peut constater ce critère dans un appel.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "extrait",
+       "raison",
+       "question"
+      ],
+      "type": "object"
+     }
+    },
+    "type": "function"
+   }
+  ]
+ }
+}

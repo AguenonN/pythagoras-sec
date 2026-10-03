@@ -20,6 +20,8 @@ import unittest
 from compilateur import compilateur_v2 as c2
 from compilateur import directive_go, mistral, service
 
+from .aides import CATALOGUE_SCENE, VOCABULAIRE_SCENE
+
 ICI = os.path.dirname(os.path.abspath(__file__))
 AGENTS = os.path.dirname(ICI)
 ATTENDUS = os.path.join(ICI, "attendus", "service")
@@ -40,7 +42,8 @@ class Base(unittest.TestCase):
 
     def derouler(self, nom, modele=mistral.MODELE_COMPILATEUR):
         requete, reponses = service.lire_parcours(os.path.join(PARCOURS, nom + ".json"))
-        s = service.Service(mode="rejeu", modele=modele, dossier=self.tmp)
+        s = service.Service(mode="rejeu", modele=modele, dossier=self.tmp, catalogue=CATALOGUE_SCENE,
+                            vocabulaire_=VOCABULAIRE_SCENE)
         return service.parcours(s, requete, reponses)
 
     def candidat(self, rep):
@@ -111,14 +114,17 @@ class TestScene(Base):
         with open(jeu, "w", encoding="utf-8") as f:
             json.dump(cand, f, ensure_ascii=False)
         requete, reponses = service.lire_parcours(os.path.join(PARCOURS, "weekend.json"))
-        s = service.Service(mode="rejeu", dossier=self.tmp)
+        s = service.Service(mode="rejeu", dossier=self.tmp, catalogue=CATALOGUE_SCENE, vocabulaire_=VOCABULAIRE_SCENE)
         fin = service.parcours(s, dict(requete, jeu_existant=jeu), reponses)[-1]
         self.assertEqual(fin["etat"], c2.JEU, fin["erreurs"])
         j = self.candidat(fin)
-        self.assertEqual((j["jeu"]["version"], [d["id"] for d in j["directives"][-2:]]), (3, ["D-009", "D-010"]))
+        demo = lire_demo()
+        self.assertEqual((j["jeu"]["version"], [d["id"] for d in j["directives"][-2:]]),
+                         (demo["jeu"]["version"] + 2, ["D-009", "D-010"]))
         self.assertEqual(j["directives"][:-1], cand["directives"])
-        self.assertTrue(fin["relecture"].startswith("Ajout au jeu demo, version 3 : 1 directive ajoutée (D-010), "
-                                                    "évaluée après 9 directives existantes"))
+        self.assertTrue(fin["relecture"].startswith(
+            "Ajout au jeu demo, version %d : 1 directive ajoutée (D-010), évaluée après %d directives existantes"
+            % (demo["jeu"]["version"] + 2, len(demo["directives"]) + 1)))
         ok, err, _ = directive_go.verifier(j, exiger_brouillon=False)
         self.assertTrue(ok, err)
 
@@ -134,7 +140,7 @@ class TestScene(Base):
             attendu = self.candidat(self.derouler(nom)[-1])["directives"]
             for question, autres in variantes.items():
                 for autre in autres:
-                    s = service.Service(mode="rejeu", dossier=self.tmp)
+                    s = service.Service(mode="rejeu", dossier=self.tmp, catalogue=CATALOGUE_SCENE, vocabulaire_=VOCABULAIRE_SCENE)
                     fin = service.parcours(s, requete, dict(reponses, **{question: autre}))[-1]
                     self.assertEqual(fin["etat"], c2.JEU, (nom, autre, fin["erreurs"]))
                     self.assertEqual(self.candidat(fin)["directives"], attendu)
@@ -152,7 +158,8 @@ class TestCommeLaConsole(Base):
     appel, comme la console l'appellera ; le rappel ne refait aucun appel."""
 
     def appeler(self, requete):
-        r = subprocess.run([sys.executable, "-m", "compilateur.service", "--dossier", self.tmp],
+        r = subprocess.run([sys.executable, "-m", "compilateur.service", "--dossier", self.tmp,
+                            "--catalogue", CATALOGUE_SCENE, "--vocabulaire", VOCABULAIRE_SCENE],
                            input=json.dumps(requete), capture_output=True, text=True, cwd=AGENTS,
                            env=dict(os.environ, COMPILATEUR_MODE="rejeu"))
         self.assertEqual(r.returncode, 0, r.stderr)

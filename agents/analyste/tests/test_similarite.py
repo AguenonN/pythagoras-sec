@@ -13,6 +13,7 @@ from analyste import __main__ as cli
 from analyste import corpus, plongements, redaction, similarite as sim
 
 from .test_detecteurs import JEU, SESSIONS
+from .annuaire_fige import figer
 
 ID_INTERNE = "A-source-interne-perimee-banque-synthetique.attribuer_pret"
 EXEMPLES = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "exemples", "propositions")
@@ -26,6 +27,14 @@ def exemple(id_):
     with open(os.path.join(EXEMPLES, id_ + ".json"), encoding="utf-8") as f:
         return json.load(f)
 
+
+
+def setUpModule():
+    globals()["_fige"] = figer()
+
+
+def tearDownModule():
+    _fige.stop()
 
 class TestSessionsSimilaires(unittest.TestCase):
     def setUp(self):

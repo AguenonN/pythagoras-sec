@@ -2,25 +2,49 @@
   "origine": "généré par go run ./cmd/registre-demo -vocabulaire agents/compilateur/exemples/vocabulaire-demo.json, depuis demo/etiquettes.json, demo/annuaire-source.json et servers/referentiel-rh/groupes_fictifs.json ; ne pas modifier à la main",
   "etiquettes": [
     {
+      "nom": "appartenance_syndicale",
+      "description": "étiquette du registre, portée par : outil rh-synthetique/consulter_fiche"
+    },
+    {
       "nom": "donnees_client",
-      "description": "étiquette du registre, portée par : serveur recherche-entreprises, outil banque-synthetique/evaluer_dossier"
+      "description": "étiquette du registre, portée par : serveur recherche-entreprises, outil banque-synthetique/consulter_client, outil banque-synthetique/evaluer_dossier, outil banque-synthetique/exporter_donnees_client, outil banque-synthetique/historique_operations, outil banque-synthetique/lister_comptes_client"
     },
     {
       "nom": "donnees_personnelles",
       "description": "étiquette du registre, portée par : serveur rh-synthetique"
     },
     {
+      "nom": "donnees_sante",
+      "description": "étiquette du registre, portée par : outil rh-synthetique/consulter_fiche"
+    },
+    {
       "nom": "externe",
       "description": "étiquette du registre, portée par : serveur eurlex, serveur gels-avoirs, serveur legifrance, serveur recherche-entreprises, serveur taux-officiel"
     },
     {
+      "nom": "mouvement_fonds",
+      "description": "étiquette du registre, portée par : outil banque-synthetique/effectuer_virement"
+    },
+    {
       "nom": "production_rapport",
       "description": "étiquette du registre, portée par : outil remettre_rapport (tout serveur)"
+    },
+    {
+      "nom": "salaire",
+      "description": "étiquette du registre, portée par : outil rh-synthetique/consulter_fiche, outil rh-synthetique/exporter_paie, outil rh-synthetique/lister_salaries"
+    },
+    {
+      "nom": "transfert_donnees",
+      "description": "étiquette du registre, portée par : outil banque-synthetique/exporter_donnees_client, outil rh-synthetique/exporter_paie"
     }
   ],
   "roles": [
     {
       "nom": "analyste-risques",
+      "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
+    },
+    {
+      "nom": "conformite",
       "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
     },
     {
@@ -40,7 +64,15 @@
       "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
     },
     {
+      "nom": "gestionnaire-rh",
+      "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
+    },
+    {
       "nom": "juridique",
+      "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
+    },
+    {
+      "nom": "paie",
       "description": "rôle de l'annuaire (valideur, destinataire d'une notification)"
     },
     {
@@ -51,6 +83,10 @@
   "groupes": [
     {
       "nom": "analystes-credit",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "conformite-lcbft",
       "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
     },
     {
@@ -66,7 +102,15 @@
       "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
     },
     {
+      "nom": "direction-rh",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
       "nom": "direction-risques",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "gestionnaires-rh",
       "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
     },
     {
@@ -78,7 +122,19 @@
       "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
     },
     {
+      "nom": "paie",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "personne-politiquement-exposee",
+      "description": "Personnes politiquement exposées (fictif : fonctions inventées) et leurs proches ; clients et comptes de la banque synthétique. Une fonction, pas une opinion. Référentiel RH : personne concernée par l'action (feuille sujet)."
+    },
+    {
       "nom": "prestataires-externes",
+      "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
+    },
+    {
+      "nom": "responsables-disciplinaires",
       "description": "groupe de l'annuaire : personnes qui lancent les agents (feuille demandeur)"
     },
     {

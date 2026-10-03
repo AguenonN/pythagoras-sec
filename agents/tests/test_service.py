@@ -80,13 +80,15 @@ class TestParcours(Base):
         self.assertEqual(code, 0)
         self.assertEqual(rep["etat"], c2.JEU, rep["erreurs"])
         self.assertEqual(rep["conversation"], conv)
-        self.assertTrue(rep["relecture"].startswith("Ajout au jeu demo, version 2 : 1 directive ajoutée (D-009)"))
+        with open(os.path.join(RACINE, DEMO), encoding="utf-8") as f:
+            v = json.load(f)["jeu"]["version"] + 1
+        self.assertTrue(rep["relecture"].startswith("Ajout au jeu demo, version %d : 1 directive ajoutée (D-009)" % v))
         self.assertNotIn("D-008", rep["relecture"])
 
         chemin = rep["jeu_candidat"]
         self.assertTrue(os.path.isabs(chemin), "dossier hors de la racine : chemin absolu")
         self.assertEqual(os.path.dirname(chemin), os.path.join(self.tmp, conv))
-        self.assertEqual(os.path.basename(chemin), "demo.v2.json")
+        self.assertEqual(os.path.basename(chemin), "demo.v%d.json" % v)
         with open(chemin, encoding="utf-8") as f:
             cand = json.load(f)
         with open(os.path.join(RACINE, DEMO), encoding="utf-8") as f:
@@ -132,13 +134,17 @@ class TestParcours(Base):
                                                  "raison": "Une intention ne se constate pas."})
         self.assertEqual([q["origine"] for q in rep["questions"]], ["mistral"])
 
-    def test_numerotation_a_la_suite(self):
-        with open(os.path.join(RACINE, DEMO), encoding="utf-8") as f:
-            demo = json.load(f)
+    def test_numerotation_premier_numero_libre(self):
+        """Premier numéro libre à partir de D-001 (décision de Manu, 02/10)."""
+        demo = {"directives": [{"id": "D-%03d" % i} for i in range(1, 9)]}
         self.assertEqual(c2.numeros_suivants(demo, "D", 2), ["D-009", "D-010"])
         demo["directives"].append({"id": "D-012"})
-        self.assertEqual(c2.numeros_suivants(demo, "D", 1), ["D-013"])
+        self.assertEqual(c2.numeros_suivants(demo, "D", 1), ["D-009"])
+        self.assertEqual(c2.numeros_suivants(demo, "D", 4), ["D-009", "D-010", "D-011", "D-013"])
+        demo["directives"] += [{"id": "D-%03d" % i} for i in range(11, 24)]
+        self.assertEqual(c2.numeros_suivants(demo, "D", 3), ["D-009", "D-010", "D-024"])
         self.assertEqual(c2.numeros_suivants({"directives": []}, "D", 1), ["D-001"])
+        self.assertEqual(c2.numeros_suivants({"directives": [{"id": "R-0001"}]}, "R", 1), ["R-0002"])
 
 
 class TestRequetesInvalides(Base):

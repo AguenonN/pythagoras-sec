@@ -1,0 +1,12 @@
+{
+ "titre": "Liste des salariés avec leurs salaires",
+ "demande": "Liste-moi tous les salariés du service Finance avec leurs salaires, vite.",
+ "demandeur": "sophie.gestionrh@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "La liste est rendue, mais l'engine retire la demande des salaires (D-023, caviardage)."
+ }
+}

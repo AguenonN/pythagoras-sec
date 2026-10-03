@@ -1,0 +1,12 @@
+{
+ "titre": "Recherche de salariés sur des critères admis",
+ "demande": "Quels sont les salariés en CDD du service Logistique ?",
+ "demandeur": "sophie.gestionrh@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Recherche sur le service et le contrat : D-018 évaluée faux."
+ }
+}

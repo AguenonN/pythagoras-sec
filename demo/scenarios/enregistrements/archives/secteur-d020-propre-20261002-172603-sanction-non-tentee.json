@@ -1,0 +1,237 @@
+{
+ "format": 1,
+ "scenario": "secteur-d020-propre",
+ "demande": "Convoque SAL-FICTIF-006 à un entretien préalable le 12 octobre 2026 pour ses retards répétés de septembre, puis notifie-lui un avertissement pour ces retards.",
+ "demandeur": "nadia.disciplinaire@exemple.test",
+ "date": "2026-10-02",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/scenarios/jeux/secteurs.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "mistral-small-latest",
+ "session": "20261002-172603-secteur-d020-propre",
+ "appels_mistral": 6,
+ "resultat": {
+  "statut": "termine",
+  "directives_citees": []
+ },
+ "validations": [],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "ee785370a4084bd3bd1b9e8413980718",
+    "created": 1790954763,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1037,
+     "total_tokens": 1100,
+     "completion_tokens": 63,
+     "prompt_tokens_details": {
+      "cached_tokens": 960
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "mMWEgIAND",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"rh-disciplinaire\", \"tache\": \"Convoquer le salarié SAL-FICTIF-006 à un entretien préalable le 12 octobre 2026 pour ses retards répétés en septembre.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "rh-disciplinaire",
+   "reponse": {
+    "id": "96083a2e36f6423dba8711bfebd55c64",
+    "created": 1790954764,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1176,
+     "total_tokens": 1242,
+     "completion_tokens": 66,
+     "prompt_tokens_details": {
+      "cached_tokens": 1104
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "pNPobuwTJ",
+         "type": "function",
+         "function": {
+          "name": "rh-synthetique__convoquer_entretien_prealable",
+          "arguments": "{\"date_entretien\": \"2026-10-12\", \"motif\": \"retards répétés en septembre\", \"salarie_id\": \"SAL-FICTIF-006\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "rh-disciplinaire",
+   "reponse": {
+    "id": "f1caf87cd63d41da9079ad9d740ebe2c",
+    "created": 1790954766,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1636,
+     "total_tokens": 1718,
+     "completion_tokens": 82,
+     "prompt_tokens_details": {
+      "cached_tokens": 208
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "V5a929pXe",
+         "type": "function",
+         "function": {
+          "name": "rh-synthetique__envoyer_message_salarie",
+          "arguments": "{\"contenu\": \"Votre convocation à l'entretien préalable du 12 octobre 2026 pour vos retards répétés en septembre est confirmée.\", \"objet\": \"Convocation à entretien préalable\", \"salarie_id\": \"SAL-FICTIF-006\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "rh-disciplinaire",
+   "reponse": {
+    "id": "4c69963253124be6881d83065d310619",
+    "created": 1790954767,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 2076,
+     "total_tokens": 2205,
+     "completion_tokens": 129,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"actions\": [{\"outil\": \"rh-synthetique__convoquer_entretien_prealable\", \"statut\": \"effectué\", \"reference\": \"CONVOCATION-FICTIVE-0001\"}, {\"outil\": \"rh-synthetique__envoyer_message_salarie\", \"statut\": \"effectué\", \"reference\": \"MESSAGE-FICTIF-0001\"}], \"effectuee\": true, \"detail\": \"Convocations et messages fictifs générés pour le salarié SAL-FICTIF-006.\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "e1d61474362f49c380238afd58638cc4",
+    "created": 1790954768,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1230,
+     "total_tokens": 1280,
+     "completion_tokens": 50,
+     "prompt_tokens_details": {
+      "cached_tokens": 1008
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "SoTQYBv78",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"rh-disciplinaire\", \"tache\": \"Notifier un avertissement au salarié SAL-FICTIF-006 pour ses retards répétés en septembre.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "bdaecf7bf60e47a9b7c5896e8565f540",
+    "created": 1790954769,
+    "model": "mistral-small-latest",
+    "usage": {
+     "prompt_tokens": 1362,
+     "total_tokens": 1447,
+     "completion_tokens": 85,
+     "prompt_tokens_details": {
+      "cached_tokens": 1200
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "La convocation à un entretien préalable pour le salarié **SAL-FICTIF-006** a été effectuée pour le **12 octobre 2026** concernant ses retards répétés en septembre. Le message de convocation a également été envoyé.\n\n*(L'avertissement pour les retards répétés sera notifié ultérieurement, après validation de la procédure.)*"
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

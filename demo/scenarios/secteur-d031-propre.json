@@ -1,0 +1,12 @@
+{
+ "titre": "Rémunération lue par le service paie",
+ "demande": "Donne-moi le salaire et les primes passées de SAL-FICTIF-045, pour la paie de novembre.",
+ "demandeur": "yann.paie@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs-a5ab.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Le demandeur est du groupe paie : D-031 évaluée faux, la rémunération n'est pas retirée. Passage du 03/10 : la fiche revient avec la rémunération (rien retiré), mais la réponse finale de l'agent dit ne pas l'avoir obtenue (défaut de restitution du modèle, pas de l'engine)."
+ }
+}

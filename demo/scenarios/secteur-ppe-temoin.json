@@ -1,0 +1,12 @@
+{
+ "titre": "Comptes d'un client ordinaire",
+ "demande": "Montre-moi les comptes du client CLI-FICTIF-014.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "jeu": "demo/scenarios/jeux/secteurs-ppe.json",
+ "validations": [],
+ "attendu": {
+  "statut": "termine",
+  "directives": [],
+  "description": "Client ordinaire : D-025 évaluée faux, comptes rendus."
+ }
+}
