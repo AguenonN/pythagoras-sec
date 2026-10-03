@@ -362,12 +362,20 @@ class TestSousAgents(unittest.TestCase):
         self.assertEqual(sorted(agents), ["analyse-dossier", "assistant-salarie", "conformite", "credit",
                                           "credit-historique", "equipe-deal", "lcb-ft",
                                           "operations", "redaction", "rh", "rh-disciplinaire", "rh-gestion"])
-        # Secteurs : consignes neutres, aucune règle (c'est l'engine qui
-        # applique le droit, docs/demo/secteurs.md).
+        # Consignes neutres, aucune règle (c'est l'engine qui applique le
+        # droit, docs/demo/secteurs.md), pour tous les sous-agents sauf trois.
+        # Exception voulue (décision de Manu, 03/10) : credit, credit-historique
+        # et conformite gardent leurs règles de gel et d'usure, pour la scène
+        # « consigne contre engine » : même avec la règle dans sa consigne,
+        # l'agent l'a sautée le 01/10 (gels indisponibles, attribution tentée),
+        # et l'engine (D-001) l'a arrêté. Aucune autre exception.
+        exceptions = {"credit", "credit-historique", "conformite"}
         interdits = ("règle", "interdit", "jamais", "valid", "gel", "soupçon", "article", "rgpd", "code du", "directive",
                      "entretien préalable", "protégé", "syndic", "santé", "externe", "plafond")
-        for nom in ("operations", "lcb-ft", "rh-gestion", "rh-disciplinaire"):
-            consigne = agents[nom].consigne.lower()
+        for nom in sorted(set(agents) - exceptions):
+            # « interne » ou « externe » : les valeurs de l'argument /destination
+            # (messagerie, data room), pas une règle.
+            consigne = agents[nom].consigne.lower().replace("« interne » ou « externe »", "")
             self.assertEqual([m for m in interdits if m in consigne], [], nom)
         self.assertEqual(agents["credit-historique"].outils,
                          ["banque-synthetique__attribuer_pret", "banque-synthetique__get_taux_interne"])

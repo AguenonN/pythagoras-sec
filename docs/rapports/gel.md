@@ -35,3 +35,15 @@ Cause : l'enregistrement du 02/10 09:19 a été fait **avant** le garde-fou d'id
 - `scripts/lancer-demo.sh archiver-sessions` : déplace les **seules** sessions dont le journal ne se vérifie pas dans `demo/execution/sessions-archivees/<AAAAMMJJ-HHMMSS>/` ; rien n'est supprimé ; « rien à archiver » sinon.
 - Test : `test/extension/cle_journal_test.go` (journal signé avec une autre clé → message clair, pas de gate ; archivage ; second archivage vide).
 - **Console (non modifiée, point 5)** : elle affiche « chaîne rompue à l'entrée n° 1 » pour un journal signé avec une autre clé (`internal/console/web/app.js`, `alerteChaines`). Modification à faire par la session console : quand la première entrée ne se vérifie pas (`premier_ecart == 0`), afficher « journal signé avec une autre clé (ou clé différente de celle de la console) : `scripts/lancer-demo.sh archiver-sessions` ».
+
+### Point 5 — propositions de démo de l'Analyste
+
+`scripts/lancer-demo.sh` (préparation) recopie `demo/scenarios/propositions/*.json` dans `demo/execution/propositions/` quand ce dossier est vide ou absent (jamais par-dessus des propositions présentes). Contenu versionné régénéré en phase 5.
+
+### Point 6 — `ops@cabinet.fr`
+
+Remplacée par `ops@exemple.test` : auteur du registre de démo (`internal/registredemo.Meta`) et du lab (`deploy/lab/registre-lab`), tests du registre et du gate (`internal/registre`, `test/gate`). Restent (non modifiés) : les journaux signés des données de test de l'Analyste (`agents/analyste/tests/donnees/sessions*/`), qu'on ne peut pas réécrire sans casser leur chaîne (voir phase 5) ; et d'autres adresses du même domaine `cabinet.fr` (`juriste@`, `alice@`, `bob@`, `dpo@`, `me.dupont@`), hors de la demande du brief, dont deux fichiers antérieurs au tag `baseline-pre-hackathon` (intouchables) et des parcours du compilateur enregistrés (l'auteur entre dans la requête à Mistral). **Question pour Manu** : faut-il les remplacer aussi (au prix de réenregistrer ces parcours) ?
+
+### Point 7 — consignes des agents crédit
+
+Gardées (décision de Manu). Documenté dans `docs/demo/secteurs.md` (« Une exception, voulue ») ; le test des consignes neutres porte désormais sur **tous** les sous-agents sauf `credit`, `credit-historique`, `conformite`, exception écrite et justifiée dans le test. Pour `assistant-salarie` et `equipe-deal`, « « interne » ou « externe » » (valeurs de l'argument `/destination`) n'est pas une règle et n'est pas compté.
