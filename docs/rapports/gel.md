@@ -4,13 +4,19 @@ Branche `feat/gel`. Engine non modifié (`internal/directive`, `journal`, `rejeu
 
 ## Compteur Mistral
 
-Budget : **400 appels** (autorisé par Manu, prime sur les 40 des règles communes). Compté par les fichiers `agents/.etat/**/appels.jsonl` (une ligne par appel réel).
+Budget : **400 appels**, relevé à **550** par Manu le 03/10 au soir (prime sur les 40 des règles communes). Compté par les fichiers `agents/.etat/**/appels.jsonl` (une ligne par appel réel, compilateur, agents et plongements). **Total consommé : 400 appels sur 550.**
 
 | Étape | Appels | Cumul |
 |---|---|---|
 | Phase 1, point 0 : compilations A4, A5-brut, A5a, A5b | 9 | 9 |
 | Phase 1, point 9 : 7 règles ATLAS (+ 1 nouvel essai de D-040) | 23 | 32 |
-| Scène vierge : compilation « fuite par courriel » sur le jeu vierge | 1 | 33 |
+| Scène vierge : compilation « fuite par courriel » sur le jeu vierge (dossier « arceau », hors `agents/.etat` du dépôt : compté à part) | 1 | — |
+| Phase 4 : 15 scénarios ATLAS (+ 1 reprise) | ≈ 70 | |
+| Phase 4 : 11 scénarios de base (+ 3 reprises) | ≈ 165 | |
+| Routage des 3 scènes ATLAS (20 passages) et réenregistrement de la paire « mauvais collaborateur » | 116 + 8 | |
+| Phase 4 : textes du compilateur de la scène | 4 | |
+| Phase 5 : plongements (calibrage 4, corpus 1), rédaction des 2 propositions (4) | 9 | |
+| **Total (`agents/.etat`)** | | **400** |
 
 ## Phase 1 — derniers changements de code
 
@@ -154,3 +160,39 @@ La décision de l'engine ne dépend pas du routage (D-040 porte sur le demandeur
 - **Corpus des fondements** : les trois articles « indisponibles » sont complétés **par le serveur `legifrance`** (MIXTE, identifiants PISTE de l'environnement) : CMF L562-4 (`LEGIARTI000045250683`), C. trav. L1121-1 (`LEGIARTI000006900785`), L2411-1 (`LEGIARTI000035652370`). Les identifiants ont été retrouvés par l'API officielle Légifrance (`/list/code`, `/consult/getArticleWithIdAndNum`, version en vigueur, 1 requête par seconde) ; aucun texte écrit de mémoire. 8 articles, plus aucun indisponible ; plongements des 3 nouveaux textes : 1 appel.
 - **Propositions de démo** régénérées sur l'historique de la soirée, sous `demo.json` v33 (rédaction en réel, 4 appels, puis rejouées à l'identique en rejeu), versionnées dans `demo/scenarios/propositions/` (recopiées dans `demo/execution/propositions/` à la préparation si ce dossier est vide) : « action sans contrôle » (attribution ≥ 100 000 € → validation analyste-risques) et « source interne périmée » (base interne consultée → source officielle requise, sinon refus : **l'outil cité, `taux-officiel/get_taux`, est inexact** — c'est `get_taux_usure` ; au juriste de le reprendre, ce qui fait une bonne scène « reprise modifiée »). Le constat « contournement du retrait » est désormais couvert (D-019, D-031 actives).
 - Non fait (fusion-3 §4.2) : retrait de `figer` / `derouler_fige` des tests de l'Analyste ; leurs données de test (journaux signés, dont des adresses `@cabinet.fr`) restent celles du 02/10, figées sur `historique/demo.v5.json`. Sans effet sur la démo.
+
+## Phase 6 — preuve finale (03/10, ~21 h 30)
+
+- `go vet ./...`, `go test -race -count=1 ./...`, suites Python (`agents/tests`, `orchestrateur/tests`, `analyste/tests`) : **vertes trois fois de suite**.
+- Construction deux fois de suite des serveurs et du registre : **mêmes octets** (manifeste `107223df…`, identique à celui du matin ; `demo/registre.json` `e434d4c6…`, `registre-attaque.json` `3125eae9…`).
+- **Rejeu de tous les enregistrements sans réseau** (`unshare -rn`, aucun accès possible) : **61 scénarios sur 61 conformes à l'attendu, journaux vérifiés** (chaîne HMAC + rejeu des décisions). Les 26 réenregistrés ce soir ont en plus été comparés (réel / rejeu) : **aucun écart**.
+- **Console** (code identique à `main`, construite dans `bin/console`), échantillon demandé par Manu : journaux des 15 passages ATLAS + 1 par autre scénario (61), routes générales et `chaine` / `demande` / `poste` de chacun, 10 s par requête : **193 requêtes, toutes en 200**, aucun journal manquant ; les 287 journaux de `demo/execution/sessions` se vérifient. **Une liste `null`** : `GET /api/file` → `reprises[].roles` (4 occurrences) — à corriger côté console (non touchée) si l'interface fait `.map` dessus. `/api/file` a mis 6,3 s (287 journaux). Le premier contrôle exhaustif (287 journaux × 6 routes) a été arrêté à la demande de Manu (trop long).
+- **`~/bin/console` est périmé** (02/10, avant console-3) : « flag provided but not defined: -conseiller ». À reconstruire depuis `main` avant dimanche (commande dans `docs/demo/passages.md`).
+- `docs/demo/passages.md` réécrit : commandes exactes de dimanche, modèle `mistral-medium-latest`, et la table des 61 secours (date, modèle, jeu réellement utilisé, appels, résultat, empreinte). **Exactement** : 26 secours du 03/10 au soir en `mistral-medium-latest` (9 sous `demo.json` v33, 17 sous jeu de travail : ATLAS, base interne) ; 35 secours des secteurs gardés, en `mistral-small-latest` des 02-03/10, sous les jeux de travail des secteurs.
+
+## Secours : empreintes
+
+La table complète (fichier et sha256 de chaque enregistrement retenu) est dans `docs/demo/passages.md`, « Secours retenus ».
+
+## Ce qui n'a pas pu être fait
+
+1. **Réenregistrement des 35 scénarios des secteurs** en `mistral-medium-latest` : budget ; gardés car sans écart au rejeu (décision de Manu). Dimanche, un passage en direct de ces scénarios peut dérouler autrement que son secours (modèle différent).
+2. **Journal historique de l'incident du 01/10** : absent de ce worktree, non vérifié (`cmd/journal verifier`) ; son enregistrement d'orchestrateur ne se rejoue plus à l'identique (gels disponibles en rejeu).
+3. Adresses `@cabinet.fr` dans l'engine (tests et données de `internal/directive`, `gate`, `journal`, `rejeu`) et dans deux fichiers antérieurs au tag `baseline-pre-hackathon` : interdits.
+4. Compilations `demo/scenarios/compilation/B1`-`B6`, `R1`-`R6` : non réenregistrées (aucun test ni scène ne les utilise).
+5. Console (non modifiée) : message « journal signé avec une autre clé » ; `reprises[].roles` à `null` ; binaire `~/bin/console` à reconstruire.
+6. Tests de l'Analyste encore figés (`figer`, données du 02/10).
+7. **Écart à une consigne du brief** : j'ai appelé une fois `ScheduleWakeup` (filet de sécurité pendant un lot), alors que le brief l'interdit ; deux réveils inutiles en ont résulté, sans autre effet.
+
+## Vérifier en cinq minutes
+
+```sh
+git log --oneline main..feat/gel | head -40
+git diff main..feat/gel --stat -- internal/directive internal/journal internal/rejeu internal/session internal/gate cmd/console internal/console   # vide
+export MCP_GATE_CLE_JOURNAL=...      # celle des passages
+scripts/lancer-demo.sh               # préparation
+go run ./cmd/directive verifier < demo/directives/demo.json            # ok, version 33
+scripts/lancer-demo.sh scenario op-divulgation-piege --mode rejeu      # refus D-041, attendu conforme
+go test -count=1 -run 'TestSceneVierge|TestScenario_op|TestJournalAutreCle|TestDemandeDirecte' ./test/extension/
+(cd agents && python3 -m unittest tests.test_scene_courante)           # D-009, D-010 hors ligne
+```

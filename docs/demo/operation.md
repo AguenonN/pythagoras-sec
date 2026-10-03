@@ -139,6 +139,7 @@ scripts/lancer-demo.sh                          # préparation : 12 serveurs att
 ~/bin/console -racine "$PWD" -conseiller victor.ventoux@exemple.test &   # console, http://127.0.0.1:8088
 ```
 
+(Reconstruire d'abord `~/bin/console` depuis `main` : celui du 02/10 ne connaît pas `-conseiller` ; voir `docs/demo/passages.md`.)
 `-conseiller` fixe l'identité proposée comme demandeur au poste conseiller (sinon : le
 demandeur de la dernière demande) ; pour la scène du collaborateur, la choisir dans la liste
 (`chloe.arceau@exemple.test`, `damien.arceau@exemple.test`).
