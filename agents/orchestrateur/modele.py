@@ -23,6 +23,10 @@ ETAT = os.path.join(os.path.dirname(ICI), ".etat", "orchestrateur")
 # 80 appels réels, puis 30 et 15 de plus accordés par Manu le 02/10 (125 au total),
 # compteur dans agents/.etat/orchestrateur.
 MAX_APPELS = 125
+# Modèle de l'orchestrateur et des sous-agents (session gel, 03/10) : medium
+# par défaut, --modele de l'orchestrateur et de scripts/lancer-demo.sh pour
+# un autre. Le compilateur garde le sien (compilateur.mistral.MODELE_COMPILATEUR).
+MODELE_AGENTS = "mistral-medium-latest"
 
 
 class ErreurRejeu(Exception):
@@ -42,10 +46,12 @@ class ModeleReel:
     """Appels réels (cache sur disque et budget de compilateur.mistral),
     chaque réponse étant aussi gardée dans l'ordre pour l'enregistrement."""
 
-    def __init__(self, cache, etat=ETAT, max_appels=None, client=None):
+    def __init__(self, cache, etat=ETAT, max_appels=None, client=None, modele=MODELE_AGENTS):
         if max_appels is None:
             max_appels = int(os.environ.get("ORCHESTRATEUR_MAX_APPELS", str(MAX_APPELS)))
-        self.client = client or mistral.Client(mode="reel", enregistrements=cache, etat=etat, max_appels=max_appels)
+        self.modele = modele
+        self.client = client or mistral.Client(mode="reel", enregistrements=cache, etat=etat, max_appels=max_appels,
+                                               modele=modele)
         self.reponses = []
 
     def pour(self, agent):

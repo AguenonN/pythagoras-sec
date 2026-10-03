@@ -7,7 +7,8 @@
 #	export MCP_GATE_CLE_JOURNAL=...      # hexadécimal, 32 octets ; jamais sur disque
 #	scripts/lancer-demo.sh                                  # prépare tout
 #	scripts/lancer-demo.sh demande "<texte>" --demandeur <id> [options]   (texte avant ou après les options)
-#	scripts/lancer-demo.sh scenario <nom> [--mode reel|rejeu] [--enregistrement F] [--horloge-depart T]
+#	scripts/lancer-demo.sh scenario <nom> [--mode reel|rejeu] [--enregistrement F] [--horloge-depart T] [--modele M]
+#	scripts/lancer-demo.sh enregistrer <nom> [--horloge-depart T] [--modele M]   (secours versionné)
 #	scripts/lancer-demo.sh valider <empreinte> --valideur <id> --role <role>
 #	scripts/lancer-demo.sh verifier <dossier de session>
 #	scripts/lancer-demo.sh comparer <dossier de session> <dossier de session>
@@ -26,14 +27,22 @@
 #	--mode reel|rejeu     reel (défaut) : Mistral ; rejeu : réponses enregistrées, sans
 #	                      réseau (serveurs en DONNEES_MODE=REJEU, validations redéposées)
 #	--enregistrement F    reel : où écrire les réponses ; rejeu : lesquelles rejouer
+#	--modele M            modèle de l'orchestrateur et des sous-agents (reel) :
+#	                      mistral-medium-latest (défaut) ou mistral-small-latest
 #	--scenario NOM        nom court du dossier de session et de l'enregistrement
 #
 # Préparation : construit les serveurs (scripts/construire-serveurs.sh),
 # mcp-gate, mcp-approve, journal et directive dans bin/ ; génère les
 # registres (demo/registre.json, demo/registre-attaque.json) avec les
-# enregistrements des serveurs de données dans
+# enregistrements des serveurs de données dans une copie de travail,
+# demo/execution/serveurs/ (ignorée par Git), remplie depuis
 # demo/scenarios/enregistrements/serveurs/ (versionnés : ce sont eux que
-# rejoue le secours hors ligne) ; l'annuaire signé (mcp-approve
+# rejoue le secours hors ligne). Une demande en direct (réel, MIXTE) n'écrit
+# donc que sous demo/execution/ ; seule la commande « enregistrer » écrit
+# des enregistrements versionnés (réponses de Mistral du scénario, et
+# réponses nouvelles des serveurs, recopiées de la copie de travail) ;
+# « scenario » en réel écrit les siennes sous demo/execution/enregistrements/.
+# L'annuaire signé (mcp-approve
 # annuaire-demo) si la source a changé ; le registre local des gels
 # (gels-avoirs preparer) s'il est absent ; vérifie que le gate démarre avec
 # le registre, l'annuaire et demo/directives/demo.json.
@@ -61,6 +70,9 @@ approbations="$execution/approbations"
 cles="$execution/cles"
 gels_local="$racine/servers/gels-avoirs/enregistrements_locaux"
 enr_serveurs="demo/scenarios/enregistrements/serveurs"
+enr_travail="demo/execution/serveurs"
+serveurs_enregistres=(taux-officiel recherche-entreprises eurlex legifrance)
+modele_defaut="mistral-medium-latest"
 jeu_demo="$racine/demo/directives/demo.json"
 
 die() { echo "lancer-demo: $*" >&2; exit 1; }
@@ -125,6 +137,32 @@ gate() {
 	exec env -i "${env_gate[@]}" "$racine/bin/mcp-gate" "${args[@]}" 2>>"$session/mcp-gate.log"
 }
 
+# Copie de travail des enregistrements des serveurs : les fichiers
+# versionnés absents y sont recopiés (jamais écrasés).
+synchroniser_serveurs() {
+	local s
+	for s in "${serveurs_enregistres[@]}"; do
+		mkdir -p "$racine/$enr_travail/$s"
+		[[ -d "$racine/$enr_serveurs/$s" ]] && cp -RLn "$racine/$enr_serveurs/$s/." "$racine/$enr_travail/$s/"
+	done
+	return 0
+}
+
+# Réponses de serveurs obtenues depuis le repère $1 : recopiées de la copie
+# de travail vers les enregistrements versionnés (sans rien écraser).
+promouvoir_serveurs() {
+	local repere="$1" s f
+	for s in "${serveurs_enregistres[@]}"; do
+		[[ -d "$racine/$enr_travail/$s" ]] || continue
+		while IFS= read -r -d '' f; do
+			if [[ ! -e "$racine/$enr_serveurs/$s/$(basename "$f")" ]]; then
+				cp "$f" "$racine/$enr_serveurs/$s/"
+				echo "lancer-demo: enregistrement serveur versionné : $enr_serveurs/$s/$(basename "$f")" >&2
+			fi
+		done < <(find "$racine/$enr_travail/$s" -maxdepth 1 -type f -newer "$repere" -print0)
+	done
+}
+
 # ---------------------------------------------------------------------------
 preparer() {
 	cd "$racine"
@@ -146,7 +184,8 @@ preparer() {
 	for s in eurlex legifrance; do
 		[[ -e "$enr_serveurs/$s" ]] || ln -s "../../../../servers/$s/enregistrements" "$enr_serveurs/$s"
 	done
-	go run ./cmd/registre-demo -enregistrements "$enr_serveurs"
+	synchroniser_serveurs
+	go run ./cmd/registre-demo -enregistrements "$enr_travail"
 
 	mkdir -p "$execution"
 	if [[ ! -f demo/annuaire.json || demo/annuaire-source.json -nt demo/annuaire.json || ! -f "$cles/autorite.pub" ]]; then
@@ -209,6 +248,7 @@ EOF
 # ---------------------------------------------------------------------------
 demande() {
 	local texte="" demandeur="" depart="" sans="" jeu="$jeu_demo" registre="normal" mode="reel" enr="" scenario=""
+	local modele="$modele_defaut"
 	(( $# > 0 )) || usage
 	# Le texte est le seul argument qui n'est pas une option, avant ou après
 	# elles : la console lance « demande --demandeur <id> <texte> ».
@@ -223,6 +263,7 @@ demande() {
 			--mode) mode="$2"; shift 2 ;;
 			--enregistrement) enr="$(realpath -m "$2")"; shift 2 ;;
 			--scenario) scenario="$2"; shift 2 ;;
+			--modele) modele="$2"; shift 2 ;;
 			-*) die "demande : option inconnue $1" ;;
 			*) [[ -z "$texte_vu" ]] || die "demande : un seul texte de demande"; texte="$1"; texte_vu=1; shift ;;
 		esac
@@ -231,6 +272,7 @@ demande() {
 	exiger_prepare
 	[[ "$mode" == reel || "$mode" == rejeu ]] || die "--mode reel ou rejeu"
 	[[ "$mode" == rejeu && -z "$enr" ]] && die "--mode rejeu exige --enregistrement"
+	synchroniser_serveurs
 	registre_de "$registre" >/dev/null
 	[[ -f "$jeu" ]] || die "jeu introuvable : $jeu"
 	if [[ "$mode" == rejeu ]]; then
@@ -291,7 +333,7 @@ PY
 	local gate_cmd=("$racine/scripts/lancer-demo.sh" gate --session "$session" --jeu "$jeu_gate" --registre "$registre")
 	[[ -n "$depart" ]] && gate_cmd+=(--horloge-depart "$depart")
 	local orch=(python3 -m orchestrateur executer --session "$session" --approbations "$approbations"
-		--mode "$mode" --meta "$meta" --demande "$texte" --demandeur "$demandeur" --date "$date")
+		--mode "$mode" --meta "$meta" --demande "$texte" --demandeur "$demandeur" --date "$date" --modele "$modele")
 	[[ -n "$enr" ]] && orch+=(--enregistrement "$enr")
 	[[ -n "$scenario" ]] && orch+=(--scenario "$scenario")
 	[[ -n "$depart" ]] && orch+=(--horloge-depart "$depart")
@@ -312,12 +354,14 @@ scenario() {
 	local nom="$1"; shift
 	local fichier="$racine/demo/scenarios/$nom.json"
 	[[ -f "$fichier" ]] || die "scénario introuvable : demo/scenarios/$nom.json"
-	local mode="reel" enr="" depart=""
+	local mode="reel" enr="" depart="" modele="" versionner=""
 	while (( $# > 0 )); do
 		case "$1" in
 			--mode) mode="$2"; shift 2 ;;
 			--enregistrement) enr="$2"; shift 2 ;;
 			--horloge-depart) depart="$2"; shift 2 ;;
+			--modele) modele="$2"; shift 2 ;;
+			--versionner) versionner=1; shift ;;   # interne : commande « enregistrer »
 			*) die "scenario : option inconnue $1" ;;
 		esac
 	done
@@ -326,8 +370,11 @@ scenario() {
 		if [[ "$mode" == rejeu ]]; then
 			enr="$(ls "$dossier_enr"/*.json 2>/dev/null | sort | tail -1)"
 			[[ -n "$enr" ]] || die "aucun enregistrement pour $nom dans demo/scenarios/enregistrements/$nom"
-		else
+		elif [[ -n "$versionner" ]]; then
 			enr="$dossier_enr/$(date +%Y%m%d-%H%M%S).json"
+		else
+			# Passage en direct : rien de versionné n'est écrit.
+			enr="$execution/enregistrements/$nom/$(date +%Y%m%d-%H%M%S).json"
 		fi
 	fi
 	local args=()
@@ -343,6 +390,7 @@ PY
 )
 	local opts=(--scenario "$nom" --mode "$mode" --enregistrement "$enr")
 	[[ -n "$depart" ]] && opts+=(--horloge-depart "$depart")
+	[[ -n "$modele" ]] && opts+=(--modele "$modele")
 	local jeu_rel
 	for i in "${!args[@]}"; do
 		if [[ "${args[$i]}" == --jeu ]]; then
@@ -377,6 +425,20 @@ if a.get("directives") is not None and sorted(a["directives"]) != sorted(r["dire
     ecarts.append("directives %s, attendues %s" % (r["directives_citees"], a["directives"]))
 print("lancer-demo: attendu : " + ("conforme" if not ecarts else "ÉCART : " + " ; ".join(ecarts)))
 PY
+	return "$code"
+}
+
+# ---------------------------------------------------------------------------
+# enregistrer : passage réel d'un scénario dont les réponses (Mistral et
+# serveurs de données nouvelles) deviennent le secours versionné.
+enregistrer() {
+	(( $# > 0 )) || usage
+	local nom="$1"; shift
+	local repere code=0
+	repere="$(mktemp)"
+	trap 'rm -f "$repere"' RETURN
+	scenario "$nom" --mode reel --versionner "$@" || code=$?
+	promouvoir_serveurs "$repere"
 	return "$code"
 }
 
@@ -450,6 +512,7 @@ case "$commande" in
 	gate) gate "$@" ;;
 	demande) demande "$@" ;;
 	scenario) scenario "$@" ;;
+	enregistrer) enregistrer "$@" ;;
 	valider) valider "$@" ;;
 	verifier) verifier "$@" ;;
 	comparer) comparer "$@" ;;

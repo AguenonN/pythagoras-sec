@@ -414,21 +414,23 @@ class TestCLI(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmp)
 
-    def lancer(self, mode, client=None, nom="s1"):
+    def lancer(self, mode, client=None, nom="s1", options=()):
         env_fichier = os.path.join(self.tmp, nom + ".env")
         journal = os.path.join(self.tmp, nom + ".jsonl")
         os.environ.update(FAUX_GATE_ENV=env_fichier, FAUX_GATE_JOURNAL=journal, MISTRAL_API_KEY="secret-de-test")
         vrai = modele.ModeleReel.__init__
 
-        def init(m, cache, etat=modele.ETAT, max_appels=None, client_=None):
-            vrai(m, cache, etat, max_appels, client=client)
+        def init(m, cache, etat=modele.ETAT, max_appels=None, client_=None, modele=modele.MODELE_AGENTS):
+            self.modeles.append(modele)
+            vrai(m, cache, etat, max_appels, client=client, modele=modele)
+        self.modeles = []
         modele.ModeleReel.__init__ = init
         try:
             out = io.StringIO()
             code = cli.principal(["executer", "--session", os.path.join(self.tmp, nom), "--approbations",
                                   os.path.join(self.tmp, "appro"), "--mode", mode, "--enregistrement",
                                   os.path.join(self.tmp, "enr.json"), "--demande", "Lis DOS-1", "--demandeur",
-                                  "camille", "--date", "2026-10-04", "--scenario", "essai", "--",
+                                  "camille", "--date", "2026-10-04", "--scenario", "essai", *options, "--",
                                   sys.executable, FAUX_GATE], out)
         finally:
             modele.ModeleReel.__init__ = vrai
@@ -458,10 +460,24 @@ class TestCLI(unittest.TestCase):
         self.assertEqual([r["agent"] for r in enr["reponses"]],
                          ["orchestrateur", "analyse-dossier", "analyse-dossier", "orchestrateur"])
         self.assertEqual(enr["appels_mistral"], 4)
+        self.assertEqual(self.modeles, ["mistral-medium-latest"])  # modèle des agents par défaut
+        self.assertEqual(enr["modele"], "mistral-medium-latest")
         self.assertEqual(enr["resultat"], {"statut": "termine", "directives_citees": []})
         self.assertNotIn("secret-de-test", json.dumps(enr))
         code2, sortie2, _, appels2 = self.lancer("rejeu", nom="s2")
         self.assertEqual((code2, sortie2, appels2), (code, sortie, appels))
+
+    def test_option_modele(self):
+        class Client:
+            reponses = [texte("Hors périmètre.")]
+
+            def completer(self, *a, **k):
+                return self.reponses.pop(0)
+        code, _, _, _ = self.lancer("reel", Client(), options=("--modele", "mistral-small-latest"))
+        self.assertEqual(code, 0)
+        self.assertEqual(self.modeles, ["mistral-small-latest"])
+        with open(os.path.join(self.tmp, "enr.json")) as f:
+            self.assertEqual(json.load(f)["modele"], "mistral-small-latest")
 
     def test_rejeu_sans_validation_enregistree_n_attend_pas(self):
         with open(os.path.join(self.tmp, "enr.json"), "w") as f:

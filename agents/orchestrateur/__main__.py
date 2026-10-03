@@ -3,7 +3,7 @@
     python -m orchestrateur executer --demande "…" --demandeur ID --session DIR \\
         --approbations DIR --date AAAA-MM-JJ [--mode reel|rejeu] [--enregistrement F] \\
         [--scenario NOM] [--meta JSON] [--mcp-approve BIN --cles DIR] [--horloge-depart T] \
-        -- <commande du gate>
+        [--modele M] -- <commande du gate>
     python -m orchestrateur sous-agents [--registre F | --catalogue F] [--dossier D]
     python -m orchestrateur comparer <journal1.jsonl> <journal2.jsonl>
 
@@ -12,7 +12,10 @@ dans son environnement), charge les sous-agents devant les outils que le
 gate expose, traite la demande, écrit etat.json, reponse.json et
 orchestrateur.json (trace) dans le dossier de session.
 
-- ``--mode reel`` : Mistral, budget ORCHESTRATEUR_MAX_APPELS (80) ; les
+- ``--modele`` : modèle de l'orchestrateur et des sous-agents
+  (``mistral-medium-latest`` par défaut, ou ORCHESTRATEUR_MODELE) ; sans
+  effet en rejeu (le modèle est celui de l'enregistrement) ;
+- ``--mode reel`` : Mistral, budget ORCHESTRATEUR_MAX_APPELS (125) ; les
   réponses obtenues sont écrites, dans l'ordre, dans ``--enregistrement``
   (avec les validations constatées), à rejouer hors ligne ;
 - ``--mode rejeu`` : les réponses de ``--enregistrement``, dans l'ordre,
@@ -106,7 +109,7 @@ def executer(a, sortie):
         m = modele.ModeleRejoue(enr["reponses"])
         date, demande, demandeur = enr["date"], enr["demande"], enr["demandeur"]
     else:
-        m = modele.ModeleReel(cache=os.path.join(a.session, "mistral"))
+        m = modele.ModeleReel(cache=os.path.join(a.session, "mistral"), modele=a.modele)
         date, demande, demandeur, enr = a.date, a.demande, a.demandeur, None
     if not demande or not demandeur or not date:
         raise SystemExit("--demande, --demandeur et --date obligatoires (ou --mode rejeu avec un enregistrement)")
@@ -143,7 +146,7 @@ def executer(a, sortie):
         meta = json.loads(a.meta) if a.meta else {}
         session.ecrire_atomique(a.enregistrement, {
             "format": 1, "scenario": a.scenario, "demande": demande, "demandeur": demandeur, "date": date,
-            "options": meta, "modele": mistral.MODELE, "session": os.path.basename(os.path.normpath(a.session)),
+            "options": meta, "modele": a.modele, "session": os.path.basename(os.path.normpath(a.session)),
             "appels_mistral": len(m.reponses),
             "resultat": {"statut": resultat["statut"], "directives_citees": resultat["directives_citees"]},
             "validations": [{"valideurs": v["valideurs"], "accepte": v["accepte"]}
@@ -174,6 +177,9 @@ def principal(argv=None, sortie=sys.stdout):
     e.add_argument("--cles")
     e.add_argument("--horloge-depart", help="horloge simulée du gate (RFC 3339) : les jetons redéposés en rejeu y sont signés")
     e.add_argument("--dossier-sous-agents", default=sous_agents.DOSSIER)
+    e.add_argument("--modele", choices=list(mistral.MODELES),
+                   default=os.environ.get("ORCHESTRATEUR_MODELE") or modele.MODELE_AGENTS,
+                   help="modèle de l'orchestrateur et des sous-agents (défaut : %(default)s)")
     e.add_argument("gate", nargs="+", help="commande du gate (stdio)")
     s = sous.add_parser("sous-agents")
     s.add_argument("--registre", help="registre du gate (défaut : demo/registre.json s'il existe)")
