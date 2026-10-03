@@ -131,24 +131,25 @@ func reponseFinale(c *VueChaine, st *Etat) Reponse {
 		return r
 	}
 	e := c.Etapes[len(c.Etapes)-1]
+	outil := "« " + libelleDe(e.Serveur, e.Outil, "") + " »"
 	r.Badge = e.Badge
 	switch e.Badge {
 	case BadgeRefuse:
-		r.Titre = fmt.Sprintf("Demande refusée : l'appel %s n'a pas été transmis.", e.Outil)
+		r.Titre = fmt.Sprintf("Demande refusée : l'appel %s n'a pas été transmis.", outil)
 	case BadgeNonAttesta:
-		r.Titre = fmt.Sprintf("Source non attestée : l'appel %s a été refusé.", e.Outil)
+		r.Titre = fmt.Sprintf("Source non attestée : l'appel %s a été refusé.", outil)
 	case BadgeRejete:
-		r.Titre = fmt.Sprintf("Validation rejetée par %s : l'appel %s n'a pas été transmis.", nomRejet(e.Rejet), e.Outil)
+		r.Titre = fmt.Sprintf("Validation rejetée par %s : l'appel %s n'a pas été transmis.", nomRejet(e.Rejet), outil)
 	case BadgeAttente:
-		r.Titre = fmt.Sprintf("Décision suspendue : une validation humaine est requise avant la transmission de l'appel %s.", e.Outil)
+		r.Titre = fmt.Sprintf("Décision suspendue : une validation humaine est requise avant la transmission de l'appel %s.", outil)
 	case BadgeIndispo:
-		r.Titre = fmt.Sprintf("Source indisponible : aucune donnée n'a été obtenue pour l'appel %s.", e.Outil)
+		r.Titre = fmt.Sprintf("Source indisponible : aucune donnée n'a été obtenue pour l'appel %s.", outil)
 	case BadgeCaviarde:
-		r.Titre = fmt.Sprintf("Appel %s transmis après retrait de %d champ(s).", e.Outil, len(e.Champs))
+		r.Titre = fmt.Sprintf("Appel %s transmis après retrait de %d champ(s).", outil, len(e.Champs))
 	default:
-		r.Titre = fmt.Sprintf("Appel %s autorisé : la réponse du serveur a été remise à l'agent.", e.Outil)
+		r.Titre = fmt.Sprintf("Appel %s autorisé : la réponse du serveur a été remise à l'agent.", outil)
 		if len(e.ValidePar) > 0 {
-			r.Titre = fmt.Sprintf("Appel %s transmis après validation humaine.", e.Outil)
+			r.Titre = fmt.Sprintf("Appel %s transmis après validation humaine.", outil)
 		}
 	}
 	r.Paragraphes = append(r.Paragraphes, "Motif de l'engine : "+e.Motif)

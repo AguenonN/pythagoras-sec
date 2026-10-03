@@ -33,10 +33,13 @@ Branche `feat/console-3`. Mis à jour après chaque commit. Périmètre : `cmd/c
   - Identité connectée : option `-conseiller <identité>` de la console ; sans elle, le demandeur de la demande la plus récente (`/api/etat` → `conseiller`). Par défaut la liste la propose ; ensuite, la dernière identité choisie (gardée en mémoire et dans le navigateur, `localStorage`, lecture protégée). Ni le sondage ni la session affichée ne la changent ; « Connecté : » montre cette identité. Une demande suggérée qui porte un demandeur compte comme un choix.
   - Tests : `TestConseillerParDefaut`, `TestNavigateurDemandeur` (défaut, deux sondages, changement de session, choix gardé d'une session à l'autre et au rechargement).
 - **Point 7 — aucune proposition.** L'Analyste n'est pas modifié. Si `demo/execution/propositions/` est vide (ou absent), l'onglet affiche « Aucune proposition. » et la commande exacte, vérifiée dans `agents/analyste/__main__.py` : `cd agents && python3 -m analyste proposer` (mode rejeu par défaut, `--mode reel` pour appeler le modèle). Test : `TestNavigateurAucuneProposition` (dossier supprimé, texte et compteur « · 0 »).
+- **Point 8 — captures.** 15 nouvelles images dans `docs/rapports/console-captures/reel/` (Chromium/Playwright, binaire réel de la console, interface embarquée), produites par `capturer-console3.sh` + `capturer-console3.py` : `2-poste-saisie-lente` (saisie en cours, focus dans le champ, frise d'une demande vivante), `2-poste-reponse-lisible` et `2-poste-reponse-detail-technique`, `5-validation-formulaire`, `5-validation-carte-decision` (avec les contrôles de l'engine), `5-validation-carte-rejet`, `2-poste-rejet-visible`, `1-journal-rejet-visible`, `1-journal-libelles-outils`, `3-regles-libelles`, `4-avant-apres-libelles`, `7-notifications-libelles`, `6-redaction-compilation-reelle` (mode « réel », simulateur du service), `6-redaction-panne-en-francais`, `6-redaction-propositions-vide`. Aucune erreur JavaScript pendant la prise. Les captures de la session « finition » (scénarios réels rejoués) sont conservées, aucune n'est écrasée.
+  - Retouches vues sur les captures : le gras Markdown ne ressortait pas dans le bandeau (tout le bandeau était en gras) ; le titre « Ce que l'engine a rendu » citait `attribuer_pret` (texte composé côté Go) : libellé lisible désormais.
 
 ## Pas fait
 
-(en cours)
+- Captures sur les **scénarios réels** (`lancer-demo.sh scenario … --mode rejeu`) : impossible ici, voir Blocages. Les captures console-3 tournent sur le simulateur d'orchestrateur et de gate (mêmes contrats, journaux chaînés, jetons signés par `mcp-approve`) ; la réponse en Markdown de `2-poste-reponse-*` est un `reponse.json` **écrit par le script de capture** (le simulateur rend du texte simple), au format exact de l'orchestrateur.
+- `docs/equipe/modifier-la-console.md` non mis à jour (hors de mon périmètre selon le brief) : y ajouter `GET /api/outils`, `-conseiller`, `-compilateur reel|rejeu`, `-mode-compilateur`, les tests du navigateur.
 
 ## Décisions prises seul
 
@@ -49,16 +52,21 @@ Branche `feat/console-3`. Mis à jour après chaque commit. Périmètre : `cmd/c
 
 ## Blocages
 
-Aucun.
+- Rejeu des scénarios réels : `scripts/lancer-demo.sh` exige le registre local des gels du jour (`servers/gels-avoirs/enregistrements_locaux`, absent du worktree) et sinon le télécharge (DG Trésor : réseau non autorisé). La session « finition » l'avait copié d'un autre worktree ; le brief interdit toute commande hors du worktree. Abandonné au premier essai, contourné par le simulateur.
 
 ## Questions pour Manu
 
-(aucune pour l'instant)
+1. (avant la démo) Lancer la console avec `-conseiller camille.conseiller@exemple.test` pour que le Poste propose Camille ; sans cette option, c'est le demandeur de la dernière demande. Faut-il plutôt la mettre par défaut dans `lancer-demo.sh` (session gel) ?
+2. (avant la démo) Avec `MISTRAL_API_KEY` dans l'environnement de la console, la compilation part en réel : vérifier le budget d'appels du compilateur. `-compilateur rejeu` pour forcer l'inverse.
+3. (après) `rejet.json` porte maintenant `role` : l'orchestrateur pourrait le reprendre dans son texte « Validation rejetée par … ».
+4. (après) Libellés courts des outils : table de la console (`internal/console/outils.go`) ; à déplacer dans le registre (champ `libelle`) si vous voulez une seule source.
 
 ## Vérifier en 5 minutes
 
 ```sh
 go vet ./... && go test -race -count=1 ./...
 python3 -m venv .venv-navigateur && .venv-navigateur/bin/pip install playwright   # une fois
-CONSOLE_NAVIGATEUR_PYTHON=$PWD/.venv-navigateur/bin/python go test -count=1 -run Navigateur -v ./internal/console/
+CONSOLE_NAVIGATEUR_PYTHON=$PWD/.venv-navigateur/bin/python go test -count=1 -run Navigateur -v ./internal/console/   # ~1 min, 5 tests
+go test -count=1 -run 'CompilateurMode|ChoisirCompilateur|ReponseSansReleve|LibellesOutils|RejetVisible|ConseillerParDefaut' ./internal/console/ ./cmd/console/
+docs/rapports/console-captures/capturer-console3.sh /tmp/c3 $PWD/.venv-navigateur/bin/python   # régénère les captures
 ```
