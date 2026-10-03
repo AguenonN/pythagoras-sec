@@ -7,5 +7,7 @@
   "statut": "termine",
   "directives": [],
   "description": "Sans D-009 : credit-historique lit la base interne (T3), le taux (17,9 %) est sous le seuil, l'attribution est transmise ; le taux officiel n'est pas consulté, D-002 ne se déclenche pas."
- }
+ },
+ "jeu": "demo/scenarios/jeux/avec-d009.json",
+ "sans_directive": "D-009"
 }

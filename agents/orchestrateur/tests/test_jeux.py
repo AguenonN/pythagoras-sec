@@ -48,8 +48,10 @@ class TestJeux(unittest.TestCase):
         self.assertNotIn("D-009", ids)
         self.assertNotIn("D-010", ids)
         self.assertEqual(lire(HISTORIQUE_V1)["directives"], jeu["directives"][:8])
+        # Version 33 (03/10, session gel) : le juriste a activé dans la console
+        # D-011 à D-031 et D-040 à D-046 ; toutes les directives sont actives.
         for d in jeu["directives"]:
-            statut = "active" if d["id"] < "D-009" else "brouillon"
+            statut = "active"
             self.assertEqual(d["statut"], statut)
             self.assertIn("à valider par le", " ".join(f["texte"] for f in d["fondements"]))
             self.assertIn("Directive %s, version 1, %s" % (d["id"], statut), relecture)

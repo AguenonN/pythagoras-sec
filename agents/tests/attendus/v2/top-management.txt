@@ -1,4 +1,4 @@
-Jeu top-management, version 1, en vigueur à partir du 05/10/2026 à 00:00 UTC, auteur juriste@cabinet.fr.
+Jeu top-management, version 1, en vigueur à partir du 05/10/2026 à 00:00 UTC, auteur juriste@exemple.test.
 Empreinte : sha256:98b50b2a118318d414f461f7011d8bebb4eedb0f37d1b533736b0cd4e6eec514.
 1 directive, évaluée dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
 Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.

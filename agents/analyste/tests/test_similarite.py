@@ -189,7 +189,7 @@ class TestCorpusEmbarque(unittest.TestCase):
     def test_vecteurs_du_corpus_enregistres(self):
         os.environ.pop("MISTRAL_API_KEY", None)
         arts, _ = corpus.charger()
-        self.assertEqual(len(plongements.Plongeur("rejeu").vecteurs([sim.texte_article(a) for a in arts])), 5)
+        self.assertEqual(len(plongements.Plongeur("rejeu").vecteurs([sim.texte_article(a) for a in arts])), 8)
 
 
 

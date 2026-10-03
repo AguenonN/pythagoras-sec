@@ -2,7 +2,7 @@
  "texte": "Aucune décision RH ne peut viser un salarié du groupe X (Code du travail, art. L1121-1). Toute action RH visant un salarié du groupe Y attend une validation humaine (Code du travail, art. L2411-1).",
  "jeu": "rh",
  "prefixe_id": "R",
- "auteur": "juriste@cabinet.fr",
+ "auteur": "juriste@exemple.test",
  "date_effet": "2026-10-05T00:00:00Z",
  "reponses": [
   {

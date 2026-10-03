@@ -1,0 +1,159 @@
+{
+ "format": 1,
+ "scenario": "op-tracabilite-temoin",
+ "demande": "Lis le document GEN-DOC-01 (plaquette institutionnelle publique).",
+ "demandeur": "victor.ventoux@exemple.test",
+ "date": "2026-10-03",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/scenarios/jeux/operation.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "mistral-medium-latest",
+ "session": "20261003-200157-op-tracabilite-temoin",
+ "appels_mistral": 4,
+ "resultat": {
+  "statut": "termine",
+  "directives_citees": []
+ },
+ "validations": [],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "8066191f3c4348fa8c8c55ddf16db18b",
+    "created": 1791050518,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1239,
+     "total_tokens": 1290,
+     "completion_tokens": 51,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "SacXGrDIU",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"equipe-deal\", \"tache\": \"Lire le document GEN-DOC-01 (plaquette institutionnelle publique) dans la data room de l'opération ATLAS.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "equipe-deal",
+   "reponse": {
+    "id": "20333dc1323042eb95c4586fb9c74bdc",
+    "created": 1791050519,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1557,
+     "total_tokens": 1579,
+     "completion_tokens": 22,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "VBsON16gd",
+         "type": "function",
+         "function": {
+          "name": "data-room__lire_document",
+          "arguments": "{\"document_id\": \"GEN-DOC-01\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "equipe-deal",
+   "reponse": {
+    "id": "406452f859c14cb097f118f74d288398",
+    "created": 1791050520,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1979,
+     "total_tokens": 2071,
+     "completion_tokens": 92,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"action\": \"Lire le document GEN-DOC-01 dans la data room\", \"statut\": \"fait\", \"reference\": \"GEN-DOC-01\", \"motif\": \"Document lu avec succès. Titre : Plaquette institutionnelle Groupe Ventoux SA. Type : document public. Projet : general. Confidentialité : publique. Extrait : Présentation publique fictive du Groupe Ventoux SA.\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "c4a9ce63269a431ba6f29ec48d7b220a",
+    "created": 1791050522,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1383,
+     "total_tokens": 1431,
+     "completion_tokens": 48,
+     "prompt_tokens_details": {
+      "cached_tokens": 896
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "Le document **GEN-DOC-01** (plaquette institutionnelle publique) a été lu avec succès. Il s'agit de la **plaquette institutionnelle du Groupe Ventoux SA**, un document public présentant l'entreprise."
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

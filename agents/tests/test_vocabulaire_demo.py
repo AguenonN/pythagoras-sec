@@ -82,7 +82,10 @@ class TestVocabulaireDemo(unittest.TestCase):
                         cites["roles"].add(val)
                     elif k == "groupe":
                         cites["groupes"].add(val)
-                    elif k == "etiquette":
+                    elif k == "etiquette" and x.get("effet") != "marquer":
+                        # Une marque (effet « marquer », D-046) pose une étiquette
+                        # libre au journal ; ce n'est pas une étiquette d'outil
+                        # du registre.
                         cites["etiquettes"].add(val)
                     visiter(val)
             elif isinstance(x, list):

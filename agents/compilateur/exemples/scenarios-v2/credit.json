@@ -2,7 +2,7 @@
  "texte": "Politique de crédit. Aucun prêt ne peut être attribué sans consultation préalable du registre des gels d'avoirs (Code monétaire et financier, art. L562-4). Au-delà de 500 000 euros, l'attribution d'un prêt est bloquée (Politique de crédit, art. 3.2). Un prêt attribué à partir du taux officiel attend une validation humaine (RGPD, art. 22). Le serveur de recherche d'entreprises ne reçoit que le SIREN (RGPD, art. 5).",
  "jeu": "credit",
  "prefixe_id": "C",
- "auteur": "juriste@cabinet.fr",
+ "auteur": "juriste@exemple.test",
  "date_effet": "2026-10-05T00:00:00Z",
  "reponses": [
   {

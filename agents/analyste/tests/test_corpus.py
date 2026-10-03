@@ -13,7 +13,8 @@ from analyste import corpus
 class TestCorpus(unittest.TestCase):
     def test_charge_et_empreinte(self):
         entrees, index = corpus.charger()
-        self.assertEqual([e["id"] for e in entrees], ["CMF-L313-5-1", "CONSO-L314-6", "RGPD-5", "RGPD-22", "RGPD-32"])
+        self.assertEqual([e["id"] for e in entrees], ["CMF-L313-5-1", "CONSO-L314-6", "RGPD-5", "RGPD-22", "RGPD-32",
+                                                      "CMF-L562-4", "CT-L1121-1", "CT-L2411-1"])
         self.assertTrue(index["empreinte"].startswith("sha256:"))
         for e in entrees:
             self.assertTrue(e["texte"])
@@ -23,7 +24,8 @@ class TestCorpus(unittest.TestCase):
 
     def test_indisponibles_consignes(self):
         _, index = corpus.charger()
-        self.assertEqual(sorted(i["id"] for i in index["indisponibles"]), ["CMF-L562-4", "CT-L1121-1", "CT-L2411-1"])
+        # Complétés le 03/10 (session gel) par le serveur legifrance : plus rien d'indisponible.
+        self.assertEqual(index["indisponibles"], [])
 
     def test_retouche_refusee(self):
         d = tempfile.mkdtemp()

@@ -1,0 +1,176 @@
+{
+ "format": 1,
+ "scenario": "op-communique-temoin",
+ "demande": "Publie le communiqué COM-ATLAS-01 sur le diffuseur réglementé.",
+ "demandeur": "adrien.arceau@exemple.test",
+ "date": "2026-10-03",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/scenarios/jeux/operation.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "mistral-medium-latest",
+ "session": "20261003-200206-op-communique-temoin",
+ "appels_mistral": 4,
+ "resultat": {
+  "statut": "termine",
+  "directives_citees": [
+   "D-044",
+   "D-045"
+  ]
+ },
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "nora.ventoux@exemple.test",
+     "role": "direction-juridique"
+    },
+    {
+     "identite": "theo.ventoux@exemple.test",
+     "role": "conformite"
+    }
+   ],
+   "accepte": true
+  }
+ ],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "8ef4bb5bc69d426fb59ade89357f9736",
+    "created": 1791050527,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1242,
+     "total_tokens": 1286,
+     "completion_tokens": 44,
+     "prompt_tokens_details": {
+      "cached_tokens": 896
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "xdx7y9BGx",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"equipe-deal\", \"tache\": \"Publier le communiqué COM-ATLAS-01 sur le diffuseur réglementé.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "equipe-deal",
+   "reponse": {
+    "id": "1044870cdc3b4d16b54e548704533975",
+    "created": 1791050528,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1550,
+     "total_tokens": 1587,
+     "completion_tokens": 37,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "Mm87kLEeA",
+         "type": "function",
+         "function": {
+          "name": "communication__publier_communique",
+          "arguments": "{\"communique_id\": \"COM-ATLAS-01\", \"canal\": \"diffuseur réglementé\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "equipe-deal",
+   "reponse": {
+    "id": "8e65762a2e6d4358a39c961b876957fe",
+    "created": 1791050531,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1941,
+     "total_tokens": 2007,
+     "completion_tokens": 66,
+     "prompt_tokens_details": {
+      "cached_tokens": 1408
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"action\": \"publier le communiqué COM-ATLAS-01 sur le diffuseur réglementé\", \"statut\": \"fait\", \"reference\": \"COMMUNIQUE-FICTIF-0001\", \"motif\": \"action enregistrée en mémoire (fictive)\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "c1b35846edd8475fa7c68fbf40f50b4f",
+    "created": 1791050532,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1353,
+     "total_tokens": 1395,
+     "completion_tokens": 42,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "Le communiqué **COM-ATLAS-01** a été publié sur le diffuseur réglementé. Référence : **COMMUNIQUE-FICTIF-0001**."
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

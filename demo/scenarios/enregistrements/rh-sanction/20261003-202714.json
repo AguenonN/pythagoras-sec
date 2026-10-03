@@ -1,0 +1,171 @@
+{
+ "format": 1,
+ "scenario": "rh-sanction",
+ "demande": "Propose une sanction pour SAL-FICTIF-002",
+ "demandeur": "luc.manager@exemple.test",
+ "date": "2026-10-03",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/directives/demo.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "mistral-medium-latest",
+ "session": "20261003-202715-rh-sanction",
+ "appels_mistral": 4,
+ "resultat": {
+  "statut": "termine",
+  "directives_citees": [
+   "D-007"
+  ]
+ },
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "helene.rh@exemple.test",
+     "role": "responsable-rh"
+    }
+   ],
+   "accepte": true
+  }
+ ],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "95edd29cfd2049db93eacb66617543bc",
+    "created": 1791052035,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1234,
+     "total_tokens": 1287,
+     "completion_tokens": 53,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "xChT9lhEM",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"rh\", \"tache\": \"Proposer une sanction pour le salarié SAL-FICTIF-002 de l'ENTREPRISE SYNTHÉTIQUE.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "rh",
+   "reponse": {
+    "id": "231997af458f42f391bd9c11cd11d51a",
+    "created": 1791052036,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1064,
+     "total_tokens": 1110,
+     "completion_tokens": 46,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "gDHrJSHU8",
+         "type": "function",
+         "function": {
+          "name": "rh-synthetique__proposer_sanction",
+          "arguments": "{\"salarie_id\": \"SAL-FICTIF-002\", \"motif\": \"Motif non précisé dans la demande\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "rh",
+   "reponse": {
+    "id": "8ec068e4651e4c8e889e450252c802b7",
+    "created": 1791052040,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1512,
+     "total_tokens": 1609,
+     "completion_tokens": 97,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\n  \"action\": \"proposer_sanction\",\n  \"salaries\": [\"SAL-FICTIF-002\"],\n  \"effectuee\": true,\n  \"reference\": \"SANCTION-FICTIVE-0001\",\n  \"detail\": \"Sanction fictive proposée pour le salarié SAL-FICTIF-002 avec le motif : 'Motif non précisé dans la demande'.\"\n}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "7700af31906e44e28614695971decfd8",
+    "created": 1791052041,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1379,
+     "total_tokens": 1448,
+     "completion_tokens": 69,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "Une sanction a été proposée pour le salarié **SAL-FICTIF-002** sous la référence **SANCTION-FICTIVE-0001**. Le motif n'a pas été précisé dans votre demande. Si vous souhaitez ajouter ou modifier des détails, merci de me le préciser."
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

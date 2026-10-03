@@ -27,7 +27,13 @@ from . import corpus, plongements
 # « Embeddings ») : décisions de crédit 0,97 à 0,99 ; remise d'un rapport sur
 # un dossier de crédit 0,92 à 0,94 ; parcours RH 0,85 à 0,88. Au-dessous de
 # 0,95, rien n'est cité.
-SEUIL_SESSIONS = 0.95
+# Recalibré le 03/10 (session gel, ``python -m analyste calibrer`` sur 225
+# sessions, agents sur mistral-medium-latest) : pour « source interne
+# périmée », les sessions de même nature (base interne) sont à 0,987 ou plus,
+# les autres décisions de crédit (taux officiel consulté) à 0,962-0,975 ; les
+# rapports 0,94, les secteurs 0,92 au plus. À 0,95, les secondes étaient citées
+# à tort : seuil porté à 0,98, dans l'écart.
+SEUIL_SESSIONS = 0.98
 NB_SESSIONS = 3
 NB_FONDEMENTS = 2
 MENTION = "suggestion — à valider par le juriste"

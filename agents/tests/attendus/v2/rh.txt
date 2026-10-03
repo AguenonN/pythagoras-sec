@@ -1,4 +1,4 @@
-Jeu rh, version 1, en vigueur à partir du 05/10/2026 à 00:00 UTC, auteur juriste@cabinet.fr.
+Jeu rh, version 1, en vigueur à partir du 05/10/2026 à 00:00 UTC, auteur juriste@exemple.test.
 Empreinte : sha256:9368bd7f92771002519efdde43dc01577012aab06e545e9d2a97d33644eb4564.
 4 directives, évaluées dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
 Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.

@@ -378,6 +378,108 @@
           ]
         }
       ]
+    },
+    {
+      "nom": "data-room",
+      "outils": [
+        {
+          "nom": "lire_document",
+          "acces": "read",
+          "description": "Lit un document de la data room fictive : titre, type, projet, étiquettes, extrait.",
+          "arguments": [
+            "/document_id"
+          ]
+        },
+        {
+          "nom": "lister_documents",
+          "acces": "read",
+          "description": "Liste les documents de la data room fictive, éventuellement filtrés par projet (par exemple « atlas »).",
+          "arguments": [
+            "/projet"
+          ]
+        },
+        {
+          "nom": "partager_document",
+          "acces": "action",
+          "description": "Partage un document de la data room avec un destinataire (action fictive, enregistrée en mémoire). La destination est qualifiée « interne » ou « externe ».",
+          "arguments": [
+            "/destinataire",
+            "/destination",
+            "/document_id"
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "messagerie",
+      "outils": [
+        {
+          "nom": "envoyer_message",
+          "acces": "action",
+          "description": "Envoie un message (action fictive, enregistrée en mémoire). La destination est qualifiée « interne » (dans l'organisation) ou « externe » (hors de l'organisation).",
+          "arguments": [
+            "/corps",
+            "/destinataire",
+            "/destination",
+            "/objet",
+            "/pieces"
+          ]
+        },
+        {
+          "nom": "rediger_message",
+          "acces": "read",
+          "description": "Liste les gabarits de message disponibles (brouillons, lecture seule). N'envoie rien.",
+          "arguments": [
+            "/type"
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "bourse",
+      "outils": [
+        {
+          "nom": "consulter_cours",
+          "acces": "read",
+          "description": "Lit le cours fictif d'un titre : libellé, dernier cours, variation, devise.",
+          "arguments": [
+            "/titre"
+          ]
+        },
+        {
+          "nom": "passer_ordre",
+          "acces": "action",
+          "description": "Passe un ordre de bourse (action fictive, enregistrée en mémoire) : titre, sens (achat ou vente), quantité, pour le compte de qui.",
+          "arguments": [
+            "/pour_le_compte_de",
+            "/quantite",
+            "/sens",
+            "/titre"
+          ]
+        }
+      ]
+    },
+    {
+      "nom": "communication",
+      "outils": [
+        {
+          "nom": "preparer_communique",
+          "acces": "read",
+          "description": "Lit un projet de communiqué fictif : titre, projet, statut, corps.",
+          "arguments": [
+            "/communique_id"
+          ]
+        },
+        {
+          "nom": "publier_communique",
+          "acces": "action",
+          "description": "Publie un communiqué (action fictive, enregistrée en mémoire) sur un canal donné.",
+          "arguments": [
+            "/canal",
+            "/communique_id"
+          ]
+        }
+      ]
     }
   ]
 }

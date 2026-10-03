@@ -315,6 +315,8 @@ class Orchestrateur:
         if fichiers == REJET:
             rejet = self.approbations.rejet(attente["empreinte_transmise"]) or {}
             qui = rejet.get("nom") or rejet.get("valideur") or "un valideur"
+            if rejet.get("role"):  # écrit par la console depuis console-3
+                qui += " (%s)" % rejet["role"]
             texte = ("Validation rejetée par %s : %s. L'appel %s reste en attente de validation humaine "
                      "(%s), aucune action effectuée." % (qui, rejet.get("motif") or "sans motif", r["outil"],
                                                          ", ".join(attente["directives"]) or "engine"))

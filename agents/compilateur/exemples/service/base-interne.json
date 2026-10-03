@@ -12,7 +12,10 @@
   "si_indetermine": "refuser",
   "La règle vise-t-elle uniquement l'outil « attribuer_pret » de la banque synthétique, ou aussi d'autres outils comme « evaluer_dossier » ou « get_taux_interne » ?": "Uniquement l'outil attribuer_pret : c'est la décision de prêt qui attend la validation.",
   "La validation par un analyste des risques doit-elle être une validation humaine (attendre_validation) ou s'agit-il d'une interdiction si la condition n'est pas remplie (refuser) ?": "Une validation humaine : l'attribution du prêt attend la validation.",
-  "Le rôle « analyste des risques » correspond-il au rôle « analyste-risques » du catalogue ?": "analyste-risques"
+  "Le rôle « analyste des risques » correspond-il au rôle « analyste-risques » du catalogue ?": "analyste-risques",
+  "La règle vise-t-elle uniquement l'outil `attribuer_pret` de la banque synthétique, ou aussi d'autres outils comme `evaluer_dossier` ou `refuser_credit` qui pourraient utiliser la base interne des taux ?": "Uniquement l'outil attribuer_pret : c'est la décision de prêt qui attend la validation, dès que la base interne des taux (banque-synthetique/get_taux_interne) a été consultée dans la demande.",
+  "Par « décision de prêt », entendez-vous toute utilisation de l'outil `attribuer_pret`, ou uniquement les cas où le montant dépasse un certain seuil ? Si oui, quel est ce seuil ?": "Toute utilisation de attribuer_pret, sans seuil de montant, dès que la base interne des taux a été consultée.",
+  "La validation par un analyste des risques doit-elle être une validation humaine explicite (attendre_validation) ou une simple notification (notifier) ?": "Une validation humaine : l'attribution du prêt attend la validation du rôle analyste-risques."
  },
  "variantes": {
   "Le rôle « analyste des risques » correspond-il au rôle « analyste-risques » du catalogue ?": [

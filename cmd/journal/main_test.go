@@ -24,7 +24,7 @@ var cle = []byte(strings.Repeat("j", 32))
 
 const h64 = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
 
-const jeuAvant = `{"jeu": {"id": "cmd-journal", "version": 1, "date_effet": "2026-01-01T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+const jeuAvant = `{"jeu": {"id": "cmd-journal", "version": 1, "date_effet": "2026-01-01T00:00:00Z", "auteur": "juriste@exemple.test"},
  "directives": [{"id": "S-001", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
   "texte_fr": "Au-delà de 500 000 euros, refus.", "fondements": [{"texte": "Politique", "article": "1"}],
   "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},

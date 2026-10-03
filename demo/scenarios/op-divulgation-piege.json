@@ -10,7 +10,7 @@
    "D-041"
   ],
   "sous_agents": [
-   "assistant-salarie"
+   "equipe-deal"
   ],
   "decisions": {
    "data-room/lire_document": "autoriser",

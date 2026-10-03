@@ -9,7 +9,9 @@
  "reponses": {
   "Le week-end correspond-il à un fuseau horaire spécifique (ex : Europe/Paris) ? Si oui, précisez les jours et heures exacts (ex : samedi 00:00 à dimanche 23:59).": "L'heure de Paris (Europe/Paris) ; le week-end, c'est le samedi et le dimanche, toute la journée.",
   "si_indetermine": "refuser",
-  "Quel fuseau horaire doit être utilisé pour définir le week-end (samedi et dimanche) ?": "Europe/Paris"
+  "Quel fuseau horaire doit être utilisé pour définir le week-end (samedi et dimanche) ?": "Europe/Paris",
+  "Quel fuseau horaire doit être utilisé pour définir la période du week-end ?": "L'heure de Paris (Europe/Paris) ; le week-end, c'est le samedi et le dimanche, toute la journée.",
+  "Faut-il bloquer uniquement l'exécution des actions (outils classés 'action') ou aussi la consultation (outils classés 'read') pendant le week-end ?": "Les deux : aucun appel d'outil par un agent le week-end, consultation comprise ; l'appel est refusé."
  },
  "variantes": {
   "Quel fuseau horaire doit être utilisé pour définir le week-end (samedi et dimanche) ?": [

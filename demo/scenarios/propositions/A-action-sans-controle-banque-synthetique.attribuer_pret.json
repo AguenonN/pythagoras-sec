@@ -1,0 +1,92 @@
+{
+ "id": "A-action-sans-controle-banque-synthetique.attribuer_pret",
+ "date": "2026-10-03T18:44:53Z",
+ "constat": {
+  "type": "Action sans contrôle humain",
+  "code": "action_sans_controle_humain",
+  "detail": "Constat : action sans contrôle humain. 2 action(s) banque-synthetique/attribuer_pret transmise(s) sans validation humaine ni directive appliquée, pour un montant au moins égal à 100 000 €.\n- 20261003-202849-base-interne-sans-d009, entrée 15 (2026-10-03, dossier DOS-FICTIF-003) : montant 150 000 €, au moins égal au seuil de 100 000 € ; action autorisée, transmise, sans directive appliquée.\n- 20261003-202922-base-interne-sans-d009-rejeu, entrée 15 (2026-10-03, dossier DOS-FICTIF-003) : montant 150 000 €, au moins égal au seuil de 100 000 € ; action autorisée, transmise, sans directive appliquée.",
+  "occurrences": [
+   {
+    "session": "20261003-202849-base-interne-sans-d009",
+    "seq_action": 15,
+    "action": "banque-synthetique/attribuer_pret",
+    "date_action": "2026-10-03T18:29:17.975715543Z",
+    "transmise": true,
+    "decision": {
+     "effet": "autoriser",
+     "directives_appliquees": [],
+     "validation_humaine": "aucune"
+    },
+    "seuil": 100000,
+    "champ_montant": "/montant",
+    "valeurs_coffre": {
+     "montant": 150000,
+     "dossier": "DOS-FICTIF-003"
+    }
+   },
+   {
+    "session": "20261003-202922-base-interne-sans-d009-rejeu",
+    "seq_action": 15,
+    "action": "banque-synthetique/attribuer_pret",
+    "date_action": "2026-10-03T18:29:23.531086206Z",
+    "transmise": true,
+    "decision": {
+     "effet": "autoriser",
+     "directives_appliquees": [],
+     "validation_humaine": "aucune"
+    },
+    "seuil": 100000,
+    "champ_montant": "/montant",
+    "valeurs_coffre": {
+     "montant": 150000,
+     "dossier": "DOS-FICTIF-003"
+    }
+   }
+  ]
+ },
+ "sessions": [
+  "20261003-202849-base-interne-sans-d009",
+  "20261003-202922-base-interne-sans-d009-rejeu"
+ ],
+ "texte_propose": "Pour tout prêt attribué via l'action banque-synthetique/attribuer_pret avec un montant d'au moins 100 000 €, la validation humaine d'un analyste-risques est requise avant transmission.",
+ "fondement_propose": "Code monétaire et financier — article L313-5-1 (à valider par le juriste).",
+ "explication": "Dans les sessions 20261003-202849-base-interne-sans-d009 et 20261003-202922-base-interne-sans-d009-rejeu, des prêts d'un montant supérieur ou égal à 100 000 € ont été attribués sans validation humaine ni application des directives existantes. L'engine a autorisé la transmission sans contrôle.",
+ "sessions_similaires": [
+  {
+   "session": "20261003-201611-base-interne-avec-d009",
+   "score": 0.996,
+   "proche_de": "20261003-202922-base-interne-sans-d009-rejeu",
+   "score_constat": 0.874
+  },
+  {
+   "session": "20261003-201642-base-interne-avec-d009-rejeu",
+   "score": 0.996,
+   "proche_de": "20261003-202922-base-interne-sans-d009-rejeu",
+   "score_constat": 0.874
+  },
+  {
+   "session": "20261003-191856-base-interne-avec-d009-rejeu",
+   "score": 0.993,
+   "proche_de": "20261003-202922-base-interne-sans-d009-rejeu",
+   "score_constat": 0.871
+  }
+ ],
+ "fondements_suggeres": [
+  {
+   "id": "CONSO-L314-6",
+   "code": "Code de la consommation",
+   "article": "L314-6",
+   "score": 0.794,
+   "lien": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000032303335",
+   "mention": "suggestion — à valider par le juriste"
+  },
+  {
+   "id": "RGPD-22",
+   "code": "Règlement (UE) 2016/679 (RGPD)",
+   "article": "22",
+   "score": 0.785,
+   "lien": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32016R0679",
+   "mention": "suggestion — à valider par le juriste"
+  }
+ ]
+}

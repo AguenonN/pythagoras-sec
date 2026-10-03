@@ -36,7 +36,7 @@ class TestReconstruction(unittest.TestCase):
             n("d", "tous", "d1", champ="/salarie_ids"),
             n("d1", "argument", champ="", op="prefixe", valeur="SAL-"),
             n("e", "demandeur", groupe="prestataires-externes"),
-            n("f", "demandeur", identites=["alice@cabinet.fr"]),
+            n("f", "demandeur", identites=["alice@exemple.test"]),
             n("g", "temps", jours=["samedi", "dimanche"], heure_de="20:00", heure_a="07:00",
               date_op=">=", date_valeur="2026-12-24", fuseau="Europe/Paris"),
             n("h", "etiquette_cible", etiquette="donnees_client"),
@@ -51,7 +51,7 @@ class TestReconstruction(unittest.TestCase):
                                              {"argument": {"champ": "/siren", "op": "present"}}]})
         self.assertEqual(a["ou"][1], {"non": {"session.a_consulte": {"serveur": "gels-avoirs", "critere": "donnees_recues"}}})
         self.assertEqual(a["ou"][2], {"existe": {"champ": "/salarie_ids", "condition": {"sujet": {"groupe": "salaries-proteges"}}}})
-        self.assertEqual(a["ou"][5], {"demandeur": {"identite": {"egal": "alice@cabinet.fr"}}})
+        self.assertEqual(a["ou"][5], {"demandeur": {"identite": {"egal": "alice@exemple.test"}}})
         self.assertEqual(a["ou"][6]["temps"]["heure"], {"de": "20:00", "a": "07:00"})
         ok, erreurs, _ = directive_go.verifier(jeu_avec(a))
         self.assertTrue(ok, erreurs)

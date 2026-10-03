@@ -1,4 +1,4 @@
-Jeu credit, version 1, en vigueur à partir du 05/10/2026 à 00:00 UTC, auteur juriste@cabinet.fr.
+Jeu credit, version 1, en vigueur à partir du 05/10/2026 à 00:00 UTC, auteur juriste@exemple.test.
 Empreinte : sha256:014514eaba7ead68793141469c1cd532fd8d3d5ee6750399b18da7c5dd499f59.
 4 directives, évaluées dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
 Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.

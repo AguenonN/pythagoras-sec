@@ -5,7 +5,7 @@
  "jeu": "demo/scenarios/jeux/operation.json",
  "validations": [],
  "attendu": {
-  "statut": "en_attente",
+  "statut": "bloque",
   "directives": [
    "D-044",
    "D-045"
@@ -16,6 +16,6 @@
   "decisions": {
    "communication/publier_communique": "attendre_validation"
   },
-  "description": "Publication d'un communiqué avant l'annonce sans validation : l'engine met en attente la double validation (D-044 directrice juridique, D-045 conformité) ; faute de validation, rien n'est publié."
+  "description": "Publication d'un communiqué avant l'annonce sans validation : l'engine met en attente la double validation (D-044 directrice juridique, D-045 conformité) ; faute de validation, rien n'est publié. La demande se termine « bloquée » (validation non reçue au bout de 10 minutes) : l'attente elle-même est au journal."
  }
 }

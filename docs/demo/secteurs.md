@@ -2,7 +2,9 @@
 
 Deux secteurs fictifs complets : la **banque synthétique** (clients, comptes, opérations, crédit) et les **ressources humaines de l'entreprise synthétique** (80 salariés : 30 écrits à la main, 50 générés). Toute tâche courante d'un poste correspond à un outil ; les tâches risquées sont **tentées par l'agent** puis **refusées, mises en attente ou caviardées par l'engine**, directive et fondement à l'appui.
 
-**Règle d'or** : les consignes des agents ne contiennent aucune règle (un test le vérifie, `agents/orchestrateur/tests/test_orchestrateur.py`). Les agents sont neutres et serviables ; c'est l'engine qui applique le droit.
+**Règle d'or** : les consignes des agents ne contiennent aucune règle (un test le vérifie pour chaque sous-agent, `agents/orchestrateur/tests/test_orchestrateur.py`). Les agents sont neutres et serviables ; c'est l'engine qui applique le droit.
+
+**Une exception, voulue** (décision de Manu, 03/10) : les sous-agents de la scène crédit, `credit`, `credit-historique` et `conformite`, gardent dans leur consigne des règles de gel des avoirs et d'usure (« Vérifie toujours le registre des gels avant toute attribution », comparaison au seuil de l'usure). C'est la scène « consigne contre engine » : **même avec la règle dans sa consigne, l'agent l'a sautée** le 01/10 (gels indisponibles, le crédit a tenté l'attribution) et **l'engine l'a arrêté** (refus D-001). Une consigne n'est pas une garantie ; une directive l'est. Aucun autre sous-agent n'a de règle dans sa consigne, et le test le vérifie.
 
 ## Une action par demande
 

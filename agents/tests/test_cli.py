@@ -2,6 +2,7 @@
 scripté : codes de sortie, sortie JSON, jeu écrit seulement s'il est
 accepté."""
 
+import contextlib
 import io
 import json
 import os
@@ -32,7 +33,7 @@ class TestCLI(unittest.TestCase):
             sortie_jeu = os.path.join(tmp, "jeu.json")
             with mock.patch("compilateur.__main__.mistral.Client", return_value=client):
                 rc = cli.principal(["--texte", CREDIT, "--jeu", "credit-pme", "--catalogue", CATALOGUE_DEMO,
-                                    "--auteur", "juriste@cabinet.fr", "--date-effet", "2026-10-04",
+                                    "--auteur", "juriste@exemple.test", "--date-effet", "2026-10-04",
                                     "--sortie", sortie_jeu] + extra + list(args), sortie=sortie)
             ecrit = os.path.exists(sortie_jeu)
         return rc, sortie.getvalue(), ecrit
@@ -63,7 +64,7 @@ class TestCLI(unittest.TestCase):
         self.assertIn("Critère non observable", out)
 
     def test_v1_retire(self):
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             self.lancer(ClientScripte(), "--id-directive", "D-001")
 
 

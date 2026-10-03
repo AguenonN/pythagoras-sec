@@ -1,0 +1,17 @@
+{
+ "requete": {
+  "texte": "Divulgation illicite par message : aucun agent n'envoie un message vers une destination externe au cours d'une demande où un document du projet ATLAS a été consulté. L'envoi est refusé et la conformité est notifiée.",
+  "fondement": "Règlement (UE) n° 596/2014 relatif aux abus de marché — divulgation illicite d'information privilégiée — à valider par le juriste ; secret professionnel de l'avocat (art. 10, 14)",
+  "auteur": "nora.ventoux@exemple.test",
+  "jeu_existant": "demo/directives/demo.json",
+  "date_effet": "2026-09-01T00:00:00+02:00"
+ },
+ "reponses": {
+  "Le juriste mentionne « un document du projet ATLAS ». Doit-on rattacher cette règle à l'étiquette « production_rapport » ou à une autre étiquette du registre ?": "Aucune étiquette : un document du projet ATLAS est consulté quand la demande a lu un document de la data room avec data-room/lire_document et en a reçu le contenu (la data room est celle du projet).",
+  "Le juriste utilise « destination externe ». Doit-on utiliser l'étiquette « externe » pour identifier cette destination, ou faut-il préciser un autre critère observable ?": "L'argument /destination de messagerie/envoyer_message vaut « externe ».",
+  "Le juriste mentionne « la conformité est notifiée ». Doit-on utiliser le rôle « conformite » pour cette notification ?": "Oui, le rôle conformite, prévenu en temps réel ; si la notification ne peut pas partir, l'envoi reste refusé.",
+  "si_indetermine": "refuser",
+  "rythme:D-001:conformite": "temps_reel",
+  "si_echec:D-001:conformite": "refuser"
+ }
+}

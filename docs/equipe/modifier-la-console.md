@@ -22,6 +22,20 @@ orchestrateur simulé) :
 docs/rapports/console-captures/preparer-captures.sh /tmp/essai 8088
 ```
 
+## Options utiles
+
+| Option | Effet |
+|---|---|
+| `-conseiller <identité>` | identité connectée au poste conseiller, proposée comme demandeur ; ni le sondage ni la session affichée ne la changent. Défaut : le demandeur de la demande la plus récente. Démo : `-conseiller camille.conseiller@exemple.test`. |
+| `-compilateur reel` / `-compilateur rejeu` | force le mode du service du compilateur (`COMPILATEUR_MODE` transmis au service). Défaut : `reel` si `MISTRAL_API_KEY` est dans l'environnement de la console (seule sa présence compte), sinon `rejeu`. Toute autre valeur de `-compilateur` reste la commande du service. Le mode est écrit au démarrage et affiché à côté de « Compiler » (`GET /api/redaction` → `mode_compilateur`). |
+| `-mode-compilateur reel\|rejeu` | force le mode quand `-compilateur` donne une commande. |
+
+`GET /api/outils` rend, pour chaque `serveur__outil`, un libellé court (table de
+`internal/console/outils.go`) et la description du catalogue
+`agents/compilateur/exemples/catalogue-demo.json` (lecture seule). Un outil
+inconnu de la table prend le début de sa description. Ajouter un serveur : y
+ajouter ses libellés.
+
 ## Où est chaque écran
 
 Tout est dans `internal/console/web/`. Un écran = un fichier qui s'enregistre
@@ -38,6 +52,7 @@ dans `ECRANS` (`app.js` porte le socle : gabarit, navigation, formats, helper
 | Rédaction | `ecran-redaction.js` | `GET /api/redaction`, `POST /api/redaction/compiler`, `…/essai`, `…/mettre-en-vigueur`, `POST /api/propositions/{id}/decision` |
 | Notifications | `ecran-notifications.js` | `GET /api/notifications` |
 | Bandeau, onglets | `app.js` | `GET /api/etat` |
+| Libellés des outils (tous les écrans) | `app.js` | `GET /api/outils` (`outils.go`) |
 
 Les formes JSON sont les structures Go : `chaine.go` (écran 1), `poste.go`
 (2), `vues2.go` (3 et 4), `vues3.go` (5), `compil.go` (6), `notifs.go`.
@@ -67,3 +82,20 @@ Les formes JSON sont les structures Go : `chaine.go` (écran 1), `poste.go`
   `demo/execution/propositions/*.decision.json`. Toujours atomiques.
 - Les tranches vides d'une réponse JSON sont `[]`, jamais `null` (l'interface
   appelle `.includes`, `.map`…).
+- **Le sondage ne détruit pas les formulaires** : un écran monte son gabarit
+  une fois et ne remplace que les parties vivantes (`replaceChildren`) ;
+  saisie, focus et listes ouvertes survivent au sondage.
+
+## Tests du navigateur
+
+Des tests Go pilotent un vrai navigateur (Playwright, Chromium) :
+`TestNavigateurFormulaires`, `TestNavigateurReponse`, `TestNavigateurDecision`,
+`TestNavigateurDemandeur`, `TestNavigateurAucuneProposition`
+(`internal/console/navigateur_test.go`, scripts dans
+`internal/console/testdata/navigateur/`). Sans `CONSOLE_NAVIGATEUR_PYTHON`, ils
+sont sautés : `go test ./...` reste autonome.
+
+```bash
+python3 -m venv .venv-navigateur && .venv-navigateur/bin/pip install playwright   # une fois
+CONSOLE_NAVIGATEUR_PYTHON=$PWD/.venv-navigateur/bin/python go test -count=1 -run Navigateur -v ./internal/console/
+```

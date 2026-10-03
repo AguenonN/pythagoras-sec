@@ -1,4 +1,4 @@
-Jeu weekend, version 1, en vigueur à partir du 05/10/2026 à 00:00 UTC, auteur juriste@cabinet.fr.
+Jeu weekend, version 1, en vigueur à partir du 05/10/2026 à 00:00 UTC, auteur juriste@exemple.test.
 Empreinte : sha256:5b7c52433dd99d965412b85e5287e79054ecf2230fa54f5a71aff37599de4fad.
 1 directive, évaluée dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
 Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.

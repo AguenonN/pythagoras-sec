@@ -14,11 +14,11 @@
    "identifiant": "LEGIARTI000032303335",
    "date_reference": "2026-10-02"
   },
-  "mode": "REJEU",
-  "origine": "rejeu",
-  "date": "2026-09-29T22:13:47Z",
+  "mode": "MIXTE",
+  "origine": "direct",
+  "date": "2026-10-03T18:44:04Z",
   "url_consultee": "https://api.piste.gouv.fr/dila/legifrance/lf-engine-app/consult/getArticle",
-  "sha256": "6cbee93534401f7ee0ae1e9ee1238cdd30da637d51bf5104eff63f0eee7c5c91"
+  "sha256": "1a0b5c757dedd734a25c05ca58e3e88e8554797d4ecf856d7d763fc787fddff8"
  },
  "en_vigueur": {
   "date_debut": "2016-07-01",

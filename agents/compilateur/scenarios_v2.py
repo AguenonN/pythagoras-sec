@@ -3,7 +3,7 @@ réponses du juriste, et le déroulé jusqu'au jeu en brouillon.
 
 Un scénario (``exemples/scenarios-v2/<nom>.json``) ::
 
-    {"texte": "...", "jeu": "weekend", "auteur": "juriste@cabinet.fr",
+    {"texte": "...", "jeu": "weekend", "auteur": "juriste@exemple.test",
      "date_effet": "2026-10-05T00:00:00Z",
      "reponses": [{"question": "<question exacte de Mistral>", "reponse": "..."},
                   {"champ": "si_indetermine", "reponse": "refuser"}]}

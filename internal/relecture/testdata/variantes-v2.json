@@ -1,5 +1,5 @@
 {
-  "jeu": {"id": "variantes-v2", "version": 2, "date_effet": "2026-10-04T10:00:00+02:00", "auteur": "juriste@cabinet.fr"},
+  "jeu": {"id": "variantes-v2", "version": 2, "date_effet": "2026-10-04T10:00:00+02:00", "auteur": "juriste@exemple.test"},
   "directives": [
     {
       "id": "W-001", "version": 3, "statut": "observation", "date_effet": "2026-10-04T10:00:00+02:00",
@@ -24,7 +24,7 @@
       "condition": {"et": [
         {"appelant": {"egal": "spiffe://lab/agents/credit"}},
         {"sous_agent_declare": {"egal": "analyste"}},
-        {"demandeur": {"identite": {"dans": ["alice@cabinet.fr", "bob@cabinet.fr"]}}},
+        {"demandeur": {"identite": {"dans": ["alice@exemple.test", "bob@exemple.test"]}}},
         {"non": {"demandeur": {"groupe": "stagiaires"}}},
         {"attestation": {"verifiee": false}},
         {"attestation": {"verifiee": false, "mode": "binaire"}},

@@ -38,7 +38,7 @@ import (
 // Le jeu du point de contrôle, plus une directive d'attestation sur la
 // banque.
 const jeuImposteur = `{
-  "jeu": {"id": "credit-pme-gate", "version": 3, "date_effet": "2026-01-01T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+  "jeu": {"id": "credit-pme-gate", "version": 3, "date_effet": "2026-01-01T00:00:00Z", "auteur": "juriste@exemple.test"},
   "directives": [
     {"id": "D-001", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Aucun prêt ne doit être attribué de manière autonome à partir des informations du serveur de taux officiel.",
@@ -198,7 +198,7 @@ func TestImposteur_EmpreinteBinaire(t *testing.T) {
 	taux := backendtest.Stdio("taux-officiel", backendtest.Imposteur, chemin, empreinteServeur)
 	taux.Commande.Args = append(taux.Commande.Args, "-temoin", temoin)
 	reg := &registre.Registre{
-		Meta:     registre.MetaRegistre{ID: "lab-imposteur", Version: 1, Auteur: "ops@cabinet.fr"},
+		Meta:     registre.MetaRegistre{ID: "lab-imposteur", Version: 1, Auteur: "ops@exemple.test"},
 		Serveurs: []registre.Serveur{taux, banque(t)},
 	}
 	b := demarrer(t, reg, jeuImposteur)
@@ -250,7 +250,7 @@ func TestImposteur_CatalogueEmpoisonne(t *testing.T) {
 	taux := backendtest.Stdio("taux-officiel", backendtest.Imposteur, serveurTest, empreinteServeur)
 	taux.Commande.Args = append(taux.Commande.Args, "-temoin", temoin)
 	reg := &registre.Registre{
-		Meta:     registre.MetaRegistre{ID: "lab-imposteur", Version: 1, Auteur: "ops@cabinet.fr"},
+		Meta:     registre.MetaRegistre{ID: "lab-imposteur", Version: 1, Auteur: "ops@exemple.test"},
 		Serveurs: []registre.Serveur{taux, banque(t)},
 	}
 	b := demarrer(t, reg, jeuImposteur)
@@ -302,7 +302,7 @@ func TestImposteur_ClefTLS(t *testing.T) {
 	imposteur := legitime
 	imposteur.URL = ts.URL + "/mcp"
 	reg := &registre.Registre{
-		Meta: registre.MetaRegistre{ID: "lab-imposteur", Version: 1, Auteur: "ops@cabinet.fr"},
+		Meta: registre.MetaRegistre{ID: "lab-imposteur", Version: 1, Auteur: "ops@exemple.test"},
 		Serveurs: []registre.Serveur{
 			backendtest.Stdio("taux-officiel", backendtest.Taux, serveurTest, empreinteServeur),
 			imposteur,

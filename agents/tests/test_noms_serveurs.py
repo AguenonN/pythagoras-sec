@@ -12,7 +12,8 @@ import unittest
 from .aides import EXEMPLES, catalogue_demo
 
 SERVEURS = {"taux-officiel", "banque-synthetique", "recherche-entreprises",
-            "gels-avoirs", "eurlex", "legifrance", "rh-synthetique", "referentiel-rh"}
+            "gels-avoirs", "eurlex", "legifrance", "rh-synthetique", "referentiel-rh",
+            "data-room", "messagerie", "bourse", "communication"}
 ENREGISTREMENTS = os.path.join(os.path.dirname(EXEMPLES), "enregistrements")
 
 

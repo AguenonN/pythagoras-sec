@@ -128,7 +128,7 @@ var AvecEnregistrements = map[string]bool{
 
 // Meta du registre de démonstration.
 // Version 2 : les étiquettes de demo/etiquettes.json entrent au registre.
-var Meta = registre.MetaRegistre{ID: "demo", Version: 2, Auteur: "ops@cabinet.fr"}
+var Meta = registre.MetaRegistre{ID: "demo", Version: 2, Auteur: "ops@exemple.test"}
 
 // Manifeste est bin/manifeste.json.
 type Manifeste struct {

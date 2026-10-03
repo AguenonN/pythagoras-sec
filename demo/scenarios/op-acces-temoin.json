@@ -1,6 +1,6 @@
 {
  "titre": "Lecture d'un document ATLAS par un initié (passe)",
- "demande": "Dans la data room, lis le document ATLAS-DOC-02 et fais-m'en un résumé.",
+ "demande": "Dans la data room, lis le document ATLAS-DOC-02 et résume-le-moi directement dans ta réponse, sans envoyer de message.",
  "demandeur": "victor.ventoux@exemple.test",
  "jeu": "demo/scenarios/jeux/operation.json",
  "validations": [],

@@ -44,7 +44,7 @@ func Generer(schema, url, id string) ([]byte, error) {
 		return nil, err
 	}
 	r := &registre.Registre{
-		Meta: registre.MetaRegistre{ID: "lab", Version: 1, Auteur: "ops@cabinet.fr"},
+		Meta: registre.MetaRegistre{ID: "lab", Version: 1, Auteur: "ops@exemple.test"},
 		Serveurs: []registre.Serveur{{
 			Nom: "banque-synthetique", Transport: registre.HTTPSpiffe, URL: url,
 			Attestation: registre.Attestation{Mode: registre.ModeSpiffe, Attendu: id},

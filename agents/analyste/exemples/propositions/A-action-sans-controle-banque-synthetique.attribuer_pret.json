@@ -38,18 +38,6 @@
    "score": 0.994,
    "proche_de": "20261002-170144-base-interne-sans-d009-rejeu",
    "score_constat": 0.867
-  },
-  {
-   "session": "20261002-170148-consigne-sans-d001-rejeu",
-   "score": 0.976,
-   "proche_de": "20261002-170144-base-interne-sans-d009-rejeu",
-   "score_constat": 0.872
-  },
-  {
-   "session": "20261002-170149-consigne-avec-d001-rejeu",
-   "score": 0.976,
-   "proche_de": "20261002-170144-base-interne-sans-d009-rejeu",
-   "score_constat": 0.872
   }
  ],
  "fondements_suggeres": [

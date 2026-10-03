@@ -27,8 +27,14 @@ const cheminDirectives = "test/integration/testdata/credit-demo.json"
 // les noms de serveurs et d'outils.
 func registreSchemas(t *testing.T, racine string) *registre.Registre {
 	t.Helper()
+	// Avec les serveurs de demo/serveurs-supplementaires.json (projet
+	// ATLAS), que vise demo.json depuis sa version 5.
+	supp, err := LireSupplementaires(racine)
+	if err != nil {
+		t.Fatal(err)
+	}
 	r := &registre.Registre{Meta: Meta}
-	for _, nom := range Serveurs {
+	for _, nom := range append(append([]string{}, Serveurs...), supp.Serveurs...) {
 		b, err := os.ReadFile(filepath.Join(racine, "servers", nom, "schema.json"))
 		if err != nil {
 			t.Fatal(err)

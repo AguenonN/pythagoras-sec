@@ -219,6 +219,17 @@ class TestOrchestrateur(Banc):
         self.assertEqual(e["attente"]["directives"], ["D-002"])
         self.assertTrue(r["texte"].startswith("Validation non reçue dans le délai"))
 
+    def test_rejet_avec_role(self):
+        o = self.orch([
+            ("orchestrateur", deleguer("credit", "Attribue")),
+            ("credit", appel("banque-synthetique__attribuer_pret", {"dossier_id": "DOS-1"})),
+        ], delai=600)
+        self.depots = [[("rejet.json", json.dumps({"valideur": "claire", "nom": "Claire Analyste", "role": "analyste-risques",
+                                                    "motif": "taux non justifié", "date": "2026-10-04T09:00:00Z"}))]]
+        r = o.executer("demande")
+        self.assertTrue(r["texte"].startswith("Validation rejetée par Claire Analyste (analyste-risques) : taux non justifié."),
+                        r["texte"])
+
     def test_rejet_de_la_console_termine_bloque(self):
         # La console (« Rejeter ») écrit approbations/<empreinte>/rejet.json.
         o = self.orch([
@@ -362,12 +373,20 @@ class TestSousAgents(unittest.TestCase):
         self.assertEqual(sorted(agents), ["analyse-dossier", "assistant-salarie", "conformite", "credit",
                                           "credit-historique", "equipe-deal", "lcb-ft",
                                           "operations", "redaction", "rh", "rh-disciplinaire", "rh-gestion"])
-        # Secteurs : consignes neutres, aucune règle (c'est l'engine qui
-        # applique le droit, docs/demo/secteurs.md).
+        # Consignes neutres, aucune règle (c'est l'engine qui applique le
+        # droit, docs/demo/secteurs.md), pour tous les sous-agents sauf trois.
+        # Exception voulue (décision de Manu, 03/10) : credit, credit-historique
+        # et conformite gardent leurs règles de gel et d'usure, pour la scène
+        # « consigne contre engine » : même avec la règle dans sa consigne,
+        # l'agent l'a sautée le 01/10 (gels indisponibles, attribution tentée),
+        # et l'engine (D-001) l'a arrêté. Aucune autre exception.
+        exceptions = {"credit", "credit-historique", "conformite"}
         interdits = ("règle", "interdit", "jamais", "valid", "gel", "soupçon", "article", "rgpd", "code du", "directive",
                      "entretien préalable", "protégé", "syndic", "santé", "externe", "plafond")
-        for nom in ("operations", "lcb-ft", "rh-gestion", "rh-disciplinaire"):
-            consigne = agents[nom].consigne.lower()
+        for nom in sorted(set(agents) - exceptions):
+            # « interne » ou « externe » : les valeurs de l'argument /destination
+            # (messagerie, data room), pas une règle.
+            consigne = agents[nom].consigne.lower().replace("« interne » ou « externe »", "")
             self.assertEqual([m for m in interdits if m in consigne], [], nom)
         self.assertEqual(agents["credit-historique"].outils,
                          ["banque-synthetique__attribuer_pret", "banque-synthetique__get_taux_interne"])
@@ -414,21 +433,23 @@ class TestCLI(unittest.TestCase):
         self.tmp = tempfile.mkdtemp()
         self.addCleanup(shutil.rmtree, self.tmp)
 
-    def lancer(self, mode, client=None, nom="s1"):
+    def lancer(self, mode, client=None, nom="s1", options=()):
         env_fichier = os.path.join(self.tmp, nom + ".env")
         journal = os.path.join(self.tmp, nom + ".jsonl")
         os.environ.update(FAUX_GATE_ENV=env_fichier, FAUX_GATE_JOURNAL=journal, MISTRAL_API_KEY="secret-de-test")
         vrai = modele.ModeleReel.__init__
 
-        def init(m, cache, etat=modele.ETAT, max_appels=None, client_=None):
-            vrai(m, cache, etat, max_appels, client=client)
+        def init(m, cache, etat=modele.ETAT, max_appels=None, client_=None, modele=modele.MODELE_AGENTS):
+            self.modeles.append(modele)
+            vrai(m, cache, etat, max_appels, client=client, modele=modele)
+        self.modeles = []
         modele.ModeleReel.__init__ = init
         try:
             out = io.StringIO()
             code = cli.principal(["executer", "--session", os.path.join(self.tmp, nom), "--approbations",
                                   os.path.join(self.tmp, "appro"), "--mode", mode, "--enregistrement",
                                   os.path.join(self.tmp, "enr.json"), "--demande", "Lis DOS-1", "--demandeur",
-                                  "camille", "--date", "2026-10-04", "--scenario", "essai", "--",
+                                  "camille", "--date", "2026-10-04", "--scenario", "essai", *options, "--",
                                   sys.executable, FAUX_GATE], out)
         finally:
             modele.ModeleReel.__init__ = vrai
@@ -458,10 +479,24 @@ class TestCLI(unittest.TestCase):
         self.assertEqual([r["agent"] for r in enr["reponses"]],
                          ["orchestrateur", "analyse-dossier", "analyse-dossier", "orchestrateur"])
         self.assertEqual(enr["appels_mistral"], 4)
+        self.assertEqual(self.modeles, ["mistral-medium-latest"])  # modèle des agents par défaut
+        self.assertEqual(enr["modele"], "mistral-medium-latest")
         self.assertEqual(enr["resultat"], {"statut": "termine", "directives_citees": []})
         self.assertNotIn("secret-de-test", json.dumps(enr))
         code2, sortie2, _, appels2 = self.lancer("rejeu", nom="s2")
         self.assertEqual((code2, sortie2, appels2), (code, sortie, appels))
+
+    def test_option_modele(self):
+        class Client:
+            reponses = [texte("Hors périmètre.")]
+
+            def completer(self, *a, **k):
+                return self.reponses.pop(0)
+        code, _, _, _ = self.lancer("reel", Client(), options=("--modele", "mistral-small-latest"))
+        self.assertEqual(code, 0)
+        self.assertEqual(self.modeles, ["mistral-small-latest"])
+        with open(os.path.join(self.tmp, "enr.json")) as f:
+            self.assertEqual(json.load(f)["modele"], "mistral-small-latest")
 
     def test_rejeu_sans_validation_enregistree_n_attend_pas(self):
         with open(os.path.join(self.tmp, "enr.json"), "w") as f:
