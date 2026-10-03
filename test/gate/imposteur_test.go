@@ -198,7 +198,7 @@ func TestImposteur_EmpreinteBinaire(t *testing.T) {
 	taux := backendtest.Stdio("taux-officiel", backendtest.Imposteur, chemin, empreinteServeur)
 	taux.Commande.Args = append(taux.Commande.Args, "-temoin", temoin)
 	reg := &registre.Registre{
-		Meta:     registre.MetaRegistre{ID: "lab-imposteur", Version: 1, Auteur: "ops@cabinet.fr"},
+		Meta:     registre.MetaRegistre{ID: "lab-imposteur", Version: 1, Auteur: "ops@exemple.test"},
 		Serveurs: []registre.Serveur{taux, banque(t)},
 	}
 	b := demarrer(t, reg, jeuImposteur)
@@ -250,7 +250,7 @@ func TestImposteur_CatalogueEmpoisonne(t *testing.T) {
 	taux := backendtest.Stdio("taux-officiel", backendtest.Imposteur, serveurTest, empreinteServeur)
 	taux.Commande.Args = append(taux.Commande.Args, "-temoin", temoin)
 	reg := &registre.Registre{
-		Meta:     registre.MetaRegistre{ID: "lab-imposteur", Version: 1, Auteur: "ops@cabinet.fr"},
+		Meta:     registre.MetaRegistre{ID: "lab-imposteur", Version: 1, Auteur: "ops@exemple.test"},
 		Serveurs: []registre.Serveur{taux, banque(t)},
 	}
 	b := demarrer(t, reg, jeuImposteur)
@@ -302,7 +302,7 @@ func TestImposteur_ClefTLS(t *testing.T) {
 	imposteur := legitime
 	imposteur.URL = ts.URL + "/mcp"
 	reg := &registre.Registre{
-		Meta: registre.MetaRegistre{ID: "lab-imposteur", Version: 1, Auteur: "ops@cabinet.fr"},
+		Meta: registre.MetaRegistre{ID: "lab-imposteur", Version: 1, Auteur: "ops@exemple.test"},
 		Serveurs: []registre.Serveur{
 			backendtest.Stdio("taux-officiel", backendtest.Taux, serveurTest, empreinteServeur),
 			imposteur,

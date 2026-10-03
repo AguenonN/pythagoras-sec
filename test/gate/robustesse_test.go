@@ -15,7 +15,7 @@ import (
 func registreSimple(t *testing.T) *registre.Registre {
 	t.Helper()
 	return &registre.Registre{
-		Meta: registre.MetaRegistre{ID: "lab-robustesse", Version: 1, Auteur: "ops@cabinet.fr"},
+		Meta: registre.MetaRegistre{ID: "lab-robustesse", Version: 1, Auteur: "ops@exemple.test"},
 		Serveurs: []registre.Serveur{
 			backendtest.Stdio("taux-officiel", backendtest.Taux, serveurTest, empreinteServeur),
 			banque(t),

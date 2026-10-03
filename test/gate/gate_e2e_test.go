@@ -125,7 +125,7 @@ func registreE2E(t *testing.T) *registre.Registre {
 	t.Helper()
 	b := banque(t)
 	r := &registre.Registre{
-		Meta: registre.MetaRegistre{ID: "lab-e2e", Version: 1, Auteur: "ops@cabinet.fr"},
+		Meta: registre.MetaRegistre{ID: "lab-e2e", Version: 1, Auteur: "ops@exemple.test"},
 		Serveurs: []registre.Serveur{
 			backendtest.Stdio("taux-officiel", backendtest.Taux, serveurTest, empreinteServeur),
 			b,

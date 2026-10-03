@@ -59,11 +59,11 @@ func TestCharger_Testdata(t *testing.T) {
 func TestCharger_EmpreinteDeclaree(t *testing.T) {
 	r := chargerTestdata(t)
 	b, _ := os.ReadFile("testdata/lab.json")
-	avec := strings.Replace(string(b), `"auteur": "ops@cabinet.fr"`, `"auteur": "ops@cabinet.fr", "empreinte": "`+r.Meta.Empreinte+`"`, 1)
+	avec := strings.Replace(string(b), `"auteur": "ops@exemple.test"`, `"auteur": "ops@exemple.test", "empreinte": "`+r.Meta.Empreinte+`"`, 1)
 	if _, err := Charger([]byte(avec)); err != nil {
 		t.Fatalf("empreinte exacte refusée : %v", err)
 	}
-	faux := strings.Replace(string(b), `"auteur": "ops@cabinet.fr"`, `"auteur": "ops@cabinet.fr", "empreinte": "`+h64+`"`, 1)
+	faux := strings.Replace(string(b), `"auteur": "ops@exemple.test"`, `"auteur": "ops@exemple.test", "empreinte": "`+h64+`"`, 1)
 	if _, err := Charger([]byte(faux)); err == nil || !strings.Contains(err.Error(), "ne correspond pas") {
 		t.Fatalf("empreinte fausse acceptée : %v", err)
 	}
