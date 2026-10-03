@@ -350,8 +350,17 @@ class TestSousAgents(unittest.TestCase):
             json.dump(d, f)
 
     def test_les_sous_agents_de_la_demo_se_chargent_devant_le_catalogue(self):
-        agents = sous_agents.charger(sous_agents.outils_du_catalogue(cli.CATALOGUE))
-        self.assertEqual(sorted(agents), ["analyse-dossier", "conformite", "credit", "credit-historique", "lcb-ft",
+        # Les serveurs de l'opération ATLAS (session opération) ne sont pas dans
+        # le catalogue figé de la démo (agents/compilateur/exemples, non modifiable) :
+        # leurs outils sont réunis ici, comme le bloc OPERATION de faux_gate.py, pour
+        # que assistant-salarie et equipe-deal se chargent sans toucher au catalogue figé.
+        operation = {"data-room__lister_documents", "data-room__lire_document", "data-room__partager_document",
+                     "messagerie__rediger_message", "messagerie__envoyer_message",
+                     "bourse__consulter_cours", "bourse__passer_ordre",
+                     "communication__preparer_communique", "communication__publier_communique"}
+        agents = sous_agents.charger(sous_agents.outils_du_catalogue(cli.CATALOGUE) | operation)
+        self.assertEqual(sorted(agents), ["analyse-dossier", "assistant-salarie", "conformite", "credit",
+                                          "credit-historique", "equipe-deal", "lcb-ft",
                                           "operations", "redaction", "rh", "rh-disciplinaire", "rh-gestion"])
         # Secteurs : consignes neutres, aucune règle (c'est l'engine qui
         # applique le droit, docs/demo/secteurs.md).

@@ -58,6 +58,14 @@ SECTEURS_ACTION = ["banque-synthetique__effectuer_virement", "banque-synthetique
                    "rh-synthetique__exporter_paie", "rh-synthetique__envoyer_message_salarie"]
 OUTILS += [{"name": n, "description": "Outil des secteurs.", "inputSchema": schema("x")}
            for n in SECTEURS_LECTURE + SECTEURS_ACTION]
+# Outils de l'opération ATLAS (session opération) : exposés pour que les
+# sous-agents assistant-salarie et equipe-deal se chargent ; aucun n'est
+# appelé par ces tests (même rôle que le bloc SECTEURS ci-dessus).
+OPERATION = ["data-room__lister_documents", "data-room__lire_document", "data-room__partager_document",
+             "messagerie__rediger_message", "messagerie__envoyer_message",
+             "bourse__consulter_cours", "bourse__passer_ordre",
+             "communication__preparer_communique", "communication__publier_communique"]
+OUTILS += [{"name": n, "description": "Outil de l'opération.", "inputSchema": schema("x")} for n in OPERATION]
 
 
 def texte(t):
