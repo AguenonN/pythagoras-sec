@@ -86,7 +86,9 @@ class TestSecteurs(unittest.TestCase):
 
     def test_origines(self):
         o = lire(os.path.join(RACINE, "demo", "directives", "origines.json"))
-        self.assertEqual(sorted(o), ["D-%03d" % i for i in range(11, 32)])
+        # D-011 à D-031 (secteurs), D-040 à D-046 (opération ATLAS, ajoutées
+        # en brouillon par la session gel).
+        self.assertEqual(sorted(o), ["D-%03d" % i for i in list(range(11, 32)) + list(range(40, 47))])
         for i, e in o.items():
             self.assertIn("à valider par le", e["texte"])
             self.assertEqual("note" in e and "rétablie" in e["note"], i in RETABLIES)

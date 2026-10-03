@@ -107,5 +107,33 @@
   "origine": "preparee_pour_la_demo",
   "texte": "préparé pour la démonstration (session secteurs, A5, 03/10/2026) ; texte et fondement restent à valider par le juriste",
   "conversation_compilateur": "20261002-180258-01edb0"
+ },
+ "D-040": {
+  "origine": "preparee_pour_la_demo",
+  "texte": "préparé pour la démonstration (session opération, 03/10/2026 ; jeu vérifié demo/scenarios/jeux/operation.json, passé par le compilateur par la session gel : écarts dans docs/rapports/gel/compilation-atlas.json) ; texte et fondement restent à valider par le juriste"
+ },
+ "D-041": {
+  "origine": "preparee_pour_la_demo",
+  "texte": "préparé pour la démonstration (session opération, 03/10/2026 ; jeu vérifié demo/scenarios/jeux/operation.json, passé par le compilateur par la session gel : écarts dans docs/rapports/gel/compilation-atlas.json) ; texte et fondement restent à valider par le juriste"
+ },
+ "D-042": {
+  "origine": "preparee_pour_la_demo",
+  "texte": "préparé pour la démonstration (session opération, 03/10/2026 ; jeu vérifié demo/scenarios/jeux/operation.json, passé par le compilateur par la session gel : écarts dans docs/rapports/gel/compilation-atlas.json) ; texte et fondement restent à valider par le juriste"
+ },
+ "D-043": {
+  "origine": "preparee_pour_la_demo",
+  "texte": "préparé pour la démonstration (session opération, 03/10/2026 ; jeu vérifié demo/scenarios/jeux/operation.json, passé par le compilateur par la session gel : écarts dans docs/rapports/gel/compilation-atlas.json) ; texte et fondement restent à valider par le juriste"
+ },
+ "D-044": {
+  "origine": "preparee_pour_la_demo",
+  "texte": "préparé pour la démonstration (session opération, 03/10/2026 ; jeu vérifié demo/scenarios/jeux/operation.json, passé par le compilateur par la session gel : écarts dans docs/rapports/gel/compilation-atlas.json) ; texte et fondement restent à valider par le juriste"
+ },
+ "D-045": {
+  "origine": "preparee_pour_la_demo",
+  "texte": "préparé pour la démonstration (session opération, 03/10/2026 ; jeu vérifié demo/scenarios/jeux/operation.json, passé par le compilateur par la session gel : écarts dans docs/rapports/gel/compilation-atlas.json) ; texte et fondement restent à valider par le juriste"
+ },
+ "D-046": {
+  "origine": "preparee_pour_la_demo",
+  "texte": "préparé pour la démonstration (session opération, 03/10/2026 ; jeu vérifié demo/scenarios/jeux/operation.json, passé par le compilateur par la session gel : écarts dans docs/rapports/gel/compilation-atlas.json) ; texte et fondement restent à valider par le juriste"
  }
 }

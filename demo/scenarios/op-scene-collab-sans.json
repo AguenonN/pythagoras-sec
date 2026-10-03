@@ -2,7 +2,7 @@
  "titre": "Mauvais collaborateur — sans règle",
  "demande": "Dans la data room du projet ATLAS, lis le document ATLAS-DOC-02 (note de valorisation de Biolys) et résume-le-moi.",
  "demandeur": "damien.arceau@exemple.test",
- "jeu": "demo/directives/demo.json",
+ "jeu": "demo/scenarios/jeux/operation-sans-regles.json",
  "validations": [],
  "attendu": {
   "statut": "termine",

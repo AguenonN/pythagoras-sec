@@ -9,6 +9,7 @@ Budget : **400 appels** (autorisé par Manu, prime sur les 40 des règles commun
 | Étape | Appels | Cumul |
 |---|---|---|
 | Phase 1, point 0 : compilations A4, A5-brut, A5a, A5b | 9 | 9 |
+| Phase 1, point 9 : 7 règles ATLAS (+ 1 nouvel essai de D-040) | 23 | 32 |
 
 ## Phase 1 — derniers changements de code
 
@@ -47,3 +48,22 @@ Remplacée par `ops@exemple.test` : auteur du registre de démo (`internal/regis
 ### Point 7 — consignes des agents crédit
 
 Gardées (décision de Manu). Documenté dans `docs/demo/secteurs.md` (« Une exception, voulue ») ; le test des consignes neutres porte désormais sur **tous** les sous-agents sauf `credit`, `credit-historique`, `conformite`, exception écrite et justifiée dans le test. Pour `assistant-salarie` et `equipe-deal`, « « interne » ou « externe » » (valeurs de l'argument `/destination`) n'est pas une règle et n'est pas compté.
+
+### Point 8 — documentation
+
+- `docs/equipe/modifier-la-console.md` : options `-conseiller`, `-compilateur reel|rejeu`, `-mode-compilateur`, route `GET /api/outils` (libellés), règle « le sondage ne détruit pas les formulaires », tests du navigateur (Playwright) et leur commande.
+- `docs/demo/operation.md` : section « Commandes exactes pour dimanche » (clé, préparation, console avec `-conseiller`, les trois scènes sans / avec les règles, en direct et en secours `--mode rejeu`, depuis la console) ; section sur le passage des règles par le compilateur.
+
+### Point 9 — jeu ATLAS passé par le compilateur (23 appels)
+
+Les 7 textes de `operation.json` passés par le service du compilateur en réel (`--jeu-existant demo/directives/demo.json`), réponses de la juriste fidèles au jeu vérifié. Détail : `docs/rapports/gel/compilation-atlas.json`. **Le jeu vérifié est gardé.**
+
+| Règle | Résultat |
+|---|---|
+| D-041, D-042, D-045 | identiques (D-041/D-042 : termes du « et » dans un autre ordre, équivalent) |
+| D-044 | condition de date perdue après la question du fuseau |
+| D-040 | inversée deux fois (« refusé si membre des initiés ») — le compilateur ne sait pas écrire « n'appartient à aucun des groupes » ; la relecture le montre |
+| D-043 | refusée par les vérifications du code (`session.a_consulte` mal formé) |
+| D-046 | impossible : une marque nouvelle n'est pas une étiquette du registre ; le compilateur la refuse |
+
+**Décision (réversible)** : D-040 à D-046 ajoutées à `demo/directives/demo.json` **version 5, en brouillon** (version 4 archivée dans `historique/demo.v4.json`, origines dans `origines.json`, `directive verifier` : ok). Sans cela, la console — qui lance toute demande sous `demo.json` — ne peut pas jouer la scène ATLAS « avec les règles ». Rien n'est activé : Manu décide en phase 2. Les scénarios « sans » (`op-scene-*-sans`) pointent désormais vers `demo/scenarios/jeux/operation-sans-regles.json` (copie figée de la version 4), pour rester « sans règle » quelle que soit l'activation. Tests ajustés : registre de démo avec les serveurs supplémentaires (`directives_test.go`), origines D-040 à D-046, étiquette d'une marque non comptée parmi les étiquettes d'outils (`test_vocabulaire_demo.py`), relectures attendues de la scène (version 6 au lieu de 5).

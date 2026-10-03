@@ -38,8 +38,10 @@ sont neutres et serviables, c'est l'engine qui applique le droit.)
 
 Textes rédigés comme une directrice juridique les écrirait ; fondements marqués « à valider
 par le juriste » ; référence proposée : **Règlement (UE) n° 596/2014** (abus de marché) et
-le secret professionnel de l'avocat. Le jeu est **actif** ; `demo/directives/demo.json`
-n'est pas touché.
+le secret professionnel de l'avocat. Le jeu de travail est **actif**. Depuis la session
+gel (03/10), les mêmes directives sont aussi dans `demo/directives/demo.json` (version 5),
+**en brouillon** : le juriste les active dans la console (écran Règles) pour jouer la scène
+« avec règles » depuis le poste conseiller.
 
 | Id | Règle (en une phrase) | Déclencheur | Effet |
 |---|---|---|---|
@@ -55,8 +57,10 @@ Relecture française de chaque directive : `go run ./cmd/directive relire --dire
 
 ## Les demandes testées, par rôle
 
-Un **jeu de travail** = règles actives. « sans règle » = jeu `demo/directives/demo.json`
-(les actions ATLAS ne sont pas gouvernées).
+Un **jeu de travail** = règles actives. « sans règle » = jeu
+`demo/scenarios/jeux/operation-sans-regles.json` (copie figée de `demo.json` version 4,
+sans aucune règle ATLAS : les actions ATLAS ne sont pas gouvernées), qui ne change pas
+quand le juriste active D-040 à D-046 dans `demo.json`.
 
 ### Salarié initié de Ventoux — `victor.ventoux@exemple.test` (assistant `assistant-salarie`)
 
@@ -123,3 +127,51 @@ les 4 nouveaux serveurs (12/12). Mise en place : environ une demi-nuit.
 4. **Tests du kit figés.** `faux_gate.py` et un test listent en dur les serveurs/sous-agents
    connus ; ajouter des sous-agents impose de les y réunir (le catalogue figé, interdit, ne
    peut pas inclure les nouveaux serveurs). Contourné comme le bloc SECTEURS existant.
+
+## Commandes exactes pour dimanche
+
+Depuis la racine du dépôt, dans le shell où la clé du journal est exportée (la même pour
+tous les passages ; jamais écrite sur disque) :
+
+```sh
+export MCP_GATE_CLE_JOURNAL=...                 # fournie par Manu
+scripts/lancer-demo.sh                          # préparation : 12 serveurs attestés sur 12
+~/bin/console -racine "$PWD" -conseiller victor.ventoux@exemple.test &   # console, http://127.0.0.1:8088
+```
+
+`-conseiller` fixe l'identité proposée comme demandeur au poste conseiller (sinon : le
+demandeur de la dernière demande) ; pour la scène du collaborateur, la choisir dans la liste
+(`chloe.arceau@exemple.test`, `damien.arceau@exemple.test`).
+
+| Scène | Sans les règles | Avec les règles (jeu de travail `operation.json`) |
+|---|---|---|
+| Fuite par courriel (`chloe.arceau`) | `scripts/lancer-demo.sh scenario op-scene-fuite-sans` | `scripts/lancer-demo.sh scenario op-divulgation-piege` → refus D-041 |
+| Mauvais collaborateur (`damien.arceau`) | `scripts/lancer-demo.sh scenario op-scene-collab-sans` | `scripts/lancer-demo.sh scenario op-acces-piege` → refus D-040 |
+| Délit d'initié involontaire (`victor.ventoux`) | `scripts/lancer-demo.sh scenario op-scene-initie-sans` | `scripts/lancer-demo.sh scenario op-initie-piege` → refus D-043 |
+
+- **En direct** (Mistral, `mistral-medium-latest`) : la commande telle quelle. Rien de
+  versionné n'est écrit (réponses sous `demo/execution/`).
+- **Secours hors ligne** (sans réseau ni Mistral, réponses enregistrées) : la même commande
+  suivie de `--mode rejeu`, par exemple
+  `scripts/lancer-demo.sh scenario op-divulgation-piege --mode rejeu`.
+- **Depuis la console** : « sans règles » tant que D-040 à D-046 sont en brouillon dans
+  `demo.json` ; le juriste les active (écran Règles), et la demande suivante du poste
+  conseiller est jouée « avec les règles ».
+- Vérifier un passage : `scripts/lancer-demo.sh verifier demo/execution/sessions/<dossier>`.
+
+Passages retenus et empreintes : `docs/demo/passages.md`.
+
+## Les règles passées par le compilateur (session gel, 03/10)
+
+Chaque texte de D-040 à D-046 a été soumis au compilateur (service, réel,
+`mistral-medium-latest`), réponses de la juriste comprises
+(`docs/rapports/gel/compilation-atlas.json`). Le jeu **vérifié à la main reste celui de la
+démo** :
+
+| Règle | Résultat du compilateur |
+|---|---|
+| D-041, D-042, D-045 | identiques au jeu vérifié (à l'ordre près des termes d'un « et ») |
+| D-044 | la condition de date (« avant le 15/10 ») est perdue après la question sur le fuseau : communiqué toujours en attente |
+| D-040 | **inversée**, deux fois : « refusé si le demandeur est membre des initiés », même après une réponse explicite ; la relecture française le montre — c'est précisément ce que le juriste doit lire avant d'activer |
+| D-043 | refusée par les vérifications du code (nœud `session.a_consulte` mal formé) |
+| D-046 | impossible : le compilateur n'accepte comme étiquette que celles des outils du registre, pas une marque nouvelle (`acces-information-privilegiee`) |

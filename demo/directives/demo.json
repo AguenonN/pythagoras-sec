@@ -1,7 +1,7 @@
 {
  "jeu": {
   "id": "demo",
-  "version": 4,
+  "version": 5,
   "date_effet": "2026-10-01T00:00:00+02:00",
   "auteur": "julie.juridique@exemple.test"
  },
@@ -1125,6 +1125,356 @@
       "/inclure_situation_familiale"
      ],
      "mode": "caviarder"
+    }
+   ]
+  },
+  {
+   "id": "D-040",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-09-01T00:00:00Z",
+   "texte_fr": "Accès à l'information privilégiée : seul un agent agissant pour une personne inscrite sur la liste d'initiés du projet ATLAS, ou membre de l'équipe ATLAS du cabinet conseil, peut lire un document du projet ATLAS dans la data room. Toute autre lecture est refusée et la conformité est notifiée.",
+   "fondements": [
+    {
+     "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — information privilégiée et listes d'initiés — à valider par le juriste",
+     "article": "7, 18"
+    }
+   ],
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "data-room",
+     "outil": "lire_document"
+    }
+   },
+   "condition": {
+    "et": [
+     {
+      "argument": {
+       "champ": "/document_id",
+       "op": "dans",
+       "valeur": [
+        "ATLAS-DOC-01",
+        "ATLAS-DOC-02",
+        "ATLAS-DOC-03",
+        "ATLAS-DOC-04",
+        "ATLAS-DOC-05",
+        "ATLAS-DOC-06",
+        "ATLAS-DOC-07",
+        "ATLAS-DOC-08",
+        "ATLAS-DOC-09",
+        "ATLAS-DOC-10"
+       ]
+      }
+     },
+     {
+      "non": {
+       "ou": [
+        {
+         "demandeur": {
+          "groupe": "inities-atlas"
+         }
+        },
+        {
+         "demandeur": {
+          "groupe": "equipe-atlas-cabinet"
+         }
+        }
+       ]
+      }
+     }
+    ]
+   },
+   "effets": [
+    {
+     "effet": "refuser"
+    },
+    {
+     "effet": "notifier",
+     "destinataire_role": "conformite",
+     "rythme": "temps_reel",
+     "si_echec": "refuser"
+    }
+   ]
+  },
+  {
+   "id": "D-041",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-09-01T00:00:00Z",
+   "texte_fr": "Divulgation illicite par message : aucun agent n'envoie un message vers une destination externe au cours d'une demande où un document du projet ATLAS a été consulté. L'envoi est refusé et la conformité est notifiée.",
+   "fondements": [
+    {
+     "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — divulgation illicite d'information privilégiée — à valider par le juriste ; secret professionnel de l'avocat",
+     "article": "10, 14"
+    }
+   ],
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "messagerie",
+     "outil": "envoyer_message"
+    }
+   },
+   "condition": {
+    "et": [
+     {
+      "argument": {
+       "champ": "/destination",
+       "op": "==",
+       "valeur": "externe"
+      }
+     },
+     {
+      "session.a_consulte": {
+       "outil": "data-room/lire_document",
+       "critere": "donnees_recues"
+      }
+     }
+    ]
+   },
+   "effets": [
+    {
+     "effet": "refuser"
+    },
+    {
+     "effet": "notifier",
+     "destinataire_role": "conformite",
+     "rythme": "temps_reel",
+     "si_echec": "refuser"
+    }
+   ]
+  },
+  {
+   "id": "D-042",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-09-01T00:00:00Z",
+   "texte_fr": "Divulgation illicite par partage : aucun agent ne partage un document vers une destination externe au cours d'une demande où un document du projet ATLAS a été consulté. Le partage est refusé et la conformité est notifiée.",
+   "fondements": [
+    {
+     "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — divulgation illicite d'information privilégiée — à valider par le juriste ; secret professionnel de l'avocat",
+     "article": "10, 14"
+    }
+   ],
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "data-room",
+     "outil": "partager_document"
+    }
+   },
+   "condition": {
+    "et": [
+     {
+      "argument": {
+       "champ": "/destination",
+       "op": "==",
+       "valeur": "externe"
+      }
+     },
+     {
+      "session.a_consulte": {
+       "outil": "data-room/lire_document",
+       "critere": "donnees_recues"
+      }
+     }
+    ]
+   },
+   "effets": [
+    {
+     "effet": "refuser"
+    },
+    {
+     "effet": "notifier",
+     "destinataire_role": "conformite",
+     "rythme": "temps_reel",
+     "si_echec": "refuser"
+    }
+   ]
+  },
+  {
+   "id": "D-043",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-09-01T00:00:00Z",
+   "texte_fr": "Opérations d'initiés sur titres : aucun agent ne passe d'ordre sur les titres VENTOUX ou BIOLYS avant le 15 octobre 2026, au cours d'une demande où un document du projet ATLAS a été consulté, ou pour le compte d'une personne inscrite sur la liste d'initiés ATLAS. L'ordre est refusé et la conformité est notifiée.",
+   "fondements": [
+    {
+     "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — opérations d'initiés et période d'abstention — à valider par le juriste",
+     "article": "8, 14, 19"
+    }
+   ],
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "bourse",
+     "outil": "passer_ordre"
+    }
+   },
+   "condition": {
+    "et": [
+     {
+      "temps": {
+       "fuseau": "Europe/Paris",
+       "date": {
+        "op": "<",
+        "valeur": "2026-10-15"
+       }
+      }
+     },
+     {
+      "argument": {
+       "champ": "/titre",
+       "op": "dans",
+       "valeur": [
+        "VENTOUX",
+        "BIOLYS"
+       ]
+      }
+     },
+     {
+      "ou": [
+       {
+        "session.a_consulte": {
+         "outil": "data-room/lire_document",
+         "critere": "donnees_recues"
+        }
+       },
+       {
+        "demandeur": {
+         "groupe": "inities-atlas"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "effets": [
+    {
+     "effet": "refuser"
+    },
+    {
+     "effet": "notifier",
+     "destinataire_role": "conformite",
+     "rythme": "temps_reel",
+     "si_echec": "refuser"
+    }
+   ]
+  },
+  {
+   "id": "D-044",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-09-01T00:00:00Z",
+   "texte_fr": "Communication avant l'annonce : la publication d'un communiqué avant le 15 octobre 2026 attend la validation de la directrice juridique, par une personne distincte de l'auteur de la demande.",
+   "fondements": [
+    {
+     "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — communication de l'information privilégiée au public — à valider par le juriste ; contrôle interne",
+     "article": "17"
+    }
+   ],
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "communication",
+     "outil": "publier_communique"
+    }
+   },
+   "condition": {
+    "temps": {
+     "fuseau": "Europe/Paris",
+     "date": {
+      "op": "<",
+      "valeur": "2026-10-15"
+     }
+    }
+   },
+   "effets": [
+    {
+     "effet": "attendre_validation",
+     "par_role": "direction-juridique",
+     "quatre_yeux": true
+    }
+   ]
+  },
+  {
+   "id": "D-045",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-09-01T00:00:00Z",
+   "texte_fr": "Communication avant l'annonce : la publication d'un communiqué avant le 15 octobre 2026 attend aussi la validation de la conformité, distincte de la directrice juridique.",
+   "fondements": [
+    {
+     "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — communication de l'information privilégiée au public — à valider par le juriste ; contrôle interne",
+     "article": "17"
+    }
+   ],
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "communication",
+     "outil": "publier_communique"
+    }
+   },
+   "condition": {
+    "temps": {
+     "fuseau": "Europe/Paris",
+     "date": {
+      "op": "<",
+      "valeur": "2026-10-15"
+     }
+    }
+   },
+   "effets": [
+    {
+     "effet": "attendre_validation",
+     "par_role": "conformite",
+     "quatre_yeux": true
+    }
+   ]
+  },
+  {
+   "id": "D-046",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-09-01T00:00:00Z",
+   "texte_fr": "Traçabilité de l'information privilégiée : toute lecture d'un document du projet ATLAS est marquée au journal comme accès à une information privilégiée (registre d'accès à l'information privilégiée).",
+   "fondements": [
+    {
+     "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — listes d'initiés et traçabilité des accès — à valider par le juriste",
+     "article": "18"
+    }
+   ],
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "data-room",
+     "outil": "lire_document"
+    }
+   },
+   "condition": {
+    "argument": {
+     "champ": "/document_id",
+     "op": "dans",
+     "valeur": [
+      "ATLAS-DOC-01",
+      "ATLAS-DOC-02",
+      "ATLAS-DOC-03",
+      "ATLAS-DOC-04",
+      "ATLAS-DOC-05",
+      "ATLAS-DOC-06",
+      "ATLAS-DOC-07",
+      "ATLAS-DOC-08",
+      "ATLAS-DOC-09",
+      "ATLAS-DOC-10"
+     ]
+    }
+   },
+   "effets": [
+    {
+     "effet": "marquer",
+     "etiquette": "acces-information-privilegiee"
     }
    ]
   }
