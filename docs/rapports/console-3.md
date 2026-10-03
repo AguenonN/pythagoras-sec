@@ -11,6 +11,12 @@ Branche `feat/console-3`. Mis à jour après chaque commit. Périmètre : `cmd/c
   - Test : `TestNavigateurFormulaires` (`navigateur_test.go` + `testdata/navigateur/formulaires.py`, Playwright/Chromium). Pendant que le test fait vivre des demandes (appels espacés, attentes, blocages), saisie caractère par caractère sur plus de 6 s et choix au clavier dans la liste pendant un sondage, sur Poste, Validation et Rédaction : même nœud DOM, valeur complète, focus conservé, et au moins une mise à jour de l'écran pendant la saisie (sinon le test ne prouverait rien). **Le même test échoue sur l'interface d'avant** (`CONSOLE_NAVIGATEUR_WEB=<ancienne web/>` : « #demande vaut 'Peut-on acc' », focus perdu).
   - Sans `CONSOLE_NAVIGATEUR_PYTHON`, le test est sauté : `go test ./...` reste autonome.
 
+- **Point 2 — compilateur en direct.** Cause confirmée : la console appelait `python -m compilateur.service` sans mode ; le service prend alors `COMPILATEUR_MODE`, sinon `rejeu` (`agents/compilateur/service.py`, option `--mode` ou variable), d'où `EnregistrementAbsent` pour tout texte nouveau.
+  - La console transmet `COMPILATEUR_MODE` au service : `reel` si `MISTRAL_API_KEY` est dans son environnement (seule la présence compte, la clé n'est ni lue ni affichée), sinon `rejeu`. `-compilateur reel|rejeu` force le mode ; toute autre valeur de `-compilateur` reste la commande du service (rôle d'origine de l'option) ; `-mode-compilateur` force le mode avec une commande donnée. Le mode est écrit au démarrage (« compilation réelle / rejouée »).
+  - Rédaction : « compilation réelle » / « compilation rejouée » discrètement à côté de « Compiler » (`GET /api/redaction` → `mode_compilateur`).
+  - Pannes : toute erreur du service portant un nom d'exception (`EnregistrementAbsent : …`, `ErreurMistral : …`, `OSError : …`) est une panne, traduite en « Le compilateur n'a pas pu répondre : … » (enregistrement absent, clé absente, budget épuisé, modèle injoignable, catalogue illisible…) ; programme introuvable, module Python absent et trace Python (dernière ligne, sans le nom de l'exception) aussi. Les remarques sur le texte (« À corriger », refus motivé) restent affichées telles quelles.
+  - Tests : `TestChoisirCompilateur` (cmd/console) ; `TestCompilateurModeEtPannes` avec le simulateur du service (`testdata/compilateur_simule.py`, qui rend désormais les pannes du service réel et l'écho du mode reçu).
+
 ## Pas fait
 
 (en cours)
@@ -18,6 +24,7 @@ Branche `feat/console-3`. Mis à jour après chaque commit. Périmètre : `cmd/c
 ## Décisions prises seul
 
 - **Playwright** installé dans `.venv-navigateur/` à la racine du worktree (règle : environnement virtuel du worktree), exclu de Git par `info/exclude` du dépôt (pas par `.gitignore`, hors périmètre). Chromium : celui déjà présent dans le cache de Playwright de la machine (aucun téléchargement de navigateur).
+- `-compilateur` garde son rôle de commande (aucun script du dépôt ne l'utilise aujourd'hui, mais la doc de la console le cite) : seules les valeurs `reel` et `rejeu` changent de sens.
 - Le test du navigateur est un test Go qui appelle un script Python : sauté sans interpréteur Playwright, pour ne pas imposer de navigateur à `go test ./...`.
 
 ## Blocages

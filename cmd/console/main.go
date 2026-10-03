@@ -47,7 +47,8 @@ func lancer() error {
 	juriste := flag.String("juriste", "juriste@exemple.test", "identité du juriste, auteur des nouvelles versions des règles")
 	dev := flag.String("dev", "", "répertoire des fichiers HTML, CSS et JS, servis depuis le disque (rechargement sans recompiler) ; ex. internal/console/web")
 	approuver := flag.String("approuver", "", "commande de signature (mcp-approve) ; défaut : bin/mcp-approve s'il existe, sinon « go run ./cmd/mcp-approve »")
-	compilateur := flag.String("compilateur", "", "commande du service du compilateur ; défaut : « python -m compilateur.service » avec agents/.venv s'il existe")
+	compilateur := flag.String("compilateur", "", "« reel » ou « rejeu » : mode du service du compilateur (défaut : reel si MISTRAL_API_KEY est dans l'environnement, sinon rejeu) ; toute autre valeur : commande du service (défaut : « python -m compilateur.service » avec agents/.venv s'il existe)")
+	modeCompil := flag.String("mode-compilateur", "", "« reel » ou « rejeu » : force le mode quand -compilateur donne une commande")
 	lanceur := flag.String("lanceur", "scripts/lancer-demo.sh", "commande qui exécute une demande (sous-commande « demande »)")
 	flag.Parse()
 
@@ -74,7 +75,11 @@ func lancer() error {
 	if sessions == "" {
 		sessions = filepath.Join(abs, *demo, "execution", "sessions")
 	}
-	cmds := console.Commandes{Racine: abs, Approuver: strings.Fields(*approuver), Compilateur: strings.Fields(*compilateur), Lanceur: strings.Fields(*lanceur)}
+	cmdCompil, mode, err := choisirCompilateur(*compilateur, *modeCompil, os.Getenv)
+	if err != nil {
+		return err
+	}
+	cmds := console.Commandes{Racine: abs, Approuver: strings.Fields(*approuver), Compilateur: cmdCompil, ModeCompilateur: mode, Lanceur: strings.Fields(*lanceur)}
 	if len(cmds.Approuver) == 0 {
 		if _, err := os.Stat(filepath.Join(abs, "bin", "mcp-approve")); err == nil {
 			cmds.Approuver = []string{filepath.Join(abs, "bin", "mcp-approve")}
@@ -101,10 +106,41 @@ func lancer() error {
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      6 * time.Minute, // la compilation attend le service
 	}
-	mode := "interface embarquée"
+	interf := "interface embarquée"
 	if *dev != "" {
-		mode = "interface lue sur disque : " + *dev
+		interf = "interface lue sur disque : " + *dev
 	}
-	fmt.Fprintf(os.Stderr, "console: http://%s (%s ; sessions : %s)\n", *addr, mode, sessions)
+	fmt.Fprintf(os.Stderr, "console: http://%s (%s ; sessions : %s ; compilation %s)\n", *addr, interf, sessions, libelleMode[cmds.ModeCompilateur])
 	return srv.ListenAndServe()
+}
+
+var libelleMode = map[string]string{"reel": "réelle", "rejeu": "rejouée"}
+
+// choisirCompilateur lit l'option -compilateur : « reel » ou « rejeu »
+// force le mode du service ; toute autre valeur est la commande du service
+// (rôle d'origine de l'option). -mode-compilateur force le mode avec une
+// commande donnée. Sans mode forcé : réel si MISTRAL_API_KEY est dans
+// l'environnement de la console (la clé n'est jamais lue ni affichée, sa
+// présence seule compte), sinon rejoué.
+func choisirCompilateur(valeur, modeForce string, getenv func(string) string) (cmd []string, mode string, err error) {
+	switch v := strings.TrimSpace(valeur); v {
+	case "reel", "rejeu":
+		mode = v
+	default:
+		cmd = strings.Fields(v)
+	}
+	switch modeForce {
+	case "":
+	case "reel", "rejeu":
+		mode = modeForce
+	default:
+		return nil, "", fmt.Errorf("-mode-compilateur %q : « reel » ou « rejeu » attendu", modeForce)
+	}
+	if mode == "" {
+		mode = "rejeu"
+		if getenv("MISTRAL_API_KEY") != "" {
+			mode = "reel"
+		}
+	}
+	return cmd, mode, nil
 }

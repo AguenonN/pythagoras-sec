@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"regexp"
 	"sort"
@@ -155,13 +156,20 @@ func (d *Depot) Compiler(texte, fondement, conversation string, reponses []Repon
 	}
 	ctx, annuler := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer annuler()
-	out, errOut, err := d.Commandes.executer(ctx, d.Commandes.Compilateur, corps)
+	cmds := d.Commandes
+	cmds.Env = append(append([]string{}, cmds.Env...), "COMPILATEUR_MODE="+d.ModeCompilateur())
+	out, errOut, err := cmds.executer(ctx, cmds.Compilateur, corps)
 	if err != nil && len(bytes.TrimSpace(out)) == 0 {
-		return nil, refus(502, "Le service du compilateur n'a pas répondu : %s", secretsRetires(premiereLigne(errOut, err)))
+		return nil, refus(502, "%s%s", prefixeCompilateur, secretsRetires(causeProcessus(cmds.Compilateur[0], errOut, err)))
 	}
 	var rep ReponseCompilateur
 	if e := json.Unmarshal(bytes.TrimSpace(out), &rep); e != nil {
-		return nil, refus(502, "La réponse du compilateur est illisible.")
+		return nil, refus(502, "%ssa réponse est illisible.", prefixeCompilateur)
+	}
+	if rep.Etat == "erreurs" {
+		if msg, panne := panneCompilateur(rep.Erreurs); panne {
+			return nil, refus(502, "%s%s", prefixeCompilateur, secretsRetires(msg))
+		}
 	}
 	if rep.Conversation != "" && !reIdSur.MatchString(rep.Conversation) {
 		return nil, refus(502, "Le compilateur a rendu un identifiant de conversation invalide.")
@@ -201,6 +209,87 @@ func (d *Depot) Compiler(texte, fondement, conversation string, reponses []Repon
 		d.noterConversation(proposition, rep.Conversation, texte)
 	}
 	return c, nil
+}
+
+// ModeCompilateur rend le mode du service : celui de la console, sinon
+// celui de l'environnement (COMPILATEUR_MODE), sinon rejeu (le défaut du
+// service).
+func (d *Depot) ModeCompilateur() string {
+	for _, m := range []string{d.Commandes.ModeCompilateur, os.Getenv("COMPILATEUR_MODE")} {
+		if m == "reel" || m == "rejeu" {
+			return m
+		}
+	}
+	return "rejeu"
+}
+
+const prefixeCompilateur = "Le compilateur n'a pas pu répondre : "
+
+// reException reconnaît une erreur que le service rend avec le nom de son
+// exception Python (« EnregistrementAbsent : … », « OSError : … ») : une
+// panne du service, pas une remarque sur le texte. Un nom d'exception n'est
+// jamais affiché.
+var reException = regexp.MustCompile(`^([A-Z][a-z]+(?:[A-Z][a-z]*)+|[A-Z]+[a-z]*Error)\s?: (.*)$`)
+
+// pannes : message français de chaque exception connue du service.
+var pannes = map[string]string{
+	"EnregistrementAbsent": "aucune réponse enregistrée pour ce texte (compilation rejouée). Pour compiler un texte nouveau, relancez la console avec MISTRAL_API_KEY dans son environnement, ou avec l'option -compilateur reel.",
+	"BudgetEpuise":         "le budget d'appels au modèle est épuisé.",
+	"ErreurTransitoire":    "le modèle est momentanément injoignable ; réessayez dans un instant.",
+}
+
+// panneCompilateur traduit les erreurs du service qui portent un nom
+// d'exception ; faux si aucune n'en porte (ce sont alors des remarques sur le
+// texte, affichées telles quelles).
+func panneCompilateur(erreurs []string) (string, bool) {
+	var msgs []string
+	for _, e := range erreurs {
+		m := reException.FindStringSubmatch(strings.TrimSpace(e))
+		if m == nil {
+			continue
+		}
+		msgs = append(msgs, traduirePanne(m[1], m[2]))
+	}
+	return strings.Join(msgs, " "), len(msgs) > 0
+}
+
+func traduirePanne(exception, detail string) string {
+	if t, ok := pannes[exception]; ok {
+		return t
+	}
+	switch {
+	case strings.Contains(detail, "MISTRAL_API_KEY"):
+		return "la clé de l'API Mistral est absente de l'environnement de la console."
+	case exception == "ErreurMistral":
+		return "le modèle a renvoyé une erreur (" + detail + ")."
+	case exception == "CatalogueInvalide":
+		return "le catalogue des outils est illisible (" + detail + ")."
+	case exception == "ErreurOutil":
+		return "la vérification des règles candidates a échoué (" + detail + ")."
+	}
+	return detail
+}
+
+// causeProcessus explique en français l'échec du processus du service :
+// programme introuvable, ou dernière ligne d'une trace Python, sans le nom
+// de l'exception.
+func causeProcessus(programme string, errOut []byte, err error) string {
+	if errors.Is(err, exec.ErrNotFound) {
+		return "le programme « " + filepath.Base(programme) + " » est introuvable."
+	}
+	lignes := strings.Split(strings.TrimSpace(string(errOut)), "\n")
+	if strings.Contains(string(errOut), "Traceback") {
+		der := strings.TrimSpace(lignes[len(lignes)-1])
+		if i := strings.Index(der, ": "); i > 0 && reException.MatchString(der[:i]+" : x") {
+			nom, detail := der[:i], der[i+2:]
+			if nom == "ModuleNotFoundError" {
+				return "le module du service est introuvable (" + detail + ") : vérifiez agents/.venv et PYTHONPATH."
+			}
+			return traduirePanne(nom, detail)
+		}
+		return der
+	}
+	return premiereLigne(errOut, err)
 }
 
 // noterConversation rattache la conversation du compilateur à la décision du

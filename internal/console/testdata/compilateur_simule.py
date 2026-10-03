@@ -49,6 +49,16 @@ else:
                    "jeu_existant": req["jeu_existant"], "date_effet": req["date_effet"]}, f)
 
 t = texte.lower()
+# Pannes du service réel, telles qu'il les rend (nom de l'exception, puis le
+# message), et écho du mode reçu.
+if "panne-enregistrement" in t:
+    sortie({"conversation": conv, "etat": "erreurs",
+            "erreurs": ["EnregistrementAbsent : aucune réponse enregistrée pour la requête 0123456789ab"]})
+if "panne-cle" in t:
+    sortie({"conversation": conv, "etat": "erreurs",
+            "erreurs": ["ErreurMistral : MISTRAL_API_KEY absente de l'environnement"]})
+if "quel mode" in t:
+    sortie({"conversation": conv, "etat": "refuse", "erreurs": ["mode : %s" % os.environ.get("COMPILATEUR_MODE", "")]})
 if "discrimin" in t:
     sortie({"conversation": conv, "etat": "non_observable",
             "non_observable": {"extrait": texte, "raison": "critère non observable dans un appel d'outil"}})

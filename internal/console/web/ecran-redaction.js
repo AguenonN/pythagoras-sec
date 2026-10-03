@@ -98,7 +98,12 @@
         h('textarea', { id: 'texte', class: 'zone-serif', rows: '7', oninput: e => { S.texte = e.target.value; } }, S.texte),
         h('label', { class: 'moyen second', for: 'fondement' }, 'Fondement'),
         h('input', { id: 'fondement', class: 'champ', type: 'text', style: 'background:#fff', value: S.fondement, oninput: e => { S.fondement = e.target.value; } }),
-        h('button', { type: 'button', class: 'btn', disabled: S.occupe || undefined, onclick: () => compiler(null) }, S.occupe ? 'Compilation…' : 'Compiler'),
+        h('div', { style: 'display:flex;align-items:center;gap:12px;flex-wrap:wrap' },
+          h('button', { type: 'button', class: 'btn', disabled: S.occupe || undefined, onclick: () => compiler(null) }, S.occupe ? 'Compilation…' : 'Compiler'),
+          h('span', { class: 'petit second', id: 'mode-compilateur', title: donnees.mode_compilateur === 'reel' ?
+            'Un texte nouveau est envoyé au modèle ; une question déjà posée est relue sans nouvel appel.' :
+            'Seules les réponses déjà enregistrées du modèle sont relues ; aucun appel n\'est fait.' },
+            donnees.mode_compilateur === 'reel' ? 'compilation réelle' : 'compilation rejouée')),
       ] : (donnees.propositions.length ? donnees.propositions.map(carteProposition) :
         h('div', { class: 'carte compacte' }, h('b', {}, 'Aucune proposition'), h('span', { class: 'moyen second' }, 'L\'Analyste n\'a rien proposé pour l\'instant.')));
       return h('section', {},

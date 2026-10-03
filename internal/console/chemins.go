@@ -73,6 +73,11 @@ type Commandes struct {
 	Approuver []string
 	// Compilateur : python -m compilateur.service (contrats §4).
 	Compilateur []string
+	// ModeCompilateur : « reel » (le service appelle le modèle pour un texte
+	// nouveau) ou « rejeu » (réponses enregistrées seulement). Transmis au
+	// service par la variable COMPILATEUR_MODE. Vide : celui de
+	// l'environnement, sinon rejeu.
+	ModeCompilateur string
 	// Lanceur : scripts/lancer-demo.sh (sous-commande demande).
 	Lanceur []string
 	// Env s'ajoute à l'environnement des commandes (ex. PYTHONPATH).

@@ -411,7 +411,8 @@ func (s *Serveur) redaction(w http.ResponseWriter, r *http.Request) {
 		Regles       *VueRegles        `json:"regles,omitempty"`
 		Origines     map[string]string `json:"origines"`
 		Refus        []string          `json:"jeux_refuses"`
-	}{Propositions: s.Depot.ListerPropositions(), Juriste: s.Depot.Juriste, JuristeNom: s.Depot.NomIdentite(s.Depot.Juriste),
+		Mode         string            `json:"mode_compilateur"` // reel | rejeu
+	}{Mode: s.Depot.ModeCompilateur(), Propositions: s.Depot.ListerPropositions(), Juriste: s.Depot.Juriste, JuristeNom: s.Depot.NomIdentite(s.Depot.Juriste),
 		Origines: map[string]string{}, Refus: append([]string{}, refus...)}
 	if jc := EnVigueur(jeux); jc != nil {
 		out.Regles = s.Depot.ReglesEnVigueur(*jc, nil, jeux, "")
