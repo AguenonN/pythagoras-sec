@@ -1,6 +1,6 @@
 # Secteurs banque et RH — ce que le jury peut demander
 
-Deux secteurs fictifs complets : la **banque synthétique** (clients, comptes, opérations, crédit) et les **ressources humaines de l'entreprise synthétique** (30 salariés). Toute tâche courante d'un poste correspond à un outil ; les tâches risquées sont **tentées par l'agent** puis **refusées, mises en attente ou caviardées par l'engine**, directive et fondement à l'appui.
+Deux secteurs fictifs complets : la **banque synthétique** (clients, comptes, opérations, crédit) et les **ressources humaines de l'entreprise synthétique** (80 salariés : 30 écrits à la main, 50 générés). Toute tâche courante d'un poste correspond à un outil ; les tâches risquées sont **tentées par l'agent** puis **refusées, mises en attente ou caviardées par l'engine**, directive et fondement à l'appui.
 
 **Règle d'or** : les consignes des agents ne contiennent aucune règle (un test le vérifie, `agents/orchestrateur/tests/test_orchestrateur.py`). Les agents sont neutres et serviables ; c'est l'engine qui applique le droit.
 
