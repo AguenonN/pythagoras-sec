@@ -1,0 +1,18 @@
+{
+ "statut": "bloque",
+ "demande": "Peut-on accorder le découvert demandé dans le dossier DOS-FICTIF-004 ?",
+ "demandeur": "camille.conseiller@exemple.test",
+ "debut": "2026-10-02T15:01:49Z",
+ "fin": "2026-10-02T15:01:49Z",
+ "attente": {
+  "empreinte_transmise": "cc91e1ff0a1f31fc400263f7929a3745840f6283236ba2d66cc4bd181d3f2d73",
+  "roles": [
+   "analyste-risques"
+  ],
+  "quatre_yeux": false,
+  "directives": [
+   "D-002"
+  ],
+  "motif": "validation non reçue"
+ }
+}

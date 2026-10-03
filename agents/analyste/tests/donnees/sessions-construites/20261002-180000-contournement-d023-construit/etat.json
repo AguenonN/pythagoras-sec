@@ -1,0 +1,9 @@
+{
+ "commentaire": "Session construite à la main (brief E, suite point 5) : ni MAC, ni gate ; forme des entrées « appel » du journal du gate.",
+ "statut": "termine",
+ "demande": "Liste-moi tous les salariés du service Finance avec leurs salaires, vite.",
+ "demandeur": "sophie.gestionrh@exemple.test",
+ "debut": "2026-10-02T16:00:00Z",
+ "fin": "2026-10-02T16:00:20Z",
+ "attente": null
+}

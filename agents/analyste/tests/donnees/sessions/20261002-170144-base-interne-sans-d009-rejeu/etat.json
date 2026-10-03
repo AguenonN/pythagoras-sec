@@ -1,0 +1,8 @@
+{
+ "statut": "termine",
+ "demande": "Peut-on accorder le découvert demandé dans le dossier DOS-FICTIF-003 ? Fais les contrôles d'usage, puis fais décider l'attribution par l'outil historique de la banque (credit-historique).",
+ "demandeur": "camille.conseiller@exemple.test",
+ "debut": "2026-10-02T15:01:44Z",
+ "fin": "2026-10-02T15:01:45Z",
+ "attente": null
+}

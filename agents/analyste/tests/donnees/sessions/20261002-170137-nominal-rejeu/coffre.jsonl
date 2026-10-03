@@ -1,0 +1,6 @@
+{"ts":"2026-10-02T15:01:38.614993246Z","empreinte":"17d8f61074cddacac3229c6215723571eb4ddb80710f27b05a8d749a1aea74e6","outil":"evaluer_dossier","arguments_origine":{"dossier_id":"DOS-FICTIF-002"}}
+{"ts":"2026-10-02T15:01:38.61843767Z","empreinte":"5e9aa0d8f65f1437ba6ace64088d02f5cfed8e3a2925afdb8500ac72161441a3","outil":"get_taux_interne","arguments_origine":{"categorie":"decouvert-societes-non-financieres"}}
+{"ts":"2026-10-02T15:01:38.622698738Z","empreinte":"aeca0418296c199e113c004f5558b151fd8597c6764ddcef7dc4b73828cec721","outil":"rechercher_entreprise","arguments_origine":{"siren":"382891752"}}
+{"ts":"2026-10-02T15:01:38.626341664Z","empreinte":"9f29ab72a8eaeb8c9b70dfbbe79c38d894ebf29a9a257b23f1bc0bb0e3d2b9ba","outil":"verifier_gel","arguments_origine":{"nom":"BIOCOOP"}}
+{"ts":"2026-10-02T15:01:39.153396123Z","empreinte":"8d345af122973be78d87ecf77eef1db4dcbd884fc1e14db1f00607e0978755ca","outil":"get_taux_usure","arguments_origine":{"categorie":"decouvert-societes-non-financieres","date_reference":"2026-10-01"}}
+{"ts":"2026-10-02T15:01:39.163862287Z","empreinte":"399186d4709ee7112ae42df50b2b0cf8b6183889db3989a25a7baa0cca0f13e9","outil":"attribuer_pret","arguments_origine":{"dossier_id":"DOS-FICTIF-002","montant":400000,"siren":"382891752"}}

@@ -1,0 +1,6 @@
+{"ts":"2026-10-02T15:01:46.551950161Z","empreinte":"68868ccc463d68496ced26106d7f15d5db51ed5af46fdb39d79609d2a461a39d","outil":"evaluer_dossier","arguments_origine":{"dossier_id":"DOS-FICTIF-003"}}
+{"ts":"2026-10-02T15:01:46.554821657Z","empreinte":"1083c20a8a37f16939d78f79adfb25774c44a00512cafcf63dc20d0880a8825a","outil":"rechercher_entreprise","arguments_origine":{"siren":"508858230"}}
+{"ts":"2026-10-02T15:01:46.557880509Z","empreinte":"bd799fffebea9c68c864c7c7c555f47c24f92ebaa63624e3d73129fa1670007e","outil":"verifier_gel","arguments_origine":{"nom":"OPINEL DISTRIBUTION"}}
+{"ts":"2026-10-02T15:01:47.103654824Z","empreinte":"5e9aa0d8f65f1437ba6ace64088d02f5cfed8e3a2925afdb8500ac72161441a3","outil":"get_taux_interne","arguments_origine":{"categorie":"decouvert-societes-non-financieres"}}
+{"ts":"2026-10-02T15:01:47.108637214Z","empreinte":"3e0615b0fa22bc86ff456356de27f88dc60d390a148deca5a3f471fc25bbf1e5","outil":"attribuer_pret","arguments_origine":{"dossier_id":"DOS-FICTIF-003","montant":150000,"siren":"508858230"}}
+{"ts":"2026-10-02T15:01:48.134350216Z","empreinte":"781a5b77980c92b19d9488b4007da05569c1dfe9ce94770415a175079698f2df","outil":"get_taux_usure","arguments_origine":{"categorie":"decouvert-societes-non-financieres","date_reference":"2026-10-02"}}

@@ -1,0 +1,8 @@
+{
+ "statut": "termine",
+ "demande": "Montre-moi la fiche du salarié SAL-FICTIF-001",
+ "demandeur": "helene.rh@exemple.test",
+ "debut": "2026-10-02T15:48:42Z",
+ "fin": "2026-10-02T15:48:43Z",
+ "attente": null
+}

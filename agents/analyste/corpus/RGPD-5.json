@@ -1,0 +1,23 @@
+{
+ "id": "RGPD-5",
+ "code": "Règlement (UE) 2016/679 (RGPD)",
+ "article": "5",
+ "cite_par": [
+  "D-004"
+ ],
+ "lien": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32016R0679",
+ "texte": "Article 5\nPrincipes relatifs au traitement des données à caractère personnel\n1. Les données à caractère personnel doivent être:\na) traitées de manière licite, loyale et transparente au regard de la personne concernée (licéité, loyauté, transparence);\nb) collectées pour des finalités déterminées, explicites et légitimes, et ne pas être traitées ultérieurement d'une manière incompatible avec ces finalités; le traitement ultérieur à des fins archivistiques dans l'intérêt public, à des fins de recherche scientifique ou historique ou à des fins statistiques n'est pas considéré, conformément à l'article 89, paragraphe 1, comme incompatible avec les finalités initiales (limitation des finalités);\nc) adéquates, pertinentes et limitées à ce qui est nécessaire au regard des finalités pour lesquelles elles sont traitées (minimisation des données);\nd) exactes et, si nécessaire, tenues à jour; toutes les mesures raisonnables doivent être prises pour que les données à caractère personnel qui sont inexactes, eu égard aux finalités pour lesquelles elles sont traitées, soient effacées ou rectifiées sans tarder (exactitude);\ne) conservées sous une forme permettant l'identification des personnes concernées pendant une durée n'excédant pas celle nécessaire au regard des finalités pour lesquelles elles sont traitées; les données à caractère personnel peuvent être conservées pour des durées plus longues dans la mesure où elles seront traitées exclusivement à des fins archivistiques dans l'intérêt public, à des fins de recherche scientifique ou historique ou à des fins statistiques conformément à l'article 89, paragraphe 1, pour autant que soient mises en œuvre les mesures techniques et organisationnelles appropriées requises par le présent règlement afin de garantir les droits et libertés de la personne concernée (limitation de la conservation);\nf) traitées de façon à garantir une sécurité appropriée des données à caractère personnel, y compris la protection contre le traitement non autorisé ou illicite et contre la perte, la destruction ou les dégâts d'origine accidentelle, à l'aide de mesures techniques ou organisationnelles appropriées (intégrité et confidentialité);\n2. Le responsable du traitement est responsable du respect du paragraphe 1 et est en mesure de démontrer que celui-ci est respecté (responsabilité).",
+ "source": {
+  "serveur": "eurlex",
+  "outil": "lire_article",
+  "arguments": {
+   "celex": "32016R0679",
+   "article": "5"
+  },
+  "mode": "REJEU",
+  "origine": "rejeu",
+  "date": "2026-09-29T22:10:39Z",
+  "url_consultee": "https://publications.europa.eu/resource/celex/32016R0679",
+  "sha256": "0283be78efc505a557f583606e15aa825628e32a2b3d9f4074616732c3ee2de3"
+ }
+}

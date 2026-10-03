@@ -1,0 +1,92 @@
+{
+ "reponse": {
+  "choices": [
+   {
+    "finish_reason": "tool_calls",
+    "index": 0,
+    "message": {
+     "content": "",
+     "role": "assistant",
+     "tool_calls": [
+      {
+       "function": {
+        "arguments": "{\"texte_propose\": \"Si un appel à l'outil rh-synthetique/lister_salaries a retiré des champs portant l'étiquette salaire, tout appel ultérieur à un outil du serveur rh-synthetique portant la même étiquette dans la même session doit être soumis à validation humaine par le responsable-rh.\", \"fondement_propose\": \"RGPD — article 5.1.c (à valider par le juriste).\", \"explication\": \"Dans la session 20261002-180000-contournement-d023-construit, l'outil rh-synthetique/lister_salaries a retiré le champ /inclure_salaires (étiqueté salaire) à l'appel 1. Les appels 2, 3 et 4 à rh-synthetique/consulter_fiche (étiqueté salaire) ont été autorisés sans validation, permettant potentiellement d'obtenir les données retirées via un autre chemin.\", \"sessions_citees\": [\"20261002-180000-contournement-d023-construit\"]}",
+        "name": "proposer_directive"
+       },
+       "id": "Okfa3QndU",
+       "index": 0,
+       "type": "function"
+      }
+     ]
+    }
+   }
+  ],
+  "created": 1790956884,
+  "id": "dc96a3c0caa348278be72cfb8e5bb645",
+  "model": "mistral-small-latest",
+  "object": "chat.completion",
+  "usage": {
+   "completion_tokens": 260,
+   "prompt_tokens": 1622,
+   "prompt_tokens_details": {
+    "cached_tokens": 944
+   },
+   "service_tier": "standard",
+   "total_tokens": 1882
+  }
+ },
+ "requete": {
+  "messages": [
+   {
+    "content": "Tu assistes le juriste d'une banque qui encadre des agents d'IA par des directives. Un contrôleur (le gate) applique ces directives à chaque appel d'outil d'un agent.\n\nOn te donne un CONSTAT établi par du code sur des exécutions passées : un risque que les directives en vigueur ne couvrent pas. Tu rédiges, pour le juriste, une PROPOSITION de directive. Il la rejettera, la modifiera ou la reprendra : tu ne décides de rien.\n\nCe que le gate sait observer au moment d'un appel, et rien d'autre :\n- l'outil appelé (serveur/outil) et s'il s'agit d'une action ou d'une lecture ;\n- les outils déjà appelés dans la même demande (session), avec ou sans données reçues ;\n- les arguments de l'appel (par exemple un montant) ;\n- les étiquettes des serveurs (par exemple donnees_personnelles, externe) ;\n- le demandeur et ses groupes, la date et l'heure.\nIl ne lit pas le contenu des réponses des serveurs.\n\nEffets possibles : refuser l'appel ; le mettre en attente de la validation humaine d'un rôle ; notifier un rôle.\n\nRègles de rédaction :\n- texte_propose : UNE seule règle, en français courant, comme l'écrirait le juriste, deux phrases au plus. Elle nomme l'action visée, la condition observable qui la déclenche et l'effet. La condition est la plus simple qui couvre TOUTES les occurrences : reprends le fait observable commun donné dans le contexte, sans rien y ajouter (ni ordre des appels, ni autre outil). Nomme les outils par leur nom serveur/outil tel qu'il figure dans le constat. Préfère la validation humaine au refus quand une personne peut vérifier ce que l'agent n'a pas vérifié ; le refus quand l'action est interdite en soi. Pour une validation humaine, UN seul rôle : de préférence un rôle qui a déjà validé cette action (contexte), jamais un rôle sans rapport avec l'action. Ne cite aucun nom de session dans la règle.\n- fondement_propose : reprends le fondement de la directive existante (contexte) dont le SUJET est le plus proche du risque (lis son texte : gels, usure, montant…) ; sinon un texte de droit que tu connais avec certitude. N'invente jamais de référence (procédure, numéro de politique, article incertain). Il sera validé par le juriste.\n- explication : le risque, en trois phrases au plus, en citant les sessions du constat par leur nom exact. Sois fidèle aux occurrences : une action dont « transmise » vaut false n'a pas été exécutée ; dis quelle décision l'engine a prise.\n- Si le contexte donne une limite d'observation : écris la règle voulue, et dis dans l'explication, en une phrase, que l'engine ne voit pas ce fait aujourd'hui.\n- sessions_citees : les noms exacts des sessions que l'explication cite, pris dans le constat.",
+    "role": "system"
+   },
+   {
+    "content": "Rôles de validation existants : analyste-risques, directeur-risques, direction-juridique, drh, emetteur-identite, juridique, responsable-rh.\n\nCONSTAT :\n{\n \"action\": \"rh-synthetique/consulter_fiche\",\n \"contexte\": {\n  \"directives_contournees\": [\n   {\n    \"cible\": {\n     \"outil\": \"lister_salaries\",\n     \"serveur\": \"rh-synthetique\"\n    },\n    \"effets\": [\n     \"retirer de l'appel les champs autres que /service\"\n    ],\n    \"fondements\": [\n     \"RGPD — à valider par le juriste, article 5.1.c\"\n    ],\n    \"id\": \"D-023\",\n    \"texte\": \"Dans une liste de salariés, les salaires sont retirés.\"\n   }\n  ],\n  \"directives_qui_visent_cette_action\": [],\n  \"fait_observable_commun\": \"dans toutes les occurrences, la session a consulté rh-synthetique/lister_salaries avant l'appel à l'outil visé, qui porte l'étiquette salaire et dont rien n'a été retiré\",\n  \"roles_ayant_valide_cette_action\": [],\n  \"roles_des_directives_du_meme_serveur\": [\n   \"responsable-rh\"\n  ]\n },\n \"nature_du_risque\": \"Une directive a retiré des champs d'un appel ; plus loin dans la même session, un autre outil qui porte la même catégorie de donnée (même étiquette) a été appelé sans que rien n'en soit retiré et a rendu des données : la donnée retirée a pu être obtenue par ce chemin, par exemple fiche par fiche.\",\n \"occurrences\": [\n  {\n   \"action\": \"rh-synthetique/consulter_fiche\",\n   \"contournements\": [\n    {\n     \"etiquettes_communes\": [\n      \"salaire\"\n     ],\n     \"outil\": \"rh-synthetique/consulter_fiche\",\n     \"seq\": 2\n    },\n    {\n     \"etiquettes_communes\": [\n      \"salaire\"\n     ],\n     \"outil\": \"rh-synthetique/consulter_fiche\",\n     \"seq\": 3\n    },\n    {\n     \"etiquettes_communes\": [\n      \"salaire\"\n     ],\n     \"outil\": \"rh-synthetique/consulter_fiche\",\n     \"seq\": 4\n    }\n   ],\n   \"date_action\": \"2026-10-02T16:00:04Z\",\n   \"decision\": {\n    \"directives_appliquees\": [],\n    \"effet\": \"autoriser\",\n    \"validation_humaine\": \"aucune\"\n   },\n   \"retrait\": {\n    \"champs_retires\": [\n     \"/inclure_salaires\"\n    ],\n    \"directives\": [\n     \"D-023\"\n    ],\n    \"etiquettes_propres\": [\n     \"salaire\"\n    ],\n    \"outil\": \"rh-synthetique/lister_salaries\",\n    \"seq\": 1\n   },\n   \"seq_action\": 2,\n   \"session\": \"20261002-180000-contournement-d023-construit\",\n   \"transmise\": true\n  }\n ],\n \"sessions\": [\n  \"20261002-180000-contournement-d023-construit\"\n ],\n \"type\": \"contournement_retrait\"\n}",
+    "role": "user"
+   }
+  ],
+  "model": "mistral-small-latest",
+  "random_seed": 0,
+  "temperature": 0,
+  "tool_choice": "any",
+  "tools": [
+   {
+    "function": {
+     "description": "Proposer au juriste un texte de directive fondé sur le constat.",
+     "name": "proposer_directive",
+     "parameters": {
+      "properties": {
+       "explication": {
+        "description": "Le risque, avec les sessions citées.",
+        "type": "string"
+       },
+       "fondement_propose": {
+        "description": "Fondement juridique proposé.",
+        "type": "string"
+       },
+       "sessions_citees": {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       "texte_propose": {
+        "description": "La règle, en français.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "texte_propose",
+       "fondement_propose",
+       "explication",
+       "sessions_citees"
+      ],
+      "type": "object"
+     }
+    },
+    "type": "function"
+   }
+  ]
+ }
+}

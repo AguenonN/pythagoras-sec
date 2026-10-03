@@ -1,0 +1,92 @@
+{
+ "reponse": {
+  "choices": [
+   {
+    "finish_reason": "tool_calls",
+    "index": 0,
+    "message": {
+     "content": "",
+     "role": "assistant",
+     "tool_calls": [
+      {
+       "function": {
+        "arguments": "{\"texte_propose\": \"Attribution d'un prêt : si l'entreprise n'a pas été retrouvée par recherche-entreprises/rechercher_entreprise dans la session, l'attribution du prêt banque-synthetique/attribuer_pret attend la validation d'un analyste-risques.\", \"fondement_propose\": \"Code monétaire et financier — à valider par le juriste, article L562-4\", \"explication\": \"Dans les sessions 20261002-170148-consigne-sans-d001-rejeu et 20261002-170149-consigne-avec-d001-rejeu, l'action banque-synthetique/attribuer_pret a été appelée sans que recherche-entreprises/rechercher_entreprise n'ait retrouvé l'entreprise (0 résultat). L'engine n'a appliqué que la directive D-002 (taux d'usure) et n'a pas bloqué l'action, malgré l'absence de preuve d'existence de l'entreprise. Aujourd'hui, le gate ne voit pas si recherche-entreprises/rechercher_entreprise a trouvé l'entreprise, seulement s'il a été appelé.\", \"sessions_citees\": [\"20261002-170148-consigne-sans-d001-rejeu\", \"20261002-170149-consigne-avec-d001-rejeu\"]}",
+        "name": "proposer_directive"
+       },
+       "id": "BTsznj0MZ",
+       "index": 0,
+       "type": "function"
+      }
+     ]
+    }
+   }
+  ],
+  "created": 1790953926,
+  "id": "670dd883c53640feb4ada8aa00a20cef",
+  "model": "mistral-small-latest",
+  "object": "chat.completion",
+  "usage": {
+   "completion_tokens": 339,
+   "prompt_tokens": 2006,
+   "prompt_tokens_details": {
+    "cached_tokens": 1200
+   },
+   "service_tier": "standard",
+   "total_tokens": 2345
+  }
+ },
+ "requete": {
+  "messages": [
+   {
+    "content": "Tu assistes le juriste d'une banque qui encadre des agents d'IA par des directives. Un contrôleur (le gate) applique ces directives à chaque appel d'outil d'un agent.\n\nOn te donne un CONSTAT établi par du code sur des exécutions passées : un risque que les directives en vigueur ne couvrent pas. Tu rédiges, pour le juriste, une PROPOSITION de directive. Il la rejettera, la modifiera ou la reprendra : tu ne décides de rien.\n\nCe que le gate sait observer au moment d'un appel, et rien d'autre :\n- l'outil appelé (serveur/outil) et s'il s'agit d'une action ou d'une lecture ;\n- les outils déjà appelés dans la même demande (session), avec ou sans données reçues ;\n- les arguments de l'appel (par exemple un montant) ;\n- les étiquettes des serveurs (par exemple donnees_personnelles, externe) ;\n- le demandeur et ses groupes, la date et l'heure.\nIl ne lit pas le contenu des réponses des serveurs.\n\nEffets possibles : refuser l'appel ; le mettre en attente de la validation humaine d'un rôle ; notifier un rôle.\n\nRègles de rédaction :\n- texte_propose : UNE seule règle, en français courant, comme l'écrirait le juriste, deux phrases au plus. Elle nomme l'action visée, la condition observable qui la déclenche et l'effet. La condition est la plus simple qui couvre TOUTES les occurrences : reprends le fait observable commun donné dans le contexte, sans rien y ajouter (ni ordre des appels, ni autre outil). Nomme les outils par leur nom serveur/outil tel qu'il figure dans le constat. Préfère la validation humaine au refus quand une personne peut vérifier ce que l'agent n'a pas vérifié ; le refus quand l'action est interdite en soi. Pour une validation humaine, UN seul rôle : de préférence un rôle qui a déjà validé cette action (contexte), jamais un rôle sans rapport avec l'action. Ne cite aucun nom de session dans la règle.\n- fondement_propose : reprends le fondement de la directive existante (contexte) dont le SUJET est le plus proche du risque (lis son texte : gels, usure, montant…) ; sinon un texte de droit que tu connais avec certitude. N'invente jamais de référence (procédure, numéro de politique, article incertain). Il sera validé par le juriste.\n- explication : le risque, en trois phrases au plus, en citant les sessions du constat par leur nom exact. Sois fidèle aux occurrences : une action dont « transmise » vaut false n'a pas été exécutée ; dis quelle décision l'engine a prise.\n- Si le contexte donne une limite d'observation : écris la règle voulue, et dis dans l'explication, en une phrase, que l'engine ne voit pas ce fait aujourd'hui.\n- sessions_citees : les noms exacts des sessions que l'explication cite, pris dans le constat.",
+    "role": "system"
+   },
+   {
+    "content": "Rôles de validation existants : analyste-risques, directeur-risques, direction-juridique, drh, emetteur-identite, juridique, responsable-rh.\n\nCONSTAT :\n{\n \"action\": \"banque-synthetique/attribuer_pret\",\n \"contexte\": {\n  \"directives_qui_visent_cette_action\": [\n   {\n    \"fondements\": [\n     \"Code monétaire et financier — à valider par le juriste, article L562-4\"\n    ],\n    \"id\": \"D-001\",\n    \"texte\": \"Gels vérifiés avant tout prêt : aucun prêt n'est attribué si le registre national des gels des avoirs n'a pas été consulté, avec une réponse reçue, dans la même demande.\"\n   },\n   {\n    \"fondements\": [\n     \"Code monétaire et financier — à valider par le juriste, article L313-5-1\"\n    ],\n    \"id\": \"D-002\",\n    \"texte\": \"Taux officiel consulté : un prêt attribué à partir du seuil de l'usure du serveur de taux officiel attend la validation d'un analyste risques.\"\n   },\n   {\n    \"fondements\": [\n     \"Politique de crédit — à valider par le juriste, article 7.1\"\n    ],\n    \"id\": \"D-005\",\n    \"texte\": \"Décision top management : au-delà de 2 000 000 euros, l'attribution d'un prêt attend la validation d'un directeur des risques, distinct du demandeur, et la direction juridique est prévenue sur-le-champ ; si elle ne peut pas l'être, l'attribution est refusée.\"\n   }\n  ],\n  \"fait_observable_commun\": \"dans toutes les occurrences, l'entreprise désignée par l'action n'a pas été retrouvée par recherche-entreprises/rechercher_entreprise dans la session\",\n  \"limite_d_observation\": \"le gate ne lit pas le contenu des réponses : il sait si recherche-entreprises/rechercher_entreprise a été consulté dans la session (avec données reçues ou non), pas si la recherche a trouvé l'entreprise ; le constat vient de la relecture des réponses datées du répertoire, que l'engine ne fait pas\",\n  \"roles_ayant_valide_cette_action\": [\n   \"analyste-risques\",\n   \"directeur-risques\"\n  ]\n },\n \"nature_du_risque\": \"Une action (attribution) a été présentée pour une entreprise que la session n'a pas retrouvée au répertoire officiel des entreprises (SIRENE) : recherchée sans résultat, ou jamais recherchée. Rien n'établit que l'entreprise existe.\",\n \"occurrences\": [\n  {\n   \"action\": \"banque-synthetique/attribuer_pret\",\n   \"date_action\": \"2026-10-02T15:01:49.536087925Z\",\n   \"decision\": {\n    \"directives_appliquees\": [\n     \"D-002\"\n    ],\n    \"effet\": \"attendre_validation\",\n    \"validation_humaine\": \"aucune\"\n   },\n   \"motif\": \"introuvable\",\n   \"recherches\": [\n    {\n     \"date_source\": \"2026-10-02T10:34:24Z\",\n     \"nombre_resultats\": 0,\n     \"outil\": \"recherche-entreprises/rechercher_entreprise\",\n     \"seq\": 2\n    }\n   ],\n   \"recherches_complete\": true,\n   \"seq_action\": 5,\n   \"session\": \"20261002-170148-consigne-sans-d001-rejeu\",\n   \"transmise\": false\n  },\n  {\n   \"action\": \"banque-synthetique/attribuer_pret\",\n   \"date_action\": \"2026-10-02T15:01:49.567761961Z\",\n   \"decision\": {\n    \"directives_appliquees\": [\n     \"D-002\"\n    ],\n    \"effet\": \"attendre_validation\",\n    \"validation_humaine\": \"aucune\"\n   },\n   \"motif\": \"introuvable\",\n   \"recherches\": [\n    {\n     \"date_source\": \"2026-10-02T10:34:24Z\",\n     \"nombre_resultats\": 0,\n     \"outil\": \"recherche-entreprises/rechercher_entreprise\",\n     \"seq\": 2\n    }\n   ],\n   \"recherches_complete\": true,\n   \"seq_action\": 5,\n   \"session\": \"20261002-170149-consigne-avec-d001-rejeu\",\n   \"transmise\": false\n  }\n ],\n \"sessions\": [\n  \"20261002-170148-consigne-sans-d001-rejeu\",\n  \"20261002-170149-consigne-avec-d001-rejeu\"\n ],\n \"type\": \"entreprise_non_retrouvee\"\n}",
+    "role": "user"
+   }
+  ],
+  "model": "mistral-small-latest",
+  "random_seed": 0,
+  "temperature": 0,
+  "tool_choice": "any",
+  "tools": [
+   {
+    "function": {
+     "description": "Proposer au juriste un texte de directive fondé sur le constat.",
+     "name": "proposer_directive",
+     "parameters": {
+      "properties": {
+       "explication": {
+        "description": "Le risque, avec les sessions citées.",
+        "type": "string"
+       },
+       "fondement_propose": {
+        "description": "Fondement juridique proposé.",
+        "type": "string"
+       },
+       "sessions_citees": {
+        "items": {
+         "type": "string"
+        },
+        "type": "array"
+       },
+       "texte_propose": {
+        "description": "La règle, en français.",
+        "type": "string"
+       }
+      },
+      "required": [
+       "texte_propose",
+       "fondement_propose",
+       "explication",
+       "sessions_citees"
+      ],
+      "type": "object"
+     }
+    },
+    "type": "function"
+   }
+  ]
+ }
+}

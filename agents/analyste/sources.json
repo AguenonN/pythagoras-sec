@@ -1,0 +1,33 @@
+{
+ "commentaire": "Catalogue des sources lu par les détecteurs de l'Analyste. Le journal du gate ne dit pas à quel trimestre se rapporte la base interne des taux (banque-synthetique ne déclare pas de structuredContent.source) : sa période est lue dans le fichier que le serveur sert (option -instantane, défaut ci-dessous). Une source officielle est datée par la source.date que le gate consigne. Le répertoire SIRENE est relu dans les enregistrements datés que le serveur recherche-entreprises sert et prolonge (mêmes URL, même date que source.date). Le contournement d'un caviardage se lit par les étiquettes propres à l'outil caviardé (celles de demo/etiquettes.json qui ne valent pas pour tout son serveur).",
+ "version": 1,
+ "taux": {
+  "interne": {
+   "outil": "banque-synthetique/get_taux_interne",
+   "periode": {
+    "fichier": "servers/taux-officiel/instantane_trimestre_precedent.json",
+    "champ": "trimestre_instantane"
+   }
+  },
+  "officielle": {
+   "serveur": "taux-officiel"
+  }
+ },
+ "repertoire_entreprises": {
+  "outil": "recherche-entreprises/rechercher_entreprise",
+  "argument": "/siren",
+  "enregistrements": [
+   "demo/scenarios/enregistrements/serveurs/recherche-entreprises",
+   "servers/recherche-entreprises/enregistrements"
+  ]
+ },
+ "montant": {
+  "argument": "/montant",
+  "seuil_defaut": 100000
+ },
+ "etiquettes": {
+  "donnees_personnelles": "donnees_personnelles",
+  "externe": "externe"
+ },
+ "etiquettes_registre": "demo/etiquettes.json"
+}

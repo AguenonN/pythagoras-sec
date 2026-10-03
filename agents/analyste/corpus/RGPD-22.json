@@ -1,0 +1,23 @@
+{
+ "id": "RGPD-22",
+ "code": "Règlement (UE) 2016/679 (RGPD)",
+ "article": "22",
+ "cite_par": [
+  "docs/orchestration/03_session_agents_hors_ligne.md"
+ ],
+ "lien": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32016R0679",
+ "texte": "Article 22\nDécision individuelle automatisée, y compris le profilage\n1. La personne concernée a le droit de ne pas faire l'objet d'une décision fondée exclusivement sur un traitement automatisé, y compris le profilage, produisant des effets juridiques la concernant ou l'affectant de manière significative de façon similaire.\n2. Le paragraphe 1 ne s'applique pas lorsque la décision:\na) est nécessaire à la conclusion ou à l'exécution d'un contrat entre la personne concernée et un responsable du traitement;\nb) est autorisée par le droit de l'Union ou le droit de l'État membre auquel le responsable du traitement est soumis et qui prévoit également des mesures appropriées pour la sauvegarde des droits et libertés et des intérêts légitimes de la personne concernée; ou\nc) est fondée sur le consentement explicite de la personne concernée.\n3. Dans les cas visés au paragraphe 2, points a) et c), le responsable du traitement met en œuvre des mesures appropriées pour la sauvegarde des droits et libertés et des intérêts légitimes de la personne concernée, au moins du droit de la personne concernée d'obtenir une intervention humaine de la part du responsable du traitement, d'exprimer son point de vue et de contester la décision.\n4. Les décisions visées au paragraphe 2 ne peuvent être fondées sur les catégories particulières de données à caractère personnel visées à l'article 9, paragraphe 1, à moins que l'article 9, paragraphe 2, point a) ou g), ne s'applique et que des mesures appropriées pour la sauvegarde des droits et libertés et des intérêts légitimes de la personne concernée ne soient en place.",
+ "source": {
+  "serveur": "eurlex",
+  "outil": "lire_article",
+  "arguments": {
+   "celex": "32016R0679",
+   "article": "22"
+  },
+  "mode": "REJEU",
+  "origine": "rejeu",
+  "date": "2026-09-29T22:10:39Z",
+  "url_consultee": "https://publications.europa.eu/resource/celex/32016R0679",
+  "sha256": "0283be78efc505a557f583606e15aa825628e32a2b3d9f4074616732c3ee2de3"
+ }
+}

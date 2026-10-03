@@ -1,0 +1,6 @@
+{"ts":"2026-10-02T15:01:41.176446218Z","empreinte":"842ebf1351ccb3d1c4dc2df75918dad6afaf9f1d7a684f94fb81dd35bd6b4380","outil":"evaluer_dossier","arguments_origine":{"dossier_id":"DOS-FICTIF-006"}}
+{"ts":"2026-10-02T15:01:41.182037344Z","empreinte":"5e9aa0d8f65f1437ba6ace64088d02f5cfed8e3a2925afdb8500ac72161441a3","outil":"get_taux_interne","arguments_origine":{"categorie":"decouvert-societes-non-financieres"}}
+{"ts":"2026-10-02T15:01:41.187264115Z","empreinte":"1a8c80adb939fd9cff81d72136f06ec2dca1da034be4eb0471e872baca0b0ebd","outil":"rechercher_entreprise","arguments_origine":{"siren":"405750753"}}
+{"ts":"2026-10-02T15:01:41.19009071Z","empreinte":"a081c2fbea8955e20c0f4e68a9c660b492a35e37e91d1801d94ca752fe16b9cd","outil":"verifier_gel","arguments_origine":{"nom":"TRICOTS SAINT-JAMES"}}
+{"ts":"2026-10-02T15:01:41.791340636Z","empreinte":"8d345af122973be78d87ecf77eef1db4dcbd884fc1e14db1f00607e0978755ca","outil":"get_taux_usure","arguments_origine":{"categorie":"decouvert-societes-non-financieres","date_reference":"2026-10-01"}}
+{"ts":"2026-10-02T15:01:41.79560139Z","empreinte":"04563d862510284ca6211990e838391c8e5b3ca10e516433df26f54073413bd6","outil":"attribuer_pret","arguments_origine":{"dossier_id":"DOS-FICTIF-006","montant":2400000,"siren":"405750753"}}

@@ -1,0 +1,8 @@
+{
+ "statut": "termine",
+ "demande": "Peut-on accorder le découvert demandé dans le dossier DOS-FICTIF-002 ?",
+ "demandeur": "camille.conseiller@exemple.test",
+ "debut": "2026-10-02T15:01:37Z",
+ "fin": "2026-10-02T15:01:40Z",
+ "attente": null
+}
