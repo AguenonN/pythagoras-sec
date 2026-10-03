@@ -176,7 +176,9 @@ func (s *Serveur) etat(w http.ResponseWriter, r *http.Request) {
 		JuristeNom   string         `json:"juriste_nom"`
 		Attentes     int            `json:"attentes"`
 		Propositions int            `json:"propositions"`
+		Conseiller   string         `json:"conseiller,omitempty"`
 	}{Journaux: []journalListe{}, Jeux: []jeuListe{}, Cle: len(s.Depot.Cle) > 0}
+	var recente time.Time
 	for _, st := range s.tousEtats() {
 		jl := journalListe{ID: st.Journal.ID, Verif: st.Verif, Entrees: len(st.Entrees), Ecart: st.Verif.PremierEcart(), Sessions: Sessions(st)}
 		if len(jl.Sessions) > 0 {
@@ -189,6 +191,9 @@ func (s *Serveur) etat(w http.ResponseWriter, r *http.Request) {
 			}
 			jl.Statut, jl.Demande = st.Dossier.Statut, st.Dossier.Demande
 			jl.Rejetee = len(s.Depot.rejetsDe(st)) > 0
+			if st.Dossier.Demandeur != "" && jl.Debut != nil && !jl.Debut.Before(recente) {
+				recente, out.Conseiller = *jl.Debut, st.Dossier.Demandeur
+			}
 			if st.Dossier.Statut == StatutEnAttente {
 				out.Attentes++
 			}
@@ -199,6 +204,11 @@ func (s *Serveur) etat(w http.ResponseWriter, r *http.Request) {
 	for i, j := range jeux {
 		out.Jeux = append(out.Jeux, jeuListe{Index: i, Libelle: j.Libelle(), Empreinte: j.Jeu.Meta.Empreinte, Source: j.Source,
 			Directives: len(j.Jeu.Directives), Version: j.Jeu.Meta.Version, Courant: j.Courant, DateEffet: j.Jeu.Meta.DateEffet})
+	}
+	if c := s.Depot.Conseiller; c != "" {
+		if _, ok := s.Depot.Fiche(c, time.Now()); ok {
+			out.Conseiller = c
+		}
 	}
 	out.Produit = s.Produit
 	out.Juriste, out.JuristeNom = s.Depot.Juriste, s.Depot.NomIdentite(s.Depot.Juriste)

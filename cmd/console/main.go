@@ -44,6 +44,7 @@ func lancer() error {
 	demo := flag.String("demo", "demo", "dossier de la démonstration, sous la racine")
 	donnees := flag.String("donnees", "", "dossier des sessions (défaut : <demo>/execution/sessions)")
 	produit := flag.String("produit", "Console de gouvernance", "nom du produit affiché dans l'en-tête")
+	conseiller := flag.String("conseiller", "", "identité connectée au poste conseiller, proposée comme demandeur (défaut : le demandeur de la demande la plus récente)")
 	juriste := flag.String("juriste", "juriste@exemple.test", "identité du juriste, auteur des nouvelles versions des règles")
 	dev := flag.String("dev", "", "répertoire des fichiers HTML, CSS et JS, servis depuis le disque (rechargement sans recompiler) ; ex. internal/console/web")
 	approuver := flag.String("approuver", "", "commande de signature (mcp-approve) ; défaut : bin/mcp-approve s'il existe, sinon « go run ./cmd/mcp-approve »")
@@ -98,7 +99,7 @@ func lancer() error {
 	if len(cmds.Lanceur) > 0 && !filepath.IsAbs(cmds.Lanceur[0]) && strings.Contains(cmds.Lanceur[0], "/") {
 		cmds.Lanceur[0] = filepath.Join(abs, cmds.Lanceur[0])
 	}
-	dep := &console.Depot{Donnees: sessions, Demo: *demo, Cle: cle, Juriste: *juriste, Commandes: cmds}
+	dep := &console.Depot{Donnees: sessions, Demo: *demo, Cle: cle, Juriste: *juriste, Conseiller: *conseiller, Commandes: cmds}
 	srv := &http.Server{
 		Addr:              *addr,
 		Handler:           (&console.Serveur{Depot: dep, Produit: *produit, Dev: *dev}).Handler(),

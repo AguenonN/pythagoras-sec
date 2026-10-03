@@ -113,6 +113,9 @@
   // Saisie conservée d'un affichage à l'autre (changement de session,
   // retour sur l'écran) : rien de ce que le conseiller a tapé n'est perdu.
   const saisie = { demande: '', demandeur: '' };
+  const CLE_DEMANDEUR = 'console.poste.demandeur';
+  function lireDemandeur() { try { return localStorage.getItem(CLE_DEMANDEUR) || ''; } catch (e) { return ''; } }
+  function ecrireDemandeur(v) { try { localStorage.setItem(CLE_DEMANDEUR, v); } catch (e) { /* stockage indisponible */ } }
 
   ECRANS.poste = async (ctx) => {
     const ch = sessionChoisie(ctx.q);
@@ -123,8 +126,17 @@
     demande.value = saisie.demande;
     const demandeur = h('select', { id: 'demandeur', class: 'champ', 'aria-label': 'Demandeur', onchange: e => { saisie.demandeur = e.target.value; } }, (identites || []).map(i =>
       h('option', { value: i.identite }, (i.nom || i.identite) + (i.groupes && i.groupes.length ? ' · ' + i.groupes.join(', ') : ''))));
-    if (saisie.demandeur && [...demandeur.options].some(o => o.value === saisie.demandeur)) demandeur.value = saisie.demandeur;
+    // Demandeur : la dernière identité choisie (gardée aussi dans le
+    // navigateur), sinon l'identité connectée ; jamais changé par le sondage
+    // ni par la session affichée.
+    const connue = (id) => id && [...demandeur.options].some(o => o.value === id);
+    const retenu = [saisie.demandeur, lireDemandeur(), etat.conseiller].find(connue);
+    if (retenu) demandeur.value = retenu;
     saisie.demandeur = demandeur.value;
+    const nomDe = (id) => { const i = (identites || []).find(x => x.identite === id); return i ? (i.nom || i.identite) : id; };
+    const connecte = () => ctx.droite(demandeur.value ? ['Connecté : ', h('b', { id: 'connecte' }, nomDe(demandeur.value))] : ['Connecté : ', nd()]);
+    demandeur.addEventListener('change', () => { ecrireDemandeur(demandeur.value); connecte(); });
+    connecte();
     const err = zoneErreur();
     const info = h('p', { class: 'petit second' });
     const bouton = h('button', { type: 'button', class: 'btn' }, 'Lancer les agents');
@@ -144,7 +156,7 @@
     if (!ctx.vivant()) return;
     const proposer = (g) => {
       demande.value = saisie.demande = g.demande;
-      if (g.demandeur && [...demandeur.options].some(o => o.value === g.demandeur)) demandeur.value = saisie.demandeur = g.demandeur;
+      if (connue(g.demandeur)) { demandeur.value = saisie.demandeur = g.demandeur; ecrireDemandeur(g.demandeur); connecte(); }
       info.textContent = 'Demande remplie : vérifiez-la puis cliquez sur « Lancer les agents ».';
       demande.focus();
     };
@@ -185,7 +197,6 @@
       const sig = v.signature + '|' + v.verification.ok + '|' + v.verification.erreur;
       if (sig === signature) return;
       signature = sig;
-      ctx.droite(v.demandeur ? ['Connecté : ', h('b', {}, (v.demandeur_fiche && v.demandeur_fiche.nom) || v.demandeur.identite)] : ['Connecté : ', nd()]);
       dynamique.replaceChildren(...deroule(v).filter(Boolean));
       aside.replaceChildren(...volet(v).flat(Infinity).filter(Boolean));
     }

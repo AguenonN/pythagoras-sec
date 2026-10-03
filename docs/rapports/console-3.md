@@ -29,6 +29,9 @@ Branche `feat/console-3`. Mis à jour après chaque commit. Périmètre : `cmd/c
   - Test : `TestRejetVisible` (Poste, Journal, liste, rôle refusé, attente mesurée, titre).
 - **Point 5 — carte de décision.** Après « Signer et valider » ou « Rejeter », l'écran Validation garde une carte : décision (validée, validation déposée n / m, ou rejetée), par qui (nom et identité), rôle, heure (heure du dépôt du jeton, rendue par la console : `POST /api/validation/valider` → `depot` ; heure de `rejet.json` pour un rejet), motif et mention pour un rejet ; pour une validation, les **quatre contrôles de l'engine** dès que l'entrée « approbation » est au journal (avant : « les contrôles s'afficheront ici dès qu'ils seront au journal », jamais présumés). Liens « Voir la session » et « Voir la preuve au journal (appel n° …) ». La file ne passe à la demande suivante que sur « Demande suivante » (ou un clic sur une autre demande de la file) ; « Compléter la validation » quand il manque un rôle (quatre yeux). La carte survit à un aller-retour vers un autre écran.
   - Test : `TestNavigateurDecision` (Playwright) : validation puis contrôles « Approbation acceptée » sur la carte, carte toujours là après deux sondages, « Demande suivante » ; rejet, carte, puis Poste (badge « Rejeté », « rejetée par », pas « bloquée », attente « jusqu'au rejet ») et Journal (badge, bandeau, mention dans le volet).
+- **Point 6 — demandeur du Poste.** Cause : la liste prenait la première identité de l'annuaire (Claire Analyste), tandis que l'en-tête « Connecté : » affichait le demandeur de la session regardée (Camille), et changeait avec elle.
+  - Identité connectée : option `-conseiller <identité>` de la console ; sans elle, le demandeur de la demande la plus récente (`/api/etat` → `conseiller`). Par défaut la liste la propose ; ensuite, la dernière identité choisie (gardée en mémoire et dans le navigateur, `localStorage`, lecture protégée). Ni le sondage ni la session affichée ne la changent ; « Connecté : » montre cette identité. Une demande suggérée qui porte un demandeur compte comme un choix.
+  - Tests : `TestConseillerParDefaut`, `TestNavigateurDemandeur` (défaut, deux sondages, changement de session, choix gardé d'une session à l'autre et au rechargement).
 
 ## Pas fait
 
@@ -40,6 +43,7 @@ Branche `feat/console-3`. Mis à jour après chaque commit. Périmètre : `cmd/c
 - `-compilateur` garde son rôle de commande (aucun script du dépôt ne l'utilise aujourd'hui, mais la doc de la console le cite) : seules les valeurs `reel` et `rejeu` changent de sens.
 - Libellés courts des outils : table dans la console (une phrase de description ne fait pas un libellé d'écran) ; la « requête exacte » de la Validation affiche aussi le libellé, le nom technique restant en info-bulle (le brief dit « partout »).
 - Un rejet change le **badge affiché** (« Rejeté ») d'un appel que le journal porte « en attente » : c'est demandé par le brief, et la mention « décision consignée par la console, hors journal signé » accompagne chaque affichage pour que la frise ne fasse pas passer ce rejet pour une décision de l'engine.
+- « Identité connectée » : la console n'a pas d'authentification ; défaut = demandeur de la demande la plus récente (ce que la démo montrait), surchargé par `-conseiller`. Pour la démo, lancer la console avec `-conseiller camille.conseiller@exemple.test`.
 - Le test du navigateur est un test Go qui appelle un script Python : sauté sans interpréteur Playwright, pour ne pas imposer de navigateur à `go test ./...`.
 
 ## Blocages
