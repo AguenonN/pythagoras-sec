@@ -51,15 +51,20 @@ ARTICLES = [
      "cite_par": ["D-008"], "serveur": "eurlex", "outil": "lire_article",
      "arguments": {"celex": "32016R0679", "article": "32"},
      "lien": "https://eur-lex.europa.eu/legal-content/FR/TXT/?uri=CELEX:32016R0679"},
-    # Cités, mais sans enregistrement : tentés, consignés s'ils manquent.
+    # Identifiants LEGIARTI retrouvés le 03/10 (session gel) par l'API officielle
+    # Légifrance (consult/getArticleWithIdAndNum, version en vigueur) ; le texte
+    # est lu par le serveur legifrance.
     {"id": "CMF-L562-4", "code": "Code monétaire et financier", "article": "L562-4", "cite_par": ["D-001"],
-     "serveur": "legifrance", "outil": "lire_article", "arguments": None,
+     "serveur": "legifrance", "outil": "lire_article", "arguments": {"identifiant": "LEGIARTI000045250683", "date_reference": DATE_REFERENCE},
+     "lien": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000045250683",
      "raison_si_absent": "identifiant LEGIARTI inconnu du dépôt et aucun enregistrement ; PISTE requis"},
     {"id": "CT-L1121-1", "code": "Code du travail", "article": "L1121-1", "cite_par": ["D-006"],
-     "serveur": "legifrance", "outil": "lire_article", "arguments": None,
+     "serveur": "legifrance", "outil": "lire_article", "arguments": {"identifiant": "LEGIARTI000006900785", "date_reference": DATE_REFERENCE},
+     "lien": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000006900785",
      "raison_si_absent": "identifiant LEGIARTI inconnu du dépôt et aucun enregistrement ; PISTE requis"},
     {"id": "CT-L2411-1", "code": "Code du travail", "article": "L2411-1", "cite_par": ["D-007"],
-     "serveur": "legifrance", "outil": "lire_article", "arguments": None,
+     "serveur": "legifrance", "outil": "lire_article", "arguments": {"identifiant": "LEGIARTI000035652370", "date_reference": DATE_REFERENCE},
+     "lien": "https://www.legifrance.gouv.fr/codes/article_lc/LEGIARTI000035652370",
      "raison_si_absent": "identifiant LEGIARTI inconnu du dépôt et aucun enregistrement ; PISTE requis"},
 ]
 # Non publics, donc hors corpus : « Politique de sécurité des sources de
