@@ -232,6 +232,14 @@ preparer() {
 	go run ./cmd/registre-demo -enregistrements "$enr_travail"
 
 	mkdir -p "$execution"
+	# Propositions de démo de l'Analyste : versionnées dans
+	# demo/scenarios/propositions/, recopiées si le dossier de la console est
+	# vide (worktree neuf) ; jamais par-dessus des propositions présentes.
+	if [[ -n "$(ls -A demo/scenarios/propositions/*.json 2>/dev/null)" && -z "$(ls -A "$execution/propositions" 2>/dev/null)" ]]; then
+		mkdir -p "$execution/propositions"
+		cp demo/scenarios/propositions/*.json "$execution/propositions/"
+		echo "lancer-demo: propositions de démo de l'Analyste copiées dans demo/execution/propositions/" >&2
+	fi
 	if [[ ! -f demo/annuaire.json || demo/annuaire-source.json -nt demo/annuaire.json || ! -f "$cles/autorite.pub" ]]; then
 		bin/mcp-approve annuaire-demo -source demo/annuaire-source.json -sortie demo/annuaire.json -cles "$cles"
 	fi
