@@ -219,6 +219,17 @@ class TestOrchestrateur(Banc):
         self.assertEqual(e["attente"]["directives"], ["D-002"])
         self.assertTrue(r["texte"].startswith("Validation non reçue dans le délai"))
 
+    def test_rejet_avec_role(self):
+        o = self.orch([
+            ("orchestrateur", deleguer("credit", "Attribue")),
+            ("credit", appel("banque-synthetique__attribuer_pret", {"dossier_id": "DOS-1"})),
+        ], delai=600)
+        self.depots = [[("rejet.json", json.dumps({"valideur": "claire", "nom": "Claire Analyste", "role": "analyste-risques",
+                                                    "motif": "taux non justifié", "date": "2026-10-04T09:00:00Z"}))]]
+        r = o.executer("demande")
+        self.assertTrue(r["texte"].startswith("Validation rejetée par Claire Analyste (analyste-risques) : taux non justifié."),
+                        r["texte"])
+
     def test_rejet_de_la_console_termine_bloque(self):
         # La console (« Rejeter ») écrit approbations/<empreinte>/rejet.json.
         o = self.orch([

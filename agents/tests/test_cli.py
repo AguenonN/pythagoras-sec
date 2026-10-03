@@ -2,6 +2,7 @@
 scripté : codes de sortie, sortie JSON, jeu écrit seulement s'il est
 accepté."""
 
+import contextlib
 import io
 import json
 import os
@@ -63,7 +64,7 @@ class TestCLI(unittest.TestCase):
         self.assertIn("Critère non observable", out)
 
     def test_v1_retire(self):
-        with self.assertRaises(SystemExit):
+        with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
             self.lancer(ClientScripte(), "--id-directive", "D-001")
 
 

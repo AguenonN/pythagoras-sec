@@ -1,6 +1,8 @@
 """Démo texte v2 : texte → questions → relecture → fichier de jeu brouillon,
 rejouée sur les réponses réelles enregistrées du scénario week-end."""
 
+import contextlib
+import io
 import json
 import os
 import tempfile
@@ -40,7 +42,7 @@ class TestDemoV2(unittest.TestCase):
         self.assertIn("refuse de traduire un critère non observable", ecrit)
         self.assertIn("proposer_jeu", [o["function"]["name"] for o in cl.recus[0][1]])
         for option in ("--v1", "--v2"):
-            with self.assertRaises(SystemExit):
+            with self.assertRaises(SystemExit), contextlib.redirect_stderr(io.StringIO()):
                 lancer([], "--texte", "x", "--date-effet", "2026-10-05", option)
 
     def test_parcours_week_end(self):
