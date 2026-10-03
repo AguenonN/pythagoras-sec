@@ -32,7 +32,7 @@
     const cls = e.badge === 'en_attente' ? 'attente' : (e.suspect ? 'suspect' : '');
     return h('li', { class: cls },
       h('span', { class: 'heure' }, heureSec(e.ts)),
-      h('span', { class: 'libelle' }, humanise(e.outil) + ' ', h('span', { class: 'second petit' }, '(' + e.serveur + ')')),
+      outilLisible(e.serveur, e.outil, { class: 'libelle' }),
       badge(e.badge, e.libelle),
       h('span', { class: 'moyen ' + (e.badge === 'en_attente' ? '' : 'second'), style: e.badge === 'en_attente' ? 'color:var(--accent)' : '' }, detail(e)),
       e.suspect ? h('span', { class: 'petit gras', style: 'color:var(--ref)' }, 'entrée non fiable') : null);
@@ -86,7 +86,11 @@
     return [
       h('div', { class: 'etiq' }, 'Réponse au conseiller'),
       r.terminee ? [
-        h('div', { class: 'callout b-' + r.badge }, r.texte),
+        h('div', { class: 'callout b-' + r.badge }, markdown(r.texte)),
+        r.detail_technique ? h('details', { class: 'technique' }, h('summary', {}, 'voir le détail technique'),
+          h('div', { class: 'petit second', style: 'margin-top:8px;display:flex;flex-direction:column;gap:4px' },
+            h('span', {}, 'Décisions de l\'engine (déjà montrées par la frise) :'),
+            r.detail_technique.split('\n').filter(Boolean).map(l => h('span', {}, avecOutils(l))))) : null,
         r.directives_citees && r.directives_citees.length ? h('p', { class: 'moyen second' }, 'Directives citées : ' + r.directives_citees.join(', ')) : null,
       ] : h('div', { class: 'callout b-indisponible' }, v.statut_session === 'en_attente' ? 'La demande attend une validation humaine.' : 'La réponse n\'est pas encore rédigée.'),
       h('div', { class: 'etiq' }, 'Ce que l\'engine a rendu à l\'agent'),

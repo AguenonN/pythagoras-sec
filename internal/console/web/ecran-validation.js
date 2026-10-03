@@ -12,7 +12,7 @@
     return n + ' / ' + a.jetons_requis;
   }
 
-  const titreAppel = (a) => { const t = humanise(a.outil || 'appel'); return t.charAt(0).toUpperCase() + t.slice(1); };
+  const titreAppel = (a) => a.outil ? libelleOutil(a.serveur, a.outil) : 'Appel';
   const valeur = (v) => typeof v === 'object' && v !== null ? JSON.stringify(v) : String(v);
   let saisie = { valideur: '', motif: '' };   // conservé d'un rafraîchissement à l'autre
 
@@ -48,7 +48,7 @@
   // Ce que le sondage redessine : la requête, les directives, les contrôles,
   // le rejet éventuel.
   function infos(a) {
-    const lignes = [(a.serveur || ND) + ' / ' + (a.outil || ND)];
+    const lignes = [];
     if (a.purgee) lignes.push('Les arguments de cet appel ont été purgés du coffre.');
     else if (a.arguments) for (const k of Object.keys(a.arguments).sort()) lignes.push(k + ' : ' + valeur(a.arguments[k]));
     else lignes.push('Arguments ' + ND + ' (coffre absent ou appel pas encore journalisé).');
@@ -57,13 +57,13 @@
     const dem = a.demandeur ? a.demandeur.identite : ND;
     return [
       h('div', { style: 'display:flex;flex-direction:column;gap:4px' },
-        h('h1', {}, titreAppel(a) + (a.serveur ? ' — ' + a.serveur : '')),
+        h('h1', {}, a.outil ? outilLisible(a.serveur, a.outil) : 'Appel'),
         h('div', { class: 'second' }, 'Demandée par ' + dem + (a.session ? ' · session ' + nomSession(a.session) : '') + (a.sous_agent ? ' · sous-agent déclaré « ' + a.sous_agent + ' »' : '') + (a.ts ? ' · ' + jourComplet(a.ts) + ' ' + heureSec(a.ts) : '')),
         a.demande ? h('div', { class: 'second' }, 'Demande : « ' + a.demande + ' »') : null),
       h('div', { class: 'grille2' },
         h('section', { class: 'carte', style: 'gap:10px' },
           h('div', { class: 'etiq' }, 'Requête exacte qui sera transmise'),
-          h('div', { class: 'requete' }, lignes.join('\n')),
+          h('div', { class: 'requete' }, a.outil ? outilLisible(a.serveur, a.outil, { class: 'gras' }) : ND, lignes.length ? '\n' + lignes.join('\n') : ''),
           h('div', { class: 'kv' }, h('span', {}, 'Signature numérique de l\'appel (empreinte)'), h('span', { class: 'mono' }, court(a.empreinte_transmise))),
           h('div', { class: 'petit second' }, 'Votre signature vaudra pour cette requête seulement. Toute modification de la requête exigera une nouvelle validation.')),
         h('section', { class: 'carte', style: 'gap:10px' },
@@ -73,7 +73,7 @@
             h('span', { class: 'moyen second' }, fondementTexte(x.fondement) + ' · ' + motifAffiche(x.motif)))) :
             h('p', { class: 'moyen' }, a.directive ? 'Directive ' + a.directive + ' (détail ' + ND + ')' : motifAffiche(a.motif) || nd()),
           h('div', { class: 'moyen', style: 'border-top:1px solid var(--trait-doux);padding-top:10px;line-height:1.5' }, 'Éléments consultés : ' +
-            (a.consultations.length ? a.consultations.map(k => k.serveur + ' / ' + k.outil + ' (appel n° ' + k.seq + ')').join(', ') : 'aucun')),
+            (a.consultations.length ? a.consultations.map(k => libelleOutil(k.serveur, k.outil) + ' (appel n° ' + k.seq + ')').join(', ') : 'aucun')),
           h('div', { class: 'moyen gras' }, 'Rôles requis : ' + (roles.join(', ') || ND) + (a.quatre_yeux ? ' · quatre yeux (deux personnes distinctes)' : '') + ' · ' + (enAttente ? 'jetons déposés ' : 'jetons acceptés ') + compteur(a)))),
       blocControles(a),
       a.motif_jeton ? h('p', { class: 'erreur gras' }, 'Dernier jeton refusé par l\'engine : ' + a.motif_jeton) : null,

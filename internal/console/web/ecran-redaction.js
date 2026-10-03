@@ -147,7 +147,7 @@
         h('span', { class: 'second' }, k.exposition + ' exposition(s), ' + k.violation + ' violation(s), ' + k.non_rejouables + ' non rejouable(s).'),
         h('span', {}, e.explication),
         e.verifiees ? null : h('span', { class: 'erreur gras' }, 'Une chaîne n\'est pas vérifiée : cet essai ne prouve rien.'),
-        e.lignes.filter(l => l.change).slice(0, 8).map(l => h('span', { class: 'petit' }, 'Appel n° ' + l.seq + ' (' + l.outil + ', ' + nomSession(l.session) + ') : ' + LIBELLE_BADGE[EFFET_BADGE[l.avant.effet]] + ' → ' + LIBELLE_BADGE[EFFET_BADGE[l.apres.effet]])),
+        e.lignes.filter(l => l.change).slice(0, 8).map(l => h('span', { class: 'petit' }, 'Appel n° ' + l.seq + ' (' + libelleOutil(l.serveur, l.outil) + ', ' + nomSession(l.session) + ') : ' + LIBELLE_BADGE[EFFET_BADGE[l.avant.effet]] + ' → ' + LIBELLE_BADGE[EFFET_BADGE[l.apres.effet]])),
         h('a', { class: 'petit', href: '#avant-apres' }, 'Voir le détail à l\'écran Avant / après'));
     }
 

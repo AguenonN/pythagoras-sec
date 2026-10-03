@@ -2,6 +2,7 @@ package console
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"mcprogue/internal/journal"
@@ -42,7 +43,11 @@ type VuePoste struct {
 type Reponse struct {
 	// Texte et Statut : reponse.json, absents tant que la demande n'est pas
 	// terminée.
-	Texte            string   `json:"texte,omitempty"`
+	Texte string `json:"texte,omitempty"`
+	// DetailTechnique : le relevé « Décisions de l'engine » que
+	// l'orchestrateur ajoute à la fin du texte, retiré de Texte (la frise le
+	// montre déjà) et rendu à part, pour qui veut le déplier.
+	DetailTechnique  string   `json:"detail_technique,omitempty"`
 	Statut           string   `json:"statut,omitempty"`
 	DirectivesCitees []string `json:"directives_citees,omitempty"`
 	Terminee         bool     `json:"terminee"`
@@ -108,6 +113,7 @@ func reponseFinale(c *VueChaine, st *Etat) Reponse {
 	r := Reponse{Paragraphes: []string{}}
 	if st.Reponse != nil {
 		r.Texte, r.Statut, r.DirectivesCitees, r.Terminee = st.Reponse.Texte, st.Reponse.Statut, st.Reponse.DirectivesCitees, true
+		r.Texte, r.DetailTechnique = separerReleve(r.Texte)
 	}
 	if len(c.Etapes) == 0 {
 		r.Badge, r.Titre = BadgeIndispo, "Aucun appel d'outil pour cette demande."
@@ -134,4 +140,17 @@ func reponseFinale(c *VueChaine, st *Etat) Reponse {
 	}
 	r.Paragraphes = append(r.Paragraphes, "Motif de l'engine : "+e.Motif)
 	return r
+}
+
+// enteteReleve ouvre le relevé que l'orchestrateur ajoute à la réponse
+// (agents/orchestrateur : « \n\nDécisions de l'engine :\n- … »).
+const enteteReleve = "Décisions de l'engine :"
+
+// separerReleve sépare le texte de l'agent du relevé technique final.
+func separerReleve(texte string) (corps, releve string) {
+	i := strings.LastIndex(texte, enteteReleve)
+	if i < 0 || (i > 0 && texte[i-1] != '\n') {
+		return texte, ""
+	}
+	return strings.TrimRight(texte[:i], " \n"), strings.TrimSpace(texte[i+len(enteteReleve):])
 }

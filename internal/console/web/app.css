@@ -179,3 +179,10 @@ select.champ { background: #fff; padding: 8px 10px; min-height: 40px; width: aut
 .grille-notif { display: grid; grid-template-columns: 150px 220px 130px 120px minmax(0, 1fr); column-gap: 16px; align-items: center; padding: 10px 4px; border-top: 1px solid var(--trait-doux); }
 .cases { display: flex; flex-wrap: wrap; gap: 8px; }
 .cases label { display: flex; gap: 6px; align-items: center; background: #fff; border: 1px solid var(--trait); border-radius: 6px; padding: 4px 10px; font-size: 13px; }
+/* Réponse au conseiller : Markdown minimal, détail technique replié. */
+.md { display: flex; flex-direction: column; gap: 8px; line-height: 1.5; }
+.md p { margin: 0; }
+.md-liste { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 4px; }
+.outil[title] { text-decoration: underline dotted var(--trait); text-underline-offset: 3px; cursor: help; }
+details.technique summary { cursor: pointer; color: var(--accent); font-size: 13px; }
+details.technique pre { white-space: pre-wrap; font-size: 12px; margin: 8px 0 0; }

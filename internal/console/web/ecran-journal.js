@@ -62,7 +62,7 @@
       onkeydown: ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); onclick(); } } },
       h('span', { class: 'num' }, e.seq),
       h('span', e.sous_agent ? { class: 'tiret', style: 'border-radius:12px;padding:2px 8px;display:inline-block' } : {}, e.sous_agent || nd('—')),
-      h('span', { class: 'mono moyen' }, e.outil),
+      outilLisible(e.serveur, e.outil, { class: 'moyen' }),
       serveurCellule(e),
       decisionCellule(e, fonde));
   }
@@ -143,7 +143,7 @@
   function celluleDemande(l) {
     return h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
       h('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' },
-        h('span', { class: 'mono gras' }, l.outil),
+        outilLisible('', l.outil, { class: 'gras' }),
         l.delegation ? h('span', { class: 'pastille' }, 'délégation · hors du gate') : null,
         l.ts ? h('span', { class: 'petit second' }, heureSec(l.ts)) : null),
       l.arguments.length ? l.arguments.map(argument) : h('span', { class: 'petit second' }, 'aucun argument'),
