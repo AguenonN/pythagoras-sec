@@ -1,4 +1,4 @@
-Ajout au jeu demo, version 3 : 1 directive ajoutée (D-009), évaluée après 21 directives existantes, dans l'ordre du jeu ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
+Ajout au jeu demo, version 4 : 1 directive ajoutée (D-009), évaluée après 27 directives existantes, dans l'ordre du jeu ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
 Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.
 
 Directive D-009, version 1, brouillon (non appliquée tant que le juriste ne l'a pas passée en observation ou active), fondée sur l'art. 12 Règlement intérieur.

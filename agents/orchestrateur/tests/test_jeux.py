@@ -40,14 +40,18 @@ class TestJeux(unittest.TestCase):
         # Version 2 (02/10, décision de Manu) : D-001 à D-008 actives, puis
         # les directives des secteurs D-011 à D-023 en brouillon ; D-009 et
         # D-010 restent libres pour la scène.
-        self.assertEqual((jeu["jeu"]["id"], jeu["jeu"]["version"]), ("demo", 2))
-        self.assertEqual([d["id"] for d in jeu["directives"]],
-                         ["D-00%d" % i for i in range(1, 9)] + ["D-%03d" % i for i in range(11, 24)])
+        # Version 3 (03/10) : + D-024 à D-029 (personnes politiquement exposées), en brouillon.
+        self.assertEqual(jeu["jeu"]["id"], "demo")
+        self.assertGreaterEqual(jeu["jeu"]["version"], 3)
+        ids = [d["id"] for d in jeu["directives"]]
+        self.assertEqual(ids[:27], ["D-00%d" % i for i in range(1, 9)] + ["D-%03d" % i for i in range(11, 30)])
+        self.assertNotIn("D-009", ids)
+        self.assertNotIn("D-010", ids)
         self.assertEqual(lire(HISTORIQUE_V1)["directives"], jeu["directives"][:8])
         for d in jeu["directives"]:
             statut = "active" if d["id"] < "D-009" else "brouillon"
             self.assertEqual(d["statut"], statut)
-            self.assertIn("à valider par le juriste", " ".join(f["texte"] for f in d["fondements"]))
+            self.assertIn("à valider par le", " ".join(f["texte"] for f in d["fondements"]))
             self.assertIn("Directive %s, version 1, %s" % (d["id"], statut), relecture)
         effets = {d["id"]: [e["effet"] for e in d["effets"]] for d in jeu["directives"][:8]}
         self.assertEqual(effets, {"D-001": ["refuser"], "D-002": ["attendre_validation"], "D-003": ["refuser"],

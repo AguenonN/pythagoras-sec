@@ -1,0 +1,26 @@
+{
+ "requete": {
+  "texte": "Aucun agent ne lit ni ne modifie les comptes, prêts, découverts ou virements d'un client personne politiquement exposée : le dossier relève d'un conseiller humain. La conformité est prévenue de chaque tentative.",
+  "fondement": "Politique interne de la banque — à valider par le responsable juridique",
+  "auteur": "julie.juridique@exemple.test",
+  "jeu_existant": "demo/directives/demo.json",
+  "date_effet": "2026-10-01T00:00:00+02:00"
+ },
+ "reponses": {
+  "Faut-il bloquer uniquement les actions (modification, virement, etc.) ou aussi la lecture (consultation des comptes, prêts, découverts) pour les clients personnes politiquement exposées ?": "Les deux : la lecture et la modification. Outils visés, du serveur banque-synthetique : consulter_client, lister_comptes_client et historique_operations, où le client est désigné par l'argument /client_id ; effectuer_virement, où le compte est désigné par /compte_debit ; modifier_plafond_decouvert et cloturer_compte, où le compte est désigné par /compte_id. L'appel est refusé quand la personne concernée (client ou compte) appartient au groupe personne-politiquement-exposee. La conformité est le rôle conformite, prévenue en temps réel à chaque tentative ; si elle ne peut pas l'être, l'appel reste refusé.",
+  "Quel est le fondement juridique exact à utiliser pour cette règle ? Le texte mentionne \"Politique interne de la banque — à valider par le responsable juridique\", mais faut-il ajouter un fondement légal ou réglementaire (par exemple, RGPD, LCB-FT, etc.) ?": "Non : seulement « Politique interne de la banque — à valider par le responsable juridique ».",
+  "si_indetermine": "refuser",
+  "rythme:D-009:conformite": "temps_reel",
+  "si_echec:D-009:conformite": "refuser",
+  "rythme:D-010:conformite": "temps_reel",
+  "si_echec:D-010:conformite": "refuser",
+  "rythme:D-024:conformite": "temps_reel",
+  "si_echec:D-024:conformite": "refuser",
+  "rythme:D-025:conformite": "temps_reel",
+  "si_echec:D-025:conformite": "refuser",
+  "rythme:D-026:conformite": "temps_reel",
+  "si_echec:D-026:conformite": "refuser",
+  "rythme:D-027:conformite": "temps_reel",
+  "si_echec:D-027:conformite": "refuser"
+ }
+}

@@ -1,7 +1,7 @@
 {
  "jeu": {
   "id": "demo",
-  "version": 2,
+  "version": 3,
   "date_effet": "2026-10-01T00:00:00+02:00",
   "auteur": "julie.juridique@exemple.test"
  },
@@ -824,6 +824,228 @@
       "/service"
      ],
      "mode": "caviarder"
+    }
+   ]
+  },
+  {
+   "id": "D-024",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-10-01T00:00:00+02:00",
+   "texte_fr": "Aucun agent ne lit ni ne modifie les comptes, prêts, découverts ou virements d'un client personne politiquement exposée : le dossier relève d'un conseiller humain.",
+   "fondements": [
+    {
+     "texte": "Politique interne de la banque — à valider par le responsable juridique"
+    }
+   ],
+   "si_indetermine": "refuser",
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "banque-synthetique",
+     "outil": "consulter_client"
+    }
+   },
+   "condition": {
+    "sujet": {
+     "groupe": "personne-politiquement-exposee",
+     "champ": "/client_id"
+    }
+   },
+   "effets": [
+    {
+     "effet": "refuser"
+    },
+    {
+     "effet": "notifier",
+     "destinataire_role": "conformite",
+     "rythme": "temps_reel",
+     "si_echec": "refuser"
+    }
+   ]
+  },
+  {
+   "id": "D-025",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-10-01T00:00:00+02:00",
+   "texte_fr": "Aucun agent ne lit ni ne modifie les comptes, prêts, découverts ou virements d'un client personne politiquement exposée : le dossier relève d'un conseiller humain.",
+   "fondements": [
+    {
+     "texte": "Politique interne de la banque — à valider par le responsable juridique"
+    }
+   ],
+   "si_indetermine": "refuser",
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "banque-synthetique",
+     "outil": "lister_comptes_client"
+    }
+   },
+   "condition": {
+    "sujet": {
+     "groupe": "personne-politiquement-exposee",
+     "champ": "/client_id"
+    }
+   },
+   "effets": [
+    {
+     "effet": "refuser"
+    },
+    {
+     "effet": "notifier",
+     "destinataire_role": "conformite",
+     "rythme": "temps_reel",
+     "si_echec": "refuser"
+    }
+   ]
+  },
+  {
+   "id": "D-026",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-10-01T00:00:00+02:00",
+   "texte_fr": "Aucun agent ne lit ni ne modifie les comptes, prêts, découverts ou virements d'un client personne politiquement exposée : le dossier relève d'un conseiller humain.",
+   "fondements": [
+    {
+     "texte": "Politique interne de la banque — à valider par le responsable juridique"
+    }
+   ],
+   "si_indetermine": "refuser",
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "banque-synthetique",
+     "outil": "historique_operations"
+    }
+   },
+   "condition": {
+    "sujet": {
+     "groupe": "personne-politiquement-exposee",
+     "champ": "/client_id"
+    }
+   },
+   "effets": [
+    {
+     "effet": "refuser"
+    },
+    {
+     "effet": "notifier",
+     "destinataire_role": "conformite",
+     "rythme": "temps_reel",
+     "si_echec": "refuser"
+    }
+   ]
+  },
+  {
+   "id": "D-027",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-10-01T00:00:00+02:00",
+   "texte_fr": "Aucun agent ne lit ni ne modifie les comptes, prêts, découverts ou virements d'un client personne politiquement exposée : le dossier relève d'un conseiller humain.",
+   "fondements": [
+    {
+     "texte": "Politique interne de la banque — à valider par le responsable juridique"
+    }
+   ],
+   "si_indetermine": "refuser",
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "banque-synthetique",
+     "outil": "effectuer_virement"
+    }
+   },
+   "condition": {
+    "sujet": {
+     "groupe": "personne-politiquement-exposee",
+     "champ": "/compte_debit"
+    }
+   },
+   "effets": [
+    {
+     "effet": "refuser"
+    },
+    {
+     "effet": "notifier",
+     "destinataire_role": "conformite",
+     "rythme": "temps_reel",
+     "si_echec": "refuser"
+    }
+   ]
+  },
+  {
+   "id": "D-028",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-10-01T00:00:00+02:00",
+   "texte_fr": "Aucun agent ne lit ni ne modifie les comptes, prêts, découverts ou virements d'un client personne politiquement exposée : le dossier relève d'un conseiller humain.",
+   "fondements": [
+    {
+     "texte": "Politique interne de la banque — à valider par le responsable juridique"
+    }
+   ],
+   "si_indetermine": "refuser",
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "banque-synthetique",
+     "outil": "modifier_plafond_decouvert"
+    }
+   },
+   "condition": {
+    "sujet": {
+     "groupe": "personne-politiquement-exposee",
+     "champ": "/compte_id"
+    }
+   },
+   "effets": [
+    {
+     "effet": "refuser"
+    },
+    {
+     "effet": "notifier",
+     "destinataire_role": "conformite",
+     "rythme": "temps_reel",
+     "si_echec": "refuser"
+    }
+   ]
+  },
+  {
+   "id": "D-029",
+   "version": 1,
+   "statut": "brouillon",
+   "date_effet": "2026-10-01T00:00:00+02:00",
+   "texte_fr": "Aucun agent ne lit ni ne modifie les comptes, prêts, découverts ou virements d'un client personne politiquement exposée : le dossier relève d'un conseiller humain.",
+   "fondements": [
+    {
+     "texte": "Politique interne de la banque — à valider par le responsable juridique"
+    }
+   ],
+   "si_indetermine": "refuser",
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "banque-synthetique",
+     "outil": "cloturer_compte"
+    }
+   },
+   "condition": {
+    "sujet": {
+     "groupe": "personne-politiquement-exposee",
+     "champ": "/compte_id"
+    }
+   },
+   "effets": [
+    {
+     "effet": "refuser"
+    },
+    {
+     "effet": "notifier",
+     "destinataire_role": "conformite",
+     "rythme": "temps_reel",
+     "si_echec": "refuser"
     }
    ]
   }

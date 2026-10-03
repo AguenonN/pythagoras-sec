@@ -77,7 +77,12 @@ class TestSecteurs(unittest.TestCase):
 
     def test_demo_installe(self):
         """demo.json v2 = le jeu en brouillon (décision de Manu, 02/10)."""
-        self.assertEqual(lire(os.path.join(RACINE, "demo", "directives", "demo.json")), self.brouillon)
+        demo = lire(os.path.join(RACINE, "demo", "directives", "demo.json"))
+        self.assertEqual(demo["directives"][:21], self.brouillon["directives"])
+        self.assertEqual(lire(os.path.join(RACINE, "demo", "directives", "historique", "demo.v2.json")), self.brouillon)
+        # D-024 à D-029 (A4) : celles de secteurs-ppe.json, en brouillon.
+        ppe = lire(os.path.join(JEUX, "secteurs-ppe.json"))["directives"][21:27]
+        self.assertEqual([dict(d, statut="active") for d in demo["directives"][21:27]], ppe)
 
     def test_origines(self):
         o = lire(os.path.join(RACINE, "demo", "directives", "origines.json"))
@@ -119,7 +124,7 @@ class TestSecteurs(unittest.TestCase):
             self.assertIn(s["demandeur"], annuaire, chemin)
             self.assertTrue(os.path.exists(os.path.join(RACINE, s["jeu"])), chemin)
             self.assertIn(s["attendu"]["statut"], ("termine", "bloque", "en_attente", "erreur"), chemin)
-        self.assertEqual(vus, 26)  # 13 pièges, 13 propres (un par directive)
+        self.assertEqual(vus, 29)  # 13 pièges, 13 propres (un par directive), 3 PPE (A4)
 
     def test_chaque_directive_a_son_piege_enregistre(self):
         """Pour chaque directive D-011 à D-023, un scénario piège enregistré en
@@ -180,3 +185,26 @@ class TestNumerotationScene(unittest.TestCase):
         with open(chemin, "w", encoding="utf-8") as f:
             json.dump(cand, f, ensure_ascii=False)
         self.assertEqual(derouler("weekend", chemin)["directives"][-1]["id"], "D-010")
+
+
+class TestPPE(unittest.TestCase):
+    """A4 : le texte du juriste se rejoue jusqu'aux six directives, une par
+    outil bancaire, refus + notification de la conformité, sujet résolu au
+    référentiel ; installées D-024 à D-029."""
+
+    def test_compilation_a4_rejouee(self):
+        tmp = tempfile.mkdtemp()
+        self.addCleanup(shutil.rmtree, tmp)
+        requete, reponses = service.lire_parcours(os.path.join(COMPILATION, "A4.json"))
+        # Rejoué sur le jeu de la compilation (demo.json v2, archivé) : sur un
+        # jeu qui contient déjà D-024 à D-029, le compilateur fait une
+        # requête de plus à Mistral, qui n'est pas enregistrée.
+        requete = dict(requete, jeu_existant="demo/directives/historique/demo.v2.json")
+        fin = service.parcours(service.Service(mode="rejeu", dossier=tmp), requete, reponses)[-1]
+        self.assertEqual(fin["etat"], "jeu", fin["erreurs"])
+        compilees = lire(service.chemin_absolu(fin["jeu_candidat"]))["directives"][-6:]
+        installees = lire(os.path.join(JEUX, "secteurs-ppe.json"))["directives"][21:27]
+        self.assertEqual([sans_marque(d) for d in compilees], [sans_marque(d) for d in installees])
+        for d in installees:
+            self.assertEqual(d["condition"]["sujet"]["groupe"], "personne-politiquement-exposee")
+            self.assertEqual([e["effet"] for e in d["effets"]], ["refuser", "notifier"])
