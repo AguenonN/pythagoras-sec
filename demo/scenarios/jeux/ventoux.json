@@ -1,0 +1,151 @@
+{
+ "jeu": {
+  "id": "demo",
+  "version": 1,
+  "date_effet": "2026-10-01T00:00:00+02:00",
+  "auteur": "nora.ventoux@exemple.test"
+ },
+ "directives": [
+  {
+   "id": "D-043",
+   "version": 1,
+   "statut": "active",
+   "date_effet": "2026-09-01T00:00:00Z",
+   "texte_fr": "Opérations d'initiés sur titres : aucun agent ne passe d'ordre sur les titres VENTOUX ou BIOLYS avant le 15 octobre 2026, au cours d'une demande où un document du projet ATLAS a été consulté, ou pour le compte d'une personne inscrite sur la liste d'initiés ATLAS. L'ordre est refusé et la conformité est notifiée.",
+   "fondements": [
+    {
+     "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — opérations d'initiés et période d'abstention — à valider par le juriste",
+     "article": "8, 14, 19"
+    }
+   ],
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "bourse",
+     "outil": "passer_ordre"
+    }
+   },
+   "condition": {
+    "et": [
+     {
+      "temps": {
+       "fuseau": "Europe/Paris",
+       "date": {
+        "op": "<",
+        "valeur": "2026-10-15"
+       }
+      }
+     },
+     {
+      "argument": {
+       "champ": "/titre",
+       "op": "dans",
+       "valeur": [
+        "VENTOUX",
+        "BIOLYS"
+       ]
+      }
+     },
+     {
+      "ou": [
+       {
+        "session.a_consulte": {
+         "outil": "data-room/lire_document",
+         "critere": "donnees_recues"
+        }
+       },
+       {
+        "demandeur": {
+         "groupe": "inities-atlas"
+        }
+       }
+      ]
+     }
+    ]
+   },
+   "effets": [
+    {
+     "effet": "refuser"
+    },
+    {
+     "effet": "notifier",
+     "destinataire_role": "conformite",
+     "rythme": "temps_reel",
+     "si_echec": "refuser"
+    }
+   ]
+  },
+  {
+   "id": "D-044",
+   "version": 1,
+   "statut": "active",
+   "date_effet": "2026-09-01T00:00:00Z",
+   "texte_fr": "Communication avant l'annonce : la publication d'un communiqué avant le 15 octobre 2026 attend la validation de la directrice juridique, par une personne distincte de l'auteur de la demande.",
+   "fondements": [
+    {
+     "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — communication de l'information privilégiée au public — à valider par le juriste ; contrôle interne",
+     "article": "17"
+    }
+   ],
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "communication",
+     "outil": "publier_communique"
+    }
+   },
+   "condition": {
+    "temps": {
+     "fuseau": "Europe/Paris",
+     "date": {
+      "op": "<",
+      "valeur": "2026-10-15"
+     }
+    }
+   },
+   "effets": [
+    {
+     "effet": "attendre_validation",
+     "par_role": "direction-juridique",
+     "quatre_yeux": true
+    }
+   ]
+  },
+  {
+   "id": "D-045",
+   "version": 1,
+   "statut": "active",
+   "date_effet": "2026-09-01T00:00:00Z",
+   "texte_fr": "Communication avant l'annonce : la publication d'un communiqué avant le 15 octobre 2026 attend aussi la validation de la conformité, distincte de la directrice juridique.",
+   "fondements": [
+    {
+     "texte": "Règlement (UE) n° 596/2014 relatif aux abus de marché — communication de l'information privilégiée au public — à valider par le juriste ; contrôle interne",
+     "article": "17"
+    }
+   ],
+   "declencheur": {
+    "evenement": "appel_outil",
+    "cible": {
+     "serveur": "communication",
+     "outil": "publier_communique"
+    }
+   },
+   "condition": {
+    "temps": {
+     "fuseau": "Europe/Paris",
+     "date": {
+      "op": "<",
+      "valeur": "2026-10-15"
+     }
+    }
+   },
+   "effets": [
+    {
+     "effet": "attendre_validation",
+     "par_role": "conformite",
+     "quatre_yeux": true
+    }
+   ]
+  }
+ ]
+}
