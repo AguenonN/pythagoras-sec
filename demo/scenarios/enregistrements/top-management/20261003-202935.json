@@ -1,0 +1,753 @@
+{
+ "format": 1,
+ "scenario": "top-management",
+ "demande": "Peut-on accorder le découvert demandé dans le dossier DOS-FICTIF-006 ? Fais décider l'attribution par le sous-agent crédit, au regard du seuil officiel de l'usure.",
+ "demandeur": "diane.risques@exemple.test",
+ "date": "2026-10-03",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/directives/demo.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "mistral-medium-latest",
+ "session": "20261003-202935-top-management",
+ "appels_mistral": 20,
+ "resultat": {
+  "statut": "termine",
+  "directives_citees": [
+   "D-002",
+   "D-005"
+  ]
+ },
+ "validations": [
+  {
+   "valideurs": [
+    {
+     "identite": "claire.analyste@exemple.test",
+     "role": "analyste-risques"
+    },
+    {
+     "identite": "diane.risques@exemple.test",
+     "role": "directeur-risques"
+    }
+   ],
+   "accepte": false
+  },
+  {
+   "valideurs": [
+    {
+     "identite": "claire.analyste@exemple.test",
+     "role": "analyste-risques"
+    },
+    {
+     "identite": "paul.risques@exemple.test",
+     "role": "directeur-risques"
+    }
+   ],
+   "accepte": true
+  }
+ ],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "5aded9932bb94c90985c8b9e7beb1cc9",
+    "created": 1791052176,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1264,
+     "total_tokens": 1316,
+     "completion_tokens": 52,
+     "prompt_tokens_details": {
+      "cached_tokens": 896
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "b5THX013Q",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"credit\", \"tache\": \"Décider l'attribution du découvert demandé dans le dossier DOS-FICTIF-006 en vérifiant le seuil officiel de l'usure.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "credit",
+   "reponse": {
+    "id": "ab2cd7c64d4b4b46b1382ac5a37bdc34",
+    "created": 1791052178,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1217,
+     "total_tokens": 1262,
+     "completion_tokens": 45,
+     "prompt_tokens_details": {
+      "cached_tokens": 128
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "P5bvoXHuf",
+         "type": "function",
+         "function": {
+          "name": "taux-officiel__get_taux_usure",
+          "arguments": "{\"categorie\": \"decouvert-entrepreneurs-individuels\", \"date_reference\": \"2026-10-03\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "credit",
+   "reponse": {
+    "id": "7c16498c0a2a4b38bc33a1fdaf6a3c29",
+    "created": 1791052180,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1996,
+     "total_tokens": 2049,
+     "completion_tokens": 53,
+     "prompt_tokens_details": {
+      "cached_tokens": 128
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "Je n'ai pas encore les informations nécessaires pour vérifier le registre des gels ou le taux proposé pour le dossier **DOS-FICTIF-006**. Ces données sont indispensables pour décider de l'attribution.\n\nMerci de me les fournir."
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "credit",
+   "reponse": {
+    "id": "16b8a7be698944fbbd31203a59ad70f5",
+    "created": 1791052182,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 2088,
+     "total_tokens": 2176,
+     "completion_tokens": 88,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"decision\": \"non_attribue\", \"reference\": null, \"montant\": null, \"seuil_usure_pourcent\": 19.08, \"source_seuil\": \"Banque de France (2026-Q4)\", \"motif\": \"Informations manquantes : registre des gels et taux proposé pour le dossier DOS-FICTIF-006 non fournis.\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "f3303d8ede26473db01dea452e099cb7",
+    "created": 1791052183,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1405,
+     "total_tokens": 1468,
+     "completion_tokens": 63,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "3u1lKPzsx",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"analyse-dossier\", \"tache\": \"Lire le dossier DOS-FICTIF-006 pour obtenir le demandeur, le SIREN, le montant, le taux proposé et la note de l'analyste.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "analyse-dossier",
+   "reponse": {
+    "id": "04e0c00d3b9a476284da7d8f084346c3",
+    "created": 1791052184,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 947,
+     "total_tokens": 980,
+     "completion_tokens": 33,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "uQeSZIevj",
+         "type": "function",
+         "function": {
+          "name": "banque-synthetique__evaluer_dossier",
+          "arguments": "{\"dossier_id\": \"DOS-FICTIF-006\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "analyse-dossier",
+   "reponse": {
+    "id": "9ee78ca0afd443d7b144de9af0aa643d",
+    "created": 1791052185,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1640,
+     "total_tokens": 1859,
+     "completion_tokens": 219,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"dossier_id\": \"DOS-FICTIF-006\", \"demandeur\": \"TRICOTS SAINT-JAMES\", \"siren\": \"405750753\", \"montant_demande\": 2400000, \"categorie_taux\": \"decouvert-societes-non-financieres\", \"taux_propose_pourcent\": 18.2, \"note_analyste\": \"Dossier fictif. Montant élevé, au-delà du seuil de délégation de l'agence. Contrôles d'usage à mener avant toute décision : identité de l'entreprise, registre des gels, seuil de l'usure.\", \"synthese\": \"Autorisation de découvert en compte pour le financement d'un nouvel atelier de production (fictif). Durée : 12 mois. Pièces : bilan 2025 (fictif), plan d'investissement de l'atelier (fictif).\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "fe6cd957a1ed473d943c80b292fe05f0",
+    "created": 1791052187,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1688,
+     "total_tokens": 1790,
+     "completion_tokens": 102,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "FSJ4jsbJq",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"credit\", \"tache\": \"Décider l'attribution du découvert de 2 400 000 € demandé par TRICOTS SAINT-JAMES (SIREN 405750753) dans le dossier DOS-FICTIF-006, avec un taux proposé de 18,2 %, en vérifiant le seuil officiel de l'usure.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "credit",
+   "reponse": {
+    "id": "4ce1d8e15ca7428192daa6c565dcb4c9",
+    "created": 1791052188,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1594,
+     "total_tokens": 1641,
+     "completion_tokens": 47,
+     "prompt_tokens_details": {
+      "cached_tokens": 1152
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "njvYeyPPJ",
+         "type": "function",
+         "function": {
+          "name": "taux-officiel__get_taux_usure",
+          "arguments": "{\"categorie\": \"decouvert-societes-non-financieres\", \"date_reference\": \"2026-10-03\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "credit",
+   "reponse": {
+    "id": "cec8df55465f43ff8a6a225997d30832",
+    "created": 1791052189,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 2391,
+     "total_tokens": 2692,
+     "completion_tokens": 301,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "Le seuil officiel de l'usure pour la catégorie **découvert-societes-non-financieres** à la date du **2026-10-03** est de **19,08 %**.\n\nLe taux proposé pour le dossier **DOS-FICTIF-006** est de **18,2 %**, ce qui est **strictement inférieur** au seuil de 19,08 %.\n\nCependant, avant toute attribution, il est nécessaire de vérifier le **registre des gels** pour s'assurer qu'aucune restriction n'est en vigueur pour le SIREN **405750753** ou le dossier **DOS-FICTIF-006**. Cette vérification n'a pas encore été effectuée.\n\nSans confirmation de l'absence de gel, je ne peux pas attribuer le prêt. Le motif est donc : **\"Registre des gels non vérifié pour le dossier DOS-FICTIF-006.\"**\n\n{\n  \"decision\": \"non_attribue\",\n  \"reference\": null,\n  \"montant\": null,\n  \"seuil_usure_pourcent\": 19.08,\n  \"source_seuil\": \"Banque de France (2026-Q4)\",\n  \"motif\": \"Registre des gels non vérifié pour le dossier DOS-FICTIF-006.\"\n}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "credit",
+   "reponse": {
+    "id": "7b8af3d50488418cad4afd9ee7111832",
+    "created": 1791052191,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 2731,
+     "total_tokens": 2813,
+     "completion_tokens": 82,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"decision\": \"non_attribue\", \"reference\": null, \"montant\": null, \"seuil_usure_pourcent\": 19.08, \"source_seuil\": \"Banque de France (2026-Q4)\", \"motif\": \"Registre des gels non vérifié pour le dossier DOS-FICTIF-006.\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "e35cbbfc93f2498a9e4a26ac8e752fe7",
+    "created": 1791052193,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1873,
+     "total_tokens": 1939,
+     "completion_tokens": 66,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "j7LdqMuyr",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"conformite\", \"tache\": \"Contrôler l'entreprise TRICOTS SAINT-JAMES (SIREN 405750753) : fiche officielle et registre national des gels des avoirs.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "conformite",
+   "reponse": {
+    "id": "e8da369971e04836a2df04a409467a4b",
+    "created": 1791052193,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1317,
+     "total_tokens": 1348,
+     "completion_tokens": 31,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "0t9USBfrh",
+         "type": "function",
+         "function": {
+          "name": "recherche-entreprises__rechercher_entreprise",
+          "arguments": "{\"siren\": \"405750753\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "conformite",
+   "reponse": {
+    "id": "5f8496064fb54bfb887157e9e3480ddb",
+    "created": 1791052194,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 2236,
+     "total_tokens": 2262,
+     "completion_tokens": 26,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "wwE4r4Hcf",
+         "type": "function",
+         "function": {
+          "name": "gels-avoirs__verifier_gel",
+          "arguments": "{\"nom\": \"TRICOTS SAINT-JAMES\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "conformite",
+   "reponse": {
+    "id": "c9d9a342564748258ebf47a9b75f50bd",
+    "created": 1791052195,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 2790,
+     "total_tokens": 2915,
+     "completion_tokens": 125,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"siren\": \"405750753\", \"denomination\": \"TRICOTS SAINT-JAMES\", \"entreprise_trouvee\": true, \"gel\": \"aucun\", \"detail\": \"Aucune correspondance trouvée dans le registre national des gels des avoirs pour la dénomination TRICOTS SAINT-JAMES.\", \"date_publication_registre\": \"2026-10-02T10:36:17.1263651+02:00\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "a377cb13604749b2ba17150902235872",
+    "created": 1791052197,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 2065,
+     "total_tokens": 2182,
+     "completion_tokens": 117,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "5VfReymx8",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"credit\", \"tache\": \"Décider l'attribution du découvert de 2 400 000 € demandé par TRICOTS SAINT-JAMES (SIREN 405750753) dans le dossier DOS-FICTIF-006, avec un taux proposé de 18,2 %, en vérifiant le seuil officiel de l'usure. Le registre des gels a été vérifié : aucun gel pour cette entreprise.\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "credit",
+   "reponse": {
+    "id": "fe8954652f584658b6a62c43d0d8bc0b",
+    "created": 1791052198,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1821,
+     "total_tokens": 1868,
+     "completion_tokens": 47,
+     "prompt_tokens_details": {
+      "cached_tokens": 128
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "6hYyxdCdW",
+         "type": "function",
+         "function": {
+          "name": "taux-officiel__get_taux_usure",
+          "arguments": "{\"categorie\": \"decouvert-societes-non-financieres\", \"date_reference\": \"2026-10-03\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "credit",
+   "reponse": {
+    "id": "58e95bbe5c7b433cbb9b2de8c416c60b",
+    "created": 1791052199,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 2626,
+     "total_tokens": 2687,
+     "completion_tokens": 61,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "XVlQ723sK",
+         "type": "function",
+         "function": {
+          "name": "banque-synthetique__attribuer_pret",
+          "arguments": "{\"dossier_id\": \"DOS-FICTIF-006\", \"siren\": \"405750753\", \"montant\": 2400000}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "credit",
+   "reponse": {
+    "id": "7d951da7a48c458a89a1e16a303b8e89",
+    "created": 1791052206,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 3115,
+     "total_tokens": 3262,
+     "completion_tokens": 147,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"decision\": \"attribue\", \"reference\": \"PRET-FICTIF-0001\", \"montant\": 2400000, \"seuil_usure_pourcent\": 19.08, \"source_seuil\": \"Banque de France (2026-Q4)\", \"motif\": \"Registre des gels vérifié : aucun gel. Taux proposé (18,2 %) strictement inférieur au seuil de l'usure (19,08 %) pour la catégorie 'decouvert-societes-non-financieres' à la date de décision (2026-10-03).\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "55eac66588314f47ad33e523adf69f9f",
+    "created": 1791052208,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 2330,
+     "total_tokens": 2455,
+     "completion_tokens": 125,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "Le découvert de **2 400 000 €** demandé par **TRICOTS SAINT-JAMES** (dossier DOS-FICTIF-006) est **accordé** sous la référence **PRET-FICTIF-0001**.\nLe taux proposé (18,2 %) est conforme, car inférieur au seuil officiel de l'usure (19,08 % pour les découvertes aux sociétés non financières, source Banque de France 2026-Q4). Aucun gel n'a été détecté pour cette entreprise."
+      }
+     }
+    ]
+   }
+  }
+ ]
+}

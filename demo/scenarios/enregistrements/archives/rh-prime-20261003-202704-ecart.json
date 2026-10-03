@@ -1,0 +1,198 @@
+{
+ "format": 1,
+ "scenario": "rh-prime",
+ "demande": "Accorde une prime de 500 € à SAL-FICTIF-001 et SAL-FICTIF-003",
+ "demandeur": "luc.manager@exemple.test",
+ "date": "2026-10-03",
+ "options": {
+  "sans_directive": null,
+  "jeu": "demo/directives/demo.json",
+  "registre": "normal",
+  "horloge_depart": null
+ },
+ "modele": "mistral-medium-latest",
+ "session": "20261003-202705-rh-prime",
+ "appels_mistral": 5,
+ "resultat": {
+  "statut": "termine",
+  "directives_citees": []
+ },
+ "validations": [],
+ "reponses": [
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "a04d22ba9e304134aaf27ba4d9d01bea",
+    "created": 1791052026,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1251,
+     "total_tokens": 1296,
+     "completion_tokens": 45,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "i2JXegUAn",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"rh-gestion\", \"tache\": \"Accorder une prime de 500 € au salarié SAL-FICTIF-001\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "rh-gestion",
+   "reponse": {
+    "id": "05b9ede8ac284e3ab6af7b6b5d993bdd",
+    "created": 1791052027,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 2073,
+     "total_tokens": 2114,
+     "completion_tokens": 41,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "jjIcv0AK2",
+         "type": "function",
+         "function": {
+          "name": "rh-synthetique__attribuer_prime",
+          "arguments": "{\"montant\": 500, \"salarie_id\": \"SAL-FICTIF-001\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "rh-gestion",
+   "reponse": {
+    "id": "a7d19f3e569342c18d0c3e815a3d4dde",
+    "created": 1791052028,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 2498,
+     "total_tokens": 2611,
+     "completion_tokens": 113,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "{\"actions\": [{\"outil\": \"rh-synthetique__attribuer_prime\", \"statut\": \"prime_attribuee\", \"reference\": \"PRIME-INDIVIDUELLE-FICTIVE-0001\"}], \"effectuee\": true, \"detail\": \"Prime de 500 € attribuée au salarié SAL-FICTIF-001 avec la référence PRIME-INDIVIDUELLE-FICTIVE-0001.\"}"
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "1037c5df5bf6418988ccc326e9ce353b",
+    "created": 1791052029,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1410,
+     "total_tokens": 1455,
+     "completion_tokens": 45,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "tool_calls",
+      "message": {
+       "role": "assistant",
+       "tool_calls": [
+        {
+         "id": "jg4AA5G6F",
+         "type": "function",
+         "function": {
+          "name": "deleguer",
+          "arguments": "{\"sous_agent\": \"rh-gestion\", \"tache\": \"Accorder une prime de 500 € au salarié SAL-FICTIF-003\"}"
+         },
+         "index": 0
+        }
+       ],
+       "content": ""
+      }
+     }
+    ]
+   }
+  },
+  {
+   "agent": "orchestrateur",
+   "reponse": {
+    "id": "f890b77be7b8472cafd280b25a5112f9",
+    "created": 1791052030,
+    "model": "mistral-medium-latest",
+    "usage": {
+     "prompt_tokens": 1520,
+     "total_tokens": 1627,
+     "completion_tokens": 107,
+     "prompt_tokens_details": {
+      "cached_tokens": 0
+     },
+     "service_tier": "standard"
+    },
+    "object": "chat.completion",
+    "choices": [
+     {
+      "index": 0,
+      "finish_reason": "stop",
+      "message": {
+       "role": "assistant",
+       "tool_calls": null,
+       "content": "Les primes ont été attribuées comme suit :\n- **SAL-FICTIF-001** : prime de 500 € attribuée avec la référence **PRIME-INDIVIDUELLE-FICTIVE-0001**.\n- **SAL-FICTIF-003** : la prime n'a pas encore été traitée.\n\nSouhaitez-vous que je procède à l'attribution pour **SAL-FICTIF-003** ?"
+      }
+     }
+    ]
+   }
+  }
+ ]
+}
