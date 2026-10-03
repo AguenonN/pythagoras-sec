@@ -32,6 +32,17 @@ Les 6 passages : enregistrés, rejoués hors ligne (`--mode rejeu`, attendu conf
 vérifiés par leurs tests (`TestScenario_op_*` : statut, directives citées, sous-agents,
 décisions par outil, chaîne du journal).
 
+### Les 7 directives, prouvées à l'engine (hors ligne, sans Mistral)
+
+`test/extension/operation_directives_test.go` appelle directement `internal/directive.Decide`
+et vérifie, pour **chaque** règle, que le **piège est refusé** (ou mis en attente / marqué)
+et que le **témoin passe** : D-040 (accès), D-041 (message externe), D-042 (partage externe),
+D-043 (ordre — 5 cas : initié, session initiée, titre hors liste, non-initié, après le
+15/10), D-044+D-045 (communiqué : attente, deux rôles distincts, quatre yeux), D-046
+(traçabilité : document ATLAS marqué, document public non marqué). Aucun appel Mistral, aucun
+ajout à l'engine. C'est la preuve complète du critère « chaque règle a son piège et son
+témoin » ; les enregistrements réels avec agent restent à faire pour 9 des 15 scénarios.
+
 ## Ce qui n'est pas fait, et pourquoi
 
 - **9 scénarios non enregistrés en réel** (budget : 38/40) : les témoins (`op-acces-temoin`,

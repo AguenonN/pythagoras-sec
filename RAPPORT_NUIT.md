@@ -51,6 +51,10 @@ Branche : `feat/operation` (worktree). Engine **non modifié**. Tout est **ficti
   | Mauvais collaborateur | `op-scene-collab-sans` : lecture **libre** | `op-acces-piege` : **refus D-040** |
 - **Consigne de l'orchestrateur élargie** au domaine « opération » (voir §3) : les demandes
   data room / bourse / message / communiqué sont désormais routées vers les sous-agents.
+- **Les 7 directives prouvées à l'engine, hors ligne, sans Mistral**
+  (`test/extension/operation_directives_test.go`) : pour chaque règle, le piège est refusé
+  (ou mis en attente / marqué) et le témoin passe. Couvre le critère « piège + témoin » pour
+  toutes les règles, même celles dont l'enregistrement réel avec agent n'a pas été fait.
 
 ## 2. Ce qui n'est pas fait, et pourquoi
 
