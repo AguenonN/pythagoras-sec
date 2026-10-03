@@ -1,5 +1,5 @@
-Jeu variantes-v2, version 2, en vigueur à partir du 04/10/2026 à 08:00 UTC, auteur juriste@cabinet.fr.
-Empreinte : sha256:ee1a90774370aca9147f332c62a09e292d4f5fa23b47df439ae0e24d8779629f.
+Jeu variantes-v2, version 2, en vigueur à partir du 04/10/2026 à 08:00 UTC, auteur juriste@exemple.test.
+Empreinte : sha256:f010425f7301ae2791a824546e96a3764f02f2e4b346daa5abbaea8bd68617c4.
 6 directives, évaluées dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
 Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.
 
@@ -23,7 +23,7 @@ Quand : tout appel à l'outil attribuer_pret sur le serveur banque-synthetique.
 Si toutes les conditions suivantes sont vraies :
   - l'identité de l'appelant, prouvée par le transport, est spiffe://lab/agents/credit
   - le sous-agent que l'agent déclare (déclaration non prouvée) est « analyste »
-  - le demandeur (la personne pour qui l'agent travaille, selon l'annuaire) est l'une des personnes « alice@cabinet.fr », « bob@cabinet.fr »
+  - le demandeur (la personne pour qui l'agent travaille, selon l'annuaire) est l'une des personnes « alice@exemple.test », « bob@exemple.test »
   - le demandeur (la personne pour qui l'agent travaille, selon l'annuaire) n'est pas membre du groupe « stagiaires »
   - l'attestation du serveur cible au registre (identité, schémas épinglés) a échoué
   - l'attestation du serveur cible au registre (identité, schémas épinglés) a échoué, et le mode d'attestation de ce serveur au registre est binaire

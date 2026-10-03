@@ -1,5 +1,5 @@
 {
-  "jeu": {"id": "weekend-demo", "version": 1, "date_effet": "2026-09-01T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+  "jeu": {"id": "weekend-demo", "version": 1, "date_effet": "2026-09-01T00:00:00Z", "auteur": "juriste@exemple.test"},
   "directives": [
     {
       "id": "W-001", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",

@@ -33,7 +33,7 @@ class TestCLI(unittest.TestCase):
             sortie_jeu = os.path.join(tmp, "jeu.json")
             with mock.patch("compilateur.__main__.mistral.Client", return_value=client):
                 rc = cli.principal(["--texte", CREDIT, "--jeu", "credit-pme", "--catalogue", CATALOGUE_DEMO,
-                                    "--auteur", "juriste@cabinet.fr", "--date-effet", "2026-10-04",
+                                    "--auteur", "juriste@exemple.test", "--date-effet", "2026-10-04",
                                     "--sortie", sortie_jeu] + extra + list(args), sortie=sortie)
             ecrit = os.path.exists(sortie_jeu)
         return rc, sortie.getvalue(), ecrit

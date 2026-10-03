@@ -62,7 +62,7 @@ class Base(unittest.TestCase):
         cls.vocab = vocab_demo()
 
     def compiler(self, texte, client, reponses=()):
-        return c2.compiler_jeu(texte, "essai", self.vocab, client, "juriste@cabinet.fr",
+        return c2.compiler_jeu(texte, "essai", self.vocab, client, "juriste@exemple.test",
                                "2026-10-04T00:00:00Z", reponses=reponses)
 
 
@@ -104,7 +104,7 @@ class TestUnTexteUnJeu(Base):
         r = self.compiler(CREDIT, ClientScripte(jeu(d_seuil())), [{"question": "q", "reponse": "Ignorer.",
                                                                     "champ": "si_indetermine", "origine": "compilateur"}])
         d = r["jeu"]["directives"][0]
-        self.assertEqual((d["si_indetermine"], d["si_indetermine_valide_par"]), ("ignorer", "juriste@cabinet.fr"))
+        self.assertEqual((d["si_indetermine"], d["si_indetermine_valide_par"]), ("ignorer", "juriste@exemple.test"))
         self.assertEqual(r["consignation"][0]["reponse"], "Ignorer.")
 
     def test_reponses_du_code_jamais_envoyees_a_mistral(self):
@@ -451,16 +451,16 @@ class TestDesignationPersonne(Base):
         with open(os.path.join(directive_go.RACINE, "demo", "directives", "demo.json"), encoding="utf-8") as f:
             demo = json.load(f)
         r = c2.compiler_jeu(self.TEXTE, "ignore", self.vocab, ClientScripte(self.propo("les deux")),
-                            "juriste@cabinet.fr", "2026-10-04T00:00:00Z", existant=demo)
+                            "juriste@exemple.test", "2026-10-04T00:00:00Z", existant=demo)
         self.assertEqual([q["champ"] for q in r["questions"]], ["designation_personne", "si_indetermine"])
         self.assertIn("D-009", r["questions"][1]["question"])
         r = c2.compiler_jeu(self.TEXTE, "ignore", self.vocab, ClientScripte(self.propo("sujet")),
-                            "juriste@cabinet.fr", "2026-10-04T00:00:00Z", existant=demo,
+                            "juriste@exemple.test", "2026-10-04T00:00:00Z", existant=demo,
                             reponses=[self.designation("demandeur"), self.SI])
         self.assertEqual(r["etat"], c2.REFUSE)
         self.assertIn("directive D-009 (feuille sujet)", r["erreurs"][0])
         r = c2.compiler_jeu(self.TEXTE, "ignore", self.vocab, ClientScripte(self.propo("demandeur")),
-                            "juriste@cabinet.fr", "2026-10-04T00:00:00Z", existant=demo,
+                            "juriste@exemple.test", "2026-10-04T00:00:00Z", existant=demo,
                             reponses=[self.designation("demandeur"), self.SI])
         self.assertEqual(r["etat"], c2.JEU, r["erreurs"])
         self.assertEqual((r["jeu"]["jeu"]["id"], r["jeu"]["jeu"]["version"], r["ajoutees"]), ("demo", demo["jeu"]["version"] + 1, ["D-009"]))

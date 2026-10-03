@@ -69,7 +69,7 @@ func TestMain(m *testing.M) {
 }
 
 const jeuProvenance = `{
-  "jeu": {"id": "credit-pme-gate", "version": 1, "date_effet": "2026-01-01T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+  "jeu": {"id": "credit-pme-gate", "version": 1, "date_effet": "2026-01-01T00:00:00Z", "auteur": "juriste@exemple.test"},
   "directives": [
     {"id": "D-001", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Aucun prêt ne doit être attribué de manière autonome à partir des informations du serveur de taux officiel.",
@@ -87,7 +87,7 @@ const jeuProvenance = `{
 
 // Le même jeu sans la directive de provenance, pour la vue avant / après.
 const jeuSansProvenance = `{
-  "jeu": {"id": "credit-pme-gate", "version": 2, "date_effet": "2026-01-01T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+  "jeu": {"id": "credit-pme-gate", "version": 2, "date_effet": "2026-01-01T00:00:00Z", "auteur": "juriste@exemple.test"},
   "directives": [
     {"id": "D-003", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Toute source de taux non attestée est rejetée.",

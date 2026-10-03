@@ -1,4 +1,4 @@
-Jeu demandeur, version 1, en vigueur à partir du 05/10/2026 à 00:00 UTC, auteur juriste@cabinet.fr.
+Jeu demandeur, version 1, en vigueur à partir du 05/10/2026 à 00:00 UTC, auteur juriste@exemple.test.
 Empreinte : sha256:b66ec11ca0d2a763c5ae1bd3477f718fef2640d41d5137722bc76d18951ea4b2.
 1 directive, évaluée dans l'ordre ci-dessous ; si plusieurs s'appliquent au même appel, l'effet le plus contraignant l'emporte (refus, puis validation humaine, puis caviardage).
 Les notifications et les marques des directives appliquées se cumulent, quel que soit l'effet retenu.

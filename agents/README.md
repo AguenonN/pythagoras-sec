@@ -26,7 +26,7 @@ python3 -m venv .venv
 .venv/bin/python -m compilateur.scenarios_v2 rh
 .venv/bin/python -m compilateur --texte "…" --jeu essai \
   --catalogue compilateur/exemples/catalogue-demo.json \
-  --auteur juriste@cabinet.fr --date-effet 2026-10-04 [--reponses r.json] [--mode reel]
+  --auteur juriste@exemple.test --date-effet 2026-10-04 [--reponses r.json] [--mode reel]
 ```
 
 `compilateur/exemples/catalogue-demo.json` et `vocabulaire-demo.json` sont
@@ -45,7 +45,7 @@ seconde et `MISTRAL_MAX_APPELS` (40) appels, compteur dans `.etat/`.
 ```sh
 .venv/bin/python -m compilateur.demo --jeu credit-pme \
   --catalogue compilateur/exemples/catalogue-demo.json \
-  --auteur juriste@cabinet.fr --sortie brouillon.json [--jeu-existant ../demo/directives/demo.json]
+  --auteur juriste@exemple.test --sortie brouillon.json [--jeu-existant ../demo/directives/demo.json]
 ```
 
 Demande le texte et la date d'effet, pose les questions, affiche la

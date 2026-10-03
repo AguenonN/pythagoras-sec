@@ -4,7 +4,7 @@ saisies → relecture côte à côte → fichier de jeu en brouillon.
     cd agents
     .venv/bin/python -m compilateur.demo --jeu credit-pme \\
         --catalogue compilateur/exemples/catalogue-demo.json \\
-        --auteur juriste@cabinet.fr --date-effet 2026-10-04 --sortie brouillon.json
+        --auteur juriste@exemple.test --date-effet 2026-10-04 --sortie brouillon.json
 
 Le texte est compilé en un jeu de directives (schéma v2 : plusieurs
 directives possibles, arbre de condition, liste d'effets) : refus motivés

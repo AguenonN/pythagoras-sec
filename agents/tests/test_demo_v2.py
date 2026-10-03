@@ -20,7 +20,7 @@ def lancer(saisies, *args, schema=(), catalogue=CATALOGUE_DEMO):
     with tempfile.TemporaryDirectory() as tmp:
         sortie = os.path.join(tmp, "jeu.json")
         rc = demo.principal(list(schema) + ["--jeu", "weekend", "--catalogue", catalogue,
-                             "--auteur", "juriste@cabinet.fr", "--sortie", sortie] + list(args),
+                             "--auteur", "juriste@exemple.test", "--sortie", sortie] + list(args),
                             lire=lambda _: saisies.pop(0), ecrire=ecrit.append)
         jeu = consigne = None
         if os.path.exists(sortie):

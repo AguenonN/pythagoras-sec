@@ -1,5 +1,5 @@
 {
-  "jeu": {"id": "credit-demo", "version": 2, "date_effet": "2026-09-15T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+  "jeu": {"id": "credit-demo", "version": 2, "date_effet": "2026-09-15T00:00:00Z", "auteur": "juriste@exemple.test"},
   "directives": [
     {
       "id": "D-001", "version": 1, "statut": "active", "date_effet": "2026-09-01T00:00:00Z",

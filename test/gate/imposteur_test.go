@@ -38,7 +38,7 @@ import (
 // Le jeu du point de contrôle, plus une directive d'attestation sur la
 // banque.
 const jeuImposteur = `{
-  "jeu": {"id": "credit-pme-gate", "version": 3, "date_effet": "2026-01-01T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+  "jeu": {"id": "credit-pme-gate", "version": 3, "date_effet": "2026-01-01T00:00:00Z", "auteur": "juriste@exemple.test"},
   "directives": [
     {"id": "D-001", "version": 1, "statut": "active", "date_effet": "2026-01-01T00:00:00Z",
      "texte_fr": "Aucun prêt ne doit être attribué de manière autonome à partir des informations du serveur de taux officiel.",

@@ -3,7 +3,7 @@ import unittest
 
 from compilateur import directive_go
 
-JEU = {"jeu": {"id": "credit-pme", "version": 1, "date_effet": "2026-10-04T00:00:00Z", "auteur": "juriste@cabinet.fr"},
+JEU = {"jeu": {"id": "credit-pme", "version": 1, "date_effet": "2026-10-04T00:00:00Z", "auteur": "juriste@exemple.test"},
        "directives": [{
            "id": "D-001", "version": 1, "statut": "brouillon", "date_effet": "2026-10-04T00:00:00Z",
            "texte_fr": "Un prêt attribué à partir du taux officiel attend une validation humaine (RGPD, art. 22).",

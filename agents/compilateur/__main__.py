@@ -2,7 +2,7 @@
 
     python -m compilateur --texte "..." --jeu credit-pme \
         --catalogue compilateur/exemples/catalogue-demo.json \
-        --auteur juriste@cabinet.fr --date-effet 2026-10-04 \
+        --auteur juriste@exemple.test --date-effet 2026-10-04 \
         [--vocabulaire V] [--fondement F] [--jeu-existant demo/directives/demo.json] \
         [--reponses reponses.json] [--mode reel] [--modele M] [--sortie jeu.json] [--json]
 
