@@ -360,7 +360,9 @@ Object.values(DATA).forEach(n => {
 
   g.append(box, bar, t1, t2, t3);
   gNode.append(g); nodeEls[n.id] = g;
-  g.addEventListener('click', () => select(n.id));
+  // Un glissé parti d'une brique déclenche quand même un `click` au relâché :
+  // le seuil distingue les deux.
+  g.addEventListener('click', () => { if (moved < SEUIL) select(n.id); });
   g.addEventListener('keydown', ev => {
     if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); select(n.id); }
   });
@@ -376,18 +378,22 @@ function fit(){
   vx = (r.width - W*k) / 2; vy = (r.height - H*k) / 2;
   apply();
 }
+// Pas de setPointerCapture ici : la capture retarge le `click` qui suit vers
+// le canvas, et les briques cessent d'être cliquables. On écoute donc le
+// déplacement sur window, ce qui suit aussi le curseur hors du cadre.
+const SEUIL = 6;                       // en deçà, c'est un clic, pas un glissé
 let down = false, px = 0, py = 0, moved = 0;
 cv.addEventListener('pointerdown', e => {
   down = true; moved = 0; px = e.clientX; py = e.clientY;
-  cv.classList.add('drag'); cv.setPointerCapture(e.pointerId);
+  cv.classList.add('drag');
 });
-cv.addEventListener('pointermove', e => {
+addEventListener('pointermove', e => {
   if (!down) return;
   const dx = e.clientX - px, dy = e.clientY - py;
   moved += Math.abs(dx) + Math.abs(dy);
   vx += dx; vy += dy; px = e.clientX; py = e.clientY; apply();
 });
-['pointerup','pointercancel'].forEach(t => cv.addEventListener(t, () => {
+['pointerup','pointercancel'].forEach(t => addEventListener(t, () => {
   down = false; cv.classList.remove('drag');
 }));
 cv.addEventListener('wheel', e => {
@@ -473,7 +479,7 @@ function clear(){
   edges.forEach(e => e.el.classList.remove('in','out','dim'));
 }
 document.getElementById('pclose').onclick = clear;
-cv.addEventListener('click', e => { if (e.target === cv && moved < 6) clear(); });
+cv.addEventListener('click', e => { if (e.target === cv && moved < SEUIL) clear(); });
 document.addEventListener('keydown', e => { if (e.key === 'Escape') clear(); });
 
 /* ---------- filtres ---------- */
