@@ -41,7 +41,7 @@ func validerDirectiveV2(v *validation, p string, d *Directive) {
 		}
 	case IndetermineIgnorer:
 		if strings.TrimSpace(d.SiIndetermineValidePar) == "" {
-			v.f("%s: si_indetermine: ignorer exige si_indetermine_valide_par (validation nommée du juriste)", p)
+			v.f("%s: si_indetermine: ignorer exige si_indetermine_valide_par (validation nommée de l'auteur)", p)
 		}
 	default:
 		v.f("%s: si_indetermine %q inconnu", p, d.SiIndetermine)
@@ -108,7 +108,7 @@ func validerEvenement(v *validation, p string, d *Directive) {
 	}
 }
 
-// validerEnveloppe contrôle l'enveloppe juridique de la directive.
+// validerEnveloppe contrôle l'enveloppe de provenance de la directive.
 func validerEnveloppe(v *validation, p string, d *Directive) {
 	if d.ID == "" {
 		v.f("%s: id manquant", p)

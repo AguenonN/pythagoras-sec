@@ -1,7 +1,7 @@
 // Commande mcp-gate est l'agrégateur : un serveur MCP en stdio qui expose à
 // l'agent les outils de tous les serveurs du registre sous le nom
 // serveur__outil, et fait passer chaque appel par l'engine (directives du
-// juriste, attestation des serveurs, journal chaîné, coffre des arguments)
+// de la politique, attestation des serveurs, journal chaîné, coffre des arguments)
 // avant de le router.
 //
 //	mcp-gate -registre registre.json -directives jeu.json \
@@ -90,7 +90,7 @@ func main() {
 
 func lancer() error {
 	cheminRegistre := flag.String("registre", "", "registre des serveurs (JSON)")
-	cheminJeu := flag.String("directives", "", "jeu de directives validé par le juriste (JSON)")
+	cheminJeu := flag.String("directives", "", "jeu de directives validé (JSON)")
 	cheminJournal := flag.String("journal", "", "journal chaîné (JSONL, prolongé s'il existe)")
 	cheminCoffre := flag.String("coffre", "", "coffre des arguments (JSONL, 0600)")
 	delai := flag.Duration("delai-backend", session.DelaiBackendDefaut, "durée maximale d'un appel à un serveur")

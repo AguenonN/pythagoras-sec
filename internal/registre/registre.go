@@ -3,10 +3,10 @@
 // cible, l'attestation attendue et le catalogue épinglé des outils qu'il
 // peut exposer, chacun classé en lecture ou en action.
 //
-// Le registre est décidé par l'opérateur, pas par le juriste : ce qu'il
-// impose (identité du serveur, schémas épinglés, outils autorisés,
-// sampling et elicitation bloqués) est toujours actif et ne dépend
-// d'aucune directive. Il est chargé et validé au démarrage ; toute erreur
+// Le registre est décidé par l'opérateur, pas par l'auteur de la politique :
+// ce qu'il impose (identité du serveur, schémas épinglés, outils autorisés,
+// sampling et elicitation bloqués) est toujours actif et ne dépend d'aucune
+// directive. Il est chargé et validé au démarrage ; toute erreur
 // arrête le chargement, rendue en bloc, une ligne par défaut.
 //
 // Comme directive.Charger, ce paquet ne lit aucun fichier : l'appelant
@@ -209,7 +209,7 @@ func (r *Registre) Version() string {
 	return fmt.Sprintf("%s v%d %s", r.Meta.ID, r.Meta.Version, r.Meta.Empreinte)
 }
 
-// Entrees rend la vue que directive.ControlesEnVigueur affiche au juriste.
+// Entrees rend la vue que directive.ControlesEnVigueur affiche à l'auteur.
 // Sampling et elicitation sont toujours bloqués : l'engine ne câble aucun
 // gestionnaire.
 func (r *Registre) Entrees() []directive.EntreeRegistre {

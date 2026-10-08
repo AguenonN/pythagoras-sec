@@ -1,7 +1,8 @@
-// Package directive est le contrat entre le produit et l'engine : le juriste
-// écrit une directive en français avec son fondement, le compilateur la met
-// sous cette forme, le juriste la valide, et l'engine l'applique à chaque
-// appel d'outil sans qu'aucun modèle ne soit sur le chemin.
+// Package directive est le contrat entre le produit et l'engine : l'auteur
+// de la politique écrit une directive en français avec son fondement, le
+// compilateur la met sous cette forme, l'auteur la valide, et l'engine
+// l'applique à chaque appel d'outil sans qu'aucun modèle ne soit sur le
+// chemin.
 //
 // Le paquet tient trois choses et rien d'autre :
 //
@@ -100,7 +101,7 @@ const (
 
 // SiIndetermine tranche une condition qui ne peut pas être évaluée (champ
 // absent, type inattendu), à la racine seulement. refuser est le défaut ;
-// ignorer n'est accepté par le chargeur que validé nommément par le juriste.
+// ignorer n'est accepté par le chargeur que validé nommément par l'auteur.
 type SiIndetermine string
 
 const (
@@ -108,8 +109,9 @@ const (
 	IndetermineIgnorer SiIndetermine = "ignorer"
 )
 
-// Fondement est une base juridique de la directive ; le premier de
-// Fondements est cité par le motif et repris dans chaque entrée de journal.
+// Fondement est ce qui fonde la directive — norme, politique interne,
+// décision tracée ; le premier de Fondements est cité par le motif et repris
+// dans chaque entrée de journal.
 type Fondement struct {
 	Texte   string `json:"texte"`
 	Article string `json:"article,omitempty"`
@@ -131,9 +133,10 @@ type Perimetre struct {
 	Appelants []string `json:"appelants"`
 }
 
-// Directive est une règle validée par le juriste : une enveloppe juridique,
-// un déclencheur, une condition en arbre et une liste d'effets
-// (docs/schema-directive-v2.md). Sa forme JSON est directive_json.go.
+// Directive est une règle validée par l'auteur de la politique : une
+// enveloppe de provenance, un déclencheur, une condition en arbre et une
+// liste d'effets (docs/schema-directive-v2.md). Sa forme JSON est
+// directive_json.go.
 type Directive struct {
 	ID        string
 	Version   int
@@ -180,7 +183,7 @@ type Jeu struct {
 }
 
 // Alerte signale un fait qui ne change pas la décision mais doit remonter au
-// juriste, comme une échéance de relecture passée.
+// l'auteur, comme une échéance de relecture passée.
 type Alerte struct {
 	DirectiveID string
 	Message     string

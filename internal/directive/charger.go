@@ -12,7 +12,7 @@ import (
 
 // Charger lit un jeu depuis ses octets et le valide strictement. Toute
 // erreur de validation est rendue en bloc, une ligne par défaut, pour que le
-// juriste corrige en une passe plutôt qu'une erreur à la fois.
+// l'auteur corrige en une passe plutôt qu'une erreur à la fois.
 //
 // Le paquet ne lit aucun fichier lui-même : la lecture appartient à
 // l'appelant, ce qui garde ce paquet sans os, io ni réseau (voir

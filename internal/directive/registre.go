@@ -6,7 +6,7 @@ import (
 )
 
 // EntreeRegistre est la vue qu'un registre de serveurs donne de lui-même à ce
-// paquet : assez pour afficher au juriste, en lecture seule, les contrôles
+// paquet : assez pour afficher à l'auteur, en lecture seule, les contrôles
 // que l'engine applique sans qu'aucune directive ne les demande. Le paquet
 // registre la remplit ; celui-ci ne fait que la lire.
 type EntreeRegistre struct {
@@ -30,7 +30,7 @@ type ControleRegistre struct {
 }
 
 // ControlesEnVigueur rend, triés par serveur puis contrôle, les contrôles
-// que le registre impose. La relecture juriste les affiche sous les
+// que le registre impose. La relecture les affiche sous les
 // directives, en lecture seule.
 func ControlesEnVigueur(entrees []EntreeRegistre) []ControleRegistre {
 	var out []ControleRegistre

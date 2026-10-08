@@ -1,5 +1,5 @@
 // Package relecture rend un jeu de directives en français, par gabarit
-// déterministe, sans modèle de langue. C'est ce que le juriste relit avant de
+// déterministe, sans modèle de langue. C'est ce que l'auteur relit avant de
 // valider : la règle telle que l'engine l'appliquera, et non le texte qu'il a
 // écrit. Même jeu, même texte, octet pour octet : aucune horloge, aucun
 // fuseau local, aucun parcours de map.
@@ -45,7 +45,7 @@ func Directive(d directive.Directive) string {
 func statut(s directive.Statut) string {
 	switch s {
 	case directive.Brouillon:
-		return "brouillon (non appliquée tant que le juriste ne l'a pas passée en observation ou active)"
+		return "brouillon (non appliquée tant qu'elle n'est pas passée en observation ou active)"
 	case directive.Observation:
 		return "en observation (journalisée, non appliquée)"
 	case directive.Active:
@@ -127,7 +127,7 @@ func operation(c directive.Condition) string {
 	return "vérifie l'opérateur inconnu " + strconv.Quote(string(c.Op)) + " " + valeur(c.Valeur)
 }
 
-// valeur écrit un nombre tel que le juriste l'a validé (json.Number garde le
+// valeur écrit un nombre tel qu'il a été validé (json.Number garde le
 // littéral), une chaîne entre guillemets français, une liste élément par
 // élément.
 func valeur(v any) string {

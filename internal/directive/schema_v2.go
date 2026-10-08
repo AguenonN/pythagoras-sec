@@ -5,7 +5,7 @@ import (
 	"encoding/hex"
 )
 
-// Schéma v2 : une directive porte l'enveloppe juridique (schema.go), un
+// Schéma v2 : une directive porte l'enveloppe de provenance (schema.go), un
 // déclencheur, une condition en arbre et une liste d'effets. Le contrat
 // complet est docs/schema-directive-v2.md. C'est la seule forme admise :
 // un document au format v1 est refusé au chargement (ErrFormatV1).

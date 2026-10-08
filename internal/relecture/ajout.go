@@ -9,7 +9,7 @@ import (
 )
 
 // Ajout rend la relecture des seules directives ids d'un jeu chargé : ce
-// que le juriste ajoute à un jeu existant (version n+1 du même jeu). Les
+// que l'auteur ajoute à un jeu existant (version n+1 du même jeu). Les
 // directives existantes ne sont pas relues ; l'en-tête dit où les ajoutées
 // prennent place. Un identifiant absent du jeu est une erreur.
 func Ajout(j *directive.Jeu, ids []string) (string, error) {
