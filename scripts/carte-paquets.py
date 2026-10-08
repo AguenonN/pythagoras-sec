@@ -52,33 +52,65 @@ def lignes(fichiers):
     return sum(sum(1 for _ in f.open(encoding="utf-8", errors="replace")) for f in fichiers)
 
 
+def imports(src: str):
+    """Les chemins importés, et eux seuls.
+
+    Une simple recherche du nom du module dans tout le fichier attraperait un
+    chemin cité dans un commentaire ou dans une chaîne — par exemple l'argument
+    d'un `exec.Command("go", "build", "mod/internal/x")` — et inventerait une
+    arête. On ne lit donc que les déclarations d'import.
+    """
+    out, i, lignes_src = [], 0, src.splitlines()
+    while i < len(lignes_src):
+        s = lignes_src[i].strip()
+        if s.startswith("import ("):                      # bloc
+            i += 1
+            while i < len(lignes_src) and lignes_src[i].strip() != ")":
+                l = lignes_src[i].strip()
+                if l and not l.startswith("//"):
+                    m = re.search(r'"([^"]+)"', l)
+                    if m:
+                        out.append(m.group(1))
+                i += 1
+        elif s.startswith("import "):                     # déclaration simple
+            m = re.search(r'"([^"]+)"', s)
+            if m:
+                out.append(m.group(1))
+        elif s.startswith(("func ", "type ", "var ", "const ")):
+            break                                         # plus d'import au-delà
+        i += 1
+    return out
+
+
 def construire(racine: pathlib.Path, module: str):
-    imp = re.compile(r'"' + re.escape(module) + r'/([a-z0-9_/-]+)"')
+    prefixe = module + "/"
     paquets = {}
 
     for base in RACINES:
         d0 = racine / base
         if not d0.is_dir():
             continue
-        for d in sorted(d0.iterdir()):
-            if not d.is_dir():
-                continue
+        # rglob, pas iterdir : un paquet imbriqué (internal/x/y) est un paquet
+        # comme un autre, et l'omettre fait mentir la carte sur son exhaustivité.
+        rep = sorted({f.parent for f in d0.rglob("*.go")})
+        for d in rep:
             go = sorted(d.glob("*.go"))
             if not go:
                 continue
             src = [f for f in go if not f.name.endswith("_test.go")]
             tst = [f for f in go if f.name.endswith("_test.go")]
-            cle = f"{base}/{d.name}"
+            cle = d.relative_to(racine).as_posix()
 
             deps = set()
             for f in src:
-                for m in imp.finditer(f.read_text(encoding="utf-8", errors="replace")):
-                    deps.add(m.group(1))
+                for p in imports(f.read_text(encoding="utf-8", errors="replace")):
+                    if p.startswith(prefixe):
+                        deps.add(p[len(prefixe):])
             deps.discard(cle)
 
             paquets[cle] = {
                 "id": cle,
-                "name": d.name,
+                "name": d.name if d.parent.name in RACINES else f"{d.parent.name}/{d.name}",
                 "kind": "cmd" if base == "cmd" else "pkg",
                 "loc": lignes(src),
                 "test": lignes(tst),

@@ -31,6 +31,14 @@
   "why": "",
   "future": ""
  },
+ "cmd/console/simulateur": {
+  "layer": "demo",
+  "fate": "jeter",
+  "title": "Simulateur, en binaire",
+  "what": "Exécute une demande de bout en bout selon les contrats de la démonstration.",
+  "why": "",
+  "future": "Part avec la console."
+ },
  "cmd/directive": {
   "layer": "moteur",
   "fate": "adapter",
@@ -151,6 +159,14 @@
   "why": "Infra de test réutilisable telle quelle.",
   "future": ""
  },
+ "internal/backendtest/serveur": {
+  "layer": "socle",
+  "fate": "garder",
+  "title": "Serveur MCP de test",
+  "what": "Le serveur MCP en stdio des tests du moteur : un profil de <code>backendtest</code> servi sur stdin/stdout.",
+  "why": "Compilé par <code>go build</code> pendant le test, donc jamais importé — c'est une dépendance de build, invisible dans le graphe d'imports.",
+  "future": ""
+ },
  "internal/chaine": {
   "layer": "moteur",
   "fate": "garder",
@@ -163,9 +179,17 @@
   "layer": "demo",
   "fate": "jeter",
   "title": "Interface de démo",
-  "what": "Écrans de démonstration. 5 904 lignes — le plus gros morceau à retirer.",
+  "what": "Écrans de démonstration. 5867 lignes avec son simulateur et ses binaires — le plus gros morceau à retirer.",
   "why": "",
   "future": "Suppose un catalogue fini."
+ },
+ "internal/console/simulateur": {
+  "layer": "demo",
+  "fate": "jeter",
+  "title": "Orchestrateur simulé",
+  "what": "Un orchestrateur et un gate simulés, pour mettre au point la console sans session réelle.",
+  "why": "",
+  "future": "Part avec la console."
  },
  "internal/controle": {
   "layer": "moteur",
