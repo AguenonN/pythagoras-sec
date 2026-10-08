@@ -5,13 +5,21 @@
 COMPOSE = docker compose -f deploy/docker-compose.yml
 
 .PHONY: test build agent network-config rogue mcp-observability agent-sre checkout-api mcp-proxy \
-        lab-up lab-register lab-naive-rogue lab-zerotrust-rogue lab-zerotrust-legit lab-down clean
+        lab-up lab-register lab-naive-rogue lab-zerotrust-rogue lab-zerotrust-legit lab-down clean carte
 
 # ---- Proof of the thesis, no Docker needed ----
 # Runs the real MCP-over-mTLS gate through all three scenarios with an in-memory
 # CA standing in for SPIRE. This is the executable heart of the project.
 test:
 	GOTOOLCHAIN=auto go test ./... -count=1
+
+# ---- Carte des briques ----
+# Relit le graphe d'imports du code, le fusionne avec carte/annotations.json
+# et écrit la page autonome. À relancer après tout ajout ou retrait de paquet.
+carte:
+	python3 scripts/carte-paquets.py
+	python3 -c "import pathlib; t=pathlib.Path('carte/page.html').read_text(encoding='utf-8'); d=pathlib.Path('carte/graphe.json').read_text(encoding='utf-8'); pathlib.Path('carte/carte.html').write_text(t.replace('/*__DATA__*/', d), encoding='utf-8')"
+	@echo 'carte/carte.html — ouvrir dans un navigateur'
 
 build: agent network-config rogue mcp-observability agent-sre checkout-api mcp-proxy
 

@@ -1,0 +1,521 @@
+<title>Carte des briques mcp_rogue</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;600&display=swap">
+
+<style>
+/* Arbre technologique : colonnes = profondeur dans le graphe d'imports réel,
+   fondations à gauche, consommateurs à droite. Canvas SVG pannable + panneau. */
+:root{
+  --bg:#eceef3; --grid:#dfe3ea; --surface:#fff; --surface-2:#f6f7fa;
+  --ink:#1a1e29; --ink-2:#5a6376; --ink-3:#8b93a5; --line:#ccd2dd; --line-2:#e3e7ee;
+  --socle:#0f8a9b; --moteur:#b5760c; --lab:#6f52bd; --demo:#848b99;
+  --socle-bg:#e2f2f4; --moteur-bg:#f8efdd; --lab-bg:#eeeafa; --demo-bg:#edeff3;
+  --sel:#1a1e29; --shadow:0 1px 2px rgba(20,25,40,.07),0 4px 14px rgba(20,25,40,.07);
+  --f-disp:"Chakra Petch",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#11141c; --grid:#1a1e28; --surface:#1b1f29; --surface-2:#21262f;
+  --ink:#e6e9f0; --ink-2:#9aa3b5; --ink-3:#6c7484; --line:#2e3542; --line-2:#262c37;
+  --socle:#3fc9d9; --moteur:#e8a63c; --lab:#a98ae8; --demo:#767d8d;
+  --socle-bg:#12323a; --moteur-bg:#372a12; --lab-bg:#282144; --demo-bg:#23272f;
+  --sel:#e6e9f0; --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#11141c; --grid:#1a1e28; --surface:#1b1f29; --surface-2:#21262f;
+  --ink:#e6e9f0; --ink-2:#9aa3b5; --ink-3:#6c7484; --line:#2e3542; --line-2:#262c37;
+  --socle:#3fc9d9; --moteur:#e8a63c; --lab:#a98ae8; --demo:#767d8d;
+  --socle-bg:#12323a; --moteur-bg:#372a12; --lab-bg:#282144; --demo-bg:#23272f;
+  --sel:#e6e9f0; --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);
+  font-size:14px;line-height:1.5;overflow:hidden}
+#app{height:100%;display:grid;grid-template-rows:auto 1fr;max-height:100%}
+
+/* ---------- barre ---------- */
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
+  padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top,0px));
+  background:var(--surface);border-bottom:1px solid var(--line);z-index:5}
+.brand{display:flex;align-items:baseline;gap:9px;margin-right:auto;min-width:0}
+.brand h1{font-family:var(--f-disp);font-size:16px;font-weight:700;margin:0;
+  letter-spacing:.02em;white-space:nowrap}
+.brand span{font-family:var(--f-mono);font-size:11px;color:var(--ink-3);white-space:nowrap}
+.ctrls{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.chip{font-family:var(--f-mono);font-size:11px;letter-spacing:.02em;
+  padding:4px 9px;border-radius:3px;border:1px solid var(--line);background:var(--surface-2);
+  color:var(--ink-2);cursor:pointer;white-space:nowrap;
+  transition:background .12s,border-color .12s,color .12s}
+.chip:hover{border-color:var(--ink-3)}
+.chip[aria-pressed="true"]{color:var(--ink);border-color:currentColor}
+.chip[data-layer="socle"][aria-pressed="true"]{color:var(--socle);background:var(--socle-bg)}
+.chip[data-layer="moteur"][aria-pressed="true"]{color:var(--moteur);background:var(--moteur-bg)}
+.chip[data-layer="lab"][aria-pressed="true"]{color:var(--lab);background:var(--lab-bg)}
+.chip[data-layer="demo"][aria-pressed="true"]{color:var(--demo);background:var(--demo-bg)}
+input[type=search]{font-family:var(--f-mono);font-size:11.5px;width:140px;
+  padding:4px 9px;border-radius:3px;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--ink)}
+input[type=search]:focus-visible,.chip:focus-visible,button:focus-visible,
+[role=button]:focus-visible,a:focus-visible{outline:2px solid var(--socle);outline-offset:2px}
+
+/* ---------- scène ---------- */
+#scene{position:relative;min-height:0;overflow:hidden;
+  background-image:radial-gradient(circle,var(--grid) 1px,transparent 1px);
+  background-size:26px 26px}
+#cv{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#cv.drag{cursor:grabbing}
+.edge{fill:none;stroke:var(--line);stroke-width:1.4;transition:stroke .15s,stroke-width .15s}
+.edge.in{stroke:var(--socle);stroke-width:2.4}
+.edge.out{stroke:var(--moteur);stroke-width:2.4}
+.edge.dim{stroke:var(--line-2);opacity:.35}
+.node{cursor:pointer}
+.nbox{fill:var(--surface);stroke:var(--line);stroke-width:1.5;rx:4}
+.node[data-layer="socle"] .nbox{stroke:var(--socle)}
+.node[data-layer="moteur"] .nbox{stroke:var(--moteur)}
+.node[data-layer="lab"] .nbox{stroke:var(--lab)}
+.node[data-layer="demo"] .nbox{stroke:var(--demo)}
+.node[data-fate="adapter"] .nbox{stroke-dasharray:5 3}
+.node[data-fate="jeter"] .nbox{stroke-dasharray:2 3;opacity:.72}
+.node[data-fate="jeter"] .ntitle{text-decoration:line-through;text-decoration-thickness:1px}
+.node .bar{rx:2}
+.node[data-layer="socle"] .bar{fill:var(--socle)}
+.node[data-layer="moteur"] .bar{fill:var(--moteur)}
+.node[data-layer="lab"] .bar{fill:var(--lab)}
+.node[data-layer="demo"] .bar{fill:var(--demo)}
+.ntitle{font-family:var(--f-mono);font-size:11.5px;font-weight:600;fill:var(--ink)}
+.nsub{font-family:var(--f-body);font-size:10px;fill:var(--ink-2)}
+.nloc{font-family:var(--f-mono);font-size:9.5px;fill:var(--ink-3)}
+.node:hover .nbox{filter:brightness(1.04)}
+.node.sel .nbox{stroke-width:3;fill:var(--surface-2)}
+.node.near .nbox{stroke-width:2.2}
+.node.off{opacity:.16;pointer-events:none}
+.zoom{position:absolute;right:12px;bottom:12px;display:flex;gap:4px;z-index:3}
+.zoom button{width:30px;height:30px;font-family:var(--f-mono);font-size:14px;line-height:1;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink-2);
+  border-radius:3px;cursor:pointer;box-shadow:var(--shadow)}
+.zoom button:hover{color:var(--ink)}
+.hint{position:absolute;left:12px;bottom:12px;font-family:var(--f-mono);font-size:10.5px;
+  color:var(--ink-3);background:var(--surface);border:1px solid var(--line);
+  padding:4px 8px;border-radius:3px;pointer-events:none;max-width:calc(100% - 120px)}
+
+/* ---------- panneau ---------- */
+#panel{position:absolute;top:0;right:0;width:min(400px,100%);height:100%;
+  background:var(--surface);border-left:1px solid var(--line);
+  box-shadow:var(--shadow);display:flex;flex-direction:column;z-index:4;
+  transform:translateX(100%);transition:transform .22s ease}
+#panel.open{transform:none}
+.phead{padding:14px 16px 12px;border-bottom:1px solid var(--line-2);flex:0 0 auto}
+.ptop{display:flex;align-items:flex-start;gap:10px}
+.ptop h2{font-family:var(--f-mono);font-size:14px;font-weight:600;margin:0;
+  word-break:break-word;min-width:0;flex:1}
+.close{flex:0 0 auto;width:26px;height:26px;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--ink-2);border-radius:3px;cursor:pointer;
+  font-size:14px;line-height:1}
+.close:hover{color:var(--ink)}
+.ptags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.tag{font-family:var(--f-mono);font-size:10px;letter-spacing:.03em;
+  padding:2px 7px;border-radius:2px;border:1px solid var(--line);color:var(--ink-2)}
+.tag.socle{color:var(--socle);border-color:var(--socle);background:var(--socle-bg)}
+.tag.moteur{color:var(--moteur);border-color:var(--moteur);background:var(--moteur-bg)}
+.tag.lab{color:var(--lab);border-color:var(--lab);background:var(--lab-bg)}
+.tag.demo{color:var(--demo);border-color:var(--demo);background:var(--demo-bg)}
+.pbody{padding:14px 16px 24px;overflow-y:auto;flex:1 1 auto;
+  padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.prole{font-family:var(--f-disp);font-size:17px;font-weight:600;margin:0 0 10px;
+  letter-spacing:.01em;text-wrap:balance}
+.sec{margin:16px 0 0}
+.sec h3{font-family:var(--f-mono);font-size:9.5px;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 6px}
+.sec p{margin:0 0 8px}
+.sec p:last-child{margin-bottom:0}
+.why{border-left:2px solid var(--socle);padding-left:11px}
+.future{border-left:2px solid var(--moteur);padding-left:11px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:1px;
+  background:var(--line-2);border:1px solid var(--line-2);border-radius:3px;overflow:hidden}
+.metrics div{background:var(--surface);padding:7px 9px;min-width:0}
+.metrics b{display:block;font-family:var(--f-mono);font-size:15px;font-weight:600;
+  font-variant-numeric:tabular-nums}
+.metrics span{font-family:var(--f-mono);font-size:9px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ink-3)}
+.links{display:flex;flex-wrap:wrap;gap:4px}
+.lk{font-family:var(--f-mono);font-size:10.5px;padding:3px 8px;border-radius:2px;
+  border:1px solid var(--line);background:var(--surface-2);color:var(--ink-2);
+  cursor:pointer;text-align:left}
+.lk:hover{color:var(--ink);border-color:var(--ink-3)}
+.lk.socle{border-left:2px solid var(--socle)}
+.lk.moteur{border-left:2px solid var(--moteur)}
+.lk.lab{border-left:2px solid var(--lab)}
+.lk.demo{border-left:2px solid var(--demo)}
+.none{color:var(--ink-3);font-size:12px;font-style:italic}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--surface-2);
+  padding:.1em .34em;border-radius:2px;border:1px solid var(--line-2)}
+.pbody em{color:var(--ink-2)}
+.doc{font-size:12px;color:var(--ink-2);border-top:1px solid var(--line-2);
+  padding-top:10px;margin-top:16px}
+.doc span{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:5px}
+
+/* ---------- accueil ---------- */
+#intro{position:absolute;inset:0;display:grid;place-items:center;padding:24px 16px;
+  background:var(--bg);z-index:6;overflow-y:auto}
+#intro[hidden]{display:none}
+.card{max-width:620px;background:var(--surface);border:1px solid var(--line);
+  border-radius:5px;padding:26px 24px;box-shadow:var(--shadow)}
+.card h2{font-family:var(--f-disp);font-size:25px;font-weight:700;margin:0 0 4px;
+  letter-spacing:.01em;text-wrap:balance}
+.card .kicker{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 14px}
+.card p{margin:0 0 11px;max-width:62ch}
+.lg{display:grid;gap:7px;margin:18px 0;padding:14px;background:var(--surface-2);
+  border:1px solid var(--line-2);border-radius:4px}
+.lgrow{display:flex;align-items:center;gap:9px;font-size:12.5px;min-width:0}
+.sw{flex:0 0 auto;width:22px;height:13px;border-radius:2px;border:1.5px solid}
+.sw.socle{border-color:var(--socle);background:var(--socle-bg)}
+.sw.moteur{border-color:var(--moteur);background:var(--moteur-bg)}
+.sw.lab{border-color:var(--lab);background:var(--lab-bg)}
+.sw.demo{border-color:var(--demo);background:var(--demo-bg)}
+.sw.d1{border-color:var(--ink-2);border-style:dashed;background:transparent}
+.sw.d2{border-color:var(--ink-3);border-style:dotted;background:transparent;opacity:.7}
+.lgrow b{font-family:var(--f-mono);font-size:11px;font-weight:600;flex:0 0 auto}
+.lgrow i{color:var(--ink-2);font-style:normal;min-width:0}
+.go{font-family:var(--f-disp);font-size:14px;font-weight:600;letter-spacing:.02em;
+  padding:9px 20px;border-radius:4px;border:1px solid var(--ink);
+  background:var(--ink);color:var(--surface);cursor:pointer}
+.go:hover{opacity:.88}
+.stats{display:flex;flex-wrap:wrap;gap:16px;margin:16px 0 4px;font-family:var(--f-mono);
+  font-size:11px;color:var(--ink-3)}
+.stats b{color:var(--ink);font-size:14px;font-variant-numeric:tabular-nums}
+
+@media (max-width:760px){
+  .brand span{display:none}
+  input[type=search]{width:108px}
+  #panel{width:100%;height:68%;top:auto;bottom:0;border-left:0;
+    border-top:1px solid var(--line);transform:translateY(100%);border-radius:7px 7px 0 0}
+  #panel.open{transform:none}
+  .hint{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div id="app">
+  <header>
+    <div class="brand">
+      <h1>Carte des briques</h1>
+      <span>mcp_rogue · 48 paquets · 104 arêtes</span>
+    </div>
+    <div class="ctrls">
+      <button class="chip" data-layer="socle" aria-pressed="true">socle</button>
+      <button class="chip" data-layer="moteur" aria-pressed="true">moteur</button>
+      <button class="chip" data-layer="lab" aria-pressed="true">lab</button>
+      <button class="chip" data-layer="demo" aria-pressed="true">démo</button>
+      <button class="chip" id="keep" aria-pressed="false">réutilisable</button>
+      <input type="search" id="q" placeholder="chercher…" aria-label="Chercher un paquet">
+      <button class="chip" id="help">?</button>
+    </div>
+  </header>
+
+  <div id="scene">
+    <svg id="cv" role="application" aria-label="Graphe des paquets"></svg>
+    <div class="hint">glisser pour déplacer · molette pour zoomer · clic sur une brique</div>
+    <div class="zoom">
+      <button id="zo" aria-label="Dézoomer">−</button>
+      <button id="zi" aria-label="Zoomer">+</button>
+      <button id="zr" aria-label="Recadrer" style="font-size:11px">⤢</button>
+    </div>
+
+    <aside id="panel" aria-live="polite">
+      <div class="phead">
+        <div class="ptop"><h2 id="pid"></h2>
+          <button class="close" id="pclose" aria-label="Fermer">×</button></div>
+        <div class="ptags" id="ptags"></div>
+      </div>
+      <div class="pbody" id="pbody"></div>
+    </aside>
+
+    <div id="intro">
+      <div class="card">
+        <p class="kicker">Documentation navigable</p>
+        <h2>Un moteur de décision pour agents MCP</h2>
+        <p>Un agent LLM appelle des outils externes via MCP. Par défaut, il fait
+        confiance à un serveur sur la foi d'une ligne de configuration écrite une fois
+        et jamais revérifiée. Ce dépôt remplace cette confiance par deux choses :
+        une <strong>preuve cryptographique d'identité</strong>, et une
+        <strong>décision journalisée et rejouable</strong> sur chaque appel.</p>
+        <p>Chaque brique ci-dessous est un paquet Go réel. Les liens entre elles sont
+        les <strong>imports réels</strong> extraits du code, pas un schéma dessiné à la
+        main : les colonnes vont des fondations (aucune dépendance) vers les
+        consommateurs.</p>
+
+        <div class="stats">
+          <span><b>24 519</b> lignes de source</span>
+          <span><b>14 907</b> lignes de tests</span>
+          <span><b>7</b> niveaux de profondeur</span>
+        </div>
+
+        <div class="lg">
+          <div class="lgrow"><i class="sw socle"></i><b>socle</b><i>identité, confinement — publié sous secu-mcp</i></div>
+          <div class="lgrow"><i class="sw moteur"></i><b>moteur</b><i>décision, journal, rejeu — le privé</i></div>
+          <div class="lgrow"><i class="sw lab"></i><b>lab</b><i>le banc d'essai sur k3s</i></div>
+          <div class="lgrow"><i class="sw demo"></i><b>démo</b><i>couche applicative, retirée en P0</i></div>
+          <div class="lgrow"><i class="sw d1"></i><b>tirets</b><i>à adapter pour la refonte</i></div>
+          <div class="lgrow"><i class="sw d2"></i><b>pointillés</b><i>à jeter</i></div>
+        </div>
+
+        <p style="color:var(--ink-2);font-size:12.5px">Commencer par
+        <code>internal/directive</code> : c'est le cœur, et 12 paquets en dépendent.</p>
+        <button class="go" id="start">Ouvrir la carte</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = {"internal/annuaire":{"id":"internal/annuaire","name":"annuaire","kind":"pkg","loc":689,"test":187,"files":3,"doc":"Package annuaire est la source des habilitations : qui est qui, dans quels groupes, avec quels rôles et depuis quand, et la clé publique de chacun. L'engine en tire trois choses : - le demandeur d'une session (la personne pour qui l'agent travaille), prouvé par un jeton d'identité signé, et ses groupes, résolus à l'ouverture de la session ; - les valideurs d'un appel en attente, prouvés par un jeton d'approbation signé de leur clé, avec les rôles qu'ils détenaient à la date de validation ; - la référence de l'annuaire (identifiant, version, empreinte), écrite au journal pour que le rejeu sache contre quoi tout a été vérifié. L'engine ne lit l'annuaire que par l'interface Source ; Local est l'implémentation de démonstration, un fichier JSON signé Ed25519 par une autorité dont la clé publique est fournie à part (jamais lue dans le fichier lui-même : une signature vérifiée avec la clé qu'elle apporte ne prouve rien). Aucune clé privée n'est dans ce paquet ni dans le dépôt : les clés de démonstration sont générées par mcp-approve dans un répertoire ignoré par Git (voir Generer).","deps":[],"usedBy":["cmd/journal","cmd/mcp-approve","cmd/mcp-gate","cmd/registre-demo","internal/console","internal/gate","internal/rejeu"],"depth":0,"layer":"moteur","fate":"garder","title":"Habilitations","what":"Qui est qui, dans quels groupes, avec quels rôles, depuis quand, et la clé publique de chacun. Fichier signé Ed25519.","why":"<strong>La clé publique de l'autorité est fournie à part, jamais lue dans le fichier</strong> : une signature vérifiée avec la clé qu'elle apporte ne prouve rien. La référence de l'annuaire va au journal, pour que le rejeu sache contre quoi tout a été vérifié.","future":""},"internal/approval":{"id":"internal/approval","name":"approval","kind":"pkg","loc":818,"test":471,"files":4,"doc":"Package approval turns \"human in the loop\" from a name into a mechanism. APPROVED_ACTIONS, the static allowlist, is an approval decided at deploy time: honest as a per-target allowlist, misleading as HITL. This package defines the dynamic interface — one decision per call, made while the call waits — and three implementations: Static   — the deploy-time allowlist, kept, under its true name; Webhook  — the call pauses while an external system (Slack button, Jira, an internal API) answers approved or refused; Token    — the caller carries proof: a short-lived JWT signed by an authenticated operator, bound to this exact call by digest. Every decision, approved or refused, lands in a hash-chained audit trail (see Audit) recording who approved what, when, under which ticket. The failure mode is always closed: no approver, no webhook answer, no token, an expired token, a token for a different call — all refuse.","deps":["internal/toolpolicy"],"usedBy":["cmd/mcp-approve","cmd/mcp-audit","cmd/mcp-proxy","internal/directive","internal/gate","internal/journal","internal/proxy","internal/rejeu"],"depth":1,"layer":"socle","fate":"garder","title":"Validation humaine","what":"Transforme « human in the loop » en mécanisme : interface <code>Approver</code>, webhook temps réel, jetons JWT dans <code>_meta.approvalToken</code>, trail d'audit chaîné HMAC. Le jeton nomme sa cible : il couvre cette action-là, pas une autre.","why":"<code>Principal</code> et <code>Actor</code> séparent le mandat du délégué : le trail répond « qui l'a fait faire », pas seulement « qui a approuvé ».","future":"C'est ce qui portera l'attente humaine obligatoire sur tout effet irréversible."},"internal/backend":{"id":"internal/backend","name":"backend","kind":"pkg","loc":628,"test":748,"files":4,"doc":"Package backend tient les sessions MCP client que l'engine ouvre vers les serveurs du registre. Un backend est une session tenue par l'engine, avec une attestation figée à la connexion : ce que l'engine a observé du serveur (empreinte du binaire, clé TLS) et si son catalogue d'outils est celui que le registre épingle. Ce qu'un backend garantit par construction : - aucun gestionnaire de sampling ni d'elicitation n'est câblé et aucune capacité n'est annoncée : ces requêtes initiées par le serveur sont refusées, et un résultat qui réclame une entrée est une erreur ; - un binaire stdio dont l'empreinte diffère n'est jamais lancé ; - une notification tools/list_changed suspend le backend le temps de revérifier le catalogue ; une dérive le met en quarantaine, sans retour possible avant reconnexion ; - Appeler refuse tout outil hors du catalogue épinglé, et tout appel quand l'attestation n'est pas valide. Connecter rend toujours un Backend, même en échec : l'engine a besoin de son nom et de son attestation (en échec) pour exposer le schéma épinglé et journaliser le refus.","deps":["internal/directive","internal/identity","internal/registre","internal/toolpin"],"usedBy":["cmd/mcp-gate","internal/gate"],"depth":4,"layer":"moteur","fate":"adapter","title":"Sessions sortantes","what":"Les sessions MCP que le moteur ouvre vers les serveurs du registre, avec une <strong>attestation figée à la connexion</strong>.","why":"Ce qu'on a vérifié au moment où on s'est connecté ne change pas en cours de session.","future":"Devient la gestion de connexion du proxy d'egress."},"internal/backendtest":{"id":"internal/backendtest","name":"backendtest","kind":"pkg","loc":199,"test":0,"files":1,"doc":"Package backendtest fournit aux tests de l'engine de petits serveurs MCP réels : les mêmes outils servis en stdio par un binaire compilé pendant le test (Construire) ou en HTTP streamable dans le processus (Serveur), et les entrées de registre qui les épinglent. Profils : - taux : get_taux (lecture). Des devises spéciales pilotent le serveur : PIEGE rend un texte qui tente de fermer l'enveloppe, ERREUR une erreur d'outil, LENT répond après deux secondes, DERIVE ajoute un outil et notifie tools/list_changed, ENV liste les variables d'environnement reçues (noms et longueurs, jamais les valeurs). - banque : attribuer_pret (action). - imposteur : get_taux avec une description qui n'est pas celle épinglée et une réponse empoisonnée.","deps":["internal/registre"],"usedBy":[],"depth":4,"layer":"socle","fate":"garder","title":"Serveurs MCP de test","what":"De vrais serveurs MCP en stdio ou HTTP, compilés pendant le test.","why":"Infra de test réutilisable telle quelle.","future":""},"internal/chaine":{"id":"internal/chaine","name":"chaine","kind":"pkg","loc":236,"test":150,"files":1,"doc":"Package chaine écrit des lignes JSON chaînées par MAC : chaque ligne porte prev, le MAC de la précédente, et mac, le MAC de son propre contenu joint à prev. Retirer, réordonner ou modifier une ligne casse tous les MAC qui la suivent. Avec une clé, le MAC est un HMAC-SHA256 que seul le porteur de la clé peut produire ; sans clé, un SHA-256, qui n'atteste que l'absence d'accident. C'est la généralisation de internal/approval.Audit à un corps quelconque : le journal des décisions y met des entrées de plusieurs types dans une seule chaîne. approval.Audit reste tel quel pour mcp-proxy. Forme canonique : le corps est décodé en objet générique avec UseNumber, prev est posé, mac retiré, et encoding/json trie les clés à tous les niveaux. La même forme sert à sceller et à vérifier.","deps":[],"usedBy":["internal/journal"],"depth":0,"layer":"moteur","fate":"garder","title":"Chaîne infalsifiable","what":"Écrit des lignes JSON où chaque ligne porte <code>prev</code> (le MAC de la précédente) et <code>mac</code> (le MAC de son propre contenu joint à <code>prev</code>).","why":"Retirer, réordonner ou modifier une ligne casse tous les MAC qui la suivent. L'idée d'une blockchain, en local et sans consensus.","future":""},"internal/console":{"id":"internal/console","name":"console","kind":"pkg","loc":4976,"test":2102,"files":19,"doc":"Package console sert les écrans de démonstration : des vues en lecture seule construites depuis les fichiers (journal JSONL chaîné, coffre, jeux de directives). Rien n'est tenu en mémoire d'une requête à l'autre : chaque affichage relit le journal et en vérifie la chaîne.","deps":["internal/annuaire","internal/directive","internal/journal","internal/rejeu","internal/relecture"],"usedBy":["cmd/console"],"depth":5,"layer":"demo","fate":"jeter","title":"Interface de démo","what":"Écrans de démonstration. 5 904 lignes — le plus gros morceau à retirer.","why":"","future":"Suppose un catalogue fini."},"internal/controle":{"id":"internal/controle","name":"controle","kind":"pkg","loc":38,"test":41,"files":1,"doc":"Package controle tient les contrôles que l'engine applique après Decide, sans directive : aujourd'hui, celui du registre. L'engine et le rejeu appellent la même fonction, pour que ce qu'affirme le journal se recalcule à l'identique.","deps":["internal/directive"],"usedBy":["internal/gate","internal/rejeu"],"depth":3,"layer":"moteur","fate":"garder","title":"Contrôles hors règles","what":"Ce que le moteur impose sans qu'aucune règle ne le demande : un serveur non attesté est refusé même si rien ne le cible.","why":"L'engine <strong>et</strong> le rejeu appellent la même fonction, pour que ce qu'affirme le journal se recalcule à l'identique. 38 lignes.","future":"C'est le patron exact du <em>plancher déterministe</em> de la refonte."},"internal/directive":{"id":"internal/directive","name":"directive","kind":"pkg","loc":2919,"test":2015,"files":12,"doc":"Package directive est le contrat entre le produit et l'engine : l'auteur de la politique écrit une directive en français avec son fondement, le compilateur la met sous cette forme, l'auteur la valide, et l'engine l'applique à chaque appel d'outil sans qu'aucun modèle ne soit sur le chemin. Le paquet tient trois choses et rien d'autre : - le schéma d'un jeu de directives versionné et daté (ce fichier) ; - un chargeur strict qui refuse tout champ que le schéma n'admet pas (charger.go, charger_v2.go) ; le format v1 (verrous) n'est plus pris en charge ; - Decide, une fonction pure : (jeu, état de session, appel) → décision, sans horloge, sans I/O, sans vérification de jeton (decide_v2.go). C'est ce qui rend l'évaluation rejouable : le journal, les directives à une date, et l'on retrouve la décision. Ce qui n'est pas une directive : les grants read/action, le pin des schémas, l'empreinte binaire, le pin TLS, le SPIFFE ID, le blocage du sampling. Ce sont des contrôles du registre, décidés par l'opérateur, toujours actifs, exposés en lecture seule par ControlesEnVigueur.","deps":["internal/approval","internal/nommage"],"usedBy":["cmd/directive","cmd/journal","cmd/mcp-gate","internal/backend","internal/console","internal/controle","internal/gate","internal/journal","internal/registre","internal/rejeu","internal/relecture","internal/session"],"depth":2,"layer":"moteur","fate":"adapter","title":"Le cœur — Decide","what":"Le schéma d'un jeu de règles versionné, un chargeur strict qui refuse tout champ hors schéma, et <code>Decide</code> : <code>(règles, état de session, appel) → décision</code>.","why":"<strong>Decide est une fonction pure</strong> : pas d'I/O, pas d'horloge, pas de vérification de jeton. La date vient de l'appel, jamais de <code>time.Now()</code>. C'est ce qui rend le rejeu exact possible — mêmes entrées, même sortie, toujours. Et aucun modèle n'est sur le chemin de la décision.","future":"La logique est <strong>trivalente</strong> (Kleene forte, <code>Faux &lt; Indetermine &lt; Vrai</code>, <code>Et</code> = min) : une condition non évaluable ne passe pas en silence. Les effets sont ordonnés (<code>Autoriser &lt; Caviarder &lt; AttendreValidation &lt; Refuser</code>) et <code>plusFort</code> retient le plus contraignant — la monotonie est déjà là. Survit à ~50 % : <code>Decide</code> et l'algèbre restent, les cibles nommées (serveur, outil) meurent."},"internal/envelope":{"id":"internal/envelope","name":"envelope","kind":"pkg","loc":53,"test":78,"files":1,"doc":"Package envelope separates what the model may obey from what it may only read. Rather than recognising hostile text, it changes the type of the content: tool output is sealed inside a delimiter that Contract declares inert. The delimiter has to resist the attacker it contains, so it carries a random nonce drawn per seal, the way MIME multipart boundaries do: the data cannot close the envelope early because it cannot predict the id it would have to forge. As depth, tags inside the data that look like the envelope are defanged before sealing. Sealing is not sanitising. The payload stays readable; it is demoted from code to data.","deps":[],"usedBy":["cmd/agent","cmd/agent-sre","internal/gate","internal/proxy"],"depth":0,"layer":"socle","fate":"garder","title":"Verrou 3 — donnée vs code","what":"Enveloppe tout contenu externe dans <code>&lt;untrusted_data id=\"nonce\"&gt;</code>, nonce de 16 octets tiré à chaque scellement, et le prompt système déclare ce contenu inerte. Les balises qui ressemblent à l'enveloppe sont désamorcées avant scellement.","why":"Le nonce est aléatoire pour qu'un texte hostile ne puisse pas deviner comment fermer la balise et s'en échapper. Ce n'est pas de la désinfection : le contenu reste lisible, il est rétrogradé de code à donnée.","future":"53 lignes, et c'est déjà le mécanisme de <em>teinture</em> dont la refonte a besoin pour marquer la provenance des fragments de spec."},"internal/gate":{"id":"internal/gate","name":"gate","kind":"pkg","loc":1824,"test":2712,"files":8,"doc":"Package gate est l'agrégateur : un serveur MCP qui expose à l'agent les outils de tous les backends du registre, sous le nom serveur__outil, et fait passer chaque tools/call par l'engine avant de le router. Pipeline d'un tools/call, dans l'ordre du contrat de l'engine (docs/contrat-engine.md) : 1. décomposer le nom exposé en (serveur, outil) ; 2. entrer dans la session (verrou tenu jusqu'à Terminer, en defer) ; 3. lire l'horloge une fois, déposer les arguments d'origine au coffre ; 4. Decide, avec cette date, l'état de session et l'attestation ; 5. refuser : entrée appel non_transmis, erreur à l'agent avec le motif ; 6. attendre_validation : refus explicite et champ structuré en_attente ; 7. sinon, écrire l'entrée transmission (refus si elle échoue), puis transmettre les arguments décidés et sceller le résultat ; 8. écrire l'entrée appel à la date passée à Decide, puis Terminer. L'engine n'expose jamais ce qu'un serveur annonce : l'agent voit le catalogue épinglé au registre, que le serveur soit attesté ou non. Un serveur non attesté voit chacun de ses appels refusés : par la directive source_attestee qui le cible s'il y en a une (elle cite son fondement), et sinon par le contrôle du registre, toujours actif.","deps":["internal/annuaire","internal/approval","internal/backend","internal/controle","internal/directive","internal/envelope","internal/journal","internal/nommage","internal/registre","internal/session"],"usedBy":["cmd/mcp-gate"],"depth":5,"layer":"moteur","fate":"adapter","title":"L'agrégateur","what":"Un serveur MCP qui expose à l'agent les outils de tous les serveurs du registre sous le nom <code>serveur__outil</code>, et fait passer chaque <code>tools/call</code> par le moteur avant de router.","why":"L'agent ne voit jamais ce qu'un serveur annonce : il voit le catalogue épinglé au registre. Un serveur non attesté voit chacun de ses appels refusés.","future":"La position d'interception survit. La décomposition <code>serveur__outil</code> meurt avec le catalogue fini."},"internal/guardrail":{"id":"internal/guardrail","name":"guardrail","kind":"pkg","loc":320,"test":168,"files":1,"doc":"Package guardrail inspects what a server says, after identity has settled who said it. mTLS answers \"are you the server I expect?\", not \"is this reply safe to hand to the model?\": a poisoned file on a legitimate server passes the handshake untouched. Guard wraps session.CallTool and applies three checks, in order: 1. schema    — the reply must decode strictly into the tool's declared output type, and the payload must match the expected configuration grammar line by line. Anything else is rejected outright (fail closed): the model never sees a payload the policy cannot parse. 2. markers   — lines carrying prompt-injection markers (instructions addressed to the assistant, role tags, chat-template delimiters, URLs in a file that has no business containing one) are neutralized in place before the reply reaches the application context. 3. redaction — values of sensitive directives (community strings, passwords, keys) are masked before any downstream processing, so the model cannot leak what it never received. Rejection is an error; neutralization and redaction are logged. A guardrail that silently rewrites data is its own debugging problem.","deps":["internal/mcptool"],"usedBy":["cmd/agent"],"depth":1,"layer":"socle","fate":"garder","title":"Inspection des réponses","what":"mTLS répond à « es-tu le serveur attendu », pas à « cette réponse est-elle sûre à donner au modèle ». Ce paquet regarde le contenu : schéma strict, puis marqueurs, puis caviardage.","why":"Un serveur authentifié peut servir un fichier empoisonné. L'identité ne dit rien du comportement.","future":"C'est l'<em>output poisoning</em> que les passerelles du marché listent comme non résolu."},"internal/identity":{"id":"internal/identity","name":"identity","kind":"pkg","loc":376,"test":72,"files":2,"doc":"Package identity is the gate the lab turns on. In MCP as it stands, an agent trusts a server on the strength of one config entry written once and never re-checked at run time. Workload identity supplies the missing verification, and the proof is inverted: nothing is blocked for being malicious, everything is rejected that is not shown to be legitimate. The rogue is refused because it cannot produce an SVID, not because it was recognised. Scope: identity answers \"who are you?\", which is binary and provable. It says nothing about \"what are you doing?\" — an authenticated server can still misbehave, and poisoned content rides in through a legitimate one. That half is contained by the other locks, not proven away.","deps":[],"usedBy":["cmd/agent","cmd/agent-sre","cmd/mcp-gate","cmd/mcp-observability","cmd/mcp-proxy","cmd/network-config","cmd/rogue","internal/backend","internal/identitytest"],"depth":0,"layer":"socle","fate":"garder","title":"Verrou 0 — identité","what":"Prouve <em>quel logiciel</em> parle, pas sur quelle machine il tourne. Chaque composant présente un certificat X.509 dont l'URI SAN est un <code>spiffe://</code> ID, signé par une CA de confiance. mTLS = les deux côtés prouvent leur identité, pas seulement le serveur comme en HTTPS.","why":"Un serveur pirate peut copier un nom d'outil, pas un SVID. Il est rejeté <strong>au handshake</strong>, avant l'exécution du moindre handler.","future":"Dans la refonte, cible déplacée : on n'atteste plus un serveur qui préexiste, mais le générateur de code, la sandbox et le proxy."},"internal/identitytest":{"id":"internal/identitytest","name":"identitytest","kind":"pkg","loc":139,"test":0,"files":1,"doc":"Package identitytest fournit aux tests une autorité de certification qui émet des SVID X.509 SPIFFE, sans SPIRE : les mêmes sources go-spiffe que la Workload API, en mémoire.","deps":["internal/identity"],"usedBy":[],"depth":1,"layer":"socle","fate":"garder","title":"CA de test (engine)","what":"Même rôle que <code>testca</code>, côté moteur.","why":"","future":""},"internal/journal":{"id":"internal/journal","name":"journal","kind":"pkg","loc":1117,"test":614,"files":3,"doc":"Package journal est le contrat commun au rejeu, à l'agent d'analyse et aux écrans : une chaîne d'entrées typées, dont l'entrée appel contient tout ce qu'il faut pour rejouer Decide à l'identique. Ce qui est en clair : serveur, outil, effet, directives et fondements, attestation, instantané de session, empreintes, noms des champs retirés, identités professionnelles d'approbation, statut et provenance de la source. Ce qui n'est que sous empreinte : les arguments d'origine et transmis, la réponse de l'outil, le jeton. Les arguments vont dans le Coffre, fichier séparé et purgeable, que l'agent d'analyse n'ouvre jamais.","deps":["internal/approval","internal/chaine","internal/directive"],"usedBy":["cmd/journal","cmd/mcp-gate","internal/console","internal/gate","internal/rejeu","internal/session"],"depth":3,"layer":"moteur","fate":"adapter","title":"Le journal","what":"Entrées typées : ouverture de session, appel, transmission, approbation, notification, purge. L'entrée <code>appel</code> contient <strong>tout ce que Decide a lu</strong>.","why":"C'est le contrat commun au rejeu, à l'audit et aux écrans. Si l'entrée ne porte pas une entrée de Decide, cet appel n'est plus rejouable.","future":"Le chaînage tient. L'entrée <code>appel</code> devient une entrée <code>effet</code>."},"internal/labconfig":{"id":"internal/labconfig","name":"labconfig","kind":"pkg","loc":53,"test":0,"files":1,"doc":"Package labconfig models the agent's trust configuration: the MCP server entry, written once and thereafter believed without question. Whoever controls Endpoint controls who the agent talks to.","deps":[],"usedBy":["cmd/agent","cmd/agent-sre","cmd/checkout-api","cmd/mcp-observability","cmd/mcp-proxy","cmd/network-config","cmd/rogue"],"depth":0,"layer":"socle","fate":"garder","title":"L'artefact attaqué","what":"Modélise l'entrée de configuration de confiance : celle qu'on écrit une fois et qu'on ne revérifie jamais. Qui contrôle <code>Endpoint</code> contrôle à qui l'agent parle.","why":"C'est l'objet que toute la thèse attaque. Le nommer dans le code rend l'hypothèse explicite.","future":""},"internal/mcptool":{"id":"internal/mcptool","name":"mcptool","kind":"pkg","loc":18,"test":0,"files":1,"doc":"Package mcptool holds the tool contract both lab servers expose. They advertise the same tool name on purpose: the collision is what makes impersonation possible, and only a proof of identity separates them.","deps":[],"usedBy":["cmd/agent","internal/guardrail","internal/server"],"depth":0,"layer":"lab","fate":"jeter","title":"Contrat d'outil du lab","what":"Les deux serveurs du lab annoncent <strong>le même nom d'outil</strong>. La collision est volontaire : c'est elle qui rend l'usurpation possible.","why":"","future":""},"internal/nommage":{"id":"internal/nommage","name":"nommage","kind":"pkg","loc":95,"test":54,"files":1,"doc":"Package nommage fixe les règles de nommage partagées par le registre, les directives et l'agrégateur : le nom logique d'un serveur, le nom d'un outil tel que le serveur l'annonce, et le nom exposé à l'agent qui combine les deux. Une directive cible (serveur, outil) séparément et n'a jamais connaissance du nom exposé ; l'agrégateur est le seul à composer et décomposer.","deps":[],"usedBy":["internal/directive","internal/gate","internal/registre","internal/registredemo"],"depth":0,"layer":"moteur","fate":"adapter","title":"Règles de nommage","what":"Nom logique d'un serveur, nom d'outil tel qu'annoncé, nom exposé qui combine les deux.","why":"","future":"Meurt avec les noms d'outils fixes."},"internal/obsclient":{"id":"internal/obsclient","name":"obsclient","kind":"pkg","loc":299,"test":0,"files":1,"doc":"Package obsclient talks to the observability backends the bridge fronts: Prometheus (metrics), Alertmanager (firing alerts) and Grafana (annotations). The bridge is the only workload holding the Grafana credential, which is why it is a separate workload at all: the agent gets a tool, never a token. Everything here runs on the server side of the mTLS gate, so by the time these functions run SPIRE has already proven which workload asked.","deps":[],"usedBy":["cmd/mcp-observability","internal/obsserver"],"depth":0,"layer":"lab","fate":"jeter","title":"Clients d'observabilité","what":"Prometheus, Alertmanager, Grafana.","why":"","future":""},"internal/obsserver":{"id":"internal/obsserver","name":"obsserver","kind":"pkg","loc":447,"test":346,"files":1,"doc":"Package obsserver builds the observability MCP bridge: three tools over Prometheus, Alertmanager and Grafana. Construction lives here rather than in cmd/ so the binary and the tests exercise the same handlers. The bridge is the trust boundary. Above it is an agent driven by a model that can be argued with; below it are production backends and a Grafana credential that writes to the dashboards an on-call team depends on. Each rule here exists because the caller cannot enforce it on itself: reads  — the PromQL cost policy (internal/promql) refuses queries that would take Prometheus down, and everything leaving the bridge goes through internal/scrub. writes — annotate_dashboard is confined three ways: a dashboard allowlist, a provenance prefix no caller can remove, and a rate limit on how much an approved-but-runaway agent can write. None of this assumes the agent is hostile, only that something it read can make it so.","deps":["internal/obsclient","internal/obstool","internal/promql","internal/scrub"],"usedBy":["cmd/mcp-observability"],"depth":1,"layer":"lab","fate":"jeter","title":"Bridge d'observabilité","what":"Trois outils par-dessus la télémétrie.","why":"","future":""},"internal/obstool":{"id":"internal/obstool","name":"obstool","kind":"pkg","loc":116,"test":0,"files":1,"doc":"Package obstool holds the tool contracts of the observability bridge, split across the read/action line internal/toolpolicy enforces on the client: query_metrics      (read)   — run a PromQL query against Prometheus get_active_alerts  (read)   — list firing alerts from Alertmanager annotate_dashboard (action) — write an annotation onto a Grafana dashboard The two reads touch sensitive data: metric labels and alert text leak hostnames, IPs and customer identifiers. The write lands on the dashboards an on-call engineer watches during an incident. One server, both halves of the risk.","deps":[],"usedBy":["cmd/agent-sre","internal/obsserver","internal/triage"],"depth":0,"layer":"lab","fate":"jeter","title":"Contrats du bridge","what":"Séparés sur la ligne read/action.","why":"","future":""},"internal/promql":{"id":"internal/promql","name":"promql","kind":"pkg","loc":376,"test":124,"files":1,"doc":"Package promql caps the cost of every expression the bridge forwards to Prometheus. The query is written by a model that can be talked into things, which makes two risks concrete: - Cost. One expression can load every series in the TSDB ({__name__=~\".+\"}) or walk a month of samples ([30d]), and Prometheus will try. That is a production outage from inside the read path, with no write permission anywhere. - Transport injection. The expression travels as a query parameter, so control characters and newlines are refused rather than encoded. Not ReDoS. Prometheus matches label regexes with RE2: linear time, no catastrophic backtracking, so (a+)+ is not an exponential-blowup vector here. Nested quantifiers are still refused, on cost grounds and so the guard does not depend on the backend staying RE2 — but the real risks are cardinality and window size. This is a syntactic allowlist over the shapes the SRE agent needs, not a PromQL parser. Using prometheus/promql/parser would give a correct AST at the price of pulling in prometheus/prometheus. It is stricter than PromQL: a rejected query costs the agent a round trip, an accepted expensive one costs the on-call team their monitoring.","deps":[],"usedBy":["cmd/mcp-observability","internal/obsserver"],"depth":0,"layer":"socle","fate":"jeter","title":"Politique de coût","what":"Borne chaque expression PromQL transmise : 1 Kio, fenêtre 6 h, 8 sélecteurs, 6 matchers regex.","why":"La requête est écrite par un modèle qui peut se faire embobiner. On ne filtre pas l'intention, on borne le coût.","future":"Le PromQL ne sert plus, mais la <strong>méthode</strong> est le patron de l'admission : contraindre déterministement ce qu'un modèle a produit, avant exécution."},"internal/proxy":{"id":"internal/proxy","name":"proxy","kind":"pkg","loc":1488,"test":1280,"files":6,"doc":"Package proxy interposes the locks in front of an MCP server not written to carry them: a third-party server, vendored or pulled from a registry, whose source is not ours to patch. The sidecar owns the network position, so the locks hold whatever the server does. agent ──mTLS(SPIFFE)──▶ mcp-proxy ──plain HTTP──▶ upstream MCP server │                          (127.0.0.1, no route │                           from anywhere else) ├─ 0. identity   the caller must PROVE its SVID ├─ 2. execution  tools/call meets the grant set │                and the human approval BEFORE a │                packet is forwarded └─ 3. data/code  replies are scrubbed and sealed into <untrusted_data id=\"nonce\"> Lock 1 (egress) is absent from this file because a process cannot apply it to itself. It lives in the deployment: the upstream binds loopback only, and the pod's NetworkPolicy gives it no egress. The proxy is worth what that placement is worth. # What is transformed, and what is not The proxy speaks JSON-RPC, not Go types. It decodes enough of each message to decide and forwards the original bytes, since an upstream may return fields this repository has never heard of (_meta, annotations, content types from a later spec revision). Only two shapes are rewritten: result.content[]  — text blocks are scrubbed, then sealed: this is the channel that becomes prompt text. result.tools[]    — filtered to the grant set, so the agent is not told about tools it could not call. result.structuredContent is scrubbed but not sealed. Sealing would destroy the typed channel that exists so a host need not re-read data as text; a host that stringifies it into a prompt seals it there, as cmd/agent-sre does. # Known scope - The JSON-RPC surface is default-deny: tools/call meets grants and approval, resources/read and resources/subscribe meet the URI allowlist, prompts/get meets the prompt allowlist, and any method outside the screened baseline (plus Config.AllowedMethods) is refused. Server-initiated sampling and elicitation are blocked unless enabled. - JSON-RPC batches are refused outright rather than screened element by element. Batching was removed from MCP in 2025-06-18, and screening it would mean a second, rarely exercised authorization path. - The caller is authenticated, the upstream is not: on loopback inside one pod there is no second party to impersonate. Fronting an upstream across a network means giving it an identity and calling ClientHTTP here.","deps":["internal/approval","internal/envelope","internal/scrub","internal/toolpin","internal/toolpolicy"],"usedBy":["cmd/mcp-proxy"],"depth":2,"layer":"socle","fate":"jeter","title":"Sidecar générique","what":"Reverse-proxy MCP portant les verrous 0, 2 et 3 devant n'importe quel serveur tiers, sans toucher à son code. <code>ParseGrants</code> lit <code>ALLOWED_TOOLS</code>.","why":"Un verrou qu'on peut poser devant l'existant vaut mieux qu'un verrou qui exige de réécrire l'existant.","future":"Repose sur l'allowlist par nom d'outil — l'hypothèse qui tombe."},"internal/registre":{"id":"internal/registre","name":"registre","kind":"pkg","loc":460,"test":221,"files":1,"doc":"Package registre tient la liste déclarative des serveurs que l'engine accepte de joindre : pour chacun, son nom logique, son transport, sa cible, l'attestation attendue et le catalogue épinglé des outils qu'il peut exposer, chacun classé en lecture ou en action. Le registre est décidé par l'opérateur, pas par l'auteur de la politique : ce qu'il impose (identité du serveur, schémas épinglés, outils autorisés, sampling et elicitation bloqués) est toujours actif et ne dépend d'aucune directive. Il est chargé et validé au démarrage ; toute erreur arrête le chargement, rendue en bloc, une ligne par défaut. Comme directive.Charger, ce paquet ne lit aucun fichier : l'appelant fournit les octets.","deps":["internal/directive","internal/nommage","internal/toolpin"],"usedBy":["cmd/mcp-gate","internal/backend","internal/backendtest","internal/gate","internal/registredemo"],"depth":3,"layer":"moteur","fate":"adapter","title":"Le registre","what":"Liste déclarative des serveurs que le moteur accepte de joindre : nom logique, transport, cible, attestation attendue, catalogue d'outils épinglé.","why":"Décidé par l'opérateur, pas par l'auteur des règles. Ce qu'il impose est toujours actif et ne dépend d'aucune règle.","future":"Devient le registre des artefacts admis et des composants d'infra attestés."},"internal/registredemo":{"id":"internal/registredemo","name":"registredemo","kind":"pkg","loc":677,"test":730,"files":3,"doc":"Package registredemo construit le registre de démonstration depuis le manifeste de construction des serveurs (bin/manifeste.json, écrit par scripts/construire-serveurs.sh) et les schema.json versionnés. Ce que le registre produit tient du manifeste, jamais d'une saisie : - huit serveurs, en stdio, dans l'ordre du manifeste ; taux-imposteur n'y figure jamais comme serveur ; - attestation binaire : l'empreinte que le manifeste donne, vérifiée sur le fichier présent ; - catalogue épinglé : chaque outil de tools/list (schema.json, dont l'empreinte est vérifiée) avec son nom, sa description et son inputSchema recopiés tels quels, puisque ce sont eux que le backend compare à ce que le serveur annonce ; - accès : read si l'annotation readOnlyHint est vraie, action sinon, y compris sans annotation (fermé par défaut) ; - environnement transmis par nom : DONNEES_MODE pour tous (gels-avoirs reçoit en plus -mode=REJEU, qui l'emporte : registre local du matin), PISTE_CLIENT_ID et PISTE_CLIENT_SECRET en plus pour legifrance ; - chemins absolus : binaire, enregistrements, instantané ; - étiquettes : celles de demo/etiquettes.json (versionné), posées sur les serveurs et les outils ; elles entrent dans l'empreinte. Le registre d'attaque est le même document, à une différence près : la commande de taux-officiel lance le binaire de taux-imposteur, et l'empreinte attendue reste celle de l'officiel. C'est l'entrée détournée ; le gate doit refuser de la lancer.","deps":["internal/nommage","internal/registre"],"usedBy":["cmd/registre-demo"],"depth":4,"layer":"demo","fate":"jeter","title":"Registre de démo","what":"Fabrique le registre de démonstration et le registre d'attaque.","why":"","future":"<strong>Attention en P0</strong> : <code>test/integration</code> l'importe pour construire ses binaires. Extraire les fixtures <em>avant</em> de supprimer."},"internal/rejeu":{"id":"internal/rejeu","name":"rejeu","kind":"pkg","loc":927,"test":694,"files":2,"doc":"Package rejeu rejoue les décisions du journal. Une entrée appel porte tout ce que Decide a lu, sauf les arguments, qui sont au coffre sous leur empreinte d'origine : le jeu (id, version, empreinte), l'attestation, l'instantané de session, l'appelant, la date. Rejouer remet ces pièces ensemble et vérifie qu'elles redonnent ce que le journal affirme. Deux contrôles internes, toujours faits dans le cadre historique (jeu d'origine, date de l'entrée) : - les arguments du coffre doivent retrouver empreinte_origine ; - la décision rejouée doit retrouver empreinte_transmise, et l'effet journalisé. Tout écart est nommé : purge (le coffre a une pierre tombale et le journal une entrée purge chaînée qui la couvre, à la même date : l'appel n'est plus rejouable, son entrée reste vérifiable dans la chaîne) ou altération (tout le reste : arguments modifiés ou disparus sans trace, pierre tombale sans entrée purge, jeu différent, décision qui ne se retrouve pas). Hors cadre historique, une décision rejouée qui diffère de la décision journalisée est un effet_de_regle. La nature ne s'applique qu'aux appels rejouables : violation quand le rejeu se fait à la date historique sous le jeu d'origine, exposition quand AuDate force la date ou qu'un autre jeu est imposé. Un appel non rejouable, purgé ou altéré, ne porte aucune nature : on ne qualifie pas ce qu'on ne peut pas rejouer, et une purge conforme n'est jamais une violation. Le rejeu n'est pas en cascade : un appel est rejoué avec l'état de session qu'il a réellement vu, même si, sous un autre jeu, un appel antérieur aurait été refusé. Le journal lu doit avoir été vérifié (journal.Verifier) : le rejeu ne refait pas la chaîne.","deps":["internal/annuaire","internal/approval","internal/controle","internal/directive","internal/journal"],"usedBy":["cmd/journal","internal/console"],"depth":4,"layer":"moteur","fate":"garder","title":"Le rejeu","what":"Rejoue chaque appel du journal sous le jeu de règles d'origine, à sa date, et vérifie que les pièces redonnent ce que le journal affirme. Les arguments sont au coffre, sous leur empreinte.","why":"Il ne dit pas seulement « ça diverge », il <strong>qualifie</strong> : <em>purge</em> (pierre tombale au coffre + entrée purge qui la couvre — légitime), <em>altération</em> (tout le reste), <em>effet de règle</em> (rejeu forcé sous un autre jeu — la divergence est le résultat recherché).","future":"Le rejeu n'est pas en cascade : un appel est rejoué avec l'état qu'il a réellement vu."},"internal/relecture":{"id":"internal/relecture","name":"relecture","kind":"pkg","loc":782,"test":339,"files":3,"doc":"Package relecture rend un jeu de directives en français, par gabarit déterministe, sans modèle de langue. C'est ce que l'auteur relit avant de valider : la règle telle que l'engine l'appliquera, et non le texte qu'il a écrit. Même jeu, même texte, octet pour octet : aucune horloge, aucun fuseau local, aucun parcours de map.","deps":["internal/directive"],"usedBy":["cmd/directive","internal/console"],"depth":3,"layer":"moteur","fate":"adapter","title":"Relecture sans modèle","what":"Rend un jeu de règles en français, <strong>par gabarit déterministe, sans modèle de langue</strong>. Même jeu, même texte, octet pour octet.","why":"C'est la règle telle que le moteur l'appliquera, pas le texte qu'on a écrit. Un humain valide sans jamais faire confiance à un LLM.","future":"La propriété à ne pas perdre : la politique reste relisible par un humain."},"internal/scrub":{"id":"internal/scrub","name":"scrub","kind":"pkg","loc":170,"test":121,"files":1,"doc":"Package scrub masks sensitive values in observability data before it leaves the bridge. Telemetry looks harmless until you read the labels: a scrape target carries its bearer token in a URL, an alert annotation quotes a failing request with a customer id, an instance label is a public IP. The model may summarise any of it into a ticket or a dashboard annotation the whole team reads. Masking happens server-side, before serialisation, rather than on the client where an injection could argue its way around it. The agent cannot leak what it never received. This is not a classifier: it is a set of high-value shapes (tokens, keys, JWTs, emails, routable IPs, customer identifiers). Anything subtler is contained by the other locks, not by pattern matching.","deps":[],"usedBy":["internal/obsserver","internal/proxy"],"depth":0,"layer":"socle","fate":"garder","title":"Caviardage","what":"Masque jetons, secrets par nom de clé, userinfo d'URL, emails, identifiants clients, et IP routables seulement.","why":"La télémétrie paraît inoffensive jusqu'à ce qu'on lise les labels.","future":"Caviarder l'état avant de l'envoyer à un classifieur externe : déjà écrit."},"internal/server":{"id":"internal/server","name":"server","kind":"pkg","loc":82,"test":0,"files":1,"doc":"Package server builds the two MCP servers the lab pits against each other. The construction lives here (not in the cmd/ mains) so the exact same tool handlers are exercised by the binaries and by the end-to-end test.","deps":["internal/mcptool"],"usedBy":["cmd/network-config","cmd/rogue"],"depth":1,"layer":"lab","fate":"jeter","title":"Serveurs du lab","what":"Construit les deux serveurs que le lab oppose — légitime et rogue.","why":"","future":""},"internal/session":{"id":"internal/session","name":"session","kind":"pkg","loc":446,"test":510,"files":1,"doc":"Package session tient l'état de session que Decide lit : qui appelle, et ce que la session a réellement consulté. L'état est tenu par l'engine, jamais déclaré par l'agent : il est indexé par la *mcp.ServerSession du go-sdk, pas par un identifiant que le client fournirait. Un appel passe par un Tour : tour, err := g.Entrer(ctx, ss, appelant) // verrou de session pris defer tour.Terminer()                    // verrou rendu, bornes appliquées dec := directive.Decide(jeu, tour.Etat(), appel) if dec.Effet != directive.Refuser { c, retour := tour.Transmettre(ctx, serveur, outil, dec.EmpreinteTransmise, backend) } Les appels d'une même session sont sérialisés : Decide voit toujours un état qui contient toutes les consultations précédentes. Un refus de l'engine (tour terminé sans Transmettre) n'est jamais une consultation.","deps":["internal/directive","internal/journal"],"usedBy":["cmd/mcp-gate","internal/gate"],"depth":4,"layer":"moteur","fate":"garder","title":"État de session","what":"Retient qui appelle et ce que la session a réellement consulté. Indexé par la session MCP du SDK, <strong>jamais par un identifiant que le client fournit</strong>.","why":"L'agent ne déclare pas son état, donc il ne peut pas mentir dessus. C'est ce qui permet des règles de flux : « pas de paiement si le panier n'a pas été lu juste avant ».","future":""},"internal/testca":{"id":"internal/testca","name":"testca","kind":"pkg","loc":116,"test":0,"files":1,"doc":"Package testca mints in-memory SPIFFE identities for tests. An SVID is an X.509 certificate whose URI SAN is a spiffe:// ID, signed by a trusted CA, which is what this package produces: it drives the real identity gate — the same tlsconfig authorizers SPIRE feeds in production — without SPIRE.","deps":[],"usedBy":[],"depth":0,"layer":"socle","fate":"garder","title":"CA de test","what":"Émet de vrais SVID X.509 SPIFFE en mémoire, sans SPIRE, à partir des mêmes sources go-spiffe que la Workload API.","why":"Les tests traversent de vrais handshakes TLS. La preuve ne dépend d'aucune infrastructure.","future":""},"internal/toolpin":{"id":"internal/toolpin","name":"toolpin","kind":"pkg","loc":198,"test":109,"files":1,"doc":"Package toolpin defends against the rug-pull: an upstream that is perfectly legitimate today and rewrites a tool's description or schema tomorrow, so the next session's model reads instructions the security review never saw. Identity does not catch this — the server proving who it is says nothing about its catalogue staying what it was. The mechanism is a lock file, the way dependency managers pin packages: each tool's identity-bearing fields (name, description, inputSchema) are hashed once, and every subsequent tools/list is checked against the recorded hash. A tool whose hash moved is not \"updated\", it is unverified, and it is disabled until an operator re-pins it deliberately. The first tools/list against a missing lock file writes it (trust on first use). TOFU is a deliberate trade: the alternative — hand-writing hashes — guarantees the file is never created at all. The pin is only as good as the state it was taken in, which the log line at pin time says out loud.","deps":[],"usedBy":["cmd/mcp-proxy","internal/backend","internal/proxy","internal/registre"],"depth":0,"layer":"socle","fate":"adapter","title":"Anti rug-pull","what":"Empreinte SHA-256 des schémas d'outils dans <code>tools.lock.json</code>. Si un serveur réécrit la description d'un outil après sa revue de sécurité, la mutation est détectée et l'outil mis en quarantaine.","why":"L'identité ne couvre pas ça : le serveur est bien celui qu'on croit, c'est son contenu qui a changé.","future":"Même mécanisme, moment déplacé : épingler l'artefact généré après son admission, au lieu d'un schéma publié avant."},"internal/toolpolicy":{"id":"internal/toolpolicy","name":"toolpolicy","kind":"pkg","loc":101,"test":110,"files":1,"doc":"Package toolpolicy decides whether a tool call may leave the agent. The layers below it are fallible: identity proves who the server is, the guardrail inspects what it says, and a text filter eventually loses to an adaptive attacker. This one assumes the injection lands and limits what a fooled model can reach. A model argued into calling drop_table finds the agent does not hold the right to call it. The check runs in the client, before the request leaves the process, so the server's answer is irrelevant: the call is never made.","deps":[],"usedBy":["cmd/agent","cmd/agent-sre","cmd/mcp-proxy","internal/approval","internal/proxy"],"depth":0,"layer":"socle","fate":"adapter","title":"Verrou 2 — exécution","what":"Middleware sur <code>CallTool</code> : refus par défaut, allowlist de capacités, séparation <code>read</code> / <code>action</code>. Un appel refusé n'atteint jamais la session interne.","why":"La ligne read/action est l'ancêtre direct des <em>classes d'effet</em> de la refonte.","future":"L'allowlist par nom d'outil meurt avec l'hypothèse du catalogue fini ; l'idée de classer les capacités survit."},"internal/triage":{"id":"internal/triage","name":"triage","kind":"pkg","loc":160,"test":122,"files":1,"doc":"Package triage turns firing alerts and a metric series into the incident note the agent proposes to write. It is deterministic. A model writes a better sentence, but the sentence is not the security-relevant part: the note is derived from data the bridge already validated and scrubbed, and its shape is predictable enough to be reviewed in the seconds an on-call engineer will give it. Wiring in an LLM rewrites this text; it does not change which tools get called.","deps":["internal/obstool"],"usedBy":["cmd/agent-sre"],"depth":1,"layer":"lab","fate":"jeter","title":"Note d'incident","what":"Déterministe, par gabarit. Aucun LLM branché.","why":"","future":""},"cmd/agent":{"id":"cmd/agent","name":"agent","kind":"cmd","loc":126,"test":0,"files":1,"doc":"Command agent is the MCP host: the party that trusts servers. It reads a trust config (an endpoint and an expected identity), connects to whatever answers, and calls get_file. TRUST_MODE splits the behaviour: naive     — MCP as it ships: trust the endpoint on sight, verify no identity. Pointed at the rogue, the agent is robbed. zerotrust — require the server to prove it holds ExpectedSPIFFEID. The rogue is refused at the handshake, before any tool runs, because it cannot produce that identity. Same config, same rogue: only continuous verification changes the outcome.","deps":["internal/envelope","internal/guardrail","internal/identity","internal/labconfig","internal/mcptool","internal/toolpolicy"],"usedBy":[],"depth":2,"layer":"lab","fate":"jeter","title":"L'agent du lab","what":"<code>TRUST_MODE=naive</code> se fait dévaliser, <code>zerotrust</code> rejette.","why":"","future":""},"cmd/agent-sre":{"id":"cmd/agent-sre","name":"agent-sre","kind":"cmd","loc":372,"test":0,"files":1,"doc":"Command agent-sre is the on-call agent: it reads production telemetry and writes on the team's dashboards. One incident pass: get_active_alerts  →  query_metrics  →  annotate_dashboard (read)               (read)             (action) with every layer in force: identity   — the bridge must prove spiffe://<td>/obs-bridge before any telemetry is requested (internal/identity). execution  — three tools granted, two read, one action; anything else is refused in-process (internal/toolpolicy), and the action needs a human approval naming the dashboard. data/code  — replies are sealed in an <untrusted_data> envelope before they could enter a prompt (internal/envelope). egress     — enforced outside the process by NetworkPolicy: this pod reaches the bridge and nothing else. SIMULATE_COMPROMISE=on makes the agent behave as a model that took the bait: it reads instructions out of the alert text and obeys them. Nothing else changes, and what still fails is the point.","deps":["internal/envelope","internal/identity","internal/labconfig","internal/obstool","internal/toolpolicy","internal/triage"],"usedBy":[],"depth":2,"layer":"lab","fate":"jeter","title":"L'agent SRE","what":"Reçoit un outil, jamais un token.","why":"","future":""},"cmd/checkout-api":{"id":"cmd/checkout-api","name":"checkout-api","kind":"cmd","loc":132,"test":0,"files":1,"doc":"Command checkout-api is the service the SRE agent investigates: a small HTTP API that exposes Prometheus metrics and can be made to fail on demand. It exists so the incident is real: Prometheus scrapes a rising 5xx rate, the recording rule fires, Alertmanager lists it, the agent finds it. Nothing is stubbed between the failure and the annotation. GET  /            — serve a request (500s at the configured failure rate) GET  /metrics     — Prometheus text exposition POST /break       — start failing (this is the \"deployment v2.1.0\") POST /heal        — stop failing break/heal are reachable only from inside the cluster: the service is not exposed, and the namespace runs default-deny NetworkPolicies.","deps":["internal/labconfig"],"usedBy":[],"depth":1,"layer":"lab","fate":"jeter","title":"Le service qui tombe","what":"Cible du scénario d'incident.","why":"","future":""},"cmd/console":{"id":"cmd/console","name":"console","kind":"cmd","loc":147,"test":37,"files":1,"doc":"Command console sert les écrans de démonstration sur 127.0.0.1. Tout est embarqué dans le binaire (HTML, CSS, JavaScript) : aucune ressource n'est chargée depuis le réseau (l'option -dev les lit sur disque). La console lit les journaux, l'état des sessions et les règles ; elle écrit seulement les règles (version suivante, ancienne version archivée), leur origine, les jetons et refus de validation, et ses décisions sur les propositions de l'Analyste. Elle ne décide rien : tout ce qu'elle affiche vient du journal, de etat.json ou d'une commande de l'engine. MCP_GATE_CLE_JOURNAL=<hex> console -racine . -demo demo La clé du journal n'est lue que dans l'environnement, comme le fait le gate. Sans clé, les écrans s'affichent mais la chaîne est déclarée non vérifiable, en rouge.","deps":["internal/console"],"usedBy":[],"depth":6,"layer":"demo","fate":"jeter","title":"Console","what":"Binaire de l'interface de démo.","why":"","future":""},"cmd/directive":{"id":"cmd/directive","name":"directive","kind":"cmd","loc":225,"test":323,"files":1,"doc":"Command directive vérifie et relit un jeu de directives lu sur l'entrée standard. C'est le seul juge de ce que le compilateur propose : aucune sortie de modèle n'est acceptée sans passer par le chargeur strict. Seul le format v2 est admis (docs/schema-directive-v2.md) : une directive v1 (clé verrou, ou sans déclencheur) est refusée par verifier et relire, une erreur par directive fautive, désignée par sa position. directive verifier [--exiger-brouillon] < jeu.json   {\"ok\":true,...} ou {\"ok\":false,\"erreurs\":[...]} directive relire   [--directives D-009,D-010] < jeu.json relecture en français, par gabarit ; avec --directives, seulement celles-ci (ajout à un jeu) directive fuseaux                                   fuseaux admis par le chargeur, en JSON --exiger-brouillon refuse aussi toute directive dont le statut n'est pas brouillon : c'est ainsi que le compilateur s'assure de ne jamais produire une directive appliquée. Codes de sortie : 0 succès, 1 jeu refusé, 2 usage ou lecture impossible.","deps":["internal/directive","internal/relecture"],"usedBy":[],"depth":4,"layer":"moteur","fate":"adapter","title":"Le juge","what":"<code>verifier</code>, <code>relire</code>, <code>fuseaux</code>. Chargeur strict en ligne de commande.","why":"« Le seul juge de ce que le compilateur propose : aucune sortie de modèle n'est acceptée sans passer par le chargeur strict. »","future":""},"cmd/greffe":{"id":"cmd/greffe","name":"greffe","kind":"cmd","loc":72,"test":0,"files":1,"doc":"Command greffe is a minimal legal MCP server over stdio: the upstream mcp-proxy wraps. Two tools, one of each capability class: lire_piece              read   — returns a document from a dossier envoyer_mise_en_demeure action — irreversible, names a third party piece_04.pdf carries a hidden instruction: the injection the demo turns on.","deps":[],"usedBy":[],"depth":0,"layer":"demo","fate":"jeter","title":"Serveur de démo","what":"Deux outils, une pièce piégée.","why":"","future":""},"cmd/journal":{"id":"cmd/journal","name":"journal","kind":"cmd","loc":421,"test":163,"files":1,"doc":"Commande journal lit un journal de l'engine (mcp-gate) pour un humain. journal verifier <journal.jsonl> journal rejouer  <journal.jsonl> -directives <jeu.json> [<jeu2.json>] [-coffre <coffre.jsonl>] [-annuaire <annuaire.json> -annuaire-autorite <autorite.pub>] verifier contrôle la chaîne HMAC et résume le journal : sessions, demandeurs, appels par décision et par statut, approbations, notifications, alertes. rejouer vérifie d'abord la chaîne, puis rejoue chaque appel sous le jeu d'origine à sa date (le jeu est retrouvé parmi ceux fournis par son identifiant et sa version) et affiche, appel par appel, la décision journalisée, la décision rejouée et les écarts. Avec un second jeu, il ajoute la vue avant / après : ce que chaque appel serait devenu sous ce jeu, et le compte des transitions. Le coffre est par défaut coffre.jsonl à côté du journal. Avec l'annuaire, les rôles des valideurs sont revérifiés à leur date. La clé HMAC est lue dans MCP_GATE_CLE_JOURNAL (hexadécimal), comme pour mcp-gate. Code de sortie : 0 si tout est conforme, 1 si la chaîne est rompue ou si un écart est constaté, 2 pour une erreur d'usage ou de lecture.","deps":["internal/annuaire","internal/directive","internal/journal","internal/rejeu"],"usedBy":[],"depth":5,"layer":"moteur","fate":"garder","title":"L'audit","what":"<code>verifier</code> contrôle la chaîne HMAC et résume. <code>rejouer</code> rejoue chaque appel sous son jeu d'origine, à sa date.","why":"C'est la commande qui répond « pourquoi vous avez refusé ça le 12 mars » — en relançant, pas en expliquant.","future":""},"cmd/mcp-approve":{"id":"cmd/mcp-approve","name":"mcp-approve","kind":"cmd","loc":246,"test":102,"files":2,"doc":"Command mcp-approve mints one approval token: the operator-side half of the _meta.approvalToken mechanism. In production this role belongs to an SSO/OIDC-backed signer, so that \"approved_by\" is an authenticated identity; this CLI is the lab and break-glass shape. mcp-approve -key-file hmac.key -by alice@example.com -ticket INC-4242 \\ -tool drop_db -args '{\"database\":\"staging\"}' -principal and -actor add the mandate: on whose behalf the act is performed and which delegate performs it, so the trail answers \"who had it done\" and not only \"who approved\". Subcommands annuaire-demo, identite and valider work with the directory of authorisations (internal/annuaire): see annuaire.go. It prints the action digest and a JWT valid for -ttl (default and maximum policy: 15m), bound to exactly that tool+arguments. The agent then passes the token in the tools/call params under _meta.approvalToken.","deps":["internal/annuaire","internal/approval"],"usedBy":[],"depth":2,"layer":"socle","fate":"garder","title":"Émission d'approbation","what":"Frappe un jeton d'approbation. En production ce rôle revient à un signataire adossé à un SSO/OIDC.","why":"","future":""},"cmd/mcp-audit":{"id":"cmd/mcp-audit","name":"mcp-audit","kind":"cmd","loc":127,"test":0,"files":2,"doc":"Command mcp-audit verifies an approval trail and prints the chain of responsibility it records. It is the auditor's half of the mechanism: mcp-approve mints the authority, mcp-proxy enforces and records it, and this walks the record back. mcp-audit -file audit.jsonl -key-file audit-hmac.key Verification checks two things per entry: that its content still seals to the MAC it carries, and that its prev equals the previous entry's MAC. A trail that passes shows nothing was edited, dropped or reordered since it was written — by anyone without the key. Without -key-file the chain is checked as plain SHA-256: enough to catch truncation and accidental edits, not enough to stand against someone who rewrote the file. The exit status says which guarantee you got.","deps":["internal/approval"],"usedBy":[],"depth":2,"layer":"socle","fate":"garder","title":"Vérification du trail","what":"Rejoue la chaîne de responsabilité : contenu scellé au MAC qu'il porte, et <code>prev</code> égal au MAC précédent.","why":"","future":""},"cmd/mcp-gate":{"id":"cmd/mcp-gate","name":"mcp-gate","kind":"cmd","loc":365,"test":45,"files":1,"doc":"Commande mcp-gate est l'agrégateur : un serveur MCP en stdio qui expose à l'agent les outils de tous les serveurs du registre sous le nom serveur__outil, et fait passer chaque appel par l'engine (directives du de la politique, attestation des serveurs, journal chaîné, coffre des arguments) avant de le router. mcp-gate -registre registre.json -directives jeu.json \\ -journal journal.jsonl -coffre coffre.jsonl Avec -annuaire et -annuaire-autorite, l'annuaire des habilitations est chargé (signature vérifiée) ; le jeton d'identité du demandeur est lu dans MCP_GATE_JETON_DEMANDEUR, vérifié au lancement, et le demandeur est résolu à l'ouverture de la session. Avec -journaux-precedents <motif>, les journaux des processus précédents (même clé) sont relus au démarrage : un jeton d'approbation qu'ils ont accepté est refusé comme déjà utilisé. Une chaîne rompue empêche le démarrage. Un serveur http-spiffe du registre est joint en mTLS : le gate obtient sa SVID de la Workload API SPIRE (-spiffe-socket, ou SPIFFE_ENDPOINT_SOCKET) et exige du serveur l'identité SPIFFE épinglée au registre. Sans serveur http-spiffe, SPIRE n'est pas sollicité. Avec -ecoute-spiffe host:port (lab, exige -appelants-spiffe), le gate est servi en HTTP streamable + mTLS SPIFFE au lieu de stdio : seuls les SPIFFE ID listés passent la poignée de main, et l'appelant consigné au journal est celui du client, prouvé par son certificat. La démo reste en stdio (appelant local-process). La clé HMAC du journal est lue dans MCP_GATE_CLE_JOURNAL (hexadécimal, 32 octets au moins), jamais dans un fichier ni sur la ligne de commande. Sans clé, sans registre ou sans jeu valide, rien ne démarre. SIGHUP recharge le jeu de directives depuis le même fichier, sans redémarrer : le document passe par le chargeur strict, et s'il est refusé l'ancien jeu reste actif (entrée alerte au journal). Un signal plutôt qu'une surveillance du fichier : la bascule est un acte explicite de l'opérateur une fois le jeu validé, jamais l'effet d'une sauvegarde en cours d'écriture, et elle ne demande aucune dépendance. kill -HUP $(pidof mcp-gate) stdout est le canal MCP : toutes les traces vont sur stderr.","deps":["internal/annuaire","internal/backend","internal/directive","internal/gate","internal/identity","internal/journal","internal/registre","internal/session"],"usedBy":[],"depth":6,"layer":"moteur","fate":"adapter","title":"Le moteur, en binaire","what":"L'agrégateur : expose les outils du registre, fait passer chaque appel par le moteur, écrit le journal.","why":"<code>mcp-gate -registre r.json -directives jeu.json -journal j.jsonl -coffre c.jsonl</code>","future":""},"cmd/mcp-observability":{"id":"cmd/mcp-observability","name":"mcp-observability","kind":"cmd","loc":129,"test":0,"files":1,"doc":"Command mcp-observability is the observability MCP bridge, the production counterpart to the lab's network-config server. It fronts Prometheus, Alertmanager and Grafana behind three MCP tools and is the only workload holding the Grafana write credential: the agent gets a tool, never a token, so one talked into exfiltrating the API key has nothing to exfiltrate. Two identity decisions, both stricter than the lab's: who may call — the listener authorizes exactly the SPIFFE IDs in AUTHORIZED_CLIENT_IDS, not anyone attested by our SPIRE. A compromised pod elsewhere holds a valid SVID and still cannot open this socket. who we are   — the bridge serves its own SVID, so the agent can tell it from something that answered on the same Service name. Configuration is by environment and fails closed when unset.","deps":["internal/identity","internal/labconfig","internal/obsclient","internal/obsserver","internal/promql"],"usedBy":[],"depth":2,"layer":"lab","fate":"jeter","title":"Le bridge","what":"Détient le token Grafana. L'agent ne le voit jamais.","why":"","future":""},"cmd/mcp-proxy":{"id":"cmd/mcp-proxy","name":"mcp-proxy","kind":"cmd","loc":384,"test":0,"files":1,"doc":"Command mcp-proxy fronts a third-party MCP server with the locks this repository builds, without touching that server's source. It is the generic form of what cmd/mcp-observability does for a bridge we wrote ourselves. # Two transports Network sidecar (the default): the deployment shape it assumes: ┌── pod ───────────────────────────────────────────────┐ │  mcp-proxy   :8443  identity per IDENTITY_MODE       │ │      │                                               │ │      ▼                                               │ │  upstream    127.0.0.1:8080  vendor MCP server,      │ │                              bound to loopback       │ └──────────────────────────────────────────────────────┘ Two placement rules decide whether this is a control or a decoration, and neither is enforceable from inside the process: the upstream binds loopback only, or a caller reaches it directly; the pod carries a default-deny egress policy, or the upstream exfiltrates on its own and never needs a caller. Stdio wrapper (-stdio): the desktop shape — Claude Desktop, an IDE, a local CLI — where the MCP server is a subprocess and there is no network to put a handshake on. In the host's config, wrap the server: mcp-proxy -stdio -- npx some-vendor-mcp-server --flag Lock 0 has no meaning across an OS pipe; what replaces it is supply-chain integrity: UPSTREAM_SHA256 pins the binary's hash before it is spawned. # Identity modes (network transport) IDENTITY_MODE=spiffe  (default) this process terminates mTLS against a SPIRE-issued SVID — the original design; IDENTITY_MODE=mesh    an Istio/Envoy sidecar already ran SPIFFE mTLS and asserts the peer in X-Forwarded-Client-Cert; the proxy verifies the assertion against the same AUTHORIZED_CLIENT_IDS allowlist. No SPIRE needed beyond the one the mesh already runs; IDENTITY_MODE=none    plain listener, identity explicitly waived. For development only; the log says so on every start. Configuration is by environment and fails closed when unset: no identity, no listener; no ALLOWED_TOOLS, no tool call; no approver, no write; no RESOURCE_URIS, no resources/read; no ALLOWED_PROMPTS, no prompts/get.","deps":["internal/approval","internal/identity","internal/labconfig","internal/proxy","internal/toolpin","internal/toolpolicy"],"usedBy":[],"depth":3,"layer":"socle","fate":"jeter","title":"Sidecar","what":"Le proxy générique, en binaire.","why":"","future":""},"cmd/network-config":{"id":"cmd/network-config","name":"network-config","kind":"cmd","loc":58,"test":0,"files":1,"doc":"Command network-config is the legitimate MCP server. It exposes get_file over a fake router configuration (labdata/router.conf) and serves over mTLS with an SVID from SPIRE, so a zero-trust agent can verify it is spiffe://<trust-domain>/network-config before trusting it.","deps":["internal/identity","internal/labconfig","internal/server"],"usedBy":[],"depth":2,"layer":"lab","fate":"jeter","title":"Le serveur légitime","what":"Sa contrepartie attestée.","why":"","future":""},"cmd/registre-demo":{"id":"cmd/registre-demo","name":"registre-demo","kind":"cmd","loc":317,"test":119,"files":2,"doc":"Commande registre-demo écrit le registre de démonstration et le registre d'attaque depuis le manifeste de construction des serveurs. scripts/construire-serveurs.sh      # bin/ et bin/manifeste.json go run ./cmd/registre-demo          # demo/registre.json, demo/registre-attaque.json Les deux fichiers portent des chemins absolus propres à la machine et les empreintes des binaires construits : ils sont régénérés, jamais versionnés. Deux exécutions sur les mêmes binaires écrivent les mêmes octets. Voir internal/registredemo. Avec -catalogue, écrit aussi le catalogue du compilateur de directives dérivé du registre (serveurs, outils, arguments en pointeurs JSON). Lui ne dépend que des schémas épinglés : il est versionné, et internal/registredemo vérifie qu'il ne diverge pas du registre. go run ./cmd/registre-demo -catalogue agents/compilateur/exemples/catalogue-demo.json Avec -vocabulaire, écrit seulement le vocabulaire du compilateur (étiquettes de demo/etiquettes.json, rôles et groupes de demo/annuaire-source.json, groupes des personnes concernées du référentiel RH) : il ne dépend que de fichiers versionnés, aucun binaire n'est lu. Il est versionné, et un test vérifie qu'il ne diverge pas de ses sources. go run ./cmd/registre-demo -vocabulaire agents/compilateur/exemples/vocabulaire-demo.json","deps":["internal/annuaire","internal/registredemo"],"usedBy":[],"depth":5,"layer":"demo","fate":"jeter","title":"Générateur de registre","what":"Régénéré, jamais versionné.","why":"","future":""},"cmd/rogue":{"id":"cmd/rogue","name":"rogue","kind":"cmd","loc":55,"test":0,"files":1,"doc":"Command rogue is the malicious MCP server. It advertises the same tool as the legitimate one — same name, same description — so inspection cannot separate them. Instead of reading a file it logs the request to stolen.log and returns a poisoned payload. The rogue is not registered in SPIRE and has no SVID. A self-signed certificate is enough to speak HTTPS at a naive agent, and never enough for a zero-trust one. A lab prop: it attacks no real system.","deps":["internal/identity","internal/labconfig","internal/server"],"usedBy":[],"depth":2,"layer":"lab","fate":"jeter","title":"Le serveur malveillant","what":"Même nom d'outil que le légitime, aucune entrée SPIRE, donc aucun SVID.","why":"","future":""}};
+
+/* ---------- disposition : colonnes = profondeur ---------- */
+const NW = 186, NH = 56, GX = 78, GY = 18, PAD = 44;
+const ORDER = {socle:0, moteur:1, lab:2, demo:3};
+const cols = {};
+Object.values(DATA).forEach(n => (cols[n.depth] ||= []).push(n));
+const depths = Object.keys(cols).map(Number).sort((a,b)=>a-b);
+depths.forEach(d => {
+  cols[d].sort((a,b) => (ORDER[a.layer]-ORDER[b.layer]) || b.usedBy.length-a.usedBy.length
+                        || a.id.localeCompare(b.id));
+  cols[d].forEach((n,i) => { n.x = PAD + d*(NW+GX); n.y = PAD + i*(NH+GY); });
+});
+const tallest = Math.max(...depths.map(d => cols[d].length));
+depths.forEach(d => {                       // centrer chaque colonne verticalement
+  const off = ((tallest - cols[d].length) * (NH+GY)) / 2;
+  cols[d].forEach(n => n.y += off);
+});
+const W = PAD*2 + (depths.length-1)*(NW+GX) + NW;
+const H = PAD*2 + tallest*(NH+GY) - GY;
+
+/* ---------- rendu ---------- */
+const SVG = 'http://www.w3.org/2000/svg';
+const cv = document.getElementById('cv');
+const gRoot = document.createElementNS(SVG,'g');
+const gEdge = document.createElementNS(SVG,'g');
+const gNode = document.createElementNS(SVG,'g');
+gRoot.append(gEdge, gNode); cv.append(gRoot);
+
+const edges = [];
+Object.values(DATA).forEach(n => n.deps.forEach(d => {
+  const s = DATA[d]; if (!s) return;
+  edges.push({from:d, to:n.id, el:null, s, t:n});
+}));
+
+function elbow(s, t){                         // coude orthogonal, style arbre techno
+  const x1 = s.x + NW, y1 = s.y + NH/2, x2 = t.x, y2 = t.y + NH/2;
+  const mx = x1 + Math.max(18, (x2 - x1) / 2), r = 9;
+  if (Math.abs(y1 - y2) < 2) return `M${x1} ${y1} L${x2} ${y2}`;
+  const dir = y2 > y1 ? 1 : -1;
+  return `M${x1} ${y1} H${mx-r} Q${mx} ${y1} ${mx} ${y1+r*dir} `
+       + `V${y2-r*dir} Q${mx} ${y2} ${mx+r} ${y2} H${x2}`;
+}
+edges.forEach(e => {
+  const p = document.createElementNS(SVG,'path');
+  p.setAttribute('d', elbow(e.s, e.t));
+  p.setAttribute('class','edge');
+  gEdge.append(p); e.el = p;
+});
+
+function trunc(s, n){ return s.length > n ? s.slice(0, n-1) + '…' : s; }
+
+const nodeEls = {};
+Object.values(DATA).forEach(n => {
+  const g = document.createElementNS(SVG,'g');
+  g.setAttribute('class','node');
+  g.setAttribute('transform', `translate(${n.x} ${n.y})`);
+  g.dataset.layer = n.layer; g.dataset.fate = n.fate; g.dataset.id = n.id;
+  g.setAttribute('tabindex','0'); g.setAttribute('role','button');
+  g.setAttribute('aria-label', `${n.id} — ${n.title}`);
+
+  const box = document.createElementNS(SVG,'rect');
+  box.setAttribute('class','nbox');
+  box.setAttribute('width', NW); box.setAttribute('height', NH); box.setAttribute('rx', 4);
+
+  const bar = document.createElementNS(SVG,'rect');
+  bar.setAttribute('class','bar');
+  bar.setAttribute('x', 0); bar.setAttribute('y', 0);
+  bar.setAttribute('width', 4); bar.setAttribute('height', NH); bar.setAttribute('rx', 2);
+
+  const t1 = document.createElementNS(SVG,'text');
+  t1.setAttribute('class','ntitle'); t1.setAttribute('x', 13); t1.setAttribute('y', 20);
+  t1.textContent = (n.kind === 'cmd' ? '⌘ ' : '') + n.name;
+
+  const t2 = document.createElementNS(SVG,'text');
+  t2.setAttribute('class','nsub'); t2.setAttribute('x', 13); t2.setAttribute('y', 35);
+  t2.textContent = trunc(n.title, 28);
+
+  const t3 = document.createElementNS(SVG,'text');
+  t3.setAttribute('class','nloc'); t3.setAttribute('x', 13); t3.setAttribute('y', 48);
+  t3.textContent = `${n.loc} LOC · ${n.usedBy.length}↓ ${n.deps.length}↑`;
+
+  g.append(box, bar, t1, t2, t3);
+  gNode.append(g); nodeEls[n.id] = g;
+  // Un glissé parti d'une brique déclenche quand même un `click` au relâché :
+  // le seuil distingue les deux.
+  g.addEventListener('click', () => { if (moved < SEUIL) select(n.id); });
+  g.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); select(n.id); }
+  });
+});
+
+/* ---------- pan & zoom ---------- */
+let vx = 0, vy = 0, k = 1;
+function apply(){ gRoot.setAttribute('transform', `translate(${vx} ${vy}) scale(${k})`); }
+function fit(){
+  const r = cv.getBoundingClientRect();
+  k = Math.min(r.width / (W + 40), r.height / (H + 40), 1);
+  k = Math.max(k, .22);
+  vx = (r.width - W*k) / 2; vy = (r.height - H*k) / 2;
+  apply();
+}
+// Pas de setPointerCapture ici : la capture retarge le `click` qui suit vers
+// le canvas, et les briques cessent d'être cliquables. On écoute donc le
+// déplacement sur window, ce qui suit aussi le curseur hors du cadre.
+const SEUIL = 6;                       // en deçà, c'est un clic, pas un glissé
+let down = false, px = 0, py = 0, moved = 0;
+cv.addEventListener('pointerdown', e => {
+  down = true; moved = 0; px = e.clientX; py = e.clientY;
+  cv.classList.add('drag');
+});
+addEventListener('pointermove', e => {
+  if (!down) return;
+  const dx = e.clientX - px, dy = e.clientY - py;
+  moved += Math.abs(dx) + Math.abs(dy);
+  vx += dx; vy += dy; px = e.clientX; py = e.clientY; apply();
+});
+['pointerup','pointercancel'].forEach(t => addEventListener(t, () => {
+  down = false; cv.classList.remove('drag');
+}));
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+  const nk = Math.min(2.2, Math.max(.2, k * (e.deltaY < 0 ? 1.12 : 1/1.12)));
+  vx = mx - (mx - vx) * (nk/k); vy = my - (my - vy) * (nk/k); k = nk; apply();
+}, {passive:false});
+function zoom(f){
+  const r = cv.getBoundingClientRect(), mx = r.width/2, my = r.height/2;
+  const nk = Math.min(2.2, Math.max(.2, k*f));
+  vx = mx - (mx - vx) * (nk/k); vy = my - (my - vy) * (nk/k); k = nk; apply();
+}
+document.getElementById('zi').onclick = () => zoom(1.25);
+document.getElementById('zo').onclick = () => zoom(1/1.25);
+document.getElementById('zr').onclick = fit;
+
+/* ---------- sélection ---------- */
+const panel = document.getElementById('panel');
+const FATE = {garder:'à garder', adapter:'à adapter', jeter:'à jeter'};
+let cur = null;
+
+function select(id){
+  cur = id; const n = DATA[id];
+  Object.entries(nodeEls).forEach(([k2, el]) => {
+    el.classList.toggle('sel', k2 === id);
+    el.classList.toggle('near', n.deps.includes(k2) || n.usedBy.includes(k2));
+  });
+  edges.forEach(e => {
+    e.el.classList.toggle('in',  e.to === id);
+    e.el.classList.toggle('out', e.from === id);
+    e.el.classList.toggle('dim', e.to !== id && e.from !== id);
+  });
+
+  document.getElementById('pid').textContent = n.id;
+  document.getElementById('ptags').innerHTML =
+    `<span class="tag ${n.layer}">${n.layer}</span>` +
+    `<span class="tag">${FATE[n.fate]}</span>` +
+    `<span class="tag">${n.kind === 'cmd' ? 'binaire' : 'paquet'}</span>` +
+    `<span class="tag">profondeur ${n.depth}</span>`;
+
+  const lk = (ids, dir) => ids.length
+    ? `<div class="links">${ids.map(i =>
+        `<button class="lk ${DATA[i] ? DATA[i].layer : ''}" data-go="${i}">${
+          dir === 'up' ? '↑ ' : '↓ '}${i.replace(/^internal\//,'')}</button>`).join('')}</div>`
+    : `<p class="none">aucun</p>`;
+
+  document.getElementById('pbody').innerHTML = `
+    <p class="prole">${n.title}</p>
+    <div class="sec"><h3>Ce que ça fait</h3><p>${n.what}</p></div>
+    ${n.why    ? `<div class="sec"><h3>Pourquoi ça compte</h3><div class="why"><p>${n.why}</p></div></div>` : ''}
+    ${n.future ? `<div class="sec"><h3>Dans la refonte</h3><div class="future"><p>${n.future}</p></div></div>` : ''}
+    <div class="sec"><h3>Poids</h3>
+      <div class="metrics">
+        <div><b>${n.loc}</b><span>source</span></div>
+        <div><b>${n.test}</b><span>tests</span></div>
+        <div><b>${n.files}</b><span>fichiers</span></div>
+        <div><b>${n.usedBy.length}</b><span>utilisé par</span></div>
+      </div></div>
+    <div class="sec"><h3>Dépend de (${n.deps.length})</h3>${lk(n.deps,'up')}</div>
+    <div class="sec"><h3>Utilisé par (${n.usedBy.length})</h3>${lk(n.usedBy,'down')}</div>
+    ${n.doc ? `<div class="doc"><span>Doc du paquet, dans le code</span>${
+      n.doc.slice(0,460).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))
+      }${n.doc.length > 460 ? '…' : ''}</div>` : ''}`;
+
+  document.querySelectorAll('[data-go]').forEach(b =>
+    b.onclick = () => { select(b.dataset.go); center(b.dataset.go); });
+  panel.classList.add('open');
+}
+function center(id){
+  const n = DATA[id], r = cv.getBoundingClientRect();
+  const wide = r.width > 760, avail = wide ? r.width - 400 : r.width;
+  // sur un écran étroit, le cadrage d'ensemble rend les briques illisibles :
+  // on remonte à une échelle où le texte se lit avant de recentrer.
+  if (k < 0.62) k = 0.62;
+  vx = avail/2 - (n.x + NW/2)*k;
+  vy = (wide ? r.height/2 : r.height*0.16) - (n.y + NH/2)*k;
+  apply();
+}
+function clear(){
+  cur = null; panel.classList.remove('open');
+  Object.values(nodeEls).forEach(el => el.classList.remove('sel','near'));
+  edges.forEach(e => e.el.classList.remove('in','out','dim'));
+}
+document.getElementById('pclose').onclick = clear;
+cv.addEventListener('click', e => { if (e.target === cv && moved < SEUIL) clear(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') clear(); });
+
+/* ---------- filtres ---------- */
+const on = {socle:true, moteur:true, lab:true, demo:true};
+let keepOnly = false, q = '';
+function refresh(){
+  Object.values(DATA).forEach(n => {
+    const ok = on[n.layer]
+      && (!keepOnly || n.fate !== 'jeter')
+      && (!q || (n.id + ' ' + n.title + ' ' + n.what).toLowerCase().includes(q));
+    nodeEls[n.id].classList.toggle('off', !ok);
+  });
+  edges.forEach(e => {
+    const vis = !nodeEls[e.from].classList.contains('off')
+             && !nodeEls[e.to].classList.contains('off');
+    e.el.style.display = vis ? '' : 'none';
+  });
+}
+document.querySelectorAll('.chip[data-layer]').forEach(b => b.onclick = () => {
+  const L = b.dataset.layer; on[L] = !on[L];
+  b.setAttribute('aria-pressed', String(on[L])); refresh();
+});
+document.getElementById('keep').onclick = e => {
+  keepOnly = !keepOnly; e.target.setAttribute('aria-pressed', String(keepOnly)); refresh();
+};
+document.getElementById('q').addEventListener('input', e => {
+  q = e.target.value.trim().toLowerCase(); refresh();
+});
+
+/* ---------- accueil ---------- */
+const intro = document.getElementById('intro');
+document.getElementById('start').onclick = () => {
+  intro.hidden = true; fit(); select('internal/directive'); center('internal/directive');
+};
+document.getElementById('help').onclick = () => { intro.hidden = false; };
+
+fit();
+addEventListener('resize', () => { if (!cur) fit(); });
+</script>
