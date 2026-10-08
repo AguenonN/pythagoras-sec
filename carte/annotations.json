@@ -1,0 +1,386 @@
+{
+ "cmd/agent": {
+  "layer": "lab",
+  "fate": "jeter",
+  "title": "L'agent du lab",
+  "what": "<code>TRUST_MODE=naive</code> se fait dévaliser, <code>zerotrust</code> rejette.",
+  "why": "",
+  "future": ""
+ },
+ "cmd/agent-sre": {
+  "layer": "lab",
+  "fate": "jeter",
+  "title": "L'agent SRE",
+  "what": "Reçoit un outil, jamais un token.",
+  "why": "",
+  "future": ""
+ },
+ "cmd/checkout-api": {
+  "layer": "lab",
+  "fate": "jeter",
+  "title": "Le service qui tombe",
+  "what": "Cible du scénario d'incident.",
+  "why": "",
+  "future": ""
+ },
+ "cmd/console": {
+  "layer": "demo",
+  "fate": "jeter",
+  "title": "Console",
+  "what": "Binaire de l'interface de démo.",
+  "why": "",
+  "future": ""
+ },
+ "cmd/directive": {
+  "layer": "moteur",
+  "fate": "adapter",
+  "title": "Le juge",
+  "what": "<code>verifier</code>, <code>relire</code>, <code>fuseaux</code>. Chargeur strict en ligne de commande.",
+  "why": "« Le seul juge de ce que le compilateur propose : aucune sortie de modèle n'est acceptée sans passer par le chargeur strict. »",
+  "future": ""
+ },
+ "cmd/greffe": {
+  "layer": "demo",
+  "fate": "jeter",
+  "title": "Serveur de démo",
+  "what": "Deux outils, une pièce piégée.",
+  "why": "",
+  "future": ""
+ },
+ "cmd/journal": {
+  "layer": "moteur",
+  "fate": "garder",
+  "title": "L'audit",
+  "what": "<code>verifier</code> contrôle la chaîne HMAC et résume. <code>rejouer</code> rejoue chaque appel sous son jeu d'origine, à sa date.",
+  "why": "C'est la commande qui répond « pourquoi vous avez refusé ça le 12 mars » — en relançant, pas en expliquant.",
+  "future": ""
+ },
+ "cmd/mcp-approve": {
+  "layer": "socle",
+  "fate": "garder",
+  "title": "Émission d'approbation",
+  "what": "Frappe un jeton d'approbation. En production ce rôle revient à un signataire adossé à un SSO/OIDC.",
+  "why": "",
+  "future": ""
+ },
+ "cmd/mcp-audit": {
+  "layer": "socle",
+  "fate": "garder",
+  "title": "Vérification du trail",
+  "what": "Rejoue la chaîne de responsabilité : contenu scellé au MAC qu'il porte, et <code>prev</code> égal au MAC précédent.",
+  "why": "",
+  "future": ""
+ },
+ "cmd/mcp-gate": {
+  "layer": "moteur",
+  "fate": "adapter",
+  "title": "Le moteur, en binaire",
+  "what": "L'agrégateur : expose les outils du registre, fait passer chaque appel par le moteur, écrit le journal.",
+  "why": "<code>mcp-gate -registre r.json -directives jeu.json -journal j.jsonl -coffre c.jsonl</code>",
+  "future": ""
+ },
+ "cmd/mcp-observability": {
+  "layer": "lab",
+  "fate": "jeter",
+  "title": "Le bridge",
+  "what": "Détient le token Grafana. L'agent ne le voit jamais.",
+  "why": "",
+  "future": ""
+ },
+ "cmd/mcp-proxy": {
+  "layer": "socle",
+  "fate": "jeter",
+  "title": "Sidecar",
+  "what": "Le proxy générique, en binaire.",
+  "why": "",
+  "future": ""
+ },
+ "cmd/network-config": {
+  "layer": "lab",
+  "fate": "jeter",
+  "title": "Le serveur légitime",
+  "what": "Sa contrepartie attestée.",
+  "why": "",
+  "future": ""
+ },
+ "cmd/registre-demo": {
+  "layer": "demo",
+  "fate": "jeter",
+  "title": "Générateur de registre",
+  "what": "Régénéré, jamais versionné.",
+  "why": "",
+  "future": ""
+ },
+ "cmd/rogue": {
+  "layer": "lab",
+  "fate": "jeter",
+  "title": "Le serveur malveillant",
+  "what": "Même nom d'outil que le légitime, aucune entrée SPIRE, donc aucun SVID.",
+  "why": "",
+  "future": ""
+ },
+ "internal/annuaire": {
+  "layer": "moteur",
+  "fate": "garder",
+  "title": "Habilitations",
+  "what": "Qui est qui, dans quels groupes, avec quels rôles, depuis quand, et la clé publique de chacun. Fichier signé Ed25519.",
+  "why": "<strong>La clé publique de l'autorité est fournie à part, jamais lue dans le fichier</strong> : une signature vérifiée avec la clé qu'elle apporte ne prouve rien. La référence de l'annuaire va au journal, pour que le rejeu sache contre quoi tout a été vérifié.",
+  "future": ""
+ },
+ "internal/approval": {
+  "layer": "socle",
+  "fate": "garder",
+  "title": "Validation humaine",
+  "what": "Transforme « human in the loop » en mécanisme : interface <code>Approver</code>, webhook temps réel, jetons JWT dans <code>_meta.approvalToken</code>, trail d'audit chaîné HMAC. Le jeton nomme sa cible : il couvre cette action-là, pas une autre.",
+  "why": "<code>Principal</code> et <code>Actor</code> séparent le mandat du délégué : le trail répond « qui l'a fait faire », pas seulement « qui a approuvé ».",
+  "future": "C'est ce qui portera l'attente humaine obligatoire sur tout effet irréversible."
+ },
+ "internal/backend": {
+  "layer": "moteur",
+  "fate": "adapter",
+  "title": "Sessions sortantes",
+  "what": "Les sessions MCP que le moteur ouvre vers les serveurs du registre, avec une <strong>attestation figée à la connexion</strong>.",
+  "why": "Ce qu'on a vérifié au moment où on s'est connecté ne change pas en cours de session.",
+  "future": "Devient la gestion de connexion du proxy d'egress."
+ },
+ "internal/backendtest": {
+  "layer": "socle",
+  "fate": "garder",
+  "title": "Serveurs MCP de test",
+  "what": "De vrais serveurs MCP en stdio ou HTTP, compilés pendant le test.",
+  "why": "Infra de test réutilisable telle quelle.",
+  "future": ""
+ },
+ "internal/chaine": {
+  "layer": "moteur",
+  "fate": "garder",
+  "title": "Chaîne infalsifiable",
+  "what": "Écrit des lignes JSON où chaque ligne porte <code>prev</code> (le MAC de la précédente) et <code>mac</code> (le MAC de son propre contenu joint à <code>prev</code>).",
+  "why": "Retirer, réordonner ou modifier une ligne casse tous les MAC qui la suivent. L'idée d'une blockchain, en local et sans consensus.",
+  "future": ""
+ },
+ "internal/console": {
+  "layer": "demo",
+  "fate": "jeter",
+  "title": "Interface de démo",
+  "what": "Écrans de démonstration. 5 904 lignes — le plus gros morceau à retirer.",
+  "why": "",
+  "future": "Suppose un catalogue fini."
+ },
+ "internal/controle": {
+  "layer": "moteur",
+  "fate": "garder",
+  "title": "Contrôles hors règles",
+  "what": "Ce que le moteur impose sans qu'aucune règle ne le demande : un serveur non attesté est refusé même si rien ne le cible.",
+  "why": "L'engine <strong>et</strong> le rejeu appellent la même fonction, pour que ce qu'affirme le journal se recalcule à l'identique. 38 lignes.",
+  "future": "C'est le patron exact du <em>plancher déterministe</em> de la refonte."
+ },
+ "internal/directive": {
+  "layer": "moteur",
+  "fate": "adapter",
+  "title": "Le cœur — Decide",
+  "what": "Le schéma d'un jeu de règles versionné, un chargeur strict qui refuse tout champ hors schéma, et <code>Decide</code> : <code>(règles, état de session, appel) → décision</code>.",
+  "why": "<strong>Decide est une fonction pure</strong> : pas d'I/O, pas d'horloge, pas de vérification de jeton. La date vient de l'appel, jamais de <code>time.Now()</code>. C'est ce qui rend le rejeu exact possible — mêmes entrées, même sortie, toujours. Et aucun modèle n'est sur le chemin de la décision.",
+  "future": "La logique est <strong>trivalente</strong> (Kleene forte, <code>Faux &lt; Indetermine &lt; Vrai</code>, <code>Et</code> = min) : une condition non évaluable ne passe pas en silence. Les effets sont ordonnés (<code>Autoriser &lt; Caviarder &lt; AttendreValidation &lt; Refuser</code>) et <code>plusFort</code> retient le plus contraignant — la monotonie est déjà là. Survit à ~50 % : <code>Decide</code> et l'algèbre restent, les cibles nommées (serveur, outil) meurent."
+ },
+ "internal/envelope": {
+  "layer": "socle",
+  "fate": "garder",
+  "title": "Verrou 3 — donnée vs code",
+  "what": "Enveloppe tout contenu externe dans <code>&lt;untrusted_data id=\"nonce\"&gt;</code>, nonce de 16 octets tiré à chaque scellement, et le prompt système déclare ce contenu inerte. Les balises qui ressemblent à l'enveloppe sont désamorcées avant scellement.",
+  "why": "Le nonce est aléatoire pour qu'un texte hostile ne puisse pas deviner comment fermer la balise et s'en échapper. Ce n'est pas de la désinfection : le contenu reste lisible, il est rétrogradé de code à donnée.",
+  "future": "53 lignes, et c'est déjà le mécanisme de <em>teinture</em> dont la refonte a besoin pour marquer la provenance des fragments de spec."
+ },
+ "internal/gate": {
+  "layer": "moteur",
+  "fate": "adapter",
+  "title": "L'agrégateur",
+  "what": "Un serveur MCP qui expose à l'agent les outils de tous les serveurs du registre sous le nom <code>serveur__outil</code>, et fait passer chaque <code>tools/call</code> par le moteur avant de router.",
+  "why": "L'agent ne voit jamais ce qu'un serveur annonce : il voit le catalogue épinglé au registre. Un serveur non attesté voit chacun de ses appels refusés.",
+  "future": "La position d'interception survit. La décomposition <code>serveur__outil</code> meurt avec le catalogue fini."
+ },
+ "internal/guardrail": {
+  "layer": "socle",
+  "fate": "garder",
+  "title": "Inspection des réponses",
+  "what": "mTLS répond à « es-tu le serveur attendu », pas à « cette réponse est-elle sûre à donner au modèle ». Ce paquet regarde le contenu : schéma strict, puis marqueurs, puis caviardage.",
+  "why": "Un serveur authentifié peut servir un fichier empoisonné. L'identité ne dit rien du comportement.",
+  "future": "C'est l'<em>output poisoning</em> que les passerelles du marché listent comme non résolu."
+ },
+ "internal/identity": {
+  "layer": "socle",
+  "fate": "garder",
+  "title": "Verrou 0 — identité",
+  "what": "Prouve <em>quel logiciel</em> parle, pas sur quelle machine il tourne. Chaque composant présente un certificat X.509 dont l'URI SAN est un <code>spiffe://</code> ID, signé par une CA de confiance. mTLS = les deux côtés prouvent leur identité, pas seulement le serveur comme en HTTPS.",
+  "why": "Un serveur pirate peut copier un nom d'outil, pas un SVID. Il est rejeté <strong>au handshake</strong>, avant l'exécution du moindre handler.",
+  "future": "Dans la refonte, cible déplacée : on n'atteste plus un serveur qui préexiste, mais le générateur de code, la sandbox et le proxy."
+ },
+ "internal/identitytest": {
+  "layer": "socle",
+  "fate": "garder",
+  "title": "CA de test (engine)",
+  "what": "Même rôle que <code>testca</code>, côté moteur.",
+  "why": "",
+  "future": ""
+ },
+ "internal/journal": {
+  "layer": "moteur",
+  "fate": "adapter",
+  "title": "Le journal",
+  "what": "Entrées typées : ouverture de session, appel, transmission, approbation, notification, purge. L'entrée <code>appel</code> contient <strong>tout ce que Decide a lu</strong>.",
+  "why": "C'est le contrat commun au rejeu, à l'audit et aux écrans. Si l'entrée ne porte pas une entrée de Decide, cet appel n'est plus rejouable.",
+  "future": "Le chaînage tient. L'entrée <code>appel</code> devient une entrée <code>effet</code>."
+ },
+ "internal/labconfig": {
+  "layer": "socle",
+  "fate": "garder",
+  "title": "L'artefact attaqué",
+  "what": "Modélise l'entrée de configuration de confiance : celle qu'on écrit une fois et qu'on ne revérifie jamais. Qui contrôle <code>Endpoint</code> contrôle à qui l'agent parle.",
+  "why": "C'est l'objet que toute la thèse attaque. Le nommer dans le code rend l'hypothèse explicite.",
+  "future": ""
+ },
+ "internal/mcptool": {
+  "layer": "lab",
+  "fate": "jeter",
+  "title": "Contrat d'outil du lab",
+  "what": "Les deux serveurs du lab annoncent <strong>le même nom d'outil</strong>. La collision est volontaire : c'est elle qui rend l'usurpation possible.",
+  "why": "",
+  "future": ""
+ },
+ "internal/nommage": {
+  "layer": "moteur",
+  "fate": "adapter",
+  "title": "Règles de nommage",
+  "what": "Nom logique d'un serveur, nom d'outil tel qu'annoncé, nom exposé qui combine les deux.",
+  "why": "",
+  "future": "Meurt avec les noms d'outils fixes."
+ },
+ "internal/obsclient": {
+  "layer": "lab",
+  "fate": "jeter",
+  "title": "Clients d'observabilité",
+  "what": "Prometheus, Alertmanager, Grafana.",
+  "why": "",
+  "future": ""
+ },
+ "internal/obsserver": {
+  "layer": "lab",
+  "fate": "jeter",
+  "title": "Bridge d'observabilité",
+  "what": "Trois outils par-dessus la télémétrie.",
+  "why": "",
+  "future": ""
+ },
+ "internal/obstool": {
+  "layer": "lab",
+  "fate": "jeter",
+  "title": "Contrats du bridge",
+  "what": "Séparés sur la ligne read/action.",
+  "why": "",
+  "future": ""
+ },
+ "internal/promql": {
+  "layer": "socle",
+  "fate": "jeter",
+  "title": "Politique de coût",
+  "what": "Borne chaque expression PromQL transmise : 1 Kio, fenêtre 6 h, 8 sélecteurs, 6 matchers regex.",
+  "why": "La requête est écrite par un modèle qui peut se faire embobiner. On ne filtre pas l'intention, on borne le coût.",
+  "future": "Le PromQL ne sert plus, mais la <strong>méthode</strong> est le patron de l'admission : contraindre déterministement ce qu'un modèle a produit, avant exécution."
+ },
+ "internal/proxy": {
+  "layer": "socle",
+  "fate": "jeter",
+  "title": "Sidecar générique",
+  "what": "Reverse-proxy MCP portant les verrous 0, 2 et 3 devant n'importe quel serveur tiers, sans toucher à son code. <code>ParseGrants</code> lit <code>ALLOWED_TOOLS</code>.",
+  "why": "Un verrou qu'on peut poser devant l'existant vaut mieux qu'un verrou qui exige de réécrire l'existant.",
+  "future": "Repose sur l'allowlist par nom d'outil — l'hypothèse qui tombe."
+ },
+ "internal/registre": {
+  "layer": "moteur",
+  "fate": "adapter",
+  "title": "Le registre",
+  "what": "Liste déclarative des serveurs que le moteur accepte de joindre : nom logique, transport, cible, attestation attendue, catalogue d'outils épinglé.",
+  "why": "Décidé par l'opérateur, pas par l'auteur des règles. Ce qu'il impose est toujours actif et ne dépend d'aucune règle.",
+  "future": "Devient le registre des artefacts admis et des composants d'infra attestés."
+ },
+ "internal/registredemo": {
+  "layer": "demo",
+  "fate": "jeter",
+  "title": "Registre de démo",
+  "what": "Fabrique le registre de démonstration et le registre d'attaque.",
+  "why": "",
+  "future": "<strong>Attention en P0</strong> : <code>test/integration</code> l'importe pour construire ses binaires. Extraire les fixtures <em>avant</em> de supprimer."
+ },
+ "internal/rejeu": {
+  "layer": "moteur",
+  "fate": "garder",
+  "title": "Le rejeu",
+  "what": "Rejoue chaque appel du journal sous le jeu de règles d'origine, à sa date, et vérifie que les pièces redonnent ce que le journal affirme. Les arguments sont au coffre, sous leur empreinte.",
+  "why": "Il ne dit pas seulement « ça diverge », il <strong>qualifie</strong> : <em>purge</em> (pierre tombale au coffre + entrée purge qui la couvre — légitime), <em>altération</em> (tout le reste), <em>effet de règle</em> (rejeu forcé sous un autre jeu — la divergence est le résultat recherché).",
+  "future": "Le rejeu n'est pas en cascade : un appel est rejoué avec l'état qu'il a réellement vu."
+ },
+ "internal/relecture": {
+  "layer": "moteur",
+  "fate": "adapter",
+  "title": "Relecture sans modèle",
+  "what": "Rend un jeu de règles en français, <strong>par gabarit déterministe, sans modèle de langue</strong>. Même jeu, même texte, octet pour octet.",
+  "why": "C'est la règle telle que le moteur l'appliquera, pas le texte qu'on a écrit. Un humain valide sans jamais faire confiance à un LLM.",
+  "future": "La propriété à ne pas perdre : la politique reste relisible par un humain."
+ },
+ "internal/scrub": {
+  "layer": "socle",
+  "fate": "garder",
+  "title": "Caviardage",
+  "what": "Masque jetons, secrets par nom de clé, userinfo d'URL, emails, identifiants clients, et IP routables seulement.",
+  "why": "La télémétrie paraît inoffensive jusqu'à ce qu'on lise les labels.",
+  "future": "Caviarder l'état avant de l'envoyer à un classifieur externe : déjà écrit."
+ },
+ "internal/server": {
+  "layer": "lab",
+  "fate": "jeter",
+  "title": "Serveurs du lab",
+  "what": "Construit les deux serveurs que le lab oppose — légitime et rogue.",
+  "why": "",
+  "future": ""
+ },
+ "internal/session": {
+  "layer": "moteur",
+  "fate": "garder",
+  "title": "État de session",
+  "what": "Retient qui appelle et ce que la session a réellement consulté. Indexé par la session MCP du SDK, <strong>jamais par un identifiant que le client fournit</strong>.",
+  "why": "L'agent ne déclare pas son état, donc il ne peut pas mentir dessus. C'est ce qui permet des règles de flux : « pas de paiement si le panier n'a pas été lu juste avant ».",
+  "future": ""
+ },
+ "internal/testca": {
+  "layer": "socle",
+  "fate": "garder",
+  "title": "CA de test",
+  "what": "Émet de vrais SVID X.509 SPIFFE en mémoire, sans SPIRE, à partir des mêmes sources go-spiffe que la Workload API.",
+  "why": "Les tests traversent de vrais handshakes TLS. La preuve ne dépend d'aucune infrastructure.",
+  "future": ""
+ },
+ "internal/toolpin": {
+  "layer": "socle",
+  "fate": "adapter",
+  "title": "Anti rug-pull",
+  "what": "Empreinte SHA-256 des schémas d'outils dans <code>tools.lock.json</code>. Si un serveur réécrit la description d'un outil après sa revue de sécurité, la mutation est détectée et l'outil mis en quarantaine.",
+  "why": "L'identité ne couvre pas ça : le serveur est bien celui qu'on croit, c'est son contenu qui a changé.",
+  "future": "Même mécanisme, moment déplacé : épingler l'artefact généré après son admission, au lieu d'un schéma publié avant."
+ },
+ "internal/toolpolicy": {
+  "layer": "socle",
+  "fate": "adapter",
+  "title": "Verrou 2 — exécution",
+  "what": "Middleware sur <code>CallTool</code> : refus par défaut, allowlist de capacités, séparation <code>read</code> / <code>action</code>. Un appel refusé n'atteint jamais la session interne.",
+  "why": "La ligne read/action est l'ancêtre direct des <em>classes d'effet</em> de la refonte.",
+  "future": "L'allowlist par nom d'outil meurt avec l'hypothèse du catalogue fini ; l'idée de classer les capacités survit."
+ },
+ "internal/triage": {
+  "layer": "lab",
+  "fate": "jeter",
+  "title": "Note d'incident",
+  "what": "Déterministe, par gabarit. Aucun LLM branché.",
+  "why": "",
+  "future": ""
+ }
+}

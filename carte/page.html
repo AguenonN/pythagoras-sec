@@ -1,0 +1,515 @@
+<title>Carte des briques mcp_rogue</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;450;600&display=swap">
+
+<style>
+/* Arbre technologique : colonnes = profondeur dans le graphe d'imports réel,
+   fondations à gauche, consommateurs à droite. Canvas SVG pannable + panneau. */
+:root{
+  --bg:#eceef3; --grid:#dfe3ea; --surface:#fff; --surface-2:#f6f7fa;
+  --ink:#1a1e29; --ink-2:#5a6376; --ink-3:#8b93a5; --line:#ccd2dd; --line-2:#e3e7ee;
+  --socle:#0f8a9b; --moteur:#b5760c; --lab:#6f52bd; --demo:#848b99;
+  --socle-bg:#e2f2f4; --moteur-bg:#f8efdd; --lab-bg:#eeeafa; --demo-bg:#edeff3;
+  --sel:#1a1e29; --shadow:0 1px 2px rgba(20,25,40,.07),0 4px 14px rgba(20,25,40,.07);
+  --f-disp:"Chakra Petch",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#11141c; --grid:#1a1e28; --surface:#1b1f29; --surface-2:#21262f;
+  --ink:#e6e9f0; --ink-2:#9aa3b5; --ink-3:#6c7484; --line:#2e3542; --line-2:#262c37;
+  --socle:#3fc9d9; --moteur:#e8a63c; --lab:#a98ae8; --demo:#767d8d;
+  --socle-bg:#12323a; --moteur-bg:#372a12; --lab-bg:#282144; --demo-bg:#23272f;
+  --sel:#e6e9f0; --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#11141c; --grid:#1a1e28; --surface:#1b1f29; --surface-2:#21262f;
+  --ink:#e6e9f0; --ink-2:#9aa3b5; --ink-3:#6c7484; --line:#2e3542; --line-2:#262c37;
+  --socle:#3fc9d9; --moteur:#e8a63c; --lab:#a98ae8; --demo:#767d8d;
+  --socle-bg:#12323a; --moteur-bg:#372a12; --lab-bg:#282144; --demo-bg:#23272f;
+  --sel:#e6e9f0; --shadow:0 1px 2px rgba(0,0,0,.4),0 6px 18px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--f-body);
+  font-size:14px;line-height:1.5;overflow:hidden}
+#app{height:100%;display:grid;grid-template-rows:auto 1fr;max-height:100%}
+
+/* ---------- barre ---------- */
+header{display:flex;flex-wrap:wrap;align-items:center;gap:10px 14px;
+  padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top,0px));
+  background:var(--surface);border-bottom:1px solid var(--line);z-index:5}
+.brand{display:flex;align-items:baseline;gap:9px;margin-right:auto;min-width:0}
+.brand h1{font-family:var(--f-disp);font-size:16px;font-weight:700;margin:0;
+  letter-spacing:.02em;white-space:nowrap}
+.brand span{font-family:var(--f-mono);font-size:11px;color:var(--ink-3);white-space:nowrap}
+.ctrls{display:flex;flex-wrap:wrap;align-items:center;gap:6px}
+.chip{font-family:var(--f-mono);font-size:11px;letter-spacing:.02em;
+  padding:4px 9px;border-radius:3px;border:1px solid var(--line);background:var(--surface-2);
+  color:var(--ink-2);cursor:pointer;white-space:nowrap;
+  transition:background .12s,border-color .12s,color .12s}
+.chip:hover{border-color:var(--ink-3)}
+.chip[aria-pressed="true"]{color:var(--ink);border-color:currentColor}
+.chip[data-layer="socle"][aria-pressed="true"]{color:var(--socle);background:var(--socle-bg)}
+.chip[data-layer="moteur"][aria-pressed="true"]{color:var(--moteur);background:var(--moteur-bg)}
+.chip[data-layer="lab"][aria-pressed="true"]{color:var(--lab);background:var(--lab-bg)}
+.chip[data-layer="demo"][aria-pressed="true"]{color:var(--demo);background:var(--demo-bg)}
+input[type=search]{font-family:var(--f-mono);font-size:11.5px;width:140px;
+  padding:4px 9px;border-radius:3px;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--ink)}
+input[type=search]:focus-visible,.chip:focus-visible,button:focus-visible,
+[role=button]:focus-visible,a:focus-visible{outline:2px solid var(--socle);outline-offset:2px}
+
+/* ---------- scène ---------- */
+#scene{position:relative;min-height:0;overflow:hidden;
+  background-image:radial-gradient(circle,var(--grid) 1px,transparent 1px);
+  background-size:26px 26px}
+#cv{width:100%;height:100%;display:block;cursor:grab;touch-action:none}
+#cv.drag{cursor:grabbing}
+.edge{fill:none;stroke:var(--line);stroke-width:1.4;transition:stroke .15s,stroke-width .15s}
+.edge.in{stroke:var(--socle);stroke-width:2.4}
+.edge.out{stroke:var(--moteur);stroke-width:2.4}
+.edge.dim{stroke:var(--line-2);opacity:.35}
+.node{cursor:pointer}
+.nbox{fill:var(--surface);stroke:var(--line);stroke-width:1.5;rx:4}
+.node[data-layer="socle"] .nbox{stroke:var(--socle)}
+.node[data-layer="moteur"] .nbox{stroke:var(--moteur)}
+.node[data-layer="lab"] .nbox{stroke:var(--lab)}
+.node[data-layer="demo"] .nbox{stroke:var(--demo)}
+.node[data-fate="adapter"] .nbox{stroke-dasharray:5 3}
+.node[data-fate="jeter"] .nbox{stroke-dasharray:2 3;opacity:.72}
+.node[data-fate="jeter"] .ntitle{text-decoration:line-through;text-decoration-thickness:1px}
+.node .bar{rx:2}
+.node[data-layer="socle"] .bar{fill:var(--socle)}
+.node[data-layer="moteur"] .bar{fill:var(--moteur)}
+.node[data-layer="lab"] .bar{fill:var(--lab)}
+.node[data-layer="demo"] .bar{fill:var(--demo)}
+.ntitle{font-family:var(--f-mono);font-size:11.5px;font-weight:600;fill:var(--ink)}
+.nsub{font-family:var(--f-body);font-size:10px;fill:var(--ink-2)}
+.nloc{font-family:var(--f-mono);font-size:9.5px;fill:var(--ink-3)}
+.node:hover .nbox{filter:brightness(1.04)}
+.node.sel .nbox{stroke-width:3;fill:var(--surface-2)}
+.node.near .nbox{stroke-width:2.2}
+.node.off{opacity:.16;pointer-events:none}
+.zoom{position:absolute;right:12px;bottom:12px;display:flex;gap:4px;z-index:3}
+.zoom button{width:30px;height:30px;font-family:var(--f-mono);font-size:14px;line-height:1;
+  border:1px solid var(--line);background:var(--surface);color:var(--ink-2);
+  border-radius:3px;cursor:pointer;box-shadow:var(--shadow)}
+.zoom button:hover{color:var(--ink)}
+.hint{position:absolute;left:12px;bottom:12px;font-family:var(--f-mono);font-size:10.5px;
+  color:var(--ink-3);background:var(--surface);border:1px solid var(--line);
+  padding:4px 8px;border-radius:3px;pointer-events:none;max-width:calc(100% - 120px)}
+
+/* ---------- panneau ---------- */
+#panel{position:absolute;top:0;right:0;width:min(400px,100%);height:100%;
+  background:var(--surface);border-left:1px solid var(--line);
+  box-shadow:var(--shadow);display:flex;flex-direction:column;z-index:4;
+  transform:translateX(100%);transition:transform .22s ease}
+#panel.open{transform:none}
+.phead{padding:14px 16px 12px;border-bottom:1px solid var(--line-2);flex:0 0 auto}
+.ptop{display:flex;align-items:flex-start;gap:10px}
+.ptop h2{font-family:var(--f-mono);font-size:14px;font-weight:600;margin:0;
+  word-break:break-word;min-width:0;flex:1}
+.close{flex:0 0 auto;width:26px;height:26px;border:1px solid var(--line);
+  background:var(--surface-2);color:var(--ink-2);border-radius:3px;cursor:pointer;
+  font-size:14px;line-height:1}
+.close:hover{color:var(--ink)}
+.ptags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}
+.tag{font-family:var(--f-mono);font-size:10px;letter-spacing:.03em;
+  padding:2px 7px;border-radius:2px;border:1px solid var(--line);color:var(--ink-2)}
+.tag.socle{color:var(--socle);border-color:var(--socle);background:var(--socle-bg)}
+.tag.moteur{color:var(--moteur);border-color:var(--moteur);background:var(--moteur-bg)}
+.tag.lab{color:var(--lab);border-color:var(--lab);background:var(--lab-bg)}
+.tag.demo{color:var(--demo);border-color:var(--demo);background:var(--demo-bg)}
+.pbody{padding:14px 16px 24px;overflow-y:auto;flex:1 1 auto;
+  padding-bottom:calc(24px + env(safe-area-inset-bottom,0px))}
+.prole{font-family:var(--f-disp);font-size:17px;font-weight:600;margin:0 0 10px;
+  letter-spacing:.01em;text-wrap:balance}
+.sec{margin:16px 0 0}
+.sec h3{font-family:var(--f-mono);font-size:9.5px;font-weight:600;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 6px}
+.sec p{margin:0 0 8px}
+.sec p:last-child{margin-bottom:0}
+.why{border-left:2px solid var(--socle);padding-left:11px}
+.future{border-left:2px solid var(--moteur);padding-left:11px}
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(78px,1fr));gap:1px;
+  background:var(--line-2);border:1px solid var(--line-2);border-radius:3px;overflow:hidden}
+.metrics div{background:var(--surface);padding:7px 9px;min-width:0}
+.metrics b{display:block;font-family:var(--f-mono);font-size:15px;font-weight:600;
+  font-variant-numeric:tabular-nums}
+.metrics span{font-family:var(--f-mono);font-size:9px;letter-spacing:.07em;
+  text-transform:uppercase;color:var(--ink-3)}
+.links{display:flex;flex-wrap:wrap;gap:4px}
+.lk{font-family:var(--f-mono);font-size:10.5px;padding:3px 8px;border-radius:2px;
+  border:1px solid var(--line);background:var(--surface-2);color:var(--ink-2);
+  cursor:pointer;text-align:left}
+.lk:hover{color:var(--ink);border-color:var(--ink-3)}
+.lk.socle{border-left:2px solid var(--socle)}
+.lk.moteur{border-left:2px solid var(--moteur)}
+.lk.lab{border-left:2px solid var(--lab)}
+.lk.demo{border-left:2px solid var(--demo)}
+.none{color:var(--ink-3);font-size:12px;font-style:italic}
+code{font-family:var(--f-mono);font-size:.9em;background:var(--surface-2);
+  padding:.1em .34em;border-radius:2px;border:1px solid var(--line-2)}
+.pbody em{color:var(--ink-2)}
+.doc{font-size:12px;color:var(--ink-2);border-top:1px solid var(--line-2);
+  padding-top:10px;margin-top:16px}
+.doc span{font-family:var(--f-mono);font-size:9.5px;letter-spacing:.09em;
+  text-transform:uppercase;color:var(--ink-3);display:block;margin-bottom:5px}
+
+/* ---------- accueil ---------- */
+#intro{position:absolute;inset:0;display:grid;place-items:center;padding:24px 16px;
+  background:var(--bg);z-index:6;overflow-y:auto}
+#intro[hidden]{display:none}
+.card{max-width:620px;background:var(--surface);border:1px solid var(--line);
+  border-radius:5px;padding:26px 24px;box-shadow:var(--shadow)}
+.card h2{font-family:var(--f-disp);font-size:25px;font-weight:700;margin:0 0 4px;
+  letter-spacing:.01em;text-wrap:balance}
+.card .kicker{font-family:var(--f-mono);font-size:10.5px;letter-spacing:.11em;
+  text-transform:uppercase;color:var(--ink-3);margin:0 0 14px}
+.card p{margin:0 0 11px;max-width:62ch}
+.lg{display:grid;gap:7px;margin:18px 0;padding:14px;background:var(--surface-2);
+  border:1px solid var(--line-2);border-radius:4px}
+.lgrow{display:flex;align-items:center;gap:9px;font-size:12.5px;min-width:0}
+.sw{flex:0 0 auto;width:22px;height:13px;border-radius:2px;border:1.5px solid}
+.sw.socle{border-color:var(--socle);background:var(--socle-bg)}
+.sw.moteur{border-color:var(--moteur);background:var(--moteur-bg)}
+.sw.lab{border-color:var(--lab);background:var(--lab-bg)}
+.sw.demo{border-color:var(--demo);background:var(--demo-bg)}
+.sw.d1{border-color:var(--ink-2);border-style:dashed;background:transparent}
+.sw.d2{border-color:var(--ink-3);border-style:dotted;background:transparent;opacity:.7}
+.lgrow b{font-family:var(--f-mono);font-size:11px;font-weight:600;flex:0 0 auto}
+.lgrow i{color:var(--ink-2);font-style:normal;min-width:0}
+.go{font-family:var(--f-disp);font-size:14px;font-weight:600;letter-spacing:.02em;
+  padding:9px 20px;border-radius:4px;border:1px solid var(--ink);
+  background:var(--ink);color:var(--surface);cursor:pointer}
+.go:hover{opacity:.88}
+.stats{display:flex;flex-wrap:wrap;gap:16px;margin:16px 0 4px;font-family:var(--f-mono);
+  font-size:11px;color:var(--ink-3)}
+.stats b{color:var(--ink);font-size:14px;font-variant-numeric:tabular-nums}
+
+@media (max-width:760px){
+  .brand span{display:none}
+  input[type=search]{width:108px}
+  #panel{width:100%;height:68%;top:auto;bottom:0;border-left:0;
+    border-top:1px solid var(--line);transform:translateY(100%);border-radius:7px 7px 0 0}
+  #panel.open{transform:none}
+  .hint{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div id="app">
+  <header>
+    <div class="brand">
+      <h1>Carte des briques</h1>
+      <span>mcp_rogue · 48 paquets · 104 arêtes</span>
+    </div>
+    <div class="ctrls">
+      <button class="chip" data-layer="socle" aria-pressed="true">socle</button>
+      <button class="chip" data-layer="moteur" aria-pressed="true">moteur</button>
+      <button class="chip" data-layer="lab" aria-pressed="true">lab</button>
+      <button class="chip" data-layer="demo" aria-pressed="true">démo</button>
+      <button class="chip" id="keep" aria-pressed="false">réutilisable</button>
+      <input type="search" id="q" placeholder="chercher…" aria-label="Chercher un paquet">
+      <button class="chip" id="help">?</button>
+    </div>
+  </header>
+
+  <div id="scene">
+    <svg id="cv" role="application" aria-label="Graphe des paquets"></svg>
+    <div class="hint">glisser pour déplacer · molette pour zoomer · clic sur une brique</div>
+    <div class="zoom">
+      <button id="zo" aria-label="Dézoomer">−</button>
+      <button id="zi" aria-label="Zoomer">+</button>
+      <button id="zr" aria-label="Recadrer" style="font-size:11px">⤢</button>
+    </div>
+
+    <aside id="panel" aria-live="polite">
+      <div class="phead">
+        <div class="ptop"><h2 id="pid"></h2>
+          <button class="close" id="pclose" aria-label="Fermer">×</button></div>
+        <div class="ptags" id="ptags"></div>
+      </div>
+      <div class="pbody" id="pbody"></div>
+    </aside>
+
+    <div id="intro">
+      <div class="card">
+        <p class="kicker">Documentation navigable</p>
+        <h2>Un moteur de décision pour agents MCP</h2>
+        <p>Un agent LLM appelle des outils externes via MCP. Par défaut, il fait
+        confiance à un serveur sur la foi d'une ligne de configuration écrite une fois
+        et jamais revérifiée. Ce dépôt remplace cette confiance par deux choses :
+        une <strong>preuve cryptographique d'identité</strong>, et une
+        <strong>décision journalisée et rejouable</strong> sur chaque appel.</p>
+        <p>Chaque brique ci-dessous est un paquet Go réel. Les liens entre elles sont
+        les <strong>imports réels</strong> extraits du code, pas un schéma dessiné à la
+        main : les colonnes vont des fondations (aucune dépendance) vers les
+        consommateurs.</p>
+
+        <div class="stats">
+          <span><b>24 519</b> lignes de source</span>
+          <span><b>14 907</b> lignes de tests</span>
+          <span><b>7</b> niveaux de profondeur</span>
+        </div>
+
+        <div class="lg">
+          <div class="lgrow"><i class="sw socle"></i><b>socle</b><i>identité, confinement — publié sous secu-mcp</i></div>
+          <div class="lgrow"><i class="sw moteur"></i><b>moteur</b><i>décision, journal, rejeu — le privé</i></div>
+          <div class="lgrow"><i class="sw lab"></i><b>lab</b><i>le banc d'essai sur k3s</i></div>
+          <div class="lgrow"><i class="sw demo"></i><b>démo</b><i>couche applicative, retirée en P0</i></div>
+          <div class="lgrow"><i class="sw d1"></i><b>tirets</b><i>à adapter pour la refonte</i></div>
+          <div class="lgrow"><i class="sw d2"></i><b>pointillés</b><i>à jeter</i></div>
+        </div>
+
+        <p style="color:var(--ink-2);font-size:12.5px">Commencer par
+        <code>internal/directive</code> : c'est le cœur, et 12 paquets en dépendent.</p>
+        <button class="go" id="start">Ouvrir la carte</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const DATA = /*__DATA__*/;
+
+/* ---------- disposition : colonnes = profondeur ---------- */
+const NW = 186, NH = 56, GX = 78, GY = 18, PAD = 44;
+const ORDER = {socle:0, moteur:1, lab:2, demo:3};
+const cols = {};
+Object.values(DATA).forEach(n => (cols[n.depth] ||= []).push(n));
+const depths = Object.keys(cols).map(Number).sort((a,b)=>a-b);
+depths.forEach(d => {
+  cols[d].sort((a,b) => (ORDER[a.layer]-ORDER[b.layer]) || b.usedBy.length-a.usedBy.length
+                        || a.id.localeCompare(b.id));
+  cols[d].forEach((n,i) => { n.x = PAD + d*(NW+GX); n.y = PAD + i*(NH+GY); });
+});
+const tallest = Math.max(...depths.map(d => cols[d].length));
+depths.forEach(d => {                       // centrer chaque colonne verticalement
+  const off = ((tallest - cols[d].length) * (NH+GY)) / 2;
+  cols[d].forEach(n => n.y += off);
+});
+const W = PAD*2 + (depths.length-1)*(NW+GX) + NW;
+const H = PAD*2 + tallest*(NH+GY) - GY;
+
+/* ---------- rendu ---------- */
+const SVG = 'http://www.w3.org/2000/svg';
+const cv = document.getElementById('cv');
+const gRoot = document.createElementNS(SVG,'g');
+const gEdge = document.createElementNS(SVG,'g');
+const gNode = document.createElementNS(SVG,'g');
+gRoot.append(gEdge, gNode); cv.append(gRoot);
+
+const edges = [];
+Object.values(DATA).forEach(n => n.deps.forEach(d => {
+  const s = DATA[d]; if (!s) return;
+  edges.push({from:d, to:n.id, el:null, s, t:n});
+}));
+
+function elbow(s, t){                         // coude orthogonal, style arbre techno
+  const x1 = s.x + NW, y1 = s.y + NH/2, x2 = t.x, y2 = t.y + NH/2;
+  const mx = x1 + Math.max(18, (x2 - x1) / 2), r = 9;
+  if (Math.abs(y1 - y2) < 2) return `M${x1} ${y1} L${x2} ${y2}`;
+  const dir = y2 > y1 ? 1 : -1;
+  return `M${x1} ${y1} H${mx-r} Q${mx} ${y1} ${mx} ${y1+r*dir} `
+       + `V${y2-r*dir} Q${mx} ${y2} ${mx+r} ${y2} H${x2}`;
+}
+edges.forEach(e => {
+  const p = document.createElementNS(SVG,'path');
+  p.setAttribute('d', elbow(e.s, e.t));
+  p.setAttribute('class','edge');
+  gEdge.append(p); e.el = p;
+});
+
+function trunc(s, n){ return s.length > n ? s.slice(0, n-1) + '…' : s; }
+
+const nodeEls = {};
+Object.values(DATA).forEach(n => {
+  const g = document.createElementNS(SVG,'g');
+  g.setAttribute('class','node');
+  g.setAttribute('transform', `translate(${n.x} ${n.y})`);
+  g.dataset.layer = n.layer; g.dataset.fate = n.fate; g.dataset.id = n.id;
+  g.setAttribute('tabindex','0'); g.setAttribute('role','button');
+  g.setAttribute('aria-label', `${n.id} — ${n.title}`);
+
+  const box = document.createElementNS(SVG,'rect');
+  box.setAttribute('class','nbox');
+  box.setAttribute('width', NW); box.setAttribute('height', NH); box.setAttribute('rx', 4);
+
+  const bar = document.createElementNS(SVG,'rect');
+  bar.setAttribute('class','bar');
+  bar.setAttribute('x', 0); bar.setAttribute('y', 0);
+  bar.setAttribute('width', 4); bar.setAttribute('height', NH); bar.setAttribute('rx', 2);
+
+  const t1 = document.createElementNS(SVG,'text');
+  t1.setAttribute('class','ntitle'); t1.setAttribute('x', 13); t1.setAttribute('y', 20);
+  t1.textContent = (n.kind === 'cmd' ? '⌘ ' : '') + n.name;
+
+  const t2 = document.createElementNS(SVG,'text');
+  t2.setAttribute('class','nsub'); t2.setAttribute('x', 13); t2.setAttribute('y', 35);
+  t2.textContent = trunc(n.title, 28);
+
+  const t3 = document.createElementNS(SVG,'text');
+  t3.setAttribute('class','nloc'); t3.setAttribute('x', 13); t3.setAttribute('y', 48);
+  t3.textContent = `${n.loc} LOC · ${n.usedBy.length}↓ ${n.deps.length}↑`;
+
+  g.append(box, bar, t1, t2, t3);
+  gNode.append(g); nodeEls[n.id] = g;
+  g.addEventListener('click', () => select(n.id));
+  g.addEventListener('keydown', ev => {
+    if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); select(n.id); }
+  });
+});
+
+/* ---------- pan & zoom ---------- */
+let vx = 0, vy = 0, k = 1;
+function apply(){ gRoot.setAttribute('transform', `translate(${vx} ${vy}) scale(${k})`); }
+function fit(){
+  const r = cv.getBoundingClientRect();
+  k = Math.min(r.width / (W + 40), r.height / (H + 40), 1);
+  k = Math.max(k, .22);
+  vx = (r.width - W*k) / 2; vy = (r.height - H*k) / 2;
+  apply();
+}
+let down = false, px = 0, py = 0, moved = 0;
+cv.addEventListener('pointerdown', e => {
+  down = true; moved = 0; px = e.clientX; py = e.clientY;
+  cv.classList.add('drag'); cv.setPointerCapture(e.pointerId);
+});
+cv.addEventListener('pointermove', e => {
+  if (!down) return;
+  const dx = e.clientX - px, dy = e.clientY - py;
+  moved += Math.abs(dx) + Math.abs(dy);
+  vx += dx; vy += dy; px = e.clientX; py = e.clientY; apply();
+});
+['pointerup','pointercancel'].forEach(t => cv.addEventListener(t, () => {
+  down = false; cv.classList.remove('drag');
+}));
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  const r = cv.getBoundingClientRect(), mx = e.clientX - r.left, my = e.clientY - r.top;
+  const nk = Math.min(2.2, Math.max(.2, k * (e.deltaY < 0 ? 1.12 : 1/1.12)));
+  vx = mx - (mx - vx) * (nk/k); vy = my - (my - vy) * (nk/k); k = nk; apply();
+}, {passive:false});
+function zoom(f){
+  const r = cv.getBoundingClientRect(), mx = r.width/2, my = r.height/2;
+  const nk = Math.min(2.2, Math.max(.2, k*f));
+  vx = mx - (mx - vx) * (nk/k); vy = my - (my - vy) * (nk/k); k = nk; apply();
+}
+document.getElementById('zi').onclick = () => zoom(1.25);
+document.getElementById('zo').onclick = () => zoom(1/1.25);
+document.getElementById('zr').onclick = fit;
+
+/* ---------- sélection ---------- */
+const panel = document.getElementById('panel');
+const FATE = {garder:'à garder', adapter:'à adapter', jeter:'à jeter'};
+let cur = null;
+
+function select(id){
+  cur = id; const n = DATA[id];
+  Object.entries(nodeEls).forEach(([k2, el]) => {
+    el.classList.toggle('sel', k2 === id);
+    el.classList.toggle('near', n.deps.includes(k2) || n.usedBy.includes(k2));
+  });
+  edges.forEach(e => {
+    e.el.classList.toggle('in',  e.to === id);
+    e.el.classList.toggle('out', e.from === id);
+    e.el.classList.toggle('dim', e.to !== id && e.from !== id);
+  });
+
+  document.getElementById('pid').textContent = n.id;
+  document.getElementById('ptags').innerHTML =
+    `<span class="tag ${n.layer}">${n.layer}</span>` +
+    `<span class="tag">${FATE[n.fate]}</span>` +
+    `<span class="tag">${n.kind === 'cmd' ? 'binaire' : 'paquet'}</span>` +
+    `<span class="tag">profondeur ${n.depth}</span>`;
+
+  const lk = (ids, dir) => ids.length
+    ? `<div class="links">${ids.map(i =>
+        `<button class="lk ${DATA[i] ? DATA[i].layer : ''}" data-go="${i}">${
+          dir === 'up' ? '↑ ' : '↓ '}${i.replace(/^internal\//,'')}</button>`).join('')}</div>`
+    : `<p class="none">aucun</p>`;
+
+  document.getElementById('pbody').innerHTML = `
+    <p class="prole">${n.title}</p>
+    <div class="sec"><h3>Ce que ça fait</h3><p>${n.what}</p></div>
+    ${n.why    ? `<div class="sec"><h3>Pourquoi ça compte</h3><div class="why"><p>${n.why}</p></div></div>` : ''}
+    ${n.future ? `<div class="sec"><h3>Dans la refonte</h3><div class="future"><p>${n.future}</p></div></div>` : ''}
+    <div class="sec"><h3>Poids</h3>
+      <div class="metrics">
+        <div><b>${n.loc}</b><span>source</span></div>
+        <div><b>${n.test}</b><span>tests</span></div>
+        <div><b>${n.files}</b><span>fichiers</span></div>
+        <div><b>${n.usedBy.length}</b><span>utilisé par</span></div>
+      </div></div>
+    <div class="sec"><h3>Dépend de (${n.deps.length})</h3>${lk(n.deps,'up')}</div>
+    <div class="sec"><h3>Utilisé par (${n.usedBy.length})</h3>${lk(n.usedBy,'down')}</div>
+    ${n.doc ? `<div class="doc"><span>Doc du paquet, dans le code</span>${
+      n.doc.slice(0,460).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]))
+      }${n.doc.length > 460 ? '…' : ''}</div>` : ''}`;
+
+  document.querySelectorAll('[data-go]').forEach(b =>
+    b.onclick = () => { select(b.dataset.go); center(b.dataset.go); });
+  panel.classList.add('open');
+}
+function center(id){
+  const n = DATA[id], r = cv.getBoundingClientRect();
+  const wide = r.width > 760, avail = wide ? r.width - 400 : r.width;
+  // sur un écran étroit, le cadrage d'ensemble rend les briques illisibles :
+  // on remonte à une échelle où le texte se lit avant de recentrer.
+  if (k < 0.62) k = 0.62;
+  vx = avail/2 - (n.x + NW/2)*k;
+  vy = (wide ? r.height/2 : r.height*0.16) - (n.y + NH/2)*k;
+  apply();
+}
+function clear(){
+  cur = null; panel.classList.remove('open');
+  Object.values(nodeEls).forEach(el => el.classList.remove('sel','near'));
+  edges.forEach(e => e.el.classList.remove('in','out','dim'));
+}
+document.getElementById('pclose').onclick = clear;
+cv.addEventListener('click', e => { if (e.target === cv && moved < 6) clear(); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape') clear(); });
+
+/* ---------- filtres ---------- */
+const on = {socle:true, moteur:true, lab:true, demo:true};
+let keepOnly = false, q = '';
+function refresh(){
+  Object.values(DATA).forEach(n => {
+    const ok = on[n.layer]
+      && (!keepOnly || n.fate !== 'jeter')
+      && (!q || (n.id + ' ' + n.title + ' ' + n.what).toLowerCase().includes(q));
+    nodeEls[n.id].classList.toggle('off', !ok);
+  });
+  edges.forEach(e => {
+    const vis = !nodeEls[e.from].classList.contains('off')
+             && !nodeEls[e.to].classList.contains('off');
+    e.el.style.display = vis ? '' : 'none';
+  });
+}
+document.querySelectorAll('.chip[data-layer]').forEach(b => b.onclick = () => {
+  const L = b.dataset.layer; on[L] = !on[L];
+  b.setAttribute('aria-pressed', String(on[L])); refresh();
+});
+document.getElementById('keep').onclick = e => {
+  keepOnly = !keepOnly; e.target.setAttribute('aria-pressed', String(keepOnly)); refresh();
+};
+document.getElementById('q').addEventListener('input', e => {
+  q = e.target.value.trim().toLowerCase(); refresh();
+});
+
+/* ---------- accueil ---------- */
+const intro = document.getElementById('intro');
+document.getElementById('start').onclick = () => {
+  intro.hidden = true; fit(); select('internal/directive'); center('internal/directive');
+};
+document.getElementById('help').onclick = () => { intro.hidden = false; };
+
+fit();
+addEventListener('resize', () => { if (!cur) fit(); });
+</script>
