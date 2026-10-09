@@ -27,7 +27,7 @@ func charger(t *testing.T, chemin string) *directive.Jeu {
 
 func TestStatutEtFondement(t *testing.T) {
 	statuts := map[directive.Statut]string{
-		directive.Brouillon:   "brouillon (non appliquée tant que le juriste ne l'a pas passée en observation ou active)",
+		directive.Brouillon:   "brouillon (non appliquée tant qu'elle n'est pas passée en observation ou active)",
 		directive.Observation: "en observation (journalisée, non appliquée)",
 		directive.Active:      "active (appliquée)",
 		directive.Retiree:     "retirée (non appliquée)",
