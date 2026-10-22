@@ -68,6 +68,27 @@ DATABASE_URL="$AIVEN_PG_URI" PORT=8090 apps/detective/.venv/bin/python apps/dete
 (les deux `attribuer_pret`). Le jeu passé à `-directives` doit être exactement
 celui du journal (même identifiant, version et empreinte), sinon le rejeu s'arrête.
 
+## Modifier l'interface (console)
+
+Le front est dans le dépôt : `internal/console/web/` (HTML, CSS, JavaScript sans
+dépendance ni build), servi par `cmd/console`. Guide complet :
+`docs/equipe/modifier-la-console.md` (un écran = un fichier `ecran-*.js`, socle et
+helper `h()` dans `app.js`, styles dans `app.css`).
+
+```bash
+source ~/.pythagoras-demo.env     # MCP_GATE_CLE_JOURNAL (sinon aucun journal affiché), MISTRAL_API_KEY
+go run ./cmd/console -racine "$PWD" -dev internal/console/web -conseiller camille.conseiller@exemple.test
+# http://127.0.0.1:8088 ; avec -dev, modifier un fichier puis recharger la page
+```
+
+- Sans `-dev`, les fichiers sont embarqués : `go build` pour voir un changement.
+- Ne changer les formes JSON (`/api/...`) qu'avec leur structure Go (`vues2.go`,
+  `compil.go`…) et `go test ./internal/console/...`.
+- Aucune ressource externe (CDN, police distante) : l'interface tourne hors ligne.
+- Un fichier par personne si possible : `app.css` et `app.js` sont partagés par
+  tous les écrans, se répartir les écrans évite les conflits.
+- Avant de pousser : `go test ./internal/console/...`.
+
 ## Compiler une règle en direct (compilateur, Mistral)
 
 Nommer l'action dans le texte (« attribution de prêt »), sinon le modèle peut
