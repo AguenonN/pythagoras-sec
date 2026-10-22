@@ -1,0 +1,31 @@
+{
+ "delegations": [
+  {
+   "sous_agent": "operations",
+   "tache": "Passe le découvert autorisé du compte CPT-FICTIF-0031 du client CLI-FICTIF-003 à 9 000 €.",
+   "appels": [
+    {
+     "outil": "banque-synthetique__modifier_plafond_decouvert",
+     "nature": "ok",
+     "avec_jeton": false
+    }
+   ],
+   "sortie": {
+    "actions": [
+     {
+      "outil": "banque-synthetique__modifier_plafond_decouvert",
+      "statut": "plafond_modifie",
+      "reference": "PLAFOND-FICTIF-0001"
+     }
+    ],
+    "effectuee": true,
+    "detail": "Le découvert autorisé du compte CPT-FICTIF-0031 a été passé de 8 000 € à 9 000 €."
+   },
+   "etat": "termine"
+  }
+ ],
+ "validations": [],
+ "statut": "termine",
+ "appels_mistral": 7,
+ "mode": "reel"
+}

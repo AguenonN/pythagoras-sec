@@ -1,0 +1,26 @@
+{
+ "delegations": [
+  {
+   "sous_agent": "assistant-salarie",
+   "tache": "Passer un ordre d'achat de 300 actions BIOLYS sur le compte-titres de victor.ventoux@exemple.test.",
+   "appels": [
+    {
+     "outil": "bourse__passer_ordre",
+     "nature": "ok",
+     "avec_jeton": false
+    }
+   ],
+   "sortie": {
+    "action": "passer un ordre d'achat de 300 actions BIOLYS pour victor.ventoux@exemple.test",
+    "statut": "fait",
+    "reference": "ORDRE-FICTIF-0001",
+    "motif": "action enregistrée en mémoire (fictive)"
+   },
+   "etat": "termine"
+  }
+ ],
+ "validations": [],
+ "statut": "termine",
+ "appels_mistral": 4,
+ "mode": "reel"
+}

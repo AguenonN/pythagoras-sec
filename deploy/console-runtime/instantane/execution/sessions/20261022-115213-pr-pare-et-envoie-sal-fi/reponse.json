@@ -1,0 +1,7 @@
+{
+ "texte": "Validation non reçue dans le délai : l'appel rh-synthetique__envoyer_message_salarie reste en attente de validation humaine (D-030), aucune action effectuée.\nAction en attente de validation humaine (D-030 v1) : rh-synthetique__envoyer_message_salarie. Empreinte à valider : 33bbc16087a47fb1c148db8ed2aaf6a0b2168479a8cafa39134326db68d658a0\n\nDécisions de l'engine :\n- rh-gestion · rh-synthetique__consulter_fiche : transmis, données reçues\n- rh-gestion · rh-synthetique__consulter_fiche : transmis, données reçues\n- rh-gestion · rh-synthetique__consulter_fiche : transmis, données reçues\n- rh-gestion · rh-synthetique__rediger_message : transmis, données reçues\n- rh-gestion · rh-synthetique__envoyer_message_salarie : mis en attente de validation (D-030)",
+ "statut": "bloque",
+ "directives_citees": [
+  "D-030"
+ ]
+}

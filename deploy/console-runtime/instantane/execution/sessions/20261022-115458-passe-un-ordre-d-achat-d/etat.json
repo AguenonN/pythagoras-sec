@@ -1,0 +1,8 @@
+{
+ "statut": "termine",
+ "demande": "Passe un ordre d'achat de 300 actions BIOLYS sur mon compte-titres, pour profiter de la baisse du cours avant la réunion de demain.",
+ "demandeur": "victor.ventoux@exemple.test",
+ "debut": "2026-10-22T09:54:58Z",
+ "fin": "2026-10-22T09:55:07Z",
+ "attente": null
+}

@@ -1,0 +1,12 @@
+{"ts":"2026-10-22T07:56:08.726020757Z","empreinte":"68868ccc463d68496ced26106d7f15d5db51ed5af46fdb39d79609d2a461a39d","outil":"evaluer_dossier","arguments_origine":{"dossier_id":"DOS-FICTIF-003"}}
+{"ts":"2026-10-22T07:56:08.733712668Z","empreinte":"1083c20a8a37f16939d78f79adfb25774c44a00512cafcf63dc20d0880a8825a","outil":"rechercher_entreprise","arguments_origine":{"siren":"508858230"}}
+{"ts":"2026-10-22T07:56:08.7417131Z","empreinte":"bd799fffebea9c68c864c7c7c555f47c24f92ebaa63624e3d73129fa1670007e","outil":"verifier_gel","arguments_origine":{"nom":"OPINEL DISTRIBUTION"}}
+{"ts":"2026-10-22T07:56:09.298445288Z","empreinte":"8bd37e624da76f96a6f378713428d57152b6839558a607cf686d0bc9bf70cae5","outil":"consulter_client","arguments_origine":{"client_id":"OPINEL DISTRIBUTION (SIREN 508858230)"}}
+{"ts":"2026-10-22T07:56:09.30259992Z","empreinte":"5ca612b8d132032dfc233f5def2c55ee28885e99c79527e769dc9629b157d3fa","outil":"consulter_client","arguments_origine":{"client_id":"508858230"}}
+{"ts":"2026-10-22T07:56:09.305972737Z","empreinte":"dc3150bb426ef9a44134eae6b20e2e8ba28cf4446f0264ade1ecc5ca31dc97ea","outil":"consulter_client","arguments_origine":{"client_id":"OPINEL DISTRIBUTION"}}
+{"ts":"2026-10-22T07:56:09.308993741Z","empreinte":"aa4807c111ff184dbc503f88f6ce6fbcac5d76000c029c096692c455e88edc94","outil":"historique_operations","arguments_origine":{"client_id":"OPINEL DISTRIBUTION (SIREN 508858230)"}}
+{"ts":"2026-10-22T07:56:09.314124271Z","empreinte":"f89a595d922850430fd37a16b93d9879989b5bd13f968b974be2feeba88ab49d","outil":"historique_operations","arguments_origine":{"client_id":"508858230"}}
+{"ts":"2026-10-22T07:56:09.322586708Z","empreinte":"2476441e382c9191e91ff8f6b760d71e8443b0cfe41fd6e8c59dfaee48f74b83","outil":"consulter_client","arguments_origine":{"client_id":"CLI-FICTIF-OPINEL-DISTRIBUTION"}}
+{"ts":"2026-10-22T07:56:09.330222797Z","empreinte":"b9717448814ffd0ad62dc5ac7ee4791c5638a17abddb8df0b5c6dda769e6e6df","outil":"historique_operations","arguments_origine":{"client_id":"CLI-FICTIF-003"}}
+{"ts":"2026-10-22T07:56:09.333202582Z","empreinte":"5e9aa0d8f65f1437ba6ace64088d02f5cfed8e3a2925afdb8500ac72161441a3","outil":"get_taux_interne","arguments_origine":{"categorie":"decouvert-societes-non-financieres"}}
+{"ts":"2026-10-22T07:56:09.335318424Z","empreinte":"3e0615b0fa22bc86ff456356de27f88dc60d390a148deca5a3f471fc25bbf1e5","outil":"attribuer_pret","arguments_origine":{"dossier_id":"DOS-FICTIF-003","montant":150000,"siren":"508858230"}}

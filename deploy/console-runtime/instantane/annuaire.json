@@ -1,0 +1,302 @@
+{
+  "annuaire": {
+    "id": "annuaire-demo",
+    "version": 1,
+    "emis_le": "2026-10-22T07:55:28.138464949Z",
+    "avertissement": "IDENTITÉS FICTIVES. Personnes, groupes et rôles inventés pour la démonstration ; aucune clé n'est versionnée : mcp-approve annuaire-demo les génère.",
+    "empreinte": "sha256:a6af4f298c66c2eda1c0e75ea84ba4be2641ad12e03225d9fcc6526513385fa8",
+    "signature": "6JuyMKfRSUlRPHI7p7jIrUEWHtRMzIWXNYGWjxbiJKGRyXp3SKQ23mQIV4XK2yXGfbKHyN4tPYIpXM2Bsvt0Bg=="
+  },
+  "identites": [
+    {
+      "identite": "claire.analyste@exemple.test",
+      "nom": "Claire Analyste (fictive)",
+      "groupes": [
+        "analystes-credit"
+      ],
+      "roles": [
+        {
+          "role": "analyste-risques",
+          "depuis": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "cle_publique": "4OKsj54u8MoTRjaQmj+zQPv7m1XtEcJL60pixFMl5/E="
+    },
+    {
+      "identite": "bruno.prestataire@exemple.test",
+      "nom": "Bruno Prestataire (fictif)",
+      "groupes": [
+        "prestataires-externes"
+      ],
+      "cle_publique": "GJ+5szgpRJEMuBBCmO9uCWCzxsHDrFWZ5/1YR+EM4ys="
+    },
+    {
+      "identite": "diane.risques@exemple.test",
+      "nom": "Diane Risques (fictive)",
+      "groupes": [
+        "direction-risques"
+      ],
+      "roles": [
+        {
+          "role": "directeur-risques",
+          "depuis": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "cle_publique": "Dr4hPqueiC08qhMXWUuH2h0GPde1EIn+7fNch/YDqbE="
+    },
+    {
+      "identite": "marc.ancien@exemple.test",
+      "nom": "Marc Ancien (fictif)",
+      "groupes": [
+        "direction-risques"
+      ],
+      "roles": [
+        {
+          "role": "directeur-risques",
+          "depuis": "2025-01-01T00:00:00Z",
+          "jusqu_a": "2026-06-30T00:00:00Z"
+        }
+      ],
+      "cle_publique": "4G5r1jL9a6l9HsTXMk+/eLTTdZv+7xGk/oRIBNLl7zA="
+    },
+    {
+      "identite": "paul.risques@exemple.test",
+      "nom": "Paul Risques (fictif)",
+      "groupes": [
+        "direction-risques"
+      ],
+      "roles": [
+        {
+          "role": "directeur-risques",
+          "depuis": "2026-03-01T00:00:00Z"
+        }
+      ],
+      "cle_publique": "5YSD8BaRk4rQDyky+IifH/eqQOvG3DkTDZKYTmrb004="
+    },
+    {
+      "identite": "helene.rh@exemple.test",
+      "nom": "Hélène RH (fictive)",
+      "groupes": [
+        "rh"
+      ],
+      "roles": [
+        {
+          "role": "drh",
+          "depuis": "2026-01-01T00:00:00Z"
+        },
+        {
+          "role": "responsable-rh",
+          "depuis": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "cle_publique": "6FqausJ9fFNc+Hlo8B079fBo3fqiL8GN11lx/FiQZLA="
+    },
+    {
+      "identite": "julie.juridique@exemple.test",
+      "nom": "Julie Juridique (fictive)",
+      "groupes": [
+        "juridique",
+        "direction-juridique"
+      ],
+      "roles": [
+        {
+          "role": "juridique",
+          "depuis": "2026-01-01T00:00:00Z"
+        },
+        {
+          "role": "direction-juridique",
+          "depuis": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "cle_publique": "4QHvm4/1iwxDTTzRISCoBdO6S6trL8AH+GCwxslmvV0="
+    },
+    {
+      "identite": "camille.conseiller@exemple.test",
+      "nom": "Camille Conseiller (fictif)",
+      "groupes": [
+        "conseillers-credit"
+      ],
+      "cle_publique": "IgxnF9uQQJQZt3XK3lDfc9nOgKikF7bgpJ15FjrvxD4="
+    },
+    {
+      "identite": "luc.manager@exemple.test",
+      "nom": "Luc Manager (fictif)",
+      "groupes": [
+        "managers"
+      ],
+      "cle_publique": "15u0NRy/m+8pIWiR9TzmXZzROMdB/d48BMPRD/6Z6xI="
+    },
+    {
+      "identite": "sophie.gestionrh@exemple.test",
+      "nom": "Sophie Gestion RH (fictive)",
+      "groupes": [
+        "rh",
+        "gestionnaires-rh"
+      ],
+      "roles": [
+        {
+          "role": "gestionnaire-rh",
+          "depuis": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "cle_publique": "vLk2B6QtSd4T9VJjdMuhkiGwc7xBp++0NAcL6IHTskg="
+    },
+    {
+      "identite": "nadia.disciplinaire@exemple.test",
+      "nom": "Nadia Disciplinaire (fictive)",
+      "groupes": [
+        "rh",
+        "responsables-disciplinaires"
+      ],
+      "cle_publique": "6KQwrv3CQzZ7VRi0H7Newt05hAI0IeM2vo+0zQP+Lng="
+    },
+    {
+      "identite": "ines.drh@exemple.test",
+      "nom": "Inès DRH (fictive)",
+      "groupes": [
+        "rh",
+        "direction-rh"
+      ],
+      "roles": [
+        {
+          "role": "drh",
+          "depuis": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "cle_publique": "NltHMfRc3JYj4Ppj26DopMFDdAviySqT3itlxBBO1aY="
+    },
+    {
+      "identite": "olivier.lcbft@exemple.test",
+      "nom": "Olivier LCB-FT (fictif)",
+      "groupes": [
+        "conformite-lcbft"
+      ],
+      "roles": [
+        {
+          "role": "conformite",
+          "depuis": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "cle_publique": "yMg93RDk7O/gvrALamf9x5/tu5d4CaHxgDuruxq/Jtc="
+    },
+    {
+      "identite": "louis.gestionrh@exemple.test",
+      "nom": "Louis Gestion RH (fictif)",
+      "groupes": [
+        "rh",
+        "gestionnaires-rh"
+      ],
+      "roles": [
+        {
+          "role": "gestionnaire-rh",
+          "depuis": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "cle_publique": "J+zcTl1d5LZWxohVyUlQs+B5bqYIupXR2TdZ3aQrWto="
+    },
+    {
+      "identite": "yann.paie@exemple.test",
+      "nom": "Yann Paie (fictif)",
+      "groupes": [
+        "rh",
+        "paie"
+      ],
+      "roles": [
+        {
+          "role": "paie",
+          "depuis": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "cle_publique": "hjt3fJyJsGy3HF5zkK0tcDr8v5PwqlYg6wpu7uyUgxY="
+    },
+    {
+      "identite": "portail@exemple.test",
+      "nom": "Portail d'authentification (fictif)",
+      "roles": [
+        {
+          "role": "emetteur-identite",
+          "depuis": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "cle_publique": "EweksUdMUdAfx4Qen9H9ul/3z6fPToLiGGDefEO5EQA="
+    },
+    {
+      "identite": "nora.ventoux@exemple.test",
+      "nom": "Nora Ventoux (fictive)",
+      "groupes": [
+        "direction-juridique"
+      ],
+      "roles": [
+        {
+          "role": "direction-juridique",
+          "depuis": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "cle_publique": "0PheNNzoTHpU6jJWkoVZ4GCAvW7QO527o+c3bPGWay8="
+    },
+    {
+      "identite": "theo.ventoux@exemple.test",
+      "nom": "Théo Ventoux (fictif)",
+      "groupes": [
+        "conformite"
+      ],
+      "roles": [
+        {
+          "role": "conformite",
+          "depuis": "2026-01-01T00:00:00Z"
+        }
+      ],
+      "cle_publique": "aKf7mokzz3vqW4QDLYIPiUAcMvP/p0Oyl6DC9lYF4sI="
+    },
+    {
+      "identite": "victor.ventoux@exemple.test",
+      "nom": "Victor Ventoux (fictif)",
+      "groupes": [
+        "inities-atlas"
+      ],
+      "cle_publique": "+vtxkh82fy1y0TA90DUyXZgHflZu3yIGKFsGWuRLV9U="
+    },
+    {
+      "identite": "wassila.ventoux@exemple.test",
+      "nom": "Wassila Ventoux (fictive)",
+      "groupes": [
+        "inities-atlas"
+      ],
+      "cle_publique": "dXTR4rt8m9v4181EGul7nQYj9eFab2iSbK0C7w0Gs90="
+    },
+    {
+      "identite": "yanis.ventoux@exemple.test",
+      "nom": "Yanis Ventoux (fictif)",
+      "groupes": [
+        "salaries-ventoux"
+      ],
+      "cle_publique": "lujimnpDJP6gvUSJJ/0sHVplSXkETih0eeKq3DJ+D6I="
+    },
+    {
+      "identite": "adrien.arceau@exemple.test",
+      "nom": "Adrien Arceau (fictif)",
+      "groupes": [
+        "equipe-atlas-cabinet",
+        "cabinet-arceau"
+      ],
+      "cle_publique": "q25tcOeiEDo1pBiLdbr7tqJoqiPtCuwqnt2LiQ+Sgcc="
+    },
+    {
+      "identite": "chloe.arceau@exemple.test",
+      "nom": "Chloé Arceau (fictive)",
+      "groupes": [
+        "equipe-atlas-cabinet",
+        "cabinet-arceau"
+      ],
+      "cle_publique": "5jIEoj2w4ATqtb6KYdnm9eqXvuihZxElViAxwvNg1y0="
+    },
+    {
+      "identite": "damien.arceau@exemple.test",
+      "nom": "Damien Arceau (fictif)",
+      "groupes": [
+        "cabinet-arceau"
+      ],
+      "cle_publique": "J3LtLOCKhDaNMc/HDYMNnR+D1BuS+7jj3WqAFRxQYJ8="
+    }
+  ]
+}

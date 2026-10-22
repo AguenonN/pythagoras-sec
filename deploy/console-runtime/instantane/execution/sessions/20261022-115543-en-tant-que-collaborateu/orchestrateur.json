@@ -1,0 +1,23 @@
+{
+ "delegations": [
+  {
+   "sous_agent": "equipe-deal",
+   "tache": "Lire dans la data room du projet ATLAS le document ATLAS-DOC-02 (note de valorisation de Biolys) et en faire un résumé pour damien.arceau@exemple.test.",
+   "appels": [
+    {
+     "outil": "data-room__lire_document",
+     "nature": "refus",
+     "avec_jeton": false,
+     "directive": "D-040 v1",
+     "motif": "refusé par D-040 v1 (Règlement (UE) n° 596/2014 relatif aux abus de marché — information privilégiée et listes d'initiés — à valider par le juriste art. 7, 18)"
+    }
+   ],
+   "sortie": null,
+   "etat": "bloque"
+  }
+ ],
+ "validations": [],
+ "statut": "bloque",
+ "appels_mistral": 2,
+ "mode": "reel"
+}

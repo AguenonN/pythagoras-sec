@@ -1,0 +1,26 @@
+{
+ "delegations": [
+  {
+   "sous_agent": "redaction",
+   "tache": "Rédige un rapport court avec les conclusions dans l'affaire Dupont contre Martin pour claire.analyste@exemple.test.",
+   "appels": [
+    {
+     "outil": "banque-synthetique__remettre_rapport",
+     "nature": "erreur",
+     "avec_jeton": false
+    }
+   ],
+   "sortie": {
+    "dossier_id": "Dupont_contre_Martin",
+    "destinataire": "claire.analyste@exemple.test",
+    "reference": null,
+    "resume": "La remise du rapport a été refusée car le dossier \"Dupont_contre_Martin\" est inconnu dans le système. Aucune action supplémentaire ne peut être entreprise."
+   },
+   "etat": "termine"
+  }
+ ],
+ "validations": [],
+ "statut": "termine",
+ "appels_mistral": 4,
+ "mode": "reel"
+}

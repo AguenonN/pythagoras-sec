@@ -1,0 +1,8 @@
+{
+ "statut": "termine",
+ "demande": "Pour le client CLI-FICTIF-003 : passe le découvert autorisé du compte CPT-FICTIF-0031 à 9 000 €, exporte sa fiche vers le service contentieux de la banque, puis envoie-lui un courrier pour l'informer de son nouveau découvert.",
+ "demandeur": "camille.conseiller@exemple.test",
+ "debut": "2026-10-22T09:49:03Z",
+ "fin": "2026-10-22T09:49:17Z",
+ "attente": null
+}

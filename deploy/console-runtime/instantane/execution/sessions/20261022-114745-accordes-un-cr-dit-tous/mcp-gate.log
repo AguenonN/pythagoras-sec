@@ -1,0 +1,46 @@
+time=2026-10-22T11:47:45.689+02:00 level=INFO msg="journaux précédents relus" fichiers=3 "jetons consommés"=1
+taux-officiel: mode MIXTE, enregistrements /home/aguenonn/pythagoras-sec/demo/execution/serveurs/taux-officiel, stdio
+recherche-entreprises: mode MIXTE, enregistrements /home/aguenonn/pythagoras-sec/demo/execution/serveurs/recherche-entreprises, stdio
+gels-avoirs: mode imposé par -mode : REJEU (DONNEES_MODE ignoré)
+gels-avoirs: mode MIXTE, enregistrements /home/aguenonn/pythagoras-sec/servers/gels-avoirs/enregistrements_locaux, stdio
+eurlex: mode MIXTE, enregistrements /home/aguenonn/pythagoras-sec/demo/execution/serveurs/eurlex, stdio
+time=2026-10-22T11:47:46.117+02:00 level=WARN msg="variable nommée au registre absente de l'environnement, non transmise" serveur=legifrance variable=PISTE_CLIENT_ID
+time=2026-10-22T11:47:46.117+02:00 level=WARN msg="variable nommée au registre absente de l'environnement, non transmise" serveur=legifrance variable=PISTE_CLIENT_SECRET
+legifrance: mode MIXTE, enregistrements /home/aguenonn/pythagoras-sec/demo/execution/serveurs/legifrance, stdio
+banque-synthetique: mode MIXTE, enregistrements servers/banque-synthetique/enregistrements, stdio
+rh-synthetique: mode MIXTE, enregistrements servers/rh-synthetique/enregistrements, stdio
+referentiel-rh: mode MIXTE, enregistrements servers/referentiel-rh/enregistrements, stdio
+data-room: mode MIXTE, enregistrements servers/data-room/enregistrements, stdio
+messagerie: mode MIXTE, enregistrements servers/messagerie/enregistrements, stdio
+bourse: mode MIXTE, enregistrements servers/bourse/enregistrements, stdio
+communication: mode MIXTE, enregistrements servers/communication/enregistrements, stdio
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg=backend serveur=taux-officiel transport=stdio attesté=true détail=""
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg=backend serveur=recherche-entreprises transport=stdio attesté=true détail=""
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg=backend serveur=gels-avoirs transport=stdio attesté=true détail=""
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg=backend serveur=eurlex transport=stdio attesté=true détail=""
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg=backend serveur=legifrance transport=stdio attesté=true détail=""
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg=backend serveur=banque-synthetique transport=stdio attesté=true détail=""
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg=backend serveur=rh-synthetique transport=stdio attesté=true détail=""
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg=backend serveur=referentiel-rh transport=stdio attesté=true détail=""
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg=backend serveur=data-room transport=stdio attesté=true détail=""
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg=backend serveur=messagerie transport=stdio attesté=true détail=""
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg=backend serveur=bourse transport=stdio attesté=true détail=""
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg=backend serveur=communication transport=stdio attesté=true détail=""
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg="server run start"
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg="server connecting"
+time=2026-10-22T11:47:46.799+02:00 level=INFO msg="server session connected" session_id=""
+time=2026-10-22T11:47:46.800+02:00 level=INFO msg="session initialized"
+time=2026-10-22T11:47:48.686+02:00 level=INFO msg="server session disconnected" session_id=""
+time=2026-10-22T11:47:48.687+02:00 level=INFO msg="server session ended"
+rh-synthetique: server is closing: EOF
+messagerie: server is closing: EOF
+referentiel-rh: server is closing: EOF
+data-room: server is closing: EOF
+bourse: server is closing: EOF
+communication: server is closing: EOF
+taux-officiel: server is closing: EOF
+recherche-entreprises: server is closing: EOF
+gels-avoirs: server is closing: EOF
+eurlex: server is closing: EOF
+legifrance: server is closing: EOF
+banque-synthetique: server is closing: EOF

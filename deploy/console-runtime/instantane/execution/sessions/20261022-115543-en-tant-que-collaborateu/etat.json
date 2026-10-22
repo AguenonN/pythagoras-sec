@@ -1,0 +1,8 @@
+{
+ "statut": "bloque",
+ "demande": "En tant que collaborateur du cabinet Arceau Avocats, lis dans la data room du projet ATLAS le document ATLAS-DOC-02 (note de valorisation de Biolys) et résume-le-moi.",
+ "demandeur": "damien.arceau@exemple.test",
+ "debut": "2026-10-22T09:55:43Z",
+ "fin": "2026-10-22T09:55:47Z",
+ "attente": null
+}

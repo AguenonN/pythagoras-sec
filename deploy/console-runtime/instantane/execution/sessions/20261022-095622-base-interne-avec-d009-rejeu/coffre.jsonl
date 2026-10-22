@@ -1,0 +1,9 @@
+{"ts":"2026-10-22T07:56:22.978247861Z","empreinte":"68868ccc463d68496ced26106d7f15d5db51ed5af46fdb39d79609d2a461a39d","outil":"evaluer_dossier","arguments_origine":{"dossier_id":"DOS-FICTIF-003"}}
+{"ts":"2026-10-22T07:56:22.982000588Z","empreinte":"1083c20a8a37f16939d78f79adfb25774c44a00512cafcf63dc20d0880a8825a","outil":"rechercher_entreprise","arguments_origine":{"siren":"508858230"}}
+{"ts":"2026-10-22T07:56:22.984687336Z","empreinte":"bd799fffebea9c68c864c7c7c555f47c24f92ebaa63624e3d73129fa1670007e","outil":"verifier_gel","arguments_origine":{"nom":"OPINEL DISTRIBUTION"}}
+{"ts":"2026-10-22T07:56:23.409317256Z","empreinte":"dc3150bb426ef9a44134eae6b20e2e8ba28cf4446f0264ade1ecc5ca31dc97ea","outil":"consulter_client","arguments_origine":{"client_id":"OPINEL DISTRIBUTION"}}
+{"ts":"2026-10-22T07:56:23.412505262Z","empreinte":"5ca612b8d132032dfc233f5def2c55ee28885e99c79527e769dc9629b157d3fa","outil":"consulter_client","arguments_origine":{"client_id":"508858230"}}
+{"ts":"2026-10-22T07:56:23.415091084Z","empreinte":"c6d7af7ed2715128c0de22d725ff25257269a370698591782430caa4f660a43d","outil":"historique_operations","arguments_origine":{"client_id":"OPINEL DISTRIBUTION"}}
+{"ts":"2026-10-22T07:56:23.420371638Z","empreinte":"f89a595d922850430fd37a16b93d9879989b5bd13f968b974be2feeba88ab49d","outil":"historique_operations","arguments_origine":{"client_id":"508858230"}}
+{"ts":"2026-10-22T07:56:23.441036816Z","empreinte":"5e9aa0d8f65f1437ba6ace64088d02f5cfed8e3a2925afdb8500ac72161441a3","outil":"get_taux_interne","arguments_origine":{"categorie":"decouvert-societes-non-financieres"}}
+{"ts":"2026-10-22T07:56:23.447304122Z","empreinte":"3e0615b0fa22bc86ff456356de27f88dc60d390a148deca5a3f471fc25bbf1e5","outil":"attribuer_pret","arguments_origine":{"dossier_id":"DOS-FICTIF-003","montant":150000,"siren":"508858230"}}

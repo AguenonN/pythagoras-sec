@@ -1,0 +1,5 @@
+{
+ "texte": "Le découvert autorisé du compte **CPT-FICTIF-0031** du client **CLI-FICTIF-003** a été passé à **9 000 €**. Les autres actions (export de la fiche et envoi du courrier) n'ont pas encore été réalisées. Veuillez les demander séparément.\n\nDécisions de l'engine :\n- operations · banque-synthetique__modifier_plafond_decouvert : transmis, données reçues",
+ "statut": "termine",
+ "directives_citees": []
+}

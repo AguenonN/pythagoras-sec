@@ -1,0 +1,5 @@
+{
+ "texte": "Votre ordre d'achat de **300 actions BIOLYS** a été passé avec succès sur votre compte-titres. Référence : **ORDRE-FICTIF-0001**.\n\nDécisions de l'engine :\n- assistant-salarie · bourse__passer_ordre : transmis, données reçues",
+ "statut": "termine",
+ "directives_citees": []
+}

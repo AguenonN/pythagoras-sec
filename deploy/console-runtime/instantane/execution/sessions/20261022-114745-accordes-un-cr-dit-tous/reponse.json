@@ -1,0 +1,5 @@
+{
+ "texte": "La demande est trop générale et ne peut pas être traitée directement. Pour accorder un crédit, il faut analyser chaque dossier individuellement (demandeur, montant, taux, conformité, etc.).\n\nSi tu as un **dossier spécifique** à traiter, précise :\n- Le nom ou l'identifiant du client (ou son SIREN pour une entreprise).\n- Le montant et le type de crédit (prêt, découvert, etc.).\n- Toute autre information utile (taux proposé, note de l'analyste, etc.).\n\nJe pourrai alors déléguer les tâches nécessaires pour traiter ce dossier. Sans ces détails, je ne peux pas avancer.",
+ "statut": "termine",
+ "directives_citees": []
+}
