@@ -2,21 +2,21 @@
 // Écran 1 · Journal et graphe de chaîne.
 
 (function () {
-  const STATUT_SESSION = { en_cours: 'en cours', en_attente: 'en attente de validation', termine: 'terminée', bloque: 'bloquée', erreur: 'en erreur' };
-  const RYTHME = { temps_reel: 'en temps réel', synthese: 'en synthèse' };
-  const REMISE = { remise: 'remise', echec: 'non remise', planifiee: 'planifiée' };
+  const STATUT_SESSION = { en_cours: 'in progress', en_attente: 'awaiting approval', termine: 'finished', bloque: 'blocked', erreur: 'failed' };
+  const RYTHME = { temps_reel: 'in real time', synthese: 'in a digest' };
+  const REMISE = { remise: 'remise', echec: 'not delivered', planifiee: 'scheduled' };
 
   function ligneChaineSession(j) {
     const v = j.verification;
-    if (v.ok) return h('span', { class: 'petit ok-txt' }, 'Chaîne vérifiée · ' + j.entrees + ' entrées');
-    if (v.cle_absente) return h('span', { class: 'petit gras', style: 'color:var(--ref)' }, 'Chaîne non vérifiable · clé absente');
-    return h('span', { class: 'petit gras', style: 'color:var(--ref)' }, 'Chaîne rompue à l\'entrée #' + (j.premier_ecart + 1));
+    if (v.ok) return h('span', { class: 'petit ok-txt' }, 'Chain verified · ' + j.entrees + ' entries');
+    if (v.cle_absente) return h('span', { class: 'petit gras', style: 'color:var(--ref)' }, 'Chain not verifiable · key missing');
+    return h('span', { class: 'petit gras', style: 'color:var(--ref)' }, 'Chain broken at entry #' + (j.premier_ecart + 1));
   }
 
   function liste(courante) {
     const demandes = toutesDemandes();
     const jours = new Set(demandes.map(j => jourComplet(dateDemande(j))));
-    const titre = jours.size === 1 ? 'Demandes du ' + [...jours][0] : 'Demandes';
+    const titre = jours.size === 1 ? 'Requests of ' + [...jours][0] : 'Requests';
     return h('aside', { class: 'laterale' },
       h('div', { class: 'etiq' }, titre),
       demandes.map(j => {
@@ -27,16 +27,16 @@
             onclick: () => allerA('journal', { j: j.id, s: ch.s ? ch.s.id : '' }) },
             h('span', { class: 'gras' }, nomChoix(ch) + ' · ' + heureMin(dateDemande(j))),
             h('span', { class: 'moyen second' }, j.demande ? j.demande.slice(0, 70) + (j.demande.length > 70 ? '…' : '') : j.id),
-            h('span', { class: 'petit second' }, (j.sessions.length ? resume + ' appel(s)' : 'aucun appel d\'outil') + (j.rejetee ? ' · rejetée' : j.statut ? ' · ' + STATUT_SESSION[j.statut] : '')),
+            h('span', { class: 'petit second' }, (j.sessions.length ? resume + ' call(s)' : 'no tool call') + (j.rejetee ? ' · rejected' : j.statut ? ' · ' + STATUT_SESSION[j.statut] : '')),
             ligneChaineSession(j)),
           j.sessions.length > 1 ? j.sessions.map(s => h('button', { type: 'button', class: 'petit second' + (j.id === courante.j.id && courante.s && s.id === courante.s.id ? ' gras' : ''),
-            onclick: () => allerA('journal', { j: j.id, s: s.id }) }, '↳ session ' + nomSession(s.id) + ' · ' + s.appels + ' appel(s)')) : null);
+            onclick: () => allerA('journal', { j: j.id, s: s.id }) }, '↳ session ' + nomSession(s.id) + ' · ' + s.appels + ' call(s)')) : null);
       }));
   }
 
   function serveurCellule(e) {
     const a = e.attestation;
-    if (!a) return h('span', {}, e.serveur + ' · ', nd('attestation non disponible'));
+    if (!a) return h('span', {}, e.serveur + ' · ', nd('attestation not available'));
     return h('span', {}, e.serveur + ' · ', a.valide ?
       h('span', { class: 'ok-txt' }, a.mode + ' ✓') : h('span', { class: 'non-txt' }, a.mode + ' ✗'));
   }
@@ -47,9 +47,9 @@
       badge(e.badge, e.libelle),
       fonde && fonde.length ? h('span', { class: 'lien-fonde' }, 'fonde ' + fonde.map(s => '#' + s).join(' ')) : null,
       !fonde && ids.length ? h('span', { class: 'second' }, ids.join(' · ')) : null,
-      e.valide_au_seq ? h('span', { class: 'petit second' }, 'validé ensuite (appel n° ' + e.valide_au_seq + ')') : null,
-      e.valide_par && e.valide_par.length ? h('span', { class: 'petit ok-txt' }, 'validé par ' + e.valide_par.map(nomValideur).join(', ')) : null,
-      e.suspect ? h('span', { class: 'non-txt', style: 'color:var(--ref)' }, 'non fiable') : null);
+      e.valide_au_seq ? h('span', { class: 'petit second' }, 'approved afterwards (call #' + e.valide_au_seq + ')') : null,
+      e.valide_par && e.valide_par.length ? h('span', { class: 'petit ok-txt' }, 'approved by ' + e.valide_par.map(nomValideur).join(', ')) : null,
+      e.suspect ? h('span', { class: 'non-txt', style: 'color:var(--ref)' }, 'unreliable') : null);
   }
 
   function rang(e, choisi, fonde, onclick) {
@@ -71,11 +71,11 @@
     const origine = liens.filter(l => l.directive === a.id);
     return h('div', { class: 'carte compacte' },
       h('div', { class: 'gras' }, versionTexte(a.id, a.version) + (a.texte ? ' · ' + Titre(a.texte) : '')),
-      h('div', { class: 'moyen second' }, 'Fondement : ' + fondementTexte(a.fondement)),
-      h('div', { class: 'moyen' }, 'Motif : ' + motifAffiche(a.motif)),
-      a.appliquee ? null : h('div', { class: 'moyen second' }, 'Directive en observation : décision journalisée, jamais appliquée.'),
+      h('div', { class: 'moyen second' }, 'Legal basis: ' + fondementTexte(a.fondement)),
+      h('div', { class: 'moyen' }, 'Reason: ' + motifAffiche(a.motif)),
+      a.appliquee ? null : h('div', { class: 'moyen second' }, 'Rule in observation: decision journaled, never applied.'),
       origine.length ? h('div', { class: 'moyen', style: 'color:var(--accent)' },
-        'Consultation à l\'origine : ' + origine.map(l => '#' + l.seq).join(', ')) : null);
+        'Originating consultation: ' + origine.map(l => '#' + l.seq).join(', ')) : null);
   }
 
   // Titre abrégé : même règle que le serveur (internal/console.Titre).
@@ -94,95 +94,95 @@
   window.TitreDirective = Titre;
 
   function volet(v, e) {
-    if (!e) return h('aside', { class: 'volet' }, h('div', { class: 'etiq' }, 'Décision'), nd('Aucun appel d\'outil pour cette demande.'));
+    if (!e) return h('aside', { class: 'volet' }, h('div', { class: 'etiq' }, 'Decision'), nd('No tool call for this request.'));
     const appliquees = e.applications.filter(a => a.appliquee || a.declenchee);
     const liens = e.provenance || [];
     const roles = e.validation && e.validation.roles && e.validation.roles.length ? e.validation.roles.join(', ') + (e.validation.quatre_yeux ? ' · quatre yeux' : '') : null;
-    let transmission = e.transmis ? 'transmis au serveur' : (e.badge === 'en_attente' ? 'aucune (en attente)' : 'aucune (non transmis)');
+    let transmission = e.transmis ? 'forwarded to the server' : (e.badge === 'en_attente' ? 'none (pending)' : 'none (not forwarded)');
     const notifs = e.notifications || [], appros = e.approbations || [];
     return h('aside', { class: 'volet' },
-      h('div', { class: 'etiq' }, 'Décision de l\'appel #' + e.seq),
+      h('div', { class: 'etiq' }, 'Decision on call #' + e.seq),
       h('div', { style: 'display:flex;align-items:center;gap:10px;flex-wrap:wrap' }, badge(e.badge, e.libelle, 'grand'),
         h('span', { class: 'moyen second' }, heureSec(e.ts) + ' · Europe/Paris')),
       e.origine_libelle ? h('p', { class: 'moyen gras', style: 'color:var(--non)' }, e.origine_libelle) : null,
       e.rejet ? h('div', { class: 'carte compacte', style: 'border-color:var(--ref)' },
         h('b', { class: 'erreur' }, texteRejet(e.rejet)), h('span', { class: 'petit second' }, e.rejet.mention)) : null,
-      e.valide_par && e.valide_par.length ? h('p', { class: 'moyen ok-txt gras' }, 'Validé par ' + e.valide_par.map(v => nomValideur(v) + ' (' + v.role + ')').join(', ')) : null,
+      e.valide_par && e.valide_par.length ? h('p', { class: 'moyen ok-txt gras' }, 'Approved by ' + e.valide_par.map(v => nomValideur(v) + ' (' + v.role + ')').join(', ')) : null,
       appliquees.length ? appliquees.map(a => carteDirective(a, liens)) :
-        h('div', { class: 'carte compacte' }, h('div', { class: 'moyen' }, motifAffiche(e.motif)), h('div', { class: 'moyen second' }, 'Aucune directive appliquée à cet appel.')),
+        h('div', { class: 'carte compacte' }, h('div', { class: 'moyen' }, motifAffiche(e.motif)), h('div', { class: 'moyen second' }, 'No rule applied to this call.')),
       h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
-        h('div', { class: 'kv' }, h('span', {}, 'Rôle requis'), roles ? h('span', {}, roles) : nd()),
-        h('div', { class: 'kv' }, h('span', {}, 'Directives évaluées'), h('span', {},
-          e.evaluees + ' · ' + e.appliquees + ' appliquée(s) · ' + e.indeterminees + ' indéterminée(s)')),
-        h('div', { class: 'kv' }, h('span', {}, 'Accès · étiquettes de la cible'), h('span', {}, (e.acces || ND) + ' · ' + ((e.etiquettes || []).join(', ') || 'aucune'))),
-        h('div', { class: 'kv' }, h('span', {}, 'Signature numérique de l\'appel (empreinte)'), h('span', { class: 'mono' }, court(e.empreinte_transmise) || ND)),
-        h('div', { class: 'kv' }, h('span', {}, 'Entrée du journal'), h('span', { class: 'mono' }, '#' + e.numero + (e.prev ? ' · précédente ' + court(e.prev) : ''))),
+        h('div', { class: 'kv' }, h('span', {}, 'Required role'), roles ? h('span', {}, roles) : nd()),
+        h('div', { class: 'kv' }, h('span', {}, 'Rules evaluated'), h('span', {},
+          e.evaluees + ' · ' + e.appliquees + ' applied · ' + e.indeterminees + ' undetermined')),
+        h('div', { class: 'kv' }, h('span', {}, 'Access · target labels'), h('span', {}, (e.acces || ND) + ' · ' + ((e.etiquettes || []).join(', ') || 'aucune'))),
+        h('div', { class: 'kv' }, h('span', {}, 'Digital fingerprint of the call'), h('span', { class: 'mono' }, court(e.empreinte_transmise) || ND)),
+        h('div', { class: 'kv' }, h('span', {}, 'Journal entry'), h('span', { class: 'mono' }, '#' + e.numero + (e.prev ? ' · previous ' + court(e.prev) : ''))),
         h('div', { class: 'kv' }, h('span', {}, 'Transmission'), h('span', {}, transmission)),
-        h('div', { class: 'kv' }, h('span', {}, 'Temps ajouté par l\'engine'), e.duree_us ? h('span', {}, ms(e.duree_us / 1000)) : nd('non mesuré'))),
+        h('div', { class: 'kv' }, h('span', {}, 'Time added by the engine'), e.duree_us ? h('span', {}, ms(e.duree_us / 1000)) : nd('not measured'))),
       h('div', { class: 'etiq' }, 'Notifications'),
       notifs.length ? notifs.map(n => h('div', { class: 'carte compacte' },
         h('div', { class: 'gras' }, n.destinataire_role + ' · ' + (RYTHME[n.rythme] || n.rythme)),
-        h('div', { class: 'moyen second' }, 'Directive ' + n.directive + ', version ' + n.version + (n.si_echec === 'refuser' ? ' · si la remise échoue, l\'appel est refusé' : '')),
-        h('div', { class: 'moyen ' + (n.statut === 'echec' ? 'erreur gras' : 'ok-txt') }, n.statut ? 'Remise : ' + (REMISE[n.statut] || n.statut) + (n.remis ? ' (' + n.remis + ' destinataire(s))' : '') : 'Remise : ' + ND))) : h('span', { class: 'moyen second' }, 'Aucune notification demandée.'),
-      h('div', { class: 'etiq' }, 'Approbations'),
+        h('div', { class: 'moyen second' }, 'Rule ' + n.directive + ', version ' + n.version + (n.si_echec === 'refuser' ? ' · if delivery fails, the call is refused' : '')),
+        h('div', { class: 'moyen ' + (n.statut === 'echec' ? 'erreur gras' : 'ok-txt') }, n.statut ? 'Delivery: ' + (REMISE[n.statut] || n.statut) + (n.remis ? ' (' + n.remis + ' destinataire(s))' : '') : 'Delivery: ' + ND))) : h('span', { class: 'moyen second' }, 'No notification requested.'),
+      h('div', { class: 'etiq' }, 'Approvals'),
       appros.length ? appros.map(a => h('div', { class: 'carte compacte' },
-        h('div', { class: 'gras ' + (a.statut === 'acceptee' ? 'ok-txt' : 'erreur') }, (a.statut === 'acceptee' ? 'Acceptée' : 'Refusée') + ' · ' + heureSec(a.ts)),
-        (a.valideurs || []).map(v => h('div', { class: 'moyen' }, v.identite + ' — rôle « ' + v.role + ' » au ' + jourMoisHeure(v.date))),
-        a.motif ? h('div', { class: 'moyen erreur' }, 'Motif : ' + a.motif) : null)) : h('span', { class: 'moyen second' }, 'Aucune approbation.'),
+        h('div', { class: 'gras ' + (a.statut === 'acceptee' ? 'ok-txt' : 'erreur') }, (a.statut === 'acceptee' ? 'Accepted' : 'Refused') + ' · ' + heureSec(a.ts)),
+        (a.valideurs || []).map(v => h('div', { class: 'moyen' }, v.identite + ' — role “' + v.role + '” on ' + jourMoisHeure(v.date))),
+        a.motif ? h('div', { class: 'moyen erreur' }, 'Reason: ' + a.motif) : null)) : h('span', { class: 'moyen second' }, 'No approval.'),
       (e.alertes || []).map(a => h('p', { class: 'erreur moyen' }, '⚠ ' + a)),
       h('div', { style: 'margin-top:auto;display:flex;gap:10px' },
-        h('a', { class: 'btn contour', style: 'flex:1', href: '#avant-apres?' + new URLSearchParams({ s: v.journal + '|' + v.session }) }, 'Rejouer cet appel'),
-        e.badge === 'en_attente' && !e.valide_au_seq ? h('a', { class: 'btn', style: 'flex:1', href: '#validation?' + new URLSearchParams({ a: v.journal }) }, 'Ouvrir la validation') : null));
+        h('a', { class: 'btn contour', style: 'flex:1', href: '#avant-apres?' + new URLSearchParams({ s: v.journal + '|' + v.session }) }, 'Replay this call'),
+        e.badge === 'en_attente' && !e.valide_au_seq ? h('a', { class: 'btn', style: 'flex:1', href: '#validation?' + new URLSearchParams({ a: v.journal }) }, 'Open the approval') : null));
   }
 
   // ---- onglet « Demandé / décidé » : le modèle d'un côté, l'engine de l'autre.
   function argument(a) {
     return h('div', { class: 'mono petit', style: 'display:flex;gap:8px;flex-wrap:wrap' },
       h('span', { class: 'second' }, a.chemin),
-      a.retire ? h('span', { class: 'non-txt gras', title: 'Valeur retirée par l\'engine : jamais affichée' }, 'retiré par l\'engine')
+      a.retire ? h('span', { class: 'non-txt gras', title: 'Value removed by the engine: never displayed' }, 'removed by the engine')
         : h('span', {}, a.valeur));
   }
   function celluleDemande(l) {
     return h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
       h('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' },
         outilLisible('', l.outil, { class: 'gras' }),
-        l.delegation ? h('span', { class: 'pastille' }, 'délégation · hors du gate') : null,
+        l.delegation ? h('span', { class: 'pastille' }, 'delegation · outside the gateway') : null,
         l.ts ? h('span', { class: 'petit second' }, heureSec(l.ts)) : null),
-      l.arguments.length ? l.arguments.map(argument) : h('span', { class: 'petit second' }, 'aucun argument'),
-      l.sans_demande ? h('span', { class: 'petit second' }, 'demande du modèle non retrouvée (arguments lus au coffre)') : null);
+      l.arguments.length ? l.arguments.map(argument) : h('span', { class: 'petit second' }, 'no argument'),
+      l.sans_demande ? h('span', { class: 'petit second' }, 'model request not found (arguments read from the vault)') : null);
   }
   function celluleDecision(l) {
-    if (l.delegation) return h('span', { class: 'second moyen' }, 'Cette délégation ne passe pas par le gate : aucune décision de l\'engine.');
-    if (l.non_recue) return h('span', { class: 'non-txt gras' }, 'Jamais reçu par le gate : aucune décision.');
+    if (l.delegation) return h('span', { class: 'second moyen' }, 'This delegation does not go through the gateway: no engine decision.');
+    if (l.non_recue) return h('span', { class: 'non-txt gras' }, 'Never received by the gateway: no decision.');
     const e = l.decision;
     const appliquees = e.applications.filter(a => a.appliquee);
     const roles = e.validation && e.validation.roles && e.validation.roles.length ? e.validation.roles.join(', ') : null;
     return h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
       h('div', { style: 'display:flex;gap:8px;align-items:center;flex-wrap:wrap' }, badge(e.badge, e.libelle),
-        h('span', { class: 'petit second' }, 'appel n° ' + e.seq + ' · ' + heureSec(e.ts))),
+        h('span', { class: 'petit second' }, 'call #' + e.seq + ' · ' + heureSec(e.ts))),
       appliquees.length ? appliquees.map(a => h('div', { class: 'moyen' },
         h('span', { class: 'gras' }, versionTexte(a.id, a.version) + (a.texte ? ' · ' + Titre(a.texte) : '')),
-        h('div', { class: 'second petit' }, 'Fondement : ' + (fondementTexte(a.fondement) || ND)))) :
-        h('div', { class: 'moyen second' }, 'Aucune directive appliquée'),
+        h('div', { class: 'second petit' }, 'Legal basis: ' + (fondementTexte(a.fondement) || ND)))) :
+        h('div', { class: 'moyen second' }, 'No rule applied'),
       h('div', { class: 'petit second' }, motifAffiche(e.motif)),
-      (e.champs_retires || []).length ? h('div', { class: 'petit' }, 'Champs retirés avant envoi : ' + e.champs_retires.join(', ')) : null,
-      e.badge === 'en_attente' ? h('div', { class: 'moyen', style: 'color:var(--accent)' }, 'Mise en attente' + (roles ? ' : validation ' + roles + ' requise' : '')) : null,
-      e.rejet ? h('div', { class: 'moyen erreur' }, 'Mise en attente, puis ' + texteRejet(e.rejet).charAt(0).toLowerCase() + texteRejet(e.rejet).slice(1) + ' (' + e.rejet.mention + ')') : null,
+      (e.champs_retires || []).length ? h('div', { class: 'petit' }, 'Fields removed before sending: ' + e.champs_retires.join(', ')) : null,
+      e.badge === 'en_attente' ? h('div', { class: 'moyen', style: 'color:var(--accent)' }, 'Held' + (roles ? ' : validation ' + roles + ' requise' : '')) : null,
+      e.rejet ? h('div', { class: 'moyen erreur' }, 'Held, then ' + texteRejet(e.rejet).charAt(0).toLowerCase() + texteRejet(e.rejet).slice(1) + ' (' + e.rejet.mention + ')') : null,
       (l.intermediaires || []).map(i => h('div', { class: 'petit second' },
-        'Repris (appel n° ' + i.seq + ', ' + heureSec(i.ts) + ') puis remis en attente : ' + motifAffiche(i.motif))),
+        'Resumed (call #' + i.seq + ', ' + heureSec(i.ts) + ') then held again: ' + motifAffiche(i.motif))),
       l.suite ? h('div', { class: 'carte compacte' },
-        h('div', { class: 'gras ok-txt' }, 'Puis ' + (l.suite.valide_par && l.suite.valide_par.length ? 'validé par ' + l.suite.valide_par.map(v => nomValideur(v) + ' (' + v.role + ')').join(', ') : 'repris')),
-        h('div', { class: 'petit second' }, badge(l.suite.badge, l.suite.libelle).textContent + ' · appel n° ' + l.suite.seq + ' · ' + heureSec(l.suite.ts))) : null);
+        h('div', { class: 'gras ok-txt' }, 'Then ' + (l.suite.valide_par && l.suite.valide_par.length ? 'approved by ' + l.suite.valide_par.map(v => nomValideur(v) + ' (' + v.role + ')').join(', ') : 'repris')),
+        h('div', { class: 'petit second' }, badge(l.suite.badge, l.suite.libelle).textContent + ' · call #' + l.suite.seq + ' · ' + heureSec(l.suite.ts))) : null);
   }
   function tableauDemande(d) {
     if (!d) return h('p', { class: 'second' }, 'Chargement…');
     return h('div', { style: 'display:flex;flex-direction:column;gap:10px' },
-      d.fichiers ? null : h('p', { class: 'second moyen' }, 'Les demandes du modèle ne sont pas disponibles pour cette session (aucun fichier mistral/) : seules les décisions de l\'engine sont montrées.'),
+      d.fichiers ? null : h('p', { class: 'second moyen' }, 'The model\'s requests are not available for this session (no mistral/ files): only the engine decisions are shown.'),
       h('div', { class: 'grille-demande entete-colonnes', style: 'display:grid;grid-template-columns:40px minmax(0,1fr) minmax(0,1fr);gap:16px' },
-        ['#', 'Ce que le modèle a demandé', 'Ce que l\'engine a décidé'].map(t => h('span', {}, t))),
+        ['#', 'What the model asked for', 'What the engine decided'].map(t => h('span', {}, t))),
       d.demandes.length ? d.demandes.map(l => h('div', { class: 'rang' + (l.hors_gate ? ' fonde' : ''), style: 'display:grid;grid-template-columns:40px minmax(0,1fr) minmax(0,1fr);gap:16px;padding:12px' },
         h('span', { class: 'num' }, l.ordre), celluleDemande(l), celluleDecision(l))) :
-        h('p', { class: 'second' }, 'Aucun appel pour cette demande.'));
+        h('p', { class: 'second' }, 'No call for this request.'));
   }
 
   ECRANS.journal = async (ctx) => {
@@ -198,7 +198,7 @@
     const lienOnglet = (cle, texte) => h('a', { class: 'onglet' + (onglet === cle ? ' actif' : ''), 'data-onglet': cle, style: onglet === cle ? 'font-weight:700;text-decoration:none;color:var(--accent)' : '',
       href: '#journal?' + new URLSearchParams(Object.assign({ j: ch.j.id, s: ch.s ? ch.s.id : '' }, cle === 'demande' ? { onglet: 'demande' } : {})) }, texte);
     const onglets = () => h('div', { class: 'onglets', style: 'display:flex;gap:18px;border-bottom:1px solid var(--trait);padding-bottom:6px' },
-      lienOnglet('chaine', 'Chaîne'), lienOnglet('demande', 'Demandé / décidé'));
+      lienOnglet('chaine', 'Chain'), lienOnglet('demande', 'Requested / decided'));
 
     function dessiner(v) {
       const fonde = {};
@@ -210,43 +210,43 @@
       const e = v.etapes.find(x => x.seq === choisi);
       const dem = v.demandeur;
       ctx.droite(v.regles ? [
-        'Règles en vigueur depuis le ', h('b', {}, jourMoisHeure(v.regles.depuis)), ' · Juriste : ', h('b', {}, v.regles.auteur || ND)]
-        : ['Règles en vigueur : ', nd()]);
+        'Rules in force since ', h('b', {}, jourMoisHeure(v.regles.depuis)), ' · Juriste : ', h('b', {}, v.regles.auteur || ND)]
+        : ['Rules in force: ', nd()]);
       racine.textContent = '';
       racine.append(
         liste(ch),
         h('main', { class: 'principal' },
           h('div', { style: 'display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap' },
             h('div', { style: 'display:flex;flex-direction:column;gap:4px' },
-              h('h1', {}, 'Demande ' + nomSession(v.session || v.journal)),
-              h('div', { class: 'second' }, 'Demande : ', v.demande ? '« ' + v.demande + ' »' : nd('non disponible')),
-              v.rejet ? h('div', { class: 'erreur gras' }, 'Demande rejetée par ' + parQui(v.rejet) + ' à ' + heureSec(v.rejet.date) + ' · ' + v.rejet.mention) : null),
+              h('h1', {}, 'Request ' + nomSession(v.session || v.journal)),
+              h('div', { class: 'second' }, 'Request: ', v.demande ? '« ' + v.demande + ' »' : nd('not available')),
+              v.rejet ? h('div', { class: 'erreur gras' }, 'Request rejected by ' + parQui(v.rejet) + ' at ' + heureSec(v.rejet.date) + ' · ' + v.rejet.mention) : null),
             pastilleChaine(v.verification)),
           onglets(),
           onglet === 'demande' ? tableauDemande(donneesDemande) : null,
           onglet === 'demande' ? null : h('div', { class: 'chemin' },
-            h('div', { class: 'col' }, h('span', { class: 'petit second' }, 'Demandeur'),
+            h('div', { class: 'col' }, h('span', { class: 'petit second' }, 'Requester'),
               dem ? h('span', { class: 'gras' }, (v.demandeur_fiche && v.demandeur_fiche.nom) || dem.identite) : h('span', { class: 'gras' }, nd()),
               dem ? h('span', { class: 'petit second' }, dem.identite) : null,
-              h('span', { class: 'petit second' }, dem ? 'groupe(s) : ' + ((dem.groupes || []).join(', ') || 'aucun') + ' · rôle(s) : ' + ((v.demandeur_fiche && v.demandeur_fiche.roles || []).join(', ') || 'aucun') : 'rôle et groupe : ' + ND),
-              h('span', { class: 'petit second' }, 'identité prouvée par : ' + (v.source_identite || ND))),
+              h('span', { class: 'petit second' }, dem ? 'groupe(s) : ' + ((dem.groupes || []).join(', ') || 'aucun') + ' · role(s): ' + ((v.demandeur_fiche && v.demandeur_fiche.roles || []).join(', ') || 'aucun') : 'role and group: ' + ND),
+              h('span', { class: 'petit second' }, 'identity proven by: ' + (v.source_identite || ND))),
             h('span', { class: 'fl' }, '→'),
-            h('div', { class: 'col' }, h('span', { class: 'petit second' }, 'Orchestrateur'),
+            h('div', { class: 'col' }, h('span', { class: 'petit second' }, 'Orchestrator'),
               h('span', { class: 'gras' }, v.appelant || ND),
-              h('span', { class: 'petit second' }, 'identité prouvée par le transport')),
+              h('span', { class: 'petit second' }, 'identity proven by the transport')),
             h('span', { class: 'fl' }, '→'),
             h('div', { style: 'display:flex;gap:8px;flex-wrap:wrap' },
-              v.sous_agents.length ? v.sous_agents.map(s => h('span', { class: 'pastille' }, s)) : h('span', { class: 'petit second' }, 'aucun sous-agent déclaré')),
-            h('span', { class: 'petit second' }, 'sous-agents : déclaré, non prouvé')),
+              v.sous_agents.length ? v.sous_agents.map(s => h('span', { class: 'pastille' }, s)) : h('span', { class: 'petit second' }, 'no declared sub-agent')),
+            h('span', { class: 'petit second' }, 'sub-agents: declared, not proven')),
           onglet === 'demande' ? null : h('div', { class: 'grille-appels entete-colonnes' },
-            ['#', 'Sous-agent', 'Appel', 'Serveur · attestation', 'Décision'].map(t => h('span', {}, t))),
+            ['#', 'Sous-agent', 'Call', 'Serveur · attestation', 'Decision'].map(t => h('span', {}, t))),
           onglet === 'demande' ? null : h('div', { style: 'display:flex;flex-direction:column;gap:8px' },
             v.etapes.length ? v.etapes.map(x => rang(x, choisi, fonde[x.seq], () => { choisi = x.seq; dessiner(derniere); })) :
-              h('p', { class: 'second' }, 'Aucun appel d\'outil pour cette demande.')),
+              h('p', { class: 'second' }, 'No tool call for this request.')),
           onglet === 'demande' ? null : h('div', { class: 'petit second', style: 'display:flex;gap:20px;flex-wrap:wrap;margin-top:4px' },
-            h('span', {}, 'Cadre bleu : consultation qui a fondé une décision de provenance.'),
-            h('span', {}, 'Pointillés : déclaré par le code d\'orchestration, consigné, non prouvé.'),
-            v.fermee ? h('span', {}, 'Session fermée : ' + v.fermeture) : h('span', {}, h('span', { class: 'vif' }), 'suivi en continu'))),
+            h('span', {}, 'Blue frame: a consultation that grounded a provenance decision.'),
+            h('span', {}, 'Dashed: declared by the orchestration code, recorded, not proven.'),
+            v.fermee ? h('span', {}, 'Session closed: ' + v.fermeture) : h('span', {}, h('span', { class: 'vif' }), 'live tracking'))),
         ...(onglet === 'demande' ? [] : [volet(v, e)]));
     }
 

@@ -7,20 +7,20 @@
 
 const ECRANS = {};
 const NAV = [
-  ['sans', 'Without Pythagoras'], ['avec', 'With Pythagoras'], ['agents', 'Live agents'], ['journal', 'Journal'], ['poste', 'Poste conseiller'], ['regles', 'Règles'],
-  ['avant-apres', 'Avant / après'], ['validation', 'Validation'], ['redaction', 'Rédaction'],
+  ['sans', 'Without Pythagoras'], ['avec', 'With Pythagoras'], ['agents', 'Live agents'], ['journal', 'Journal'], ['poste', 'Advisor desk'], ['regles', 'Rules'],
+  ['avant-apres', 'Before / after'], ['validation', 'Validation'], ['redaction', 'Rule writing'],
   ['notifications', 'Notifications'],
 ];
 const LIBELLE_BADGE = {
-  autorise: 'Autorisé', caviarde: 'Caviardé', en_attente: 'En attente', refuse: 'Refusé',
-  indisponible: 'Indisponible', source_non_attestee: 'Source non attestée', rejete: 'Rejeté',
+  autorise: 'Allowed', caviarde: 'Redacted', en_attente: 'Pending', refuse: 'Blocked',
+  indisponible: 'Unavailable', source_non_attestee: 'Unattested source', rejete: 'Rejected',
 };
 const EFFET_BADGE = {
   autoriser: 'autorise', caviarder: 'caviarde', attendre_validation: 'en_attente', refuser: 'refuse',
   non_rejouable: 'indisponible',
 };
 const INTERVALLE_MS = 2000;
-const ND = 'non disponible';
+const ND = 'not available';
 
 let etat = null;          // dernière réponse de /api/etat
 let minuteur = null;      // suivi en continu de l'écran courant
@@ -74,7 +74,7 @@ function lienSession(j, s, texte) {
 const PARIS = 'Europe/Paris';
 function fmt(ts, opts) {
   const d = new Date(ts);
-  return isNaN(d) ? '' : new Intl.DateTimeFormat('fr-FR', Object.assign({ timeZone: PARIS }, opts)).format(d);
+  return isNaN(d) ? '' : new Intl.DateTimeFormat('en-GB', Object.assign({ timeZone: PARIS }, opts)).format(d);
 }
 const heureSec = (ts) => fmt(ts, { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 const heureMin = (ts) => fmt(ts, { hour: '2-digit', minute: '2-digit' });
@@ -101,10 +101,10 @@ const nomSession = (id) => {
 };
 function ilYa(ts) {
   const s = Math.max(0, (Date.now() - new Date(ts).getTime()) / 1000);
-  if (s < 90) return 'il y a un instant';
-  if (s < 5400) return 'il y a ' + Math.round(s / 60) + ' min';
-  if (s < 129600) return 'il y a ' + Math.round(s / 3600) + ' h';
-  return 'il y a ' + Math.round(s / 86400) + ' j';
+  if (s < 90) return 'just now';
+  if (s < 5400) return Math.round(s / 60) + ' min ago';
+  if (s < 129600) return Math.round(s / 3600) + ' h ago';
+  return Math.round(s / 86400) + ' d ago';
 }
 function ms(x) {
   if (x == null) return '—';
@@ -126,8 +126,8 @@ function motifAffiche(m) {
 }
 // Un rejet consigné par la console (approbations/<empreinte>/rejet.json).
 function texteRejet(r) {
-  return 'Rejeté par ' + (r.nom || r.valideur) + (r.role ? ' (rôle « ' + r.role + ' »)' : '') +
-    (r.date ? ' le ' + jourComplet(r.date) + ' à ' + heureSec(r.date) : '') + ' : ' + r.motif;
+  return 'Rejected by ' + (r.nom || r.valideur) + (r.role ? ' (role “' + r.role + ' »)' : '') +
+    (r.date ? ' on ' + jourComplet(r.date) + ' at ' + heureSec(r.date) : '') + ' : ' + r.motif;
 }
 const parQui = (r) => (r.nom || r.valideur) + (r.role ? ' (' + r.role + ')' : '');
 function humanise(nom) { return String(nom || '').replace(/_/g, ' '); }
@@ -146,8 +146,35 @@ function cleOutil(serveur, outil) {
   outil = String(outil || '');
   return outil.includes('__') || !serveur ? outil : serveur + '__' + outil;
 }
+// English labels for the tools (the Go table stays French for its tests).
+const OUTILS_EN = {
+  'banque-synthetique__attribuer_pret': 'Grant loan — bank', 'banque-synthetique__cloturer_compte': 'Close account — bank',
+  'banque-synthetique__consulter_client': 'Client record — bank', 'banque-synthetique__declarer_soupcon': 'Suspicious activity report — bank',
+  'banque-synthetique__effectuer_virement': 'Transfer — bank', 'banque-synthetique__envoyer_courrier_client': 'Send letter to client — bank',
+  'banque-synthetique__evaluer_dossier': 'Read credit file — bank', 'banque-synthetique__exporter_donnees_client': 'Export client data — bank',
+  'banque-synthetique__get_taux_interne': 'Usury threshold (internal table) — bank', 'banque-synthetique__historique_operations': 'Transaction history — bank',
+  'banque-synthetique__lister_comptes_client': 'Client accounts — bank', 'banque-synthetique__modifier_plafond_decouvert': 'Change overdraft limit — bank',
+  'banque-synthetique__rediger_courrier_client': 'Draft letter to client — bank', 'banque-synthetique__refuser_credit': 'Refuse credit — bank',
+  'banque-synthetique__remettre_rapport': 'Deliver report — bank',
+  'rh-synthetique__attribuer_prime': 'Grant bonus — HR', 'rh-synthetique__consulter_fiche': 'Full employee record — HR',
+  'rh-synthetique__consulter_salarie': 'Employee record — HR', 'rh-synthetique__convoquer_entretien_prealable': 'Disciplinary meeting notice — HR',
+  'rh-synthetique__decider_prime': 'Bonus decision — HR', 'rh-synthetique__envoyer_message_salarie': 'Message to employee — HR',
+  'rh-synthetique__exporter_paie': 'Payroll export — HR', 'rh-synthetique__licencier': 'Dismissal — HR', 'rh-synthetique__lister_salaries': 'Employee list — HR',
+  'rh-synthetique__proposer_sanction': 'Propose sanction — HR', 'rh-synthetique__rechercher_salaries': 'Search employees — HR',
+  'rh-synthetique__rediger_message': 'Draft message to employee — HR', 'rh-synthetique__sanctionner': 'Disciplinary sanction — HR',
+  'referentiel-rh__groupes_salarie': 'Employee groups — HR directory',
+  'taux-officiel__get_taux_usure': 'Usury threshold — Banque de France', 'taux-imposteur__get_taux_usure': 'Usury threshold — unofficial source',
+  'recherche-entreprises__rechercher_entreprise': 'Company record — company registry', 'gels-avoirs__verifier_gel': 'Asset-freeze check — DG Trésor',
+  'eurlex__lire_article': 'EU law article — EUR-Lex', 'eurlex__rechercher_acte': 'EU act — EUR-Lex', 'legifrance__lire_article': 'French law article — Légifrance',
+  'data-room__lire_document': 'Read document — data room', 'data-room__lister_documents': 'List documents — data room',
+  'data-room__partager_document': 'Share document — data room', 'messagerie__envoyer_message': 'Send message — messaging',
+  'messagerie__rediger_message': 'Draft message — messaging', 'bourse__consulter_cours': 'Share price — securities',
+  'bourse__passer_ordre': 'Place order — securities', 'communication__preparer_communique': 'Prepare press release — communication',
+  'communication__publier_communique': 'Publish press release — communication',
+};
 function libelleOutil(serveur, outil) {
   const k = cleOutil(serveur, outil), l = OUTILS && OUTILS[k];
+  if (OUTILS_EN[k]) return OUTILS_EN[k];
   if (l) return l.libelle;
   const [s, o] = k.includes('__') ? k.split('__') : ['', k];
   const t = humanise(o);
@@ -218,20 +245,20 @@ function badge(cle, texte, extra) {
   return h('span', { class: 'badge b-' + cle + (extra ? ' ' + extra : '') }, texte || LIBELLE_BADGE[cle] || cle);
 }
 const badgeEffet = (effet) => badge(EFFET_BADGE[effet] || 'indisponible',
-  effet === 'non_rejouable' ? 'Non rejouable' : LIBELLE_BADGE[EFFET_BADGE[effet]]);
+  effet === 'non_rejouable' ? 'Not replayable' : LIBELLE_BADGE[EFFET_BADGE[effet]]);
 
 // ------------------------------------------------------------------ chaîne
 
 function etatChaine(v) {
   // v : { ok, lignes, total, erreur, cle_absente }
   if (!v) return null;
-  if (v.ok) return { ok: true, court: 'Chaîne vérifiée · ' + v.lignes + ' / ' + v.total + ' entrées' };
-  if (v.cle_absente) return { ok: false, court: 'Chaîne non vérifiable · clé du journal absente' };
-  return { ok: false, court: 'Chaîne rompue · ' + v.lignes + ' / ' + v.total + ' entrées vérifiées', detail: v.erreur };
+  if (v.ok) return { ok: true, court: 'Chain verified · ' + v.lignes + ' / ' + v.total + ' entries' };
+  if (v.cle_absente) return { ok: false, court: 'Chain not verifiable · journal key missing' };
+  return { ok: false, court: 'Chain broken · ' + v.lignes + ' / ' + v.total + ' entries verified', detail: v.erreur };
 }
 function pastilleChaine(v) {
   const c = etatChaine(v);
-  if (!c) return h('div', { class: 'chaine rompue' }, 'Chaîne : ' + ND);
+  if (!c) return h('div', { class: 'chaine rompue' }, 'Chain: ' + ND);
   return h('div', { class: 'chaine' + (c.ok ? '' : ' rompue'), title: c.detail || '' }, c.court);
 }
 
@@ -240,10 +267,10 @@ function pastilleChaine(v) {
 let coque = null;
 function monterCoque() {
   if (coque) return coque;
-  const nav = h('nav', { class: 'nav', 'aria-label': 'Écrans' },
+  const nav = h('nav', { class: 'nav', 'aria-label': 'Screens' },
     NAV.map(([id, nom]) => h('a', { href: '#' + id, 'data-ecran': id }, nom)));
   coque = {
-    produit: h('div', { class: 'produit' }, 'Console de gouvernance'),
+    produit: h('div', { class: 'produit' }, 'Pythagoras'),
     nav,
     droite: h('div', { class: 'droite' }),
     alerte: h('div', { class: 'alerte-chaine', role: 'alert', hidden: true }),
@@ -261,8 +288,8 @@ function alerteChaines() {
   c.alerte.textContent = '';
   if (!mal.length) return;
   c.alerte.append(mal.map((j, i) => (i ? ' · ' : '') + 'Journal « ' + j.id + ' » : ' +
-    (j.verification.cle_absente ? 'chaîne non vérifiable, clé absente.' :
-      'chaîne rompue à l\'entrée n° ' + (j.premier_ecart + 1) + '. Les entrées suivantes ne sont pas fiables.')).join(''));
+    (j.verification.cle_absente ? 'chain not verifiable, key missing.' :
+      'chain broken at entry #' + (j.premier_ecart + 1) + '. The following entries are not reliable.')).join(''));
 }
 
 function parseHash() {
@@ -290,7 +317,7 @@ async function router() {
   try {
     [etat] = await Promise.all([api('/api/etat'), chargerOutils()]);
     if (gen !== generation) return;
-    c.produit.textContent = etat.produit || 'Console de gouvernance';
+    c.produit.textContent = etat.produit || 'Pythagoras';
     for (const a of c.nav.querySelectorAll('a')) {
       const k = NOMBRE_ONGLET[a.dataset.ecran], n = k ? etat[k] : 0;
       a.textContent = NAV.find(x => x[0] === a.dataset.ecran)[1] + (n ? ' · ' + n : '');
@@ -300,7 +327,7 @@ async function router() {
     ctx.droite('');
     await ECRANS[ecran](ctx);
   } catch (e) {
-    ctx.monter(h('div', { class: 'principal' }, h('p', { class: 'erreur' }, 'Erreur : ' + e.message)));
+    ctx.monter(h('div', { class: 'principal' }, h('p', { class: 'erreur' }, 'Error: ' + e.message)));
   }
 }
 
@@ -331,7 +358,7 @@ const nomChoix = (x) => nomSession(x.s ? x.s.id : x.j.id);
 const cheminJournal = (x, ecran) => '/api/journal/' + encodeURIComponent(x.j.id) +
   (x.s ? '/session/' + encodeURIComponent(x.s.id) : '') + '/' + ecran;
 function selecteurSession(ecran, courante, extra) {
-  return h('select', { class: 'champ', 'aria-label': 'Demande', onchange: e => {
+  return h('select', { class: 'champ', 'aria-label': 'Request', onchange: e => {
     const [j, s] = e.target.value.split('|');
     allerA(ecran, Object.assign({ j, s }, extra || {}));
   } }, toutesSessions().map(x => h('option', { value: x.j.id + '|' + (x.s ? x.s.id : ''), selected: x.j.id === courante.j.id },
@@ -339,8 +366,8 @@ function selecteurSession(ecran, courante, extra) {
 }
 function aucunJournal() {
   return h('div', { class: 'principal ample' }, h('div', { class: 'carte' },
-    h('h2', {}, 'Aucune session'),
-    h('p', { class: 'second' }, 'Aucun journal de session n\'a été trouvé dans le répertoire de données de la console.')));
+    h('h2', {}, 'No session'),
+    h('p', { class: 'second' }, 'No session journal was found in the console data directory.')));
 }
 
 window.addEventListener('hashchange', router);

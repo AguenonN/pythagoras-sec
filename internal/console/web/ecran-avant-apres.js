@@ -4,17 +4,17 @@
 // directive choisie.
 
 (function () {
-  const CHAMPS = { effet: 'décision', directives: 'directives appliquées', roles: 'rôles requis', notifications: 'notifications', champs: 'champs retirés' };
+  const CHAMPS = { effet: 'decision', directives: 'rules applied', roles: 'required roles', notifications: 'notifications', champs: 'fields removed' };
 
   function cote(c, diff, nom) {
     const lignes = [
-      h('div', {}, c.effet === 'non_rejouable' ? badge('indisponible', 'Non rejouable') : badgeEffet(c.effet))];
+      h('div', {}, c.effet === 'non_rejouable' ? badge('indisponible', 'Not replayable') : badgeEffet(c.effet))];
     const ligne = (cle, titre, valeur) => h('div', { class: 'petit' + (diff.includes(cle) ? ' diff-cell' : ' second') }, titre + ' : ' + (valeur || 'aucun'));
     if (c.effet !== 'non_rejouable') {
-      lignes.push(ligne('directives', 'Directives', (c.directives || []).join(', ')));
-      lignes.push(ligne('roles', 'Rôles requis', (c.roles || []).join(', ') + (c.quatre_yeux ? ' (quatre yeux)' : '')));
+      lignes.push(ligne('directives', 'Rules', (c.directives || []).join(', ')));
+      lignes.push(ligne('roles', 'Required roles', (c.roles || []).join(', ') + (c.quatre_yeux ? ' (quatre yeux)' : '')));
       lignes.push(ligne('notifications', 'Notifications', (c.notifications || []).join(' ; ')));
-      lignes.push(ligne('champs', 'Champs retirés', (c.champs_retires || []).join(', ')));
+      lignes.push(ligne('champs', 'Fields removed', (c.champs_retires || []).join(', ')));
     }
     return h('div', { style: 'display:flex;flex-direction:column;gap:4px' }, lignes);
   }
@@ -26,7 +26,7 @@
         outilLisible(l.serveur, l.outil, { class: 'moyen' + (l.change ? ' gras' : '') }),
         h('span', { class: 'second petit' }, l.serveur + ' · ' + nomSession(l.session) + ' · ' + heureMin(l.ts)),
         l.change ? h('span', { class: 'petit gras', style: 'color:var(--cav)' },
-          'Ce qui change : ' + l.differences.map(d => CHAMPS[d] || d).join(', ') + ' · ' + (l.qualification === 'violation' ? 'violation' : 'exposition')) : null),
+          'What changes: ' + l.differences.map(d => CHAMPS[d] || d).join(', ') + ' · ' + (l.qualification === 'violation' ? 'violation' : 'exposition')) : null),
       cote(l.avant, l.differences), cote(l.apres, l.differences),
       (l.ecarts || []).length ? h('span', { class: 'petit erreur', style: 'grid-column:1/-1' }, '⚠ ' + l.ecarts.map(x => x.detail).join(' ; ')) : null);
   }
@@ -56,31 +56,31 @@
     ctx.monter(h('div', { class: 'corps' }, h('main', { class: 'principal ample' },
       h('div', { style: 'display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap' },
         h('div', { style: 'display:flex;flex-direction:column;gap:6px' },
-          h('h1', {}, 'La même exécution, avant et après la directive du juriste'),
-          h('div', { class: 'second' }, 'Sessions rejouées à leur date d\'origine, avec les règles en vigueur et avec ces mêmes règles privées de la directive choisie.')),
+          h('h1', {}, 'The same run, before and after the lawyer\'s rule'),
+          h('div', { class: 'second' }, 'Sessions replayed at their original date, with the rules in force and with the same rules minus the chosen one.')),
         h('div', { style: 'display:flex;gap:12px;align-items:center;flex-wrap:wrap' },
-          h('label', { class: 'moyen second', for: 'directive' }, 'Directive comparée'), select)),
-      v.sessions.length ? h('div', { class: 'carte compacte' }, h('div', { class: 'etiq' }, 'Sessions à rejouer'), cases) : null,
-      h('div', { class: v.verifiees ? 'chaine' : 'chaine rompue', style: 'align-self:flex-start' }, v.verifiees ? 'Chaînes des sessions rejouées vérifiées' : 'Une chaîne n\'est pas vérifiée : ces rejeux ne prouvent rien'),
-      !c ? h('div', { class: 'carte' }, h('p', { class: 'second' }, 'Aucune directive à comparer : les règles en vigueur sont illisibles ou vides.')) : [
+          h('label', { class: 'moyen second', for: 'directive' }, 'Compared rule'), select)),
+      v.sessions.length ? h('div', { class: 'carte compacte' }, h('div', { class: 'etiq' }, 'Sessions to replay'), cases) : null,
+      h('div', { class: v.verifiees ? 'chaine' : 'chaine rompue', style: 'align-self:flex-start' }, v.verifiees ? 'Chains of replayed sessions verified' : 'A chain is not verified: these replays prove nothing'),
+      !c ? h('div', { class: 'carte' }, h('p', { class: 'second' }, 'No rule to compare: the rules in force are unreadable or empty.')) : [
         h('div', { class: 'grille-aa2 entete-colonnes', style: 'padding:0 16px' },
-          ['#', 'Appel', v.libelle_avant, v.libelle_apres].map(t => h('span', { class: 'gras' }, t))),
-        h('div', { class: 'petit second' }, tout ? 'Tous les appels rejoués. ' : 'Seuls les appels dont la décision change sont montrés. ',
-          h('a', { href: '#' + location.hash.replace(/^#/, '').split('&tout=1')[0] + (tout ? '' : '&tout=1') }, tout ? 'Ne montrer que ceux qui changent' : 'Montrer tous les appels')),
-        v.lignes.length ? h('div', { style: 'display:flex;flex-direction:column;gap:8px' }, v.lignes.filter(l => tout || l.change).map(rang)) : h('p', { class: 'second' }, 'Aucun appel dans les sessions choisies.'),
+          ['#', 'Call', v.libelle_avant, v.libelle_apres].map(t => h('span', { class: 'gras' }, t))),
+        h('div', { class: 'petit second' }, tout ? 'All calls replayed. ' : 'Only calls whose decision changes are shown. ',
+          h('a', { href: '#' + location.hash.replace(/^#/, '').split('&tout=1')[0] + (tout ? '' : '&tout=1') }, tout ? 'Show only those that change' : 'Show all calls')),
+        v.lignes.length ? h('div', { style: 'display:flex;flex-direction:column;gap:8px' }, v.lignes.filter(l => tout || l.change).map(rang)) : h('p', { class: 'second' }, 'No call in the selected sessions.'),
         h('div', { class: 'grille3', style: 'margin-top:8px' },
-          carte('Ce qui s\'est passé ' + v.libelle_avant.charAt(0).toLowerCase() + v.libelle_avant.slice(1), h('p', { style: 'line-height:1.55' }, v.explication)),
-          carte('Pourquoi c\'est un risque', h('p', { class: 'second', style: 'line-height:1.55' }, nd('non disponible : l\'analyse de l\'Analyste n\'est pas reliée à cet écran'))),
-          carte('Qualification de l\'écart', h('p', { style: 'line-height:1.55' },
-            h('b', {}, k.exposition + (k.exposition > 1 ? ' expositions' : ' exposition')), ' : la directive est postérieure à l\'appel. ',
-            h('b', {}, k.violation + (k.violation > 1 ? ' violations' : ' violation')), ' : la directive était en vigueur à la date de l\'appel.'))),
+          carte('What happened ' + v.libelle_avant.charAt(0).toLowerCase() + v.libelle_avant.slice(1), h('p', { style: 'line-height:1.55' }, v.explication)),
+          carte('Why it is a risk', h('p', { class: 'second', style: 'line-height:1.55' }, nd('not available: the Analyst\'s analysis is not linked to this screen'))),
+          carte('Nature of the gap', h('p', { style: 'line-height:1.55' },
+            h('b', {}, k.exposition + (k.exposition > 1 ? ' expositions' : ' exposition')), ': the rule postdates the call. ',
+            h('b', {}, k.violation + (k.violation > 1 ? ' violations' : ' violation')), ': the rule was in force on the date of the call.'))),
         h('div', { class: 'carte', style: 'margin-top:auto;flex-direction:row;align-items:center;justify-content:space-between;flex-wrap:wrap' },
           h('div', { style: 'display:flex;gap:32px;flex-wrap:wrap' },
-            [[k.sessions, k.sessions > 1 ? 'sessions rejouées' : 'session rejouée'],
-             [k.appels, k.appels > 1 ? 'appels rejoués' : 'appel rejoué'],
-             [k.changes, k.changes > 1 ? 'appels dont la décision change' : 'appel dont la décision change'],
-             [k.non_rejouables, k.non_rejouables > 1 ? 'appels non rejouables' : 'appel non rejouable']].map(([n, t]) =>
+            [[k.sessions, k.sessions > 1 ? 'sessions replayed' : 'session replayed'],
+             [k.appels, k.appels > 1 ? 'calls replayed' : 'call replayed'],
+             [k.changes, k.changes > 1 ? 'calls whose decision changes' : 'call whose decision changes'],
+             [k.non_rejouables, k.non_rejouables > 1 ? 'calls not replayable' : 'call not replayable']].map(([n, t]) =>
               h('div', { style: 'display:flex;flex-direction:column' }, h('span', { class: 'chiffre-grand' }, n), h('span', { class: 'moyen second' }, t)))),
-          h('a', { class: 'btn', href: '#redaction' }, 'Écrire ou reprendre une directive'))])));
+          h('a', { class: 'btn', href: '#redaction' }, 'Write or resume a rule'))])));
   };
 })();
