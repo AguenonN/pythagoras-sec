@@ -19,22 +19,31 @@ ENTETES_RETENUS = ("content-type", "content-length", "content-security-policy", 
 class Proxy(BaseHTTPRequestHandler):
     def transmettre(self, avec_corps):
         try:
-            c = http.client.HTTPConnection(*AMONT, timeout=30)
+            c = http.client.HTTPConnection(*AMONT, timeout=180)
             c.request(self.command, self.path, headers={"Host": "%s:%d" % AMONT, "Accept": self.headers.get("Accept", "*/*")})
             r = c.getresponse()
             corps = r.read()
         except OSError as err:
             print("proxy: console injoignable : %s" % err, file=sys.stderr)
-            return self.repondre(503, b'{"erreur":"console en cours de demarrage"}')
-        self.send_response(r.status)
-        for k, v in r.getheaders():
-            if k.lower() in ENTETES_RETENUS:
-                self.send_header(k, v)
-        self.end_headers()
-        if avec_corps:
-            self.wfile.write(corps)
+            return self.repondre(503, b'{"erreur":"console busy or starting, retry in a moment"}')
+        try:
+            self.send_response(r.status)
+            for k, v in r.getheaders():
+                if k.lower() in ENTETES_RETENUS:
+                    self.send_header(k, v)
+            self.end_headers()
+            if avec_corps:
+                self.wfile.write(corps)
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # le navigateur a abandonné la requête
 
     def repondre(self, code, corps):
+        try:
+            self._repondre(code, corps)
+        except (BrokenPipeError, ConnectionResetError):
+            pass  # le navigateur a abandonné la requête
+
+    def _repondre(self, code, corps):
         self.send_response(code)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(corps)))
