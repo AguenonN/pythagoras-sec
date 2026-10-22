@@ -7,7 +7,7 @@
 
 const ECRANS = {};
 const NAV = [
-  ['journal', 'Journal'], ['poste', 'Poste conseiller'], ['regles', 'Règles'],
+  ['agents', 'Live agents'], ['journal', 'Journal'], ['poste', 'Poste conseiller'], ['regles', 'Règles'],
   ['avant-apres', 'Avant / après'], ['validation', 'Validation'], ['redaction', 'Rédaction'],
   ['notifications', 'Notifications'],
 ];

@@ -1,0 +1,12 @@
+/* Écran « Live agents » (ecran-agents.js). */
+.ag-grille { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+@media (max-width: 1100px) { .ag-grille { grid-template-columns: 1fr; } }
+.ag-carte { display: block; font-family: var(--sans); }
+.ag-fil { display: flex; flex-direction: column; gap: 10px; max-height: 640px; overflow-y: auto; }
+.ag-ligne { display: grid; grid-template-columns: 64px 1fr; gap: 8px; padding-bottom: 8px; border-bottom: 1px solid var(--trait-doux); }
+.ag-etat { border-radius: 99px; padding: 5px 12px; font-size: 13px; font-weight: 600; white-space: nowrap; }
+.ag-etat.live { background: var(--ok-fond); color: var(--ok); }
+.ag-etat.replay { background: var(--ind-fond); color: var(--ind); }
+@keyframes ag-pulse { 0% { opacity: 1; } 50% { opacity: .35; } 100% { opacity: 1; } }
+.ag-pulse { animation: ag-pulse 1s ease-in-out 3; }
+@media (prefers-reduced-motion: reduce) { .ag-pulse { animation: none; } }
