@@ -49,3 +49,5 @@ pyagent/__pycache__/
 
 # Environnements Python locaux
 apps/detective/.venv/
+__pycache__/
+*.pyc
