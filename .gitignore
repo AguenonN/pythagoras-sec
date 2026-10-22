@@ -46,3 +46,6 @@ pyagent/__pycache__/
 # mcp-approve annuaire-demo, jamais versionnés (la source sans clé l'est).
 /demo/annuaire.json
 *.cle
+
+# Environnements Python locaux
+apps/detective/.venv/
