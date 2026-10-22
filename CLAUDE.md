@@ -39,6 +39,9 @@ sur Aiven — voir `docs/hackathon-aiven.md`.
 
 ## Commandes
 
+Pour la démo en direct, tout passe par `scripts/demo-hackathon.sh` (`verifier`,
+`preparer`, `passage`, `gels`, `regle`, `regle-live "…"`, `detective`). Le détail :
+
 ```bash
 # Go >= 1.25
 go test ./cmd/journal-sql/ && go build -o bin/journal-sql ./cmd/journal-sql
