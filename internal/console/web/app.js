@@ -7,7 +7,7 @@
 
 const ECRANS = {};
 const NAV = [
-  ['agents', 'Live agents'], ['journal', 'Journal'], ['poste', 'Poste conseiller'], ['regles', 'Règles'],
+  ['sans', 'Without Pythagoras'], ['avec', 'With Pythagoras'], ['agents', 'Live agents'], ['journal', 'Journal'], ['poste', 'Poste conseiller'], ['regles', 'Règles'],
   ['avant-apres', 'Avant / après'], ['validation', 'Validation'], ['redaction', 'Rédaction'],
   ['notifications', 'Notifications'],
 ];
@@ -267,7 +267,7 @@ function alerteChaines() {
 
 function parseHash() {
   const [ecran, q] = location.hash.replace(/^#/, '').split('?');
-  return { ecran: ECRANS[ecran] ? ecran : 'journal', q: new URLSearchParams(q || '') };
+  return { ecran: ECRANS[ecran] ? ecran : 'sans', q: new URLSearchParams(q || '') };
 }
 function allerA(ecran, params) {
   const q = new URLSearchParams(params || {}).toString();
