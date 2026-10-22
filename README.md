@@ -1,4 +1,6 @@
-# mcp_rogue
+<p align="center"><img src="docs/assets/pythagoras-logo.jpg" alt="pythagoras" width="460"></p>
+
+# pythagoras-sec
 
 Un agent LLM appelle des outils externes via MCP. Par défaut, il accorde sa
 confiance à un serveur sur la foi d'une entrée de configuration écrite une fois

@@ -30,6 +30,9 @@ button, select, input, textarea { font: inherit; color: inherit; }
 
 /* En-tête */
 .entete { height: 60px; padding: 0 28px; background: var(--surface); border-bottom: 1px solid var(--trait); display: flex; align-items: center; gap: 32px; flex: none; }
+.marque { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; flex: none; }
+.marque:hover { color: inherit; }
+.logo { width: 30px; height: 30px; display: block; }
 .produit { font-family: var(--serif); font-size: 20px; font-weight: 600; white-space: nowrap; }
 .nav { display: flex; gap: 24px; font-size: 14px; }
 .nav a { color: var(--second); text-decoration: none; padding: 19px 0; white-space: nowrap; }

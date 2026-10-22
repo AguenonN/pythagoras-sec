@@ -250,7 +250,7 @@ function monterCoque() {
     app: h('div', { id: 'app' }),
   };
   document.getElementById('coque').append(
-    h('header', { class: 'entete' }, coque.produit, nav, coque.droite), coque.alerte, coque.app);
+    h('header', { class: 'entete' }, h('a', { href: '#sans', class: 'marque' }, h('img', { src: 'logo.svg', alt: 'Pythagoras', class: 'logo' }), coque.produit), nav, coque.droite), coque.alerte, coque.app);
   return coque;
 }
 

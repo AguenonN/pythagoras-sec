@@ -43,7 +43,7 @@ func lancer() error {
 	racine := flag.String("racine", ".", "racine du dépôt : les commandes y tournent et demo/ s'y trouve")
 	demo := flag.String("demo", "demo", "dossier de la démonstration, sous la racine")
 	donnees := flag.String("donnees", "", "dossier des sessions (défaut : <demo>/execution/sessions)")
-	produit := flag.String("produit", "Console de gouvernance", "nom du produit affiché dans l'en-tête")
+	produit := flag.String("produit", "Pythagoras", "nom du produit affiché dans l'en-tête")
 	conseiller := flag.String("conseiller", "", "identité connectée au poste conseiller, proposée comme demandeur (défaut : le demandeur de la demande la plus récente)")
 	juriste := flag.String("juriste", "juriste@exemple.test", "identité du juriste, auteur des nouvelles versions des règles")
 	dev := flag.String("dev", "", "répertoire des fichiers HTML, CSS et JS, servis depuis le disque (rechargement sans recompiler) ; ex. internal/console/web")
