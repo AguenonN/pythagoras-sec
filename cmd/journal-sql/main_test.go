@@ -142,10 +142,11 @@ func ecrireJournal(t *testing.T, chemin string, cle []byte) {
 	}
 }
 
-// TestImpacts_DeBoutEnBout : deux prêts décidés sous le jeu du scénario 4,
-// journalisés et déposés au coffre comme par l'engine ; le registre des
-// gels ajoute l'un des deux SIREN. Seule la décision de ce prêt change.
-func TestImpacts_DeBoutEnBout(t *testing.T) {
+// journalDeuxPrets : deux prêts autorisés sous le jeu du scénario 4 (SIREN
+// 405750753 pour 200 000 €, 552100554 pour 50 000 €), journalisés et
+// déposés au coffre comme par l'engine. Rend le journal et le jeu.
+func journalDeuxPrets(t *testing.T) (string, string) {
+	t.Helper()
 	brut, err := os.ReadFile(jeuScenario4)
 	if err != nil {
 		t.Fatal(err)
@@ -159,8 +160,7 @@ func TestImpacts_DeBoutEnBout(t *testing.T) {
 	if err := os.WriteFile(cheminJeu, brut, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	cle := bytes.Repeat([]byte{9}, 32)
-	ecr, err := journal.Ouvrir(cheminJ, cle)
+	ecr, err := journal.Ouvrir(cheminJ, bytes.Repeat([]byte{9}, 32))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -175,13 +175,17 @@ func TestImpacts_DeBoutEnBout(t *testing.T) {
 		Seq: 1, Serveur: "gels-avoirs", Outil: "verifier_gel", TS: ts, Resultat: journal.StatutOK, Empreinte: "e1",
 		Source: &journal.Source{Origine: "rejeu", Date: "2026-09-29T08:00:00Z"},
 	}}
-	for i, siren := range []string{"405750753", "552100554"} {
-		args := map[string]any{"dossier_id": "DOS-FICTIF-00" + string(rune('1'+i)), "siren": siren, "montant": float64(200000)}
+	prets := []struct {
+		siren   string
+		montant float64
+	}{{"405750753", 200000}, {"552100554", 50000}}
+	for i, p := range prets {
+		args := map[string]any{"dossier_id": "DOS-FICTIF-00" + string(rune('1'+i)), "siren": p.siren, "montant": p.montant}
 		appel := directive.Appel{Serveur: "banque-synthetique", Outil: "attribuer_pret", Arguments: args, Attestation: att, Horodatage: ts,
 			VersionRegistre: "reg-1", EtiquettesCible: []string{"credit"}, Acces: directive.Acces("action")}
 		dec := directive.Decide(*origine, directive.EtatSession{ID: "s1", Consultations: journal.VersConsultations(gels)}, appel)
 		if dec.Effet != directive.Autoriser {
-			t.Fatalf("sous le jeu d'origine, le prêt %s devrait être autorisé : %s (%s)", siren, dec.Effet, dec.Motif)
+			t.Fatalf("sous le jeu d'origine, le prêt %s devrait être autorisé : %s (%s)", p.siren, dec.Effet, dec.Motif)
 		}
 		emp := approvalDigest("attribuer_pret", args)
 		if err := coffre.Deposer(journal.Depot{TS: ts, Empreinte: emp, Outil: "attribuer_pret", ArgumentsOrigine: args}); err != nil {
@@ -200,22 +204,77 @@ func TestImpacts_DeBoutEnBout(t *testing.T) {
 	}
 	ecr.Fermer()
 	coffre.Fermer()
+	return cheminJ, cheminJeu
+}
 
+func lancerImpacts(t *testing.T, args ...string) (string, string) {
+	t.Helper()
 	var out, errw bytes.Buffer
 	env := func(string) string { return strings.Repeat("09", 32) }
-	code := executer([]string{"impacts", cheminJ, "-directives", cheminJeu, "-gels", "552100554", "-evenement", "gels 2026-10-22"}, &out, &errw, env)
-	if code != 0 {
+	if code := executer(append([]string{"impacts"}, args...), &out, &errw, env); code != 0 {
 		t.Fatalf("code %d : %s", code, errw.String())
 	}
-	sql := out.String()
+	return out.String(), errw.String()
+}
+
+// Le registre des gels ajoute l'un des deux SIREN : seule la décision de
+// ce prêt change.
+func TestImpacts_Gels(t *testing.T) {
+	cheminJ, cheminJeu := journalDeuxPrets(t)
+	sql, resume := lancerImpacts(t, cheminJ, "-directives", cheminJeu, "-gels", "552100554", "-evenement", "gels 2026-10-22")
 	if strings.Count(sql, "INSERT INTO impacts") != 2 {
 		t.Fatalf("deux décisions rejouées attendues :\n%s", sql)
 	}
 	if !strings.Contains(sql, "'autoriser', 'refuser', true") || !strings.Contains(sql, "'autoriser', 'autoriser', false") {
-		t.Fatalf("une décision invalidée, une inchangée attendues :\n%s", sql)
+		t.Fatalf("une décision changée, une inchangée attendues :\n%s", sql)
 	}
-	if !strings.Contains(errw.String(), "1 invalidée(s)") {
-		t.Fatalf("résumé : %s", errw.String())
+	if !strings.Contains(resume, "1 changée(s)") {
+		t.Fatalf("résumé : %s", resume)
+	}
+}
+
+// « Et si cette règle avait existé ? » : une directive candidate en
+// brouillon, datée d'aujourd'hui, est évaluée comme active depuis la date
+// du jeu. Seul le prêt de 200 000 € dépasse le seuil.
+func TestImpacts_Hypothese(t *testing.T) {
+	cheminJ, cheminJeu := journalDeuxPrets(t)
+	candidate := `{"id": "D-100", "version": 1, "statut": "brouillon", "date_effet": "2026-10-22T00:00:00Z",
+	  "texte_fr": "Au-delà de 100 000 euros, aucun prêt n'est attribué sans consultation du taux officiel dans la demande.",
+	  "fondements": [{"texte": "Politique de crédit — à valider par le juriste", "article": "7.2"}],
+	  "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+	  "condition": {"et": [{"argument": {"champ": "/montant", "op": ">", "valeur": 100000}},
+	                       {"non": {"session.a_consulte": {"serveur": "taux-officiel", "critere": "donnees_recues"}}}]},
+	  "effets": [{"effet": "refuser"}]}`
+	chemin := filepath.Join(filepath.Dir(cheminJ), "candidate.json")
+	if err := os.WriteFile(chemin, []byte(candidate), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sql, resume := lancerImpacts(t, cheminJ, "-directives", cheminJeu, "-apres", chemin)
+	if !strings.Contains(sql, "'hypothèse D-100'") {
+		t.Fatalf("évènement par défaut attendu :\n%s", sql)
+	}
+	if !strings.Contains(sql, "'autoriser', 'refuser', true") || !strings.Contains(sql, "'autoriser', 'autoriser', false") {
+		t.Fatalf("le prêt de 200 000 € seul doit changer :\n%s", sql)
+	}
+	if !strings.Contains(resume, "1 changée(s)") {
+		t.Fatalf("résumé : %s", resume)
+	}
+}
+
+func TestLireCandidates(t *testing.T) {
+	for _, brut := range []string{
+		`{"id": "D-1"}`,
+		`[{"id": "D-1"}]`,
+		`{"directives": [{"id": "D-1"}]}`,
+		`{"jeu": {"id": "x", "version": 1}, "directives": [{"id": "D-1"}]}`,
+	} {
+		cs, err := LireCandidates([]byte(brut))
+		if err != nil || len(cs) != 1 || cs[0]["id"] != "D-1" {
+			t.Errorf("%s : %v %v", brut, cs, err)
+		}
+	}
+	if _, err := LireCandidates([]byte(`[]`)); err == nil {
+		t.Error("une liste vide doit être refusée")
 	}
 }
 

@@ -8,7 +8,8 @@ Ajout du 22/10/2026 : `cmd/journal-sql`. Le moteur n'est pas modifié.
 |---|---|
 | `schema` | Tables `journaux`, `entrees`, `consultations`, `applications`, `impacts` et vue `detective` |
 | `exporter` | Vérifie la chaîne HMAC, puis écrit le journal en SQL. Un journal rompu n'entre pas dans la base (code 1, aucun SQL) |
-| `impacts` | Rejoue le journal sous le jeu d'origine, puis sous ce jeu augmenté de D-090 « aucun prêt à une entité nouvellement gelée » (`rejeu.Comparer`). Écrit dans `impacts` chaque décision, avant/après |
+| `impacts -gels` | Rejoue le journal sous le jeu d'origine, puis sous ce jeu augmenté de D-090 « aucun prêt à une entité nouvellement gelée » (`rejeu.Comparer`). Écrit dans `impacts` chaque décision, avant/après |
+| `impacts -apres` | « Et si cette règle avait existé ? » : les directives candidates (un brouillon du compilateur, une directive seule, une liste) remplacent ou complètent le jeu, évaluées comme actives depuis sa date d'effet |
 
 La commande n'ouvre aucune connexion et n'ajoute aucune dépendance : elle
 écrit du SQL sur la sortie standard, à envoyer à `psql`.
@@ -30,9 +31,14 @@ bin/journal-sql exporter demo/execution/sessions/<dossier>/journal.jsonl | psql 
 bin/journal-sql impacts demo/execution/sessions/<dossier>/journal.jsonl \
     -directives demo/scenarios/jeux/avec-d009.json \
     -gels <SIREN> -evenement "gels 2026-10-22" | psql "$AIVEN_PG_URI"
+
+# 4. Et si cette règle avait existé ? (le brouillon du compilateur, ou la règle prête)
+bin/journal-sql impacts demo/execution/sessions/<dossier>/journal.jsonl \
+    -directives demo/scenarios/jeux/avec-d009.json \
+    -apres demo/scenarios/jeux/hypothese-seuil-officiel.json | psql "$AIVEN_PG_URI"
 ```
 
-Le résumé (décisions rejouées, invalidées) sort sur l'erreur standard.
+Le résumé (décisions rejouées, changées) sort sur l'erreur standard.
 Le coffre est par défaut `coffre.jsonl` à côté du journal (`-coffre` sinon).
 
 ## Requêtes pour la démo

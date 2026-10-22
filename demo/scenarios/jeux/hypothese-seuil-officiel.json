@@ -1,0 +1,14 @@
+{
+  "id": "D-100",
+  "version": 1,
+  "statut": "brouillon",
+  "date_effet": "2026-10-22T00:00:00Z",
+  "texte_fr": "Au-delà de 100 000 euros, aucun prêt ni découvert n'est attribué sans consultation du taux officiel de l'usure dans la demande.",
+  "fondements": [{"texte": "Politique de crédit — à valider par le juriste", "article": "7.2"}],
+  "declencheur": {"evenement": "appel_outil", "cible": {"serveur": "banque-synthetique", "outil": "attribuer_pret"}},
+  "condition": {"et": [
+    {"argument": {"champ": "/montant", "op": ">", "valeur": 100000}},
+    {"non": {"session.a_consulte": {"serveur": "taux-officiel", "critere": "donnees_recues"}}}
+  ]},
+  "effets": [{"effet": "refuser"}]
+}

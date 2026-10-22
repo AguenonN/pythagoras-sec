@@ -3,7 +3,8 @@
 //
 //	journal-sql schema
 //	journal-sql exporter <journal.jsonl> [-id <identifiant>]
-//	journal-sql impacts  <journal.jsonl> -directives <jeu.json> -gels <siren,siren…>
+//	journal-sql impacts  <journal.jsonl> -directives <jeu.json>
+//	                     (-gels <siren,siren…> | -apres <directives.json>)
 //	                     [-evenement <libellé>] [-coffre <coffre.jsonl>] [-id <identifiant>]
 //
 // La commande n'ouvre aucune connexion : elle écrit du SQL sur la sortie
@@ -24,6 +25,11 @@
 // une directive v2 ordinaire (feuille argument, op dans), chargée par
 // directive.Charger. Les décisions dont l'effet change sont les décisions
 // que la mise à jour du registre invalide.
+//
+// Avec -apres, la question devient « et si ces règles avaient existé » :
+// les directives candidates (par exemple le brouillon du compilateur)
+// remplacent ou complètent le jeu d'origine, évaluées comme actives depuis
+// sa date d'effet.
 //
 // La clé HMAC est lue dans MCP_GATE_CLE_JOURNAL (hexadécimal), comme pour
 // mcp-gate et journal.
@@ -57,7 +63,7 @@ const IDDirectiveGels = "D-090"
 const usage = `usage :
   journal-sql schema
   journal-sql exporter <journal.jsonl> [-id <identifiant>]
-  journal-sql impacts  <journal.jsonl> -directives <jeu.json> -gels <siren,siren…>
+  journal-sql impacts  <journal.jsonl> -directives <jeu.json> (-gels <siren,siren…> | -apres <directives.json>)
                        [-evenement <libellé>] [-coffre <coffre.jsonl>] [-id <identifiant>]
 Le SQL est écrit sur la sortie standard (à envoyer à psql).
 La clé du journal est lue dans MCP_GATE_CLE_JOURNAL.`
@@ -127,6 +133,7 @@ type options struct {
 	jeu       string
 	coffre    string
 	gels      []string
+	apres     string
 	evenement string
 }
 
@@ -146,6 +153,8 @@ func lireOptions(cheminJournal string, args []string) (options, error) {
 			o.coffre = v
 		case "evenement":
 			o.evenement = v
+		case "apres":
+			o.apres = v
 		case "gels":
 			for _, s := range strings.Split(v, ",") {
 				if s = strings.TrimSpace(s); s != "" {
@@ -332,11 +341,8 @@ func impacts(out, errw io.Writer, o options, es []journal.Entree) error {
 	if o.jeu == "" {
 		return errors.New("-directives obligatoire : le jeu d'origine du journal")
 	}
-	if len(o.gels) == 0 {
-		return errors.New("-gels obligatoire : les SIREN ajoutés au registre des gels")
-	}
-	if o.evenement == "" {
-		o.evenement = "gels " + strings.Join(o.gels, ",")
+	if (len(o.gels) == 0) == (o.apres == "") {
+		return errors.New("exactement un de -gels (SIREN ajoutés au registre des gels) ou -apres (directives candidates)")
 	}
 	brutJeu, err := os.ReadFile(o.jeu)
 	if err != nil {
@@ -346,13 +352,37 @@ func impacts(out, errw io.Writer, o options, es []journal.Entree) error {
 	if err != nil {
 		return fmt.Errorf("%s : %w", o.jeu, err)
 	}
-	brutApres, err := JeuAvecGels(brutJeu, o.gels)
-	if err != nil {
-		return err
+	var brutApres []byte
+	if len(o.gels) > 0 {
+		if o.evenement == "" {
+			o.evenement = "gels " + strings.Join(o.gels, ",")
+		}
+		if brutApres, err = JeuAvecGels(brutJeu, o.gels); err != nil {
+			return err
+		}
+	} else {
+		brutCand, err := os.ReadFile(o.apres)
+		if err != nil {
+			return err
+		}
+		cands, err := LireCandidates(brutCand)
+		if err != nil {
+			return fmt.Errorf("%s : %w", o.apres, err)
+		}
+		if o.evenement == "" {
+			ids := make([]string, len(cands))
+			for i, c := range cands {
+				ids[i], _ = c["id"].(string)
+			}
+			o.evenement = "hypothèse " + strings.Join(ids, ",")
+		}
+		if brutApres, err = JeuHypothese(brutJeu, cands, true); err != nil {
+			return err
+		}
 	}
 	apres, err := directive.Charger(brutApres)
 	if err != nil {
-		return fmt.Errorf("jeu augmenté de %s : %w", IDDirectiveGels, err)
+		return fmt.Errorf("jeu hypothétique refusé par le chargeur : %w", err)
 	}
 	coffre, err := journal.OuvrirCoffre(o.coffre)
 	if err != nil {
@@ -368,10 +398,10 @@ func impacts(out, errw io.Writer, o options, es []journal.Entree) error {
 	for _, l := range cmp.Lignes {
 		if l.Avant != l.Apres {
 			changes++
-			fmt.Fprintf(errw, "  invalidée : session %s #%d %s/%s  %s → %s\n", court(l.Session), l.Seq, l.Serveur, l.Outil, l.Avant, l.Apres)
+			fmt.Fprintf(errw, "  changée : session %s #%d %s/%s  %s → %s\n", court(l.Session), l.Seq, l.Serveur, l.Outil, l.Avant, l.Apres)
 		}
 	}
-	fmt.Fprintf(errw, "journal-sql: %q : %d décision(s) rejouée(s), %d invalidée(s)\n", o.evenement, len(cmp.Lignes), changes)
+	fmt.Fprintf(errw, "journal-sql: %q : %d décision(s) rejouée(s), %d changée(s)\n", o.evenement, len(cmp.Lignes), changes)
 	return nil
 }
 
@@ -388,11 +418,42 @@ func ecrireImpacts(w io.Writer, id, evenement string, cmp rejeu.Comparaison) {
 
 // JeuAvecGels renvoie le jeu d'origine, version + 1, augmenté d'une
 // directive qui refuse attribuer_pret quand l'argument siren figure parmi
-// les entités nouvellement gelées. Sa date d'effet est celle du jeu
-// d'origine : le rejeu évalue « si nous avions su », cadre d'exposition.
-// L'empreinte et la signature du jeu d'origine sont retirées, le
-// chargeur recalcule l'empreinte.
+// les entités nouvellement gelées (voir JeuHypothese pour le cadre).
 func JeuAvecGels(brutJeu []byte, sirens []string) ([]byte, error) {
+	tries := append([]string(nil), sirens...)
+	sort.Strings(tries)
+	valeurs := make([]any, len(tries))
+	for i, s := range tries {
+		valeurs[i] = s
+	}
+	gels := map[string]any{
+		"id":      IDDirectiveGels,
+		"version": 1,
+		"statut":  "active",
+		"texte_fr": "Mise à jour du registre des gels : aucun prêt n'est attribué à une entité " +
+			"inscrite au registre national des gels des avoirs lors de sa dernière mise à jour.",
+		"fondements": []any{map[string]any{"texte": "Code monétaire et financier — à valider par le juriste", "article": "L562-4"}},
+		"declencheur": map[string]any{
+			"evenement": "appel_outil",
+			"cible":     map[string]any{"serveur": "banque-synthetique", "outil": "attribuer_pret"},
+		},
+		"condition": map[string]any{"argument": map[string]any{"champ": "/siren", "op": "dans", "valeur": valeurs}},
+		"effets":    []any{map[string]any{"effet": "refuser"}},
+	}
+	return JeuHypothese(brutJeu, []map[string]any{gels}, false)
+}
+
+// JeuHypothese renvoie le jeu d'origine, version + 1, dans lequel chaque
+// directive candidate remplace celle de même identifiant ou s'ajoute. Une
+// candidate est évaluée comme si elle avait été en vigueur : statut forcé à
+// active (sauf retiree, qui simule un retrait) et date d'effet ramenée à
+// celle du jeu d'origine, sans quoi la non-rétroactivité de Decide
+// l'écarterait de tout appel passé. Le rejeu se fait dans le cadre
+// d'exposition (« si nous avions su »), jamais dans le cadre historique.
+// Avec remplacer à false, une candidate dont l'identifiant existe déjà est
+// une erreur. L'empreinte et la signature d'origine sont retirées : le
+// chargeur recalcule l'empreinte.
+func JeuHypothese(brutJeu []byte, candidates []map[string]any, remplacer bool) ([]byte, error) {
 	var jeu map[string]any
 	dec := json.NewDecoder(bytes.NewReader(brutJeu))
 	dec.UseNumber()
@@ -403,7 +464,8 @@ func JeuAvecGels(brutJeu []byte, sirens []string) ([]byte, error) {
 	if !ok {
 		return nil, errors.New("jeu sans en-tête « jeu »")
 	}
-	version, err := meta["version"].(json.Number).Int64()
+	num, _ := meta["version"].(json.Number)
+	version, err := num.Int64()
 	if err != nil {
 		return nil, errors.New("version du jeu illisible")
 	}
@@ -411,38 +473,84 @@ func JeuAvecGels(brutJeu []byte, sirens []string) ([]byte, error) {
 	if dateEffet == "" {
 		return nil, errors.New("date_effet du jeu absente")
 	}
+	if len(candidates) == 0 {
+		return nil, errors.New("aucune directive candidate")
+	}
 	directives, _ := jeu["directives"].([]any)
-	for _, d := range directives {
-		if m, _ := d.(map[string]any); m != nil && m["id"] == IDDirectiveGels {
-			return nil, fmt.Errorf("le jeu contient déjà %s", IDDirectiveGels)
+	index := map[string]int{}
+	for i, d := range directives {
+		if m, _ := d.(map[string]any); m != nil {
+			if id, _ := m["id"].(string); id != "" {
+				index[id] = i
+			}
 		}
 	}
-	tries := append([]string(nil), sirens...)
-	sort.Strings(tries)
-	valeurs := make([]any, len(tries))
-	for i, s := range tries {
-		valeurs[i] = s
+	for _, c := range candidates {
+		id, _ := c["id"].(string)
+		if id == "" {
+			return nil, errors.New("directive candidate sans identifiant")
+		}
+		d := map[string]any{}
+		for k, v := range c {
+			d[k] = v
+		}
+		if d["statut"] != "retiree" {
+			d["statut"] = "active"
+		}
+		d["date_effet"] = dateEffet
+		delete(d, "revision_avant")
+		if i, existe := index[id]; existe {
+			if !remplacer {
+				return nil, fmt.Errorf("le jeu contient déjà %s", id)
+			}
+			directives[i] = d
+			continue
+		}
+		index[id] = len(directives)
+		directives = append(directives, d)
 	}
-	directives = append(directives, map[string]any{
-		"id":         IDDirectiveGels,
-		"version":    1,
-		"statut":     "active",
-		"date_effet": dateEffet,
-		"texte_fr": "Mise à jour du registre des gels : aucun prêt n'est attribué à une entité " +
-			"inscrite au registre national des gels des avoirs lors de sa dernière mise à jour.",
-		"fondements": []any{map[string]any{"texte": "Code monétaire et financier — à valider par le juriste", "article": "L562-4"}},
-		"declencheur": map[string]any{
-			"evenement": "appel_outil",
-			"cible":     map[string]any{"serveur": "banque-synthetique", "outil": "attribuer_pret"},
-		},
-		"condition": map[string]any{"argument": map[string]any{"champ": "/siren", "op": "dans", "valeur": valeurs}},
-		"effets":    []any{map[string]any{"effet": "refuser"}},
-	})
 	delete(meta, "empreinte")
 	delete(meta, "signature")
 	meta["version"] = version + 1
 	jeu["directives"] = directives
 	return json.MarshalIndent(jeu, "", "  ")
+}
+
+// LireCandidates lit les directives candidates d'un fichier : un jeu
+// complet ({"jeu": …, "directives": […]}, comme l'écrit le compilateur),
+// un objet {"directives": […]}, une liste de directives ou une directive.
+func LireCandidates(brut []byte) ([]map[string]any, error) {
+	dec := json.NewDecoder(bytes.NewReader(brut))
+	dec.UseNumber()
+	var v any
+	if err := dec.Decode(&v); err != nil {
+		return nil, fmt.Errorf("directives candidates illisibles : %w", err)
+	}
+	var liste []any
+	switch x := v.(type) {
+	case []any:
+		liste = x
+	case map[string]any:
+		if ds, ok := x["directives"].([]any); ok {
+			liste = ds
+		} else {
+			liste = []any{x}
+		}
+	default:
+		return nil, errors.New("directives candidates : objet ou liste attendu")
+	}
+	var out []map[string]any
+	for _, d := range liste {
+		m, ok := d.(map[string]any)
+		if !ok {
+			return nil, errors.New("directive candidate : objet attendu")
+		}
+		out = append(out, m)
+	}
+	if len(out) == 0 {
+		return nil, errors.New("aucune directive candidate")
+	}
+	return out, nil
 }
 
 // ---------------------------------------------------------------------------
