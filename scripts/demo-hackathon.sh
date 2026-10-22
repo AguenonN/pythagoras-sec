@@ -8,6 +8,7 @@
 #	scripts/demo-hackathon.sh regle        # « et si cette règle avait existé ? » (règle prête)
 #	scripts/demo-hackathon.sh regle-live "<texte de la règle>"   # compilée par Mistral, puis rejouée
 #	scripts/demo-hackathon.sh detective [PORT]   # page Detective sur la base Aiven (défaut 8090)
+#	scripts/demo-hackathon.sh sync         # verse en continu chaque session nouvelle ou modifiée dans Aiven
 #	scripts/demo-hackathon.sh tout         # preparer, passage, gels, regle
 #
 # Variables : AIVEN_PG_URI, MCP_GATE_CLE_JOURNAL (la même toute la journée),
@@ -129,6 +130,27 @@ detective() {
 	DATABASE_URL="$AIVEN_PG_URI" PORT="$port" exec "$venv/bin/python" apps/detective/app.py
 }
 
+sync() {
+	exiger AIVEN_PG_URI MCP_GATE_CLE_JOURNAL
+	construire
+	declare -A vu=()
+	titre "Synchronisation continue des journaux vers Aiven PostgreSQL (Ctrl+C pour arrêter)"
+	while :; do
+		for j in demo/execution/sessions/*/journal.jsonl; do
+			[[ -f "$j" ]] || continue
+			local marque; marque=$(stat -c '%s:%Y' "$j")
+			[[ "${vu[$j]:-}" == "$marque" ]] && continue
+			if bin/journal-sql exporter "$j" 2>/dev/null | psql_aiven 2>/dev/null; then
+				vu[$j]=$marque
+				dire "$(date +%T)  versé : $(basename "$(dirname "$j")")  ($(wc -l < "$j") entrées, chaîne vérifiée)"
+			else
+				dire "$(date +%T)  non versé (chaîne en cours d'écriture ou rompue) : $(basename "$(dirname "$j")")"
+			fi
+		done
+		sleep 5
+	done
+}
+
 case "${1:-}" in
 	verifier) verifier ;;
 	preparer) preparer ;;
@@ -137,6 +159,7 @@ case "${1:-}" in
 	regle) regle ;;
 	regle-live) shift; regle_live "${1:-}" ;;
 	detective) shift; detective "${1:-}" ;;
+	sync) sync ;;
 	tout) preparer; passage; gels; regle ;;
-	*) sed -n '2,14p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
+	*) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 2 ;;
 esac
