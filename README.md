@@ -1,22 +1,40 @@
-# mcp_rogue
+# pythagoras-sec
 
-Un agent LLM appelle des outils externes via MCP. Par défaut, il accorde sa
-confiance à un serveur sur la foi d'une entrée de configuration écrite une fois
-et jamais revérifiée à l'exécution : qui contrôle cette ligne contrôle à qui
-l'agent parle. Ce dépôt remplace cette confiance déclarative par deux choses.
-D'abord une **preuve cryptographique d'identité** — chaque composant présente un
-SVID SPIFFE au handshake mTLS, et un serveur qui ne peut pas la produire est
-rejeté avant l'exécution de son moindre handler, sans qu'on ait eu besoin de le
-reconnaître comme malveillant. Ensuite une **décision journalisée et rejouable**
-sur chaque appel : une fonction pure, sans horloge ni réseau ni modèle de
-langue, dont le journal chaîné par MAC porte tout ce qu'elle a lu, de sorte que
-six mois plus tard la question « pourquoi cet appel a-t-il été refusé » se
-répond en relançant la décision, pas en l'expliquant. Les deux moitiés
-répondent à des questions différentes et ne se remplacent pas : l'identité est
-binaire et se prouve, le comportement est continu et ne se prouve pas — il se
-confine, par des verrous qui tiennent même quand un filtre cède, parce qu'on
-n'injecte pas un prompt dans une route réseau absente, un privilège non accordé
-ou un type de donnée inerte.
+A policy engine between AI agents and their MCP tools. Every tool call is decided
+by a pure function against versioned directives, written to a MAC-chained journal
+and replayable offline. Actions above an authorization threshold wait for human
+approval. The identity layer is also published as a standalone public proxy:
+**[secu-mcp](https://github.com/AguenonN/secu-mcp)**.
+
+**Problem.** An MCP client trusts a server because a configuration line says so,
+written once and never re-checked at runtime. If an agent or a server is
+compromised, nothing stands between it and tool execution.
+
+**Architecture.**
+
+- **Identity:** each component presents a SPIFFE SVID at the mTLS handshake; a
+  server that cannot is rejected before any of its handlers runs.
+- **Decision:** `cmd/mcp-gate` routes every `tools/call` through
+  `Decide(rules, session state, call) → decision`, a pure function with no I/O,
+  no clock and no language model on the decision path (enforced by an AST test).
+  A condition that cannot be evaluated is `Indeterminate`, and the default is to
+  refuse.
+- **Audit:** every decision is appended to a MAC-chained journal that carries
+  everything it read, so "why was this call refused?" is answered by replaying
+  the decision, not by explaining it.
+- **Containment:** egress default-deny, a capability allowlist before the call
+  leaves the process, and tool responses sealed as inert data. These hold even
+  when a prompt injection fools the model.
+
+**Validation.** Synthetic banking scenario: a loan approval runs in 12 calls.
+With directive D-009 enabled, the action is intercepted, paused for human
+validation and completes in 14 calls. Both audit chains pass offline verification.
+
+**Next.** Segmented controls: replacing hand-written rules with chained binary
+classifiers whose verdicts combine deterministically, to secure connector code
+generated on demand.
+
+> The detailed documentation below is in French.
 
 ## La carte des briques
 
