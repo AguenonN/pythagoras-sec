@@ -153,10 +153,10 @@ attempt 3  POST exfil URL      → BLOCKED: lookup exfil.attacker-controlled.tes
 
 | Document | Contenu |
 |---|---|
-| [carte des briques](carte/carte.html) | Les 48 paquets et leurs liens, navigables |
+| [carte des briques](carte/carte.html) | Les 51 paquets et leurs liens, navigables |
+| [`docs/plan-construction.md`](docs/plan-construction.md) | Le plan de la refonte : socle puis approche grand public |
 | [`docs/contrat-engine.md`](docs/contrat-engine.md) | Ce que l'agrégateur doit respecter pour que le journal reste rejouable |
 | [`docs/schema-directive-v2.md`](docs/schema-directive-v2.md) | Le schéma d'une règle : déclencheur, condition en arbre, effets, tables de Kleene |
-| [`docs/controles-segmentes.md`](docs/controles-segmentes.md) | Refonte en cours : décision déterministe sur observations probabilistes |
 
 `secu-mcp` est l'extraction publique du socle (identité et confinement). Ce
 dépôt le contient en entier, plus le moteur, et en est la source de vérité :
